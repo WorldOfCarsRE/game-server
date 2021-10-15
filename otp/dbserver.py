@@ -229,6 +229,7 @@ class DBServer(DownstreamMessageDirector):
             dg.add_bytes(rejected_name)
             dg.add_bytes(toon_fields['setDNAString'])
             dg.add_uint8(av_ids.index(av_id))
+            dg.add_uint8(0)
 
         self.send_datagram(dg)
 
