@@ -102,8 +102,9 @@ password_pattern = re.compile(r'[A-Za-z0-9_!@#$%^&*]+')
 
 async def handle_login(request):
     print(request.method, request.path, request.query)
+    args = await request.post()
 
-    username = request.query.get('n')
+    username = args.get('u')
 
     if not username:
         return web.Response()
@@ -111,7 +112,7 @@ async def handle_login(request):
     if not username_pattern.match(username):
         return web.Response()
 
-    password = request.query.get('p')
+    password = args.get('p')
 
     if not password:
         return web.Response()
@@ -162,7 +163,7 @@ async def handle_login(request):
     print(token)
 
     action = 'LOGIN_ACTION=PLAY'
-    token = f'LOGIN_TOKEN={token.hex()}'
+    token = f'{token.hex()}'
     username = f'GAME_USERNAME={username}'
     disl_id = f'GAME_DISL_ID={info["disl_id"]}'
     download_url = f'PANDA_DOWNLOAD_URL=http://{HOST}:{PORT}/'
@@ -172,12 +173,13 @@ async def handle_login(request):
     acc_params = f'webAccountParams=&chatEligible=1&secretsNeedsParentPassword=0'
     whitelist_url = f'GAME_WHITELIST_URL=http://{HOST}:{PORT}'
 
-    response ='\n'.join((action, token, username, disl_id, download_url, account_url, game_url,
-                                        acc_params, is_test_svr, whitelist_url))
+    response = {
+        'token': token
+    }
 
     print('sending reponse', response)
 
-    return web.Response(text=response)
+    return web.json_response(response)
 
 
 async def create_new_account(username: str, password: str, cursor: aiomysql.DictCursor):
@@ -277,7 +279,7 @@ async def init_app():
 
     app.router.add_get('/launcher/current/patcher.startshow', handle_start_show)
 
-    app.router.add_get('/login', handle_login)
+    app.router.add_post('/login', handle_login)
     app.router.add_static('/', path=config['WebServer.CONTENT_DIR'], name='releaseNotes.html')
 
     app.router.add_post('/api/authDelete', handle_auth_delete)
