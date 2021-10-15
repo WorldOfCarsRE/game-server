@@ -1,7 +1,8 @@
 @echo off
 cd ..
+set /P PYTHON_PATH=<PYTHON_PATH
 
 :main
-python -m ai.AIStart
+%PYTHON_PATH% -m ai.AIStart
 pause
 goto :main

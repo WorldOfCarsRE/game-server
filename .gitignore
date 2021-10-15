@@ -228,3 +228,6 @@ logs/*
 tests/_trial_temp
 
 .vs
+
+# Python Path
+PYTHON_PATH

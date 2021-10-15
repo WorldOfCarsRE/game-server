@@ -1,7 +1,8 @@
 @echo off
 cd ..
+set /P PYTHON_PATH=<PYTHON_PATH
 
 :main
-python -m web.website
+%PYTHON_PATH% -m web.website
 pause
 goto :main

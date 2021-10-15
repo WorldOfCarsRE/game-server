@@ -1,7 +1,8 @@
 @echo off
 cd ..
+set /P PYTHON_PATH=<PYTHON_PATH
 
 :main
-python -m otp.uberdog
+%PYTHON_PATH% -m otp.uberdog
 pause
 goto :main
