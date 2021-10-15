@@ -329,7 +329,7 @@ class AIRepository:
         from .TimeManagerAI import TimeManagerAI
 
         self.district = ToontownDistrictAI(self)
-        self.district.name = 'Nutty River'
+        self.district.name = 'Sillyville'
         self.generateWithRequired(self.district, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS)
 
         post_remove = Datagram()
