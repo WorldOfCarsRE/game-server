@@ -296,6 +296,13 @@ class DistributedSuitAI(DistributedSuitBaseAI):
 
     def stopPathNow(self):
         taskMgr.remove(self.uniqueName('move'))
+        
+    def flyAwayNow(self):
+        self.b_setPathState(PathState.STOP_FLYAWAY)
+        self.stopPathNow()
+        name = self.uniqueName('flyAwayNow')
+        taskMgr.remove(name)
+        taskMgr.doMethodLater(TO_SKY, self.finishFlyAwayNow, name)
 
     def danceNowFlyAwayLater(self):
         self.b_setPathState(PathState.VICTORY_FLYAWAY)
