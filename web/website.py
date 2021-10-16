@@ -12,9 +12,7 @@ from Crypto.Cipher import AES
 
 import json
 
-
 import os
-
 
 SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 
@@ -24,7 +22,7 @@ table_creation = '''CREATE TABLE accounts (
     username VARCHAR(255) NOT NULL PRIMARY KEY UNIQUE,
     hash VARBINARY(255) NOT NULL,
     salt VARBINARY(64) NOT NULL,
-    disl_id INT NOT NULL, 
+    disl_id INT NOT NULL,
     access ENUM('FULL', 'VELVET_ROPE') NOT NULL DEFAULT 'FULL',
     account_type ENUM('NO_PARENT_ACCOUNT', 'WITH_PARENT_ACCOUNT') NOT NULL DEFAULT 'NO_PARENT_ACCOUNT',
     create_friends_with_chat ENUM('YES', 'CODE', 'NO') NOT NULL DEFAULT 'YES',
@@ -45,13 +43,11 @@ DEFAULT_ACCOUNT = {
     'LAST_LOGIN': b'\x00\x00',
 }
 
-
 DIR = config['WebServer.CONTENT_DIR']
 PATCHER_VER_FILE = os.path.join(DIR, 'patcher.ver')
 PATCHER_STARTSHOW_FILE = os.path.join(DIR, 'patcher.startshow')
 HOST = config['WebServer.HOST']
 PORT = config['WebServer.PORT']
-
 
 if config['WebServer.WRITE_PATCH_FILES']:
     print('Writing patcher files...')
@@ -62,27 +58,21 @@ if config['WebServer.WRITE_PATCH_FILES']:
     with open(PATCHER_STARTSHOW_FILE, 'w+') as f:
         f.write(patcher.PATCHER_STARTSHOW)
 
-
 async def handle_patcher(request):
     print(request.method, request.path, request.query_string)
     return web.FileResponse(PATCHER_VER_FILE)
-
 
 async def handle_start_show(request):
     print(request.method, request.path, request.query_string)
 
     return web.FileResponse(PATCHER_STARTSHOW_FILE)
 
-
 with open(os.path.join(DIR, 'twhitelist.dat'), 'r', encoding='windows-1252') as f:
     WHITELIST = f.read()
-
 
 async def handle_whitelist(request):
     print(request.method, request.path, request.query_string)
     return web.Response(text=WHITELIST)
-
-
 
 # BUTTON_2: TOP TOONS
 # BUTTON_3: PLAYER'S GUIDE
@@ -92,13 +82,10 @@ async def handle_whitelist(request):
 # BUTTON_8: NEW ACCOUNT
 #
 
-
-
 import re
 
 username_pattern = re.compile(r'[A-Za-z0-9_]+')
 password_pattern = re.compile(r'[A-Za-z0-9_!@#$%^&*]+')
-
 
 async def handle_login(request):
     print(request.method, request.path, request.query)
@@ -107,24 +94,42 @@ async def handle_login(request):
     username = args.get('u')
 
     if not username:
-        return web.Response()
+        data = {
+            'message': 'No username specified in request.'
+        }
+        return web.json_response(data)
 
     if not username_pattern.match(username):
-        return web.Response()
+        data = {
+            'message': 'Username is not valid.'
+        }
+        return web.json_response(data)
 
     password = args.get('p')
 
     if not password:
-        return web.Response()
+        data = {
+            'message': 'No password specified in request.'
+        }
+        return web.json_response(data)
 
     if not password_pattern.match(password):
-        return web.Response()
+        data = {
+            'message': 'Password is not valid.'
+        }
+        return web.json_response(data)
 
     if len(username) > 255:
-        return web.Response()
+        data = {
+            'message': 'Username is greater than 255 characters.'
+        }
+        return web.json_response(data)
 
     if len(password) > 255:
-        return web.Response()
+        data = {
+            'message': 'Password is greater than 255 characters.'
+        }
+        return web.json_response(data)
 
     print(f'{username} attempting to login...')
 
@@ -143,13 +148,19 @@ async def handle_login(request):
     request.app['pool'].release(conn)
 
     if not info:
-        return web.Response()
+        data = {
+            'message': 'The specified account was not found in the database.'
+        }
+        return web.json_response(data)
 
     cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'], iterations=101337)
 
     if cmp_hash != info['hash']:
         print('hashes dont match', cmp_hash, info['hash'], len(info['hash']))
-        return web.Response()
+        data = {
+            'message': 'Incorrect password.'
+        }
+        return web.json_response(data)
 
     del info['hash']
     del info['salt']
@@ -164,7 +175,7 @@ async def handle_login(request):
 
     action = 'LOGIN_ACTION=PLAY'
     token = f'{token.hex()}'
-    username = f'GAME_USERNAME={username}'
+    username = f'{username}'
     disl_id = f'GAME_DISL_ID={info["disl_id"]}'
     download_url = f'PANDA_DOWNLOAD_URL=http://{HOST}:{PORT}/'
     account_url = f'ACCOUNT_SERVER=http://{HOST}:{PORT}/'
@@ -174,13 +185,13 @@ async def handle_login(request):
     whitelist_url = f'GAME_WHITELIST_URL=http://{HOST}:{PORT}'
 
     response = {
-        'token': token
+        'token': token,
+        'message': f'Welcome back, {username}.'
     }
 
     print('sending reponse', response)
 
     return web.json_response(response)
-
 
 async def create_new_account(username: str, password: str, cursor: aiomysql.DictCursor):
     salt = os.urandom(56)
@@ -220,7 +231,6 @@ async def create_new_account(username: str, password: str, cursor: aiomysql.Dict
         print(e, e.__class__)
 
     return await cursor.fetchone()
-
 
 async def handle_auth_delete(request):
     print(request.method, request.path, request.query, request.headers)
@@ -270,7 +280,6 @@ async def handle_auth_delete(request):
 
     return web.Response(text='ACCOUNT SERVER RESPONSE')
 
-
 async def init_app():
     app = web.Application()
     app.router.add_get('/patcher.ver', handle_patcher)
@@ -302,12 +311,9 @@ async def init_app():
 
     return app
 
-
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     app = loop.run_until_complete(init_app())
     print('running app..')
     web.run_app(app, host=HOST, port=PORT)
     app['pool'].terminate()
-
-

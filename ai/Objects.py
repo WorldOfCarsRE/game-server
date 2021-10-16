@@ -226,6 +226,9 @@ class NewsManagerAI(DistributedObjectAI):
     def d_setHolidayIdList(self):
         self.sendUpdate('setHolidayIdList', [self.holidayIds])
 
+    def d_sendSystemMessage(self, msg, msgType = 0):
+        self.sendUpdate('sendSystemMessage', [msg, msgType])
+
 
 class HolidayBaseAI:
     holidayId = None
@@ -426,3 +429,80 @@ class FriendManagerAI(DistributedObjectGlobalAI):
         dg.add_server_header([getPuppetChannel(avId)], self.air.ourChannel, CLIENT_FRIEND_ONLINE)
         dg.add_uint32(otherAvId)
         self.air.send(dg)
+
+class MagicWordManagerAI(DistributedObjectAI):
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+class ToontownMagicWordManagerAI(MagicWordManagerAI):
+    def __init__(self, air):
+        MagicWordManagerAI.__init__(self, air)
+
+    def checkArguments(self, avId: int, magicWord: str, function, args):
+        fArgs = function.__code__.co_argcount - 1
+        argCount = len(args)
+
+        if argCount > fArgs:
+            response = 'Invalid argument count!'
+            self.sendResponseMessage(avId, response)
+            return False
+
+        minArgs = fArgs - (len(function.__defaults__) if function.__defaults__ else 0) - 1
+
+        if argCount < minArgs:
+            response = '{0} requires at least {1} arguments but received {2}!'.format(magicWord, str(minArgs), str(argCount))
+            self.sendResponseMessage(avId, response)
+            return False
+
+        return True
+
+    def sendResponseMessage(self, avId: int, message: str):
+        self.sendUpdateToAvatar(avId, 'setMagicWordResponse', [message])
+
+    def sendSystemMessage(self, av, msg: str):
+        if msg == '':
+            return
+
+        self.air.newsManager.d_sendSystemMessage(msg)
+
+        response = 'Sent system message!'
+        self.sendResponseMessage(av.do_id, response)
+
+    def setMagicWord(self, magicWord, avId, zoneId, signature):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if not av:
+            return
+
+        # Chop off the prefix at the start as its not needed
+        magicWord = magicWord[1:]
+        # Split the Magic Word.
+        splitWord = magicWord.split(' ')
+        # Grab the arguments.
+        args = splitWord[1:]
+        # Make the Magic Word case insensitive.
+        magicWord = splitWord[0].lower()
+        del splitWord
+
+        # Log this attempt.
+        print('{0} with avId of {1} executed Magic Word: {2}!'.format(av.getName(), avId, magicWord))
+
+        # Grab all of our string arguments.
+        string = ' '.join(str(x) for x in args)
+        stringVal = ' '.join(str(x) for x in args[2:])
+
+        clientWords = [
+            'run'
+        ]
+
+        if magicWord in clientWords or magicWord == '':
+            # We can ignore this.
+            return
+
+        if magicWord in ('system', 'smsg'):
+            self.sendSystemMessage(av, msg = string)
+        else:
+            self.sendResponseMessage(avId, '{0} is not a valid Magic Word.'.format(magicWord))
+            print('Unknown Magic Word: {0} from avId: {1}!'.format(magicWord, avId))
+            return
