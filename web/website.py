@@ -175,7 +175,7 @@ async def handle_login(request):
 
     action = 'LOGIN_ACTION=PLAY'
     token = f'{token.hex()}'
-    username = f'GAME_USERNAME={username}'
+    username = f'{username}'
     disl_id = f'GAME_DISL_ID={info["disl_id"]}'
     download_url = f'PANDA_DOWNLOAD_URL=http://{HOST}:{PORT}/'
     account_url = f'ACCOUNT_SERVER=http://{HOST}:{PORT}/'
