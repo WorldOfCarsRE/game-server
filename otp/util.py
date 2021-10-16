@@ -22,7 +22,7 @@ DEFAULT_TOON = {
     "setExperience": (b'\x00\x00' * 7,),
     "setMaxCarry": (20,),
     "setTrackAccess": ([0, 0, 0, 0, 1, 1, 0],),
-    "setTrackProgress": (0, 0,),
+    "setTrackProgress": (-1, 0,),
     "setTrackBonusLevel": ([-1, -1, -1, -1, -1, -1, -1],),
     "setInventory": (b'\x00' * 49,),
     "setMaxNPCFriends": (8,),
