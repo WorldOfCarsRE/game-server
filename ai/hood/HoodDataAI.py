@@ -36,6 +36,10 @@ DNA_MAP = {
     DonaldsDreamland: 'donalds_dreamland_sz.dna',
     LullabyLane: 'donalds_dreamland_9100.dna',
     PajamaPlace: 'donalds_dreamland_9200.dna',
+    SellbotHQ: 'cog_hq_sellbot_sz.dna',
+    SellbotFactoryExt: 'cog_hq_sellbot_11200.dna',
+    CashbotHQ: 'cog_hq_cashbot_sz.dna',
+    LawbotHQ: 'cog_hq_lawbot_sz.dna',
 }
 
 
@@ -234,6 +238,62 @@ class StreetAI(SafeZoneAI):
             self.suitPlanner.generateWithRequired(self.zone_id)
             self.suitPlanner.startup()
 
+
+class CogHQAI(PlaceAI):
+    lobbyZone = None
+    suitZones = []
+    secondaryZone = None
+    secondaryZoneWantSuits = False
+    elevatorZones = []
+    numExtDoors = 0
+    numIntDoors = 0
+
+    def __init__(self, air, zone_id, facilityMgr):
+        PlaceAI.__init__(self, air, zone_id)
+
+        self.wantSuits = True
+        self.suitPlanners = []
+        self.facilityMgr = facilityMgr
+        
+    def create(self):
+        self.dna, self.storage = load_dna_file('dna/files/' + DNA_MAP[self.zone_id])
+        
+    def startup(self):
+        self.active = True
+        if self.wantSuits:
+            for zone_id in self.suitZones:
+                suitPlanner = DistributedSuitPlannerAI(self.air, self)
+                suitPlanner.generateWithRequired(zone_id)
+                suitPlanner.startup()
+                self.suitPlanners.append(suitPlanner)
+                
+            
+class SBHQHoodAI(CogHQAI):
+    zoneId = SellbotHQ
+    suitZones = [SellbotHQ, SellbotFactoryExt]
+
+    def __init__(self, air, facilityMgr):
+        CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
+        
+class CBHQHoodAI(CogHQAI):
+    zoneId = CashbotHQ
+    suitZones = [CashbotHQ]
+
+    def __init__(self, air, facilityMgr):
+        CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
+
+class LBHQHoodAI(CogHQAI):
+    zoneId = LawbotHQ
+    suitZones = [LawbotHQ]
+
+    def __init__(self, air, facilityMgr):
+        CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
+        
+class BBHQHoodAI(CogHQAI):
+    zoneId = BossbotHQ
+
+    def __init__(self, air, facilityMgr):
+        CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
 
 class PlaygroundAI(SafeZoneAI):
     treasurePlannerClass: Optional[Type[RegenTreasurePlanner]] = None

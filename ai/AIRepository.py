@@ -371,7 +371,7 @@ class AIRepository:
         self.district.b_setAvailable(True)
 
     def loadZones(self):
-        from ai.hood.HoodDataAI import DDHoodAI, TTHoodAI, BRHoodAI, MMHoodAI, DGHoodAI, DLHoodAI
+        from ai.hood.HoodDataAI import DDHoodAI, TTHoodAI, BRHoodAI, MMHoodAI, DGHoodAI, DLHoodAI, SBHQHoodAI, CBHQHoodAI, LBHQHoodAI, BBHQHoodAI
 
         self.hoods = [
             DDHoodAI(self),
@@ -379,7 +379,11 @@ class AIRepository:
             BRHoodAI(self),
             MMHoodAI(self),
             DGHoodAI(self),
-            DLHoodAI(self)
+            DLHoodAI(self),
+            SBHQHoodAI(self, None), # TODO: facility mgrs
+            CBHQHoodAI(self, None),
+            LBHQHoodAI(self, None),
+            BBHQHoodAI(self, None)
         ]
 
         for hood in self.hoods:

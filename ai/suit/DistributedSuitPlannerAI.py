@@ -36,6 +36,18 @@ SUIT_HOOD_INFO = {
     PunchlinePlace: SuitHoodInfo(zoneId=PunchlinePlace, minSuits=3, maxSuits=10, minSuitBldgs=0, maxSuitBldgs=5,
                                  buildingWeight=15, maxBattleSuits=3, joinChances=(1, 5, 10, 40, 60, 80),
                                  deptChances=(10, 10, 40, 40), levels=(1, 2, 3), buildingDifficulties=()),
+    SellbotHQ: SuitHoodInfo(zoneId=SellbotHQ, minSuits=3, maxSuits=15, minSuitBldgs=0, maxSuitBldgs=0, buildingWeight=0,
+                            maxBattleSuits=4, joinChances= (1, 5, 10, 40, 60, 80), deptChances=(0, 0, 0, 100),
+                            levels=(4, 5, 6), buildingDifficulties=()),
+    SellbotFactoryExt: SuitHoodInfo(zoneId=SellbotFactoryExt, minSuits=10, maxSuits=20, minSuitBldgs=0, maxSuitBldgs=0, buildingWeight=0,
+                            maxBattleSuits=4, joinChances= (1, 5, 10, 40, 60, 80), deptChances=(0, 0, 0, 100),
+                            levels=(4, 5, 6), buildingDifficulties=()),
+    CashbotHQ: SuitHoodInfo(zoneId=CashbotHQ, minSuits=10, maxSuits=20, minSuitBldgs=0, maxSuitBldgs=0, buildingWeight=0,
+                            maxBattleSuits=4, joinChances= (1, 5, 10, 40, 60, 80), deptChances=(0, 0, 100, 0),
+                            levels=(7, 8, 9), buildingDifficulties=()),
+    LawbotHQ: SuitHoodInfo(zoneId=LawbotHQ, minSuits=10, maxSuits=20, minSuitBldgs=0, maxSuitBldgs=0, buildingWeight=0,
+                            maxBattleSuits=4, joinChances= (1, 5, 10, 40, 60, 80), deptChances=(0, 100, 0, 0),
+                            levels=(8, 9, 10), buildingDifficulties=()),
 }
 
 from dna.objects import DNASuitPoint, SuitPointType, SuitLegType, FROM_SKY, SUIT_WALK_SPEED
