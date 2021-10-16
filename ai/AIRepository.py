@@ -326,6 +326,7 @@ class AIRepository:
         self.registerForChannel(self.ourChannel)
 
         from .Objects import ToontownDistrictAI, ToontownDistrictStatsAI, DistributedInGameNewsMgrAI, NewsManagerAI, FriendManagerAI
+        from .Objects import ToontownMagicWordManagerAI
         from .TimeManagerAI import TimeManagerAI
 
         self.district = ToontownDistrictAI(self)
@@ -365,6 +366,9 @@ class AIRepository:
 
         self.friendManager = FriendManagerAI(self)
         self.friendManager.generateGlobalObject(OTP_ZONE_ID_MANAGEMENT)
+
+        self.magicWordMgr = ToontownMagicWordManagerAI(self)
+        self.magicWordMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
 
         self.loadZones()
 
