@@ -501,7 +501,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
             return
 
         if magicWord in ('system', 'smsg'):
-            self.sendSystemMessage(av, message = string)
+            self.sendSystemMessage(av, msg = string)
         else:
             self.sendResponseMessage(avId, '{0} is not a valid Magic Word.'.format(magicWord))
             print('Unknown Magic Word: {0} from avId: {1}!'.format(magicWord, avId))
