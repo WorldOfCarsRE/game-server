@@ -6,6 +6,6 @@ panda3d
 pycryptodome
 PyMySQL
 pyOpenSSL
-uvloop==0.14.0; sys_platform == 'linux'
+uvloop; sys_platform != 'win32'
 lark-parser
 numpy
