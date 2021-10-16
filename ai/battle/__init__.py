@@ -1622,8 +1622,8 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         for toonId in self.activeToons + self.exitedToons:
             attack = self.toonAttacks.get(toonId)
-            toon = self.air.doTable[toonId]
-            if attack is None:
+            toon = self.air.doTable.get(toonId)
+            if attack is None or toon is None:
                 continue
 
             if attack.track == Tracks.NO_ATTACK:
