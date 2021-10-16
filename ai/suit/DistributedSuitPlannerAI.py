@@ -262,8 +262,8 @@ class BattleManagerAI:
 
         if cellId in self.cell2Battle:
             if not self.requestBattleAddSuit(cellId, suit):
-                suit.flyAwayNow()                
-                
+                suit.flyAwayNow()
+
             battle = self.cell2Battle[cellId]
             battle.signupToon(toonId, pos[0], pos[1], pos[2])
         else:
@@ -273,7 +273,7 @@ class BattleManagerAI:
             self.cell2Battle[cellId]
 
         return battle
-        
+
     def removeBattle(self, cellId):
         if cellId in self.cell2Battle:
             self.cell2Battle[cellId].requestDelete()
