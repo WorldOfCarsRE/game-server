@@ -1270,13 +1270,13 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.numSuitsEver = 0
 
         self.battleExperience: List[BattleExperience] = []
-        
+
     def enterOff(self):
         pass
 
     def exitOff(self):
         pass
-        
+
     def requestDelete(self):
         self.demand('Off')
         DistributedObjectAI.requestDelete(self)
@@ -1941,7 +1941,7 @@ from direct.task import Task
 class DistributedBattleAI(DistributedBattleBaseAI):
 
     def __init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback=None):
-        DistributedBattleBaseAI.__init__(self, air, finishCallback)\
+        DistributedBattleBaseAI.__init__(self, air, finishCallback)
         self.battleMgr = battleMgr
         self.zoneId = zoneId
 
@@ -2026,10 +2026,10 @@ class DistributedBattleAI(DistributedBattleBaseAI):
                 if len(deadSuits) and not lastActiveSuitDied or len(deadToons):
                     self.needAdjust = True
                 self.demand('WaitForJoin')
-        
+
     def enterResume(self):
         DistributedBattleBaseAI.enterResume(self)
         if self.finishCallback:
             self.finishCallback(self.zoneId)
-        
+
         self.battleMgr.removeBattle(self.battleCellId)
