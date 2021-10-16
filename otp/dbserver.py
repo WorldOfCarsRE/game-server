@@ -80,7 +80,7 @@ class DBServerProtocol(MDUpstreamProtocol):
 
 
 from dc.parser import parse_dc_file
-from otp.dbbackend import SQLBackend, OTPCreateFailed
+from otp.dbbackend import MongoBackend, OTPCreateFailed
 from dc.util import Datagram
 
 
@@ -97,7 +97,7 @@ class DBServer(DownstreamMessageDirector):
 
         self.dc = parse_dc_file('toon.dc')
 
-        self.backend = SQLBackend(self)
+        self.backend = MongoBackend(self)
 
         self.operations = {}
 

@@ -14,7 +14,7 @@ The AI server is rewritten from scratch to take advantage of Python 3 features a
 
 
 ## Database Backends
-Currently only MySQL is supported. More database backends will be added in the future.
+Currently only MySQL and MongoDB is supported. More database backends will be added in the future.
 
 
 ## How to setup:
