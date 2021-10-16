@@ -221,10 +221,6 @@ class MongoBackend(DatabaseBackend):
         self.client = MongoClient('127.0.0.1:27017')
         self.mongodb = self.client['OpenOTP']
 
-        if 'objects' not in self.mongodb.collection_names():
-            print('e')
-            #self.mongodb.objects()
-
         for dclass in self.dc.classes:
             if 'DcObjectType' not in dclass.fields_by_name:
                 continue
