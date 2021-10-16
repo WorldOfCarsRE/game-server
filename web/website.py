@@ -95,13 +95,13 @@ async def handle_login(request):
 
     if not username:
         data = {
-            'status': 'No username specified in request.'
+            'message': 'No username specified in request.'
         }
         return web.json_response(data)
 
     if not username_pattern.match(username):
         data = {
-            'status': 'Username is not valid.'
+            'message': 'Username is not valid.'
         }
         return web.json_response(data)
 
@@ -109,25 +109,25 @@ async def handle_login(request):
 
     if not password:
         data = {
-            'status': 'No password specified in request.'
+            'message': 'No password specified in request.'
         }
         return web.json_response(data)
 
     if not password_pattern.match(password):
         data = {
-            'status': 'Password is not valid.'
+            'message': 'Password is not valid.'
         }
         return web.json_response(data)
 
     if len(username) > 255:
         data = {
-            'status': 'Username is greater than 255 characters.'
+            'message': 'Username is greater than 255 characters.'
         }
         return web.json_response(data)
 
     if len(password) > 255:
         data = {
-            'status': 'Password is greater than 255 characters.'
+            'message': 'Password is greater than 255 characters.'
         }
         return web.json_response(data)
 
@@ -149,7 +149,7 @@ async def handle_login(request):
 
     if not info:
         data = {
-            'status': 'The specified account was not found in the database.'
+            'message': 'The specified account was not found in the database.'
         }
         return web.json_response(data)
 
@@ -158,7 +158,7 @@ async def handle_login(request):
     if cmp_hash != info['hash']:
         print('hashes dont match', cmp_hash, info['hash'], len(info['hash']))
         data = {
-            'status': 'Incorrect password.'
+            'message': 'Incorrect password.'
         }
         return web.json_response(data)
 
@@ -186,7 +186,7 @@ async def handle_login(request):
 
     response = {
         'token': token,
-        'status': f'Welcome back, {username}.'
+        'message': f'Welcome back, {username}.'
     }
 
     print('sending reponse', response)
