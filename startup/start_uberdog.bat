@@ -1,4 +1,5 @@
 @echo off
+title UberDOG
 cd ..
 set /P PYTHON_PATH=<PYTHON_PATH
 

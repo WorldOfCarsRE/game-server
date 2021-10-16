@@ -1,4 +1,5 @@
 @echo off
+title OTP Server
 cd ..
 set /P PYTHON_PATH=<PYTHON_PATH
 

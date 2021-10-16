@@ -1,4 +1,5 @@
 @echo off
+title Web
 cd ..
 set /P PYTHON_PATH=<PYTHON_PATH
 
