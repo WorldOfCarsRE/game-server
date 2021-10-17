@@ -4,14 +4,12 @@ import time
 from .DistributedObjectAI import DistributedObjectAI
 from . import OTPGlobals
 
-
 DisconnectUnknown = 0
 DisconnectBookExit = 1
 DisconnectCloseWindow = 2
 DisconnectPythonError = 3
 DisconnectSwitchShards = 4
 DisconnectGraphicsError = 5
-
 
 class TimeManagerAI(DistributedObjectAI):
     def __init__(self, air):

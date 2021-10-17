@@ -462,18 +462,18 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getMaxFishTank(self):
         return 20
-        
+
     def setInventory(self, inventory):
         self.inventory = Inventory.fromBytes(inventory)
         self.inventory.toon = self
 
     def getInventory(self):
         return self.inventory.makeNetString()
-        
+
     def b_setFishTank(self, genusList, speciesList, weightList):
         self.setFishTank(genusList, speciesList, weightList)
         self.d_setFishTank(genusList, speciesList, weightList)
-        
+
     def d_setFishTank(self, genusList, speciesList, weightList):
         self.sendUpdate("setFishTank", [genusList, speciesList, weightList])
 
@@ -750,21 +750,21 @@ from ai import OTPGlobals
 
 class FishTank:
     __slots__ = 'fishList'
-    
+
     def __init__(self):
         self.fishList: List[FishBase] = []
-        
+
     def __len__(self):
         return len(self.fishList)
-        
+
     def getFish(self):
         return self.fishList
-        
+
     def makeFromNetLists(self, genusList, speciesList, weightList):
         self.fishList: List[FishBase] = []
         for genus, species, weight in zip(genusList, speciesList, weightList):
             self.fishList.append(FishBase(genus, species, weight))
-            
+
     def getNetLists(self):
         genusList = []
         speciesList = []
@@ -774,7 +774,7 @@ class FishTank:
             speciesList.append(fish.getSpecies())
             weightList.append(fish.getWeight())
         return [genusList, speciesList, weightList]
-        
+
     def hasFish(self, genus, species):
         for fish in self.fishList:
             if (fish.getGenus() == genus) and (fish.getSpecies() == species):
@@ -788,7 +788,7 @@ class FishTank:
                 (fish.getWeight() >= weight)):
                 return 1
         return 0
-    
+
     def addFish(self, fish):
         self.fishList.append(fish)
         return 1
@@ -805,7 +805,7 @@ class FishTank:
         for fish in self.fishList:
             value += fish.getValue()
         return value
-            
+
     def __str__(self):
         numFish = len(self.fishList)
         value = 0

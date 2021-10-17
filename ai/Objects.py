@@ -10,7 +10,6 @@ from dc.util import Datagram
 from otp.util import getPuppetChannel
 from otp.messagetypes import CLIENT_FRIEND_ONLINE
 
-
 class DistributedDistrictAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
@@ -36,7 +35,6 @@ class DistributedDistrictAI(DistributedObjectAI):
 
     def getAvailable(self):
         return self.available
-
 
 class ToontownDistrictAI(DistributedDistrictAI):
     def __init__(self, air):
@@ -226,7 +224,6 @@ class NewsManagerAI(DistributedObjectAI):
     def d_sendSystemMessage(self, msg, msgType = 0):
         self.sendUpdate('sendSystemMessage', [msg, msgType])
 
-
 class HolidayBaseAI:
     holidayId = None
 
@@ -315,10 +312,8 @@ class InviteeResponse:
     NO = 10
     TOO_MANY_FRIENDS = 13
 
-
 MAX_FRIENDS = 50
 MAX_PLAYER_FRIENDS = 300
-
 
 class FriendManagerAI(DistributedObjectGlobalAI):
     do_id = OTP_DO_ID_FRIEND_MANAGER

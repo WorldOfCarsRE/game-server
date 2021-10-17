@@ -6,9 +6,7 @@ from asyncio import Queue
 import asyncio
 import par
 
-
 from typing import Dict, Set, List
-
 
 class MDProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):

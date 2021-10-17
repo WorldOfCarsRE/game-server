@@ -21,7 +21,6 @@ from . import AIZoneData
 
 from .ToontownGlobals import DynamicZonesBegin, DynamicZonesEnd
 
-
 class AIProtocol(ToontownProtocol):
     def connection_made(self, transport):
         ToontownProtocol.connection_made(self, transport)
@@ -36,7 +35,6 @@ class AIProtocol(ToontownProtocol):
     def send_datagram(self, data: Datagram):
         loop = self.service.loop
         loop.call_soon_threadsafe(self.outgoing_q.put_nowait, data.bytes())
-
 
 class AIRepository:
     def __init__(self):
