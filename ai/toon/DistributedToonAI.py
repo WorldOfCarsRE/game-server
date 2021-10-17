@@ -5,6 +5,7 @@ from dc.util import Datagram
 
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
+from ai import ToontownGlobals
 
 class DistributedAvatarAI(DistributedSmoothNodeAI):
     def __init__(self, air):
@@ -30,6 +31,9 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.DISLid = 0
         self.access = 0
         self.friendsList: List[FriendEntry] = []
+        self.defaultZone = 0
+        self.lastHood = 0
+        self.hoodsVisited = []
 
     def setAccountName(self, name):
         self.accountName = name
@@ -272,8 +276,19 @@ class DistributedToonAI(DistributedPlayerAI):
     def getDefaultShard(self):
         return 0
 
+    def setDefaultZone(self, zone: int):
+        self.defaultZone = zone
+
+    def d_setDefaultZone(self, zone: int):
+        self.sendUpdate('setDefaultZone', [zone])
+
+    def b_setDefaultZone(self, zone: int):
+        if zone != self.defaultZone:
+            self.setDefaultZone(zone)
+            self.d_setDefaultZone(zone)
+
     def getDefaultZone(self):
-        return 2000
+        return self.defaultZone
 
     def getShtickerBook(self):
         return b''
@@ -281,14 +296,32 @@ class DistributedToonAI(DistributedPlayerAI):
     def getZonesVisited(self):
         return []
 
+    def b_setHoodsVisited(self, hoodsVisited: list):
+        self.hoodsVisited = hoodsVisited
+        self.d_setHoodsVisited(hoodsVisited)
+
+    def d_setHoodsVisited(self, hoodsVisited: list):
+        self.sendUpdate('setHoodsVisited', [hoodsVisited])
+
     def getHoodsVisited(self):
-        return []
+        return self.hoodsVisited
 
     def getInterface(self):
         return b''
 
+    def setLastHood(self, hood: int):
+        self.lastHood = hood
+
+    def d_setLastHood(self, hood: int):
+        self.sendUpdate('setLastHood', [hood])
+
+    def b_setLastHood(self, hood: int):
+        if hood != self.lastHood:
+            self.setLastHood(hood)
+            self.d_setLastHood(hood)
+
     def getLastHood(self):
-        return 0
+        return self.lastHood
 
     def getTutorialAck(self):
         return 1
@@ -545,18 +578,33 @@ class DistributedToonAI(DistributedPlayerAI):
     def getNametagStyle(self):
         return 0
 
-    def handleZoneChange(self, old_zone: int, new_zone: int):
+    def getHoodId(self, zoneId):
+        return zoneId - zoneId % 1000
+
+    def handleZoneChange(self, oldZone: int, newZone: int):
         channel = getPuppetChannel(self.do_id)
 
-        if old_zone in self.air.vismap and new_zone not in self.air.vismap:
+        if oldZone in self.air.vismap and newZone not in self.air.vismap:
             self.air.removeInterest(channel, DistributedToonAI.STREET_INTEREST_HANDLE, 0)
-        elif new_zone in self.air.vismap:
-            visibles = self.air.vismap[new_zone][:]
-            if len(visibles) == 1 and visibles[0] == new_zone:
+        elif newZone in self.air.vismap:
+            visibles = self.air.vismap[newZone][:]
+            if len(visibles) == 1 and visibles[0] == newZone:
                 # Playground visgroup, ignore
                 return
             self.air.setInterest(channel, DistributedToonAI.STREET_INTEREST_HANDLE, 0, self.parentId, visibles)
 
+        # TODO: Should this be handled somewhere else?
+        if 100 <= newZone < ToontownGlobals.DynamicZonesBegin:
+            hood = self.getHoodId(newZone)
+
+            self.b_setLastHood(hood)
+            self.b_setDefaultZone(hood)
+
+            hoodsVisited = list(self.getHoodsVisited())
+
+            if hood not in hoodsVisited:
+                hoodsVisited.append(hood)
+                self.b_setHoodsVisited(hoodsVisited)
 
 class Inventory:
     __slots__ = 'inventory', 'toon'

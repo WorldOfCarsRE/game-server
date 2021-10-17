@@ -75,7 +75,7 @@ class FishMovies:
     ExitMovie = 2
     CastMovie = 3
     PullInMovie = 4
-    
+
 class FishItems:
     Nothing = 0
     QuestItem = 1
@@ -98,7 +98,7 @@ class FishItems:
       BootItem: 100,
     }
     """
-    
+
 class FishGlobals:
     FishingAngleMin = -50
     FishingAngleMax = 50
@@ -119,10 +119,10 @@ class FishGlobals:
       3: 75,
       4: 150
     }
-    
+
     def getCastCost(rodId):
         return FishGlobals.rodDict[rodId][FishGlobals.ROD_CAST_COST_INDEX]
-        
+
 class DistributedFishingTargetAI(DistributedNodeAI, FSM):
 
     def __init__(self, air, pond, hunger):
@@ -239,33 +239,33 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         if self.avId != senderId:
             return
         self.normalExit()
-        
+
     def __startTimeout(self, timeLimit):
         self.__stopTimeout()
         self.timeoutTask = taskMgr.doMethodLater(timeLimit,
                                                  self.normalExit,
                                                  self.uniqueName('timeout'))
-                                                 
+
     def __stopTimeout(self):
         if self.timeoutTask:
             taskMgr.remove(self.timeoutTask)
             self.timeoutTask = None
-        
+
     def cleanupAvatar(self):
         self.pond.removeSpot(self.avId, self)
         self.ignore(self.air.getAvatarExitEvent(self.avId))
         self.__stopTimeout()
         self.avId = 0
-        
+
     def normalExit(self, task=None):
         self.cleanupAvatar()
         self.d_setMovie(FishMovies.ExitMovie)
         taskMgr.doMethodLater(1.2, self.__clearEmpty,
                               self.uniqueName('clearEmpty'))
-                              
+
     def __clearEmpty(self, task=None):
         self.d_setOccupied(0)
-        
+
     def __handleUnexpectedEvent(self):
         self.cleanupAvatar()
         self.d_setOccupied(0)
@@ -279,28 +279,28 @@ class DistributedFishingSpotAI(DistributedObjectAI):
             return
         if power <= 0 or power > 1:
             return
-            
+
         if heading < FishGlobals.FishingAngleMin:
             return
         if heading > FishGlobals.FishingAngleMax:
             return
-            
+
         sender = self.air.doTable.get(senderId)
         if not sender:
             return
-            
+
         self.__stopTimeout()
         money = sender.getMoney()
         castCost = FishGlobals.getCastCost(sender.getFishingRod())
-        
+
         if money < castCost:
             self.normalExit()
             return
-        
+
         sender.b_setMoney(money - castCost)
         self.d_setMoney(FishMovies.CastMovie, power=power, h=heading)
         self.__startTimeout(self.TIMEOUT)
-        
+
     def hitTarget(self, code, item):
         if code == FishItems.JellybeanItem:
             self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=item)
@@ -345,14 +345,14 @@ class DistributedFishingPondAI(DistributedObjectAI):
         itemType = FishItems.BootItem
         value = None
         rodId = av.getFishingRod()
-    
+
         # TODO: prioritize quest items
         randNum = random.randint(0, 100)
         for item, chance in FishItems.item2Chance.items():
             if randNum <= chance:
                 itemType = item
                 break
-                
+
         if itemType == FishItems.FishItem:
             pass
         elif itemType == FishItems.BootItem:
@@ -360,7 +360,7 @@ class DistributedFishingPondAI(DistributedObjectAI):
         elif itemType == FishItems.JellybeanItem:
             value = FishGlobals.rod2Jellybean[rodId]
             av.addMoney(value)
-    
+
         return itemType, value
 
     def hitTarget(self, targetId):
@@ -375,7 +375,7 @@ class DistributedFishingPondAI(DistributedObjectAI):
         if not target:
             return
         if target.isHungry():
-            code, item = self.getCatch(sender)    
+            code, item = self.getCatch(sender)
             spot.hitTarget(code, item)
 
     def addSpot(self, avId, spot):
