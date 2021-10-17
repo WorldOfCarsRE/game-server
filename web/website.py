@@ -1,46 +1,26 @@
 from otp import config
 
-import asyncio
 from aiohttp import web
-import aiomysql
-
-import hashlib
-
-import logging
+from pymongo import MongoClient
 
 from Crypto.Cipher import AES
 
-import json
-
-import os
+import asyncio, hashlib, logging, json, os, time, binascii
 
 SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 
 logging.basicConfig(level=logging.DEBUG)
 
-table_creation = '''CREATE TABLE accounts (
-    username VARCHAR(255) NOT NULL PRIMARY KEY UNIQUE,
-    hash VARBINARY(255) NOT NULL,
-    salt VARBINARY(64) NOT NULL,
-    disl_id INT NOT NULL,
-    access ENUM('FULL', 'VELVET_ROPE') NOT NULL DEFAULT 'FULL',
-    account_type ENUM('NO_PARENT_ACCOUNT', 'WITH_PARENT_ACCOUNT') NOT NULL DEFAULT 'NO_PARENT_ACCOUNT',
-    create_friends_with_chat ENUM('YES', 'CODE', 'NO') NOT NULL DEFAULT 'YES',
-    chat_code_creation_rule ENUM('YES', 'PARENT', 'NO') NOT NULL DEFAULT 'YES',
-    whitelist_chat_enabled ENUM('YES', 'NO') NOT NULL DEFAULT  'YES'
-);
-'''
-
 DEFAULT_ACCOUNT = {
-    'ACCOUNT_AV_SET': (24).to_bytes(2, 'little') + (0).to_bytes(4, 'little') * 6,
-    'pirateAvatars': b'\x00\x00',
-    'HOUSE_ID_SET': b'\x00\x00',
-    'ESTATE_ID': b'\x00\x00\x00\x00',
-    'ACCOUNT_AV_SET_DEL': b'\x00\x00',
-    'PLAYED_MINUTES': b'\x00\x00',
-    'PLAYED_MINUTES_PERIOD': b'\x00\x00',
-    'CREATED': b'\x00\x00',
-    'LAST_LOGIN': b'\x00\x00',
+    'ACCOUNT_AV_SET': [0] * 6,
+    'pirateAvatars': [0],
+    'HOUSE_ID_SET': [0] * 6,
+    'ESTATE_ID': 0,
+    'ACCOUNT_AV_SET_DEL': [],
+    'PLAYED_MINUTES': 0,
+    'PLAYED_MINUTES_PERIOD': 0,
+    'CREATED': time.ctime(),
+    'LAST_LOGIN': time.ctime(),
 }
 
 DIR = config['WebServer.CONTENT_DIR']
@@ -91,7 +71,7 @@ async def handle_login(request):
     print(request.method, request.path, request.query)
     args = await request.post()
 
-    username = args.get('u')
+    username = args.get('u').lower()
 
     if not username:
         data = {
@@ -133,29 +113,16 @@ async def handle_login(request):
 
     print(f'{username} attempting to login...')
 
-    async with await request.app['pool'].acquire() as conn:
-        async with await conn.cursor(aiomysql.DictCursor) as cursor:
-            try:
-                await cursor.execute(f'SELECT * FROM accounts WHERE username=\'{username}\'')
-                info = await cursor.fetchone()
-
-                if not info:
-                    print(f'Creating new account for {username}...')
-                    info = await create_new_account(username, password, cursor)
-            except Exception as e:
-                print('error: ', e.args, e)
-
-    request.app['pool'].release(conn)
+    pool = request.app['pool']
+    info = pool.accounts.find_one({'username': username})
 
     if not info:
-        data = {
-            'message': 'The specified account was not found in the database.'
-        }
-        return web.json_response(data)
+        print(f'Creating new account for {username}...')
+        info = await create_new_account(username, password, pool)
 
-    cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'], iterations=101337)
+    cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'].encode(), 10000)
 
-    if cmp_hash != info['hash']:
+    if cmp_hash != binascii.a2b_base64(info['hash']):
         print('hashes dont match', cmp_hash, info['hash'], len(info['hash']))
         data = {
             'message': 'Incorrect password.'
@@ -164,6 +131,7 @@ async def handle_login(request):
 
     del info['hash']
     del info['salt']
+    del info['_id']
 
     # Now make the token.
 
@@ -189,48 +157,57 @@ async def handle_login(request):
         'message': f'Welcome back, {username}.'
     }
 
-    print('sending reponse', response)
+    print('sending response', response)
 
     return web.json_response(response)
 
-async def create_new_account(username: str, password: str, cursor: aiomysql.DictCursor):
-    salt = os.urandom(56)
-    accc_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations=101337)
-
-    print('salt', 'hash', len(salt), len(accc_hash))
-
-    salt = f"X'{salt.hex()}'"
-    accc_hash = f"X'{accc_hash.hex()}'"
+async def create_new_account(username: str, password: str, cursor: MongoClient):
+    salt = binascii.b2a_base64(hashlib.sha256(os.urandom(60)).digest()).strip()
+    accHash = binascii.b2a_base64(hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 10000)).strip().decode()
 
     try:
-        await cursor.execute("USE otp; INSERT INTO objects (class_name) VALUES ('Account');")
+        data = {}
+        data['class_name'] = 'Account'
+        data['do_id'] = cursor.objects.count() + 1
+        cursor.objects.insert_one(data)
         print('inserted')
-        await cursor.execute("SELECT LAST_INSERT_ID();")
-        do_id = (await cursor.fetchone())['LAST_INSERT_ID()']
 
-        print('CREATED NEW ACCOUNT WITH ID: %s' % do_id)
+        print('CREATED NEW ACCOUNT WITH ID: %s' % data['do_id'])
 
         array = (0).to_bytes(4, 'little') * 6
         av_set = len(array).to_bytes(2, 'little') + array
 
         fields = list(DEFAULT_ACCOUNT.items())
 
-        keys = ','.join((field[0] for field in fields))
-        values = ','.join((f"X'{field[1].hex()}'" for field in fields))
-        cmd = f"INSERT INTO account (do_id, DcObjectType, {keys}) VALUES ({do_id}, 'Account', {values});"
-        print(cmd)
-        await cursor.execute(cmd)
-        await cursor.execute('USE web;')
+        cmdData = {}
 
-        await cursor.execute(f"INSERT INTO accounts (username, hash, salt, disl_id) VALUES ('{username}', {accc_hash}, {salt}, {do_id});")
-        await cursor.connection.commit()
+        cmdData['do_id'] = data['do_id']
+        cmdData['DcObjectType'] = 'Account'
 
-        await cursor.execute(f"SELECT * FROM accounts WHERE username='{username}'")
+        for field in fields:
+            fieldName = field[0]
+            cmdData[fieldName] = field[1]
+
+        cursor.Account.insert_one(cmdData)
+
+        acc = {}
+        acc['username'] = username
+        acc['hash'] = accHash
+        acc['salt'] = salt.decode()
+        acc['disl_id'] = data['do_id']
+        acc['access'] = 'FULL'
+        acc['account_type'] = 'NO_PARENT_ACCOUNT'
+        acc['create_friends_with_chat'] = 'YES'
+        acc['chat_code_creation_rule'] = 'YES'
+        acc['whitelist_chat_enabled'] = 'YES'
+
+        cursor.accounts.insert_one(acc)
+        return acc
 
     except Exception as e:
         print(e, e.__class__)
 
-    return await cursor.fetchone()
+    return []
 
 async def handle_auth_delete(request):
     print(request.method, request.path, request.query, request.headers)
@@ -255,26 +232,15 @@ async def handle_auth_delete(request):
     if len(password) > 255:
         return web.Response()
 
-    async with await request.app['pool'].acquire() as conn:
-        async with await conn.cursor(aiomysql.DictCursor) as cursor:
-            try:
-                await cursor.execute(f'SELECT * FROM accounts WHERE username=\'{username}\'')
-                info = await cursor.fetchone()
-
-                if not info:
-                    print(f'Creating new account for {username}...')
-                    info = await create_new_account(username, password, cursor)
-            except Exception as e:
-                print('error: ', e.args, e)
-
-    request.app['pool'].release(conn)
+    # TODO: Mongo.
+    info = False
 
     if not info:
         return web.Response()
 
-    cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'], iterations=101337)
+    cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'].encode(), 10000)
 
-    if cmp_hash != info['hash']:
+    if cmp_hash != binascii.a2b_base64(info['hash']):
         print('hashes dont match', cmp_hash, info['hash'], len(info['hash']))
         return web.Response(text='ACCOUNT SERVER RESPONSE\n\nerrorCode=20\nerrorMsg=bad password')
 
@@ -293,18 +259,7 @@ async def init_app():
 
     app.router.add_post('/api/authDelete', handle_auth_delete)
 
-    pool = await aiomysql.create_pool(host=config['SQL.HOST'], port=config['SQL.PORT'], user=config['SQL.USER'],
-                                      password=config['SQL.PASSWORD'], db='web', maxsize=5)
-
-    async with await pool.acquire() as conn:
-        async with await conn.cursor() as cursor:
-            await cursor.execute('SHOW TABLES;')
-            tables = await cursor.fetchone()
-            if not tables or 'accounts' not in tables:
-                await cursor.execute(table_creation)
-
-    pool.release(conn)
-
+    pool = MongoClient('127.0.0.1:27017')['Dialga']
     app['pool'] = pool
 
     print('init done')

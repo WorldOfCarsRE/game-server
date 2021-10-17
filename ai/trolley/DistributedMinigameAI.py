@@ -6,7 +6,6 @@ from ai.ToonBarrier import ToonBarrier
 from typing import Optional, List, Dict
 from enum import IntEnum
 
-
 from . import PurchaseState, Purchaser, INVENTORY_PENDING, PurchaseManagerAI, incZoneRef, decZoneRef
 
 
@@ -54,6 +53,12 @@ class DistributedMinigameAI(DistributedObjectAI, FSM):
 
     def getParticipants(self):
         return self.participants
+        
+    def getNumParticipants(self):
+        return len(self.getParticipants())
+        
+    def isSinglePlayer(self):
+        return self.getNumParticipants() == 1
 
     def getTrolleyZone(self):
         return self.trolleyZone

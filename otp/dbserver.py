@@ -14,7 +14,6 @@ from .exceptions import *
 
 from dc.objects import MolecularField
 
-
 class DBServerProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
         sender = dgi.get_channel()
@@ -47,7 +46,7 @@ class DBServerProtocol(MDUpstreamProtocol):
             fields = []
             for i in range(field_count):
                 f = self.service.dc.fields[dgi.get_uint16()]()
-                fields.append((f.name, f.unpack_bytes(dgi)))
+                fields.append((f.name, f.unpack_value(dgi)))
 
             coro = self.service.create_toon(sender, context, dclass, disl_id, pos, fields)
         else:
@@ -70,7 +69,7 @@ class DBServerProtocol(MDUpstreamProtocol):
         fields = []
         for i in range(field_count):
             f = self.service.dc.fields[dgi.get_uint16()]()
-            fields.append((f.name, f.unpack_bytes(dgi)))
+            fields.append((f.name, f.unpack_value(dgi)))
 
         self.service.loop.create_task(self.service.set_stored_values(do_id, fields))
 
@@ -78,11 +77,9 @@ class DBServerProtocol(MDUpstreamProtocol):
         do_id = dgi.get_uint32()
         self.service.loop.create_task(self.service.query_account(sender, do_id))
 
-
 from dc.parser import parse_dc_file
-from otp.dbbackend import SQLBackend, OTPCreateFailed
+from otp.dbbackend import MongoBackend, OTPCreateFailed
 from dc.util import Datagram
-
 
 class DBServer(DownstreamMessageDirector):
     upstream_protocol = DBServerProtocol
@@ -97,7 +94,7 @@ class DBServer(DownstreamMessageDirector):
 
         self.dc = parse_dc_file('toon.dc')
 
-        self.backend = SQLBackend(self)
+        self.backend = MongoBackend(self)
 
         self.operations = {}
 
@@ -124,14 +121,18 @@ class DBServer(DownstreamMessageDirector):
         try:
             do_id = await self.backend.create_object(dclass, fields)
             account = await self.backend.query_object_fields(disl_id, ['ACCOUNT_AV_SET'], 'Account')
+
+            a = Datagram()
+            self.dc.namespace['Account']['ACCOUNT_AV_SET'].pack_value(a, account['ACCOUNT_AV_SET'])
+
             temp = Datagram()
-            temp.add_bytes(account['ACCOUNT_AV_SET'])
+            temp.add_bytes(a.bytes())
             av_set = self.dc.namespace['Account']['ACCOUNT_AV_SET'].unpack_value(temp.iterator())
             print(do_id, disl_id, pos, av_set)
             av_set[pos] = do_id
             temp.seek(0)
             self.dc.namespace['Account']['ACCOUNT_AV_SET'].pack_value(temp, av_set)
-            await self.backend.set_field(disl_id, 'ACCOUNT_AV_SET', temp.bytes(), 'Account')
+            await self.backend.set_field(disl_id, 'ACCOUNT_AV_SET', av_set, 'Account')
         except OTPCreateFailed as e:
             print('creation failed', e)
             do_id = 0
@@ -170,7 +171,15 @@ class DBServer(DownstreamMessageDirector):
             if field_dict[field.name] is None:
                 continue
             dg.add_uint16(field.number)
-            dg.add_bytes(field_dict[field.name])
+
+            fieldValue = field_dict[field.name]
+
+            dcName = await self.backend._query_dclass(do_id)
+
+            # Pack the field data.
+            a = Datagram()
+            self.dc.namespace[dcName][field.name].pack_value(a, fieldValue)
+            dg.add_bytes(a.bytes())
             counter += 1
 
         dg.seek(pos)
@@ -190,32 +199,32 @@ class DBServer(DownstreamMessageDirector):
         field_dict = await self.backend.query_object_all(do_id, dclass.name)
 
         temp = Datagram()
-        temp.add_bytes(field_dict['ACCOUNT_AV_SET'])
+        dclass['ACCOUNT_AV_SET'].pack_value(temp, field_dict['ACCOUNT_AV_SET'])
         av_ids = dclass['ACCOUNT_AV_SET'].unpack_value(temp.iterator())
+
+        tempTwo = Datagram()
+        dclass['ACCOUNT_AV_SET_DEL'].pack_value(tempTwo, field_dict['ACCOUNT_AV_SET_DEL'])
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_ACCOUNT_QUERY_RESP)
-        dg.add_bytes(field_dict['ACCOUNT_AV_SET_DEL'])
+        dg.add_bytes(tempTwo.bytes())
         av_count = sum((1 if av_id else 0 for av_id in av_ids))
         self.log.debug(f'Account query for {do_id} from {sender}: {field_dict}')
-        dg.add_uint16(av_count)  # Av count
+        dg.add_uint16(av_count) # Av count
         for av_id in av_ids:
             if not av_id:
                 continue
             toon_fields = await self.backend.query_object_fields(av_id, ['setName', 'WishNameState', 'WishName', 'setDNAString'], 'DistributedToon')
 
-            wish_name = toon_fields['WishName']
-
-            temp = Datagram()
-            temp.add_bytes(toon_fields['WishNameState'])
-            name_state = toon_dclass['WishNameState'].unpack_value(temp.iterator())
+            wish_name = toon_fields['WishName'][0].encode()
+            name_state = toon_fields['WishNameState'][0]
 
             dg.add_uint32(av_id)
-            dg.add_bytes(toon_fields['setName'])
+            dg.add_string16(toon_fields['setName'][0].encode())
 
-            pending_name = b'\x00\x00'
-            approved_name = b'\x00\x00'
-            rejected_name = b'\x00\x00'
+            pending_name = b''
+            approved_name = b''
+            rejected_name = b''
 
             if name_state == 'APPROVED':
                 approved_name = wish_name
@@ -224,15 +233,14 @@ class DBServer(DownstreamMessageDirector):
             else:
                 pending_name = wish_name
 
-            dg.add_bytes(pending_name)
-            dg.add_bytes(approved_name)
-            dg.add_bytes(rejected_name)
-            dg.add_bytes(toon_fields['setDNAString'])
+            dg.add_string16(pending_name)
+            dg.add_string16(approved_name)
+            dg.add_string16(rejected_name)
+            dg.add_string16(toon_fields['setDNAString'][0])
             dg.add_uint8(av_ids.index(av_id))
             dg.add_uint8(0)
 
         self.send_datagram(dg)
-
 
 async def main():
     loop = asyncio.get_running_loop()
