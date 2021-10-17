@@ -427,6 +427,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         default_toon['setDISLid'] = (self.account.disl_id,)
         default_toon['WishName'] = ('',)
         default_toon['WishNameState'] = ('CLOSED',)
+        default_toon['setAccountName'] = (self.account.username,)
 
         count = 0
         for field in dclass.inherited_fields:
