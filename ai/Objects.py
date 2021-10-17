@@ -255,7 +255,6 @@ class DistributedPhaseEventMgrAI(DistributedObjectAI):
     def getIsRunning(self):
         return False
 
-
 class DistributedSillyMeterMgrAI(DistributedPhaseEventMgrAI):
     def getNumPhases(self):
         return 15
@@ -269,7 +268,6 @@ class DistributedSillyMeterMgrAI(DistributedPhaseEventMgrAI):
     def getIsRunning(self):
         return 1
 
-
 class SillyMeterHolidayAI(HolidayBaseAI):
     holidayId = SILLYMETER_HOLIDAY
 
@@ -282,7 +280,6 @@ class SillyMeterHolidayAI(HolidayBaseAI):
         super().stop()
         self.air.sillyMgr.requestDelete()
         del self.air.sillyMgr
-
 
 from .DistributedObjectGlobalAI import DistributedObjectGlobalAI
 

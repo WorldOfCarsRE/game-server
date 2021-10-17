@@ -129,11 +129,8 @@ class DistributedSuitBaseAI(DistributedObjectAI):
     def prepareToJoinBattle(self):
         pass
 
-
 from dna.objects import SuitLegList, DNASuitPoint
 from typing import Optional, List
-
-
 
 class PathState(IntEnum):
     STOP = 0
@@ -142,9 +139,7 @@ class PathState(IntEnum):
     UNKNOWN = 3
     VICTORY_FLYAWAY = 4
 
-
 UPDATE_TIMESTAMP_INTERVAL = 60.0
-
 
 class DistributedSuitAI(DistributedSuitBaseAI):
     def __init__(self, air, suitPlanner):

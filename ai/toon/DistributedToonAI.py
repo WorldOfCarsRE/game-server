@@ -484,9 +484,6 @@ class DistributedToonAI(DistributedPlayerAI):
     def getFishTank(self):
         return self.fishTank.getNetLists()
 
-    def getFishTank(self):
-        return [], [], []
-
     def getFishingRod(self):
         return 0
 
