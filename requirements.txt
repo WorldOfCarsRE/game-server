@@ -1,10 +1,8 @@
 aiohttp
-aiomysql
 Cython
 dataslots
 panda3d
 pycryptodome
-PyMySQL
 pyOpenSSL
 uvloop; sys_platform != 'win32'
 lark-parser

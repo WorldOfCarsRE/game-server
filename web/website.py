@@ -232,8 +232,8 @@ async def handle_auth_delete(request):
     if len(password) > 255:
         return web.Response()
 
-    # TODO: Mongo.
-    info = False
+    pool = request.app['pool']
+    info = pool.accounts.find_one({'username': username})
 
     if not info:
         return web.Response()
@@ -259,7 +259,7 @@ async def init_app():
 
     app.router.add_post('/api/authDelete', handle_auth_delete)
 
-    pool = MongoClient('127.0.0.1:27017')['Dialga']
+    pool = MongoClient(config['MongoDB.Host'])[config['MongoDB.Name']]
     app['pool'] = pool
 
     print('init done')

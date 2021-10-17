@@ -622,7 +622,7 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
         DownstreamMessageDirector.__init__(self, loop)
         ChannelAllocator.__init__(self)
 
-        self.dc_file = parse_dc_file('toon.dc')
+        self.dc_file = parse_dc_file('etc/dclass/toon.dc')
 
         self.loop.set_exception_handler(self._on_exception)
 
