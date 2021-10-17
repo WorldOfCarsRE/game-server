@@ -164,7 +164,7 @@ class FriendManagerUD(Uberdog):
     def inviteeFriendConsidering(self, todo0):
         pass
 
-    def inviteeFriendResponse(self, todo0):
+    def inviteeFriendResponse(self, response, context):
         pass
 
     def inviteeAcknowledgeCancel(self, todo0):
