@@ -62,7 +62,7 @@ class AIRepository:
         self.zoneTable: Dict[int, set] = {}
         self.parentTable: Dict[int, set] = {}
 
-        self.dcFile = parse_dc_file('toon.dc')
+        self.dcFile = parse_dc_file('etc/dclass/toon.dc')
 
         self.currentSender = None
         self.loop = None

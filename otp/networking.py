@@ -1,16 +1,10 @@
 from asyncio import Queue
 from dc.util import Datagram
-import logging
-import traceback
-
-
-import asyncio
-import struct
-
 
 from asyncio import Future
 from typing import List
 
+import logging, traceback, asyncio, struct, ssl
 
 class Service:
     def __init__(self):
@@ -39,9 +33,8 @@ class Service:
     def unsubscribe_channel(self, participant, channel):
         raise NotImplementedError
 
-
 class UpstreamServer:
-    SERVER_SSL_CONTEXT = None
+    sslContext = None
     downstream_protocol = None
 
     def __init__(self, loop):
@@ -49,13 +42,17 @@ class UpstreamServer:
         self._server = None
         self._clients = set()
 
-    async def listen(self, host: str, port: int):
+    async def listen(self, host: str, port: int, secure: int = 0):
         if self.downstream_protocol is None:
             raise Exception('PROTOCOL NOT DEFINED!')
 
         self.log.debug(f'Listening on {host}:{port}')
 
-        self._server = await self.loop.create_server(self.new_client, host, port, ssl=self.SERVER_SSL_CONTEXT,
+        if secure and port == 6667:
+            self.sslContext = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            self.sslContext.load_cert_chain('etc/server.cert', 'etc/server.key')
+
+        self._server = await self.loop.create_server(self.new_client, host, port, ssl=self.sslContext,
                                                      start_serving=False)
 
         async with self._server:
@@ -66,7 +63,6 @@ class UpstreamServer:
         client = self.downstream_protocol(self)
         self._clients.add(client)
         return client
-
 
 class DownstreamClient:
     CLIENT_SSL_CONTEXT = None
@@ -83,7 +79,6 @@ class DownstreamClient:
         self._client = self.upstream_protocol(self)
         return self._client
 
-
 class DatagramFuture(Future):
     def __init__(self, loop, msg_id, sender=None, context=None):
         Future.__init__(self, loop=loop)
@@ -91,7 +86,6 @@ class DatagramFuture(Future):
         self.future_msg_id = msg_id
         self.future_sender = sender
         self.context = context
-
 
 class ToontownProtocol(asyncio.Protocol):
     def __init__(self, service):

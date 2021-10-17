@@ -35,8 +35,8 @@ class MongoBackend(DatabaseBackend):
         self.mongodb = None
 
     async def setup(self):
-        self.client = MongoClient('127.0.0.1:27017')
-        self.mongodb = self.client['Dialga']
+        self.client = MongoClient(config['MongoDB.Host'])
+        self.mongodb = self.client[config['MongoDB.Name']]
 
     async def _query_dclass(self, do_id: int) -> str:
         cursor = self.mongodb.objects
