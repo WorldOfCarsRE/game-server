@@ -42,6 +42,9 @@ class DistributedPlayerAI(DistributedAvatarAI):
     def getAccountName(self):
         return self.accountName
 
+    def setFriendsList(self, friendsList):
+        self.friendsList = friendsList
+
     def getFriendsList(self):
         return self.friendsList
 
@@ -69,7 +72,7 @@ class DistributedPlayerAI(DistributedAvatarAI):
 
     def extendFriendsList(self, friendId: int, trueFriend: bool):
         for i, entry in enumerate(self.friendsList):
-            if entry.doId == friendId:
+            if entry[0] == friendId:
                 self.friendsList[i] = FriendEntry(friendId, trueFriend)
                 return
 
