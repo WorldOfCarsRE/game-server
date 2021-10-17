@@ -63,7 +63,7 @@ DEFAULT_TOON = {
     "setCatalogNotify": (0, 0,),
     "setSpeedChatStyleIndex": (1,),
     "setTeleportAccess": ([],),
-    "setCogStatus": ([0] * 32,),
+    "setCogStatus": ([1] * 32,),
     "setCogCount": ([0] * 32,),
     "setCogRadar": ([0] * 4,),
     "setBuildingRadar": ([0] * 4,),
