@@ -36,7 +36,7 @@ class MongoBackend(DatabaseBackend):
 
     async def setup(self):
         self.client = MongoClient('127.0.0.1:27017')
-        self.mongodb = self.client['OpenOTP']
+        self.mongodb = self.client['Dialga']
 
     async def _query_dclass(self, do_id: int) -> str:
         cursor = self.mongodb.objects
@@ -50,7 +50,6 @@ class MongoBackend(DatabaseBackend):
             if field.is_db and field.is_required:
                 if field.name not in columns:
                     raise OTPCreateFailed('Missing required db field: %s' % field.name)
-
 
         count = self.mongodb.objects.count()
 
