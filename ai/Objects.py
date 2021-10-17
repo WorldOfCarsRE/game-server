@@ -60,7 +60,6 @@ class ToontownDistrictAI(DistributedDistrictAI):
         if isinstance(obj, DistributedToonAI):
             obj.sendUpdate('arrivedOnDistrict', [self.do_id, ])
 
-
 class ToontownDistrictStatsAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
@@ -173,7 +172,6 @@ class MultipleStartDate:
         yield (self.startYear, self.startMonth, self.startDay)
         yield (self.endYear, self.endMonth, self.endDay)
 
-
 class MultipleStartHoliday:
     __slots__ = 'holidayId', 'times'
 
@@ -186,7 +184,6 @@ class MultipleStartHoliday:
         yield self.times
 
 from ai.HolidayGlobals import *
-
 
 class NewsManagerAI(DistributedObjectAI):
     def __init__(self, air):
@@ -244,9 +241,7 @@ class HolidayBaseAI:
         self.air.newsManager.holidayIds.remove(self.holidayId)
         self.air.newsManager.d_setHolidayIdList()
 
-
 from otp.constants import *
-
 
 class DistributedPhaseEventMgrAI(DistributedObjectAI):
     def getNumPhases(self):
@@ -292,7 +287,6 @@ class SillyMeterHolidayAI(HolidayBaseAI):
 
 from .DistributedObjectGlobalAI import DistributedObjectGlobalAI
 
-
 class FriendRequest:
     CANCELLED = -1
     INACTIVE = 0
@@ -310,7 +304,6 @@ class FriendRequest:
 
     def isRequestedId(self, avId):
         return avId == self.requestedId
-
 
 class InviteeResponse:
     NOT_AVAILABLE = 0
@@ -493,7 +486,9 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         stringVal = ' '.join(str(x) for x in args[2:])
 
         clientWords = [
-            'run'
+            'run',
+            'walk',
+            'fps'
         ]
 
         if magicWord in clientWords or magicWord == '':
@@ -506,3 +501,8 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
             self.sendResponseMessage(avId, '{0} is not a valid Magic Word.'.format(magicWord))
             print('Unknown Magic Word: {0} from avId: {1}!'.format(magicWord, avId))
             return
+
+class EstateManagerAI(DistributedObjectAI):
+
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)

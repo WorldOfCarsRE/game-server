@@ -1,6 +1,5 @@
 from ai.DistributedNodeAI import DistributedNodeAI
 
-
 class DistributedNPCToonBaseAI(DistributedNodeAI):
     def __init__(self, air, npcId, name=None):
         DistributedNodeAI.__init__(self, air, name)
@@ -31,7 +30,6 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
         sender = self.air.currentAvatarSender
         self.sendUpdateToAvatar(sender, 'freeAvatar', [])
 
-
 class DistributedNPCToonAI(DistributedNPCToonBaseAI):
     def setMovieDone(self):
         pass
@@ -41,7 +39,6 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
 
     def chooseTrack(self, choice):
         pass
-
 
 class DistributedNPCSpecialQuestGiverAI(DistributedNPCToonBaseAI):
     def setMovieDone(self):
@@ -53,26 +50,21 @@ class DistributedNPCSpecialQuestGiverAI(DistributedNPCToonBaseAI):
     def chooseTrack(self, choice):
         pass
 
-
 class DistributedNPCClerkAI(DistributedNPCToonBaseAI):
     def setInventory(self, inventory, money, done):
         pass
-
 
 class DistributedNPCTailorAI(DistributedNPCToonBaseAI):
     def setDNA(self, dna, finished, which):
         pass
 
-
 class DistributedNPCFishermanAI(DistributedNPCToonBaseAI):
     def completeSale(self, sell: bool):
         pass
 
-
 class DistributedNPCPartyPersonAI(DistributedNPCToonBaseAI):
     def answer(self, plan: bool):
         pass
-
 
 class DistributedNPCPetclerkAI(DistributedNPCToonBaseAI):
     def petAdopted(self, whichPet, nameIndex):
@@ -87,7 +79,6 @@ class DistributedNPCPetclerkAI(DistributedNPCToonBaseAI):
     def transactionDone(self):
         pass
 
-
 class DistributedNPCKartClerkAI(DistributedNPCToonBaseAI):
     def buyKart(self, kart):
         pass
@@ -98,10 +89,8 @@ class DistributedNPCKartClerkAI(DistributedNPCToonBaseAI):
     def transactionDone(self):
         pass
 
-
 class DistributedNPCFlippyInToonHallAI(DistributedNPCToonAI):
     pass
-
 
 class DistributedNPCScientistAI(DistributedNPCToonBaseAI):
     pass

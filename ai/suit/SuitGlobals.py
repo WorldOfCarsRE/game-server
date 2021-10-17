@@ -4,7 +4,6 @@ from typing import Tuple, NamedTuple
 
 from itertools import islice
 
-
 class SuitDept(IntEnum):
     def __new__(cls, value, char):
         obj = int.__new__(cls, value)
@@ -16,9 +15,6 @@ class SuitDept(IntEnum):
     LAW = 1, 'l'
     MONEY = 2, 'm'
     SELL = 3, 's'
-
-
-
 
 class SuitHeads(Enum):
     def __new__(cls, value):

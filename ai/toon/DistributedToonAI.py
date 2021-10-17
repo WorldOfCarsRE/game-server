@@ -6,7 +6,6 @@ from dc.util import Datagram
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
 
-
 class DistributedAvatarAI(DistributedSmoothNodeAI):
     def __init__(self, air):
         DistributedSmoothNodeAI.__init__(self, air)
@@ -19,11 +18,9 @@ class DistributedAvatarAI(DistributedSmoothNodeAI):
     def getName(self):
         return self.name
 
-
 class FriendEntry(NamedTuple):
     doId: int
     trueFriend: bool
-
 
 class DistributedPlayerAI(DistributedAvatarAI):
     def __init__(self, air):
@@ -73,9 +70,7 @@ class DistributedPlayerAI(DistributedAvatarAI):
 
         self.friendsList.append(FriendEntry(friendId, trueFriend))
 
-
 MAX_NPC_FRIENDS_FLAG = 1 << 15
-
 
 class DistributedToonAI(DistributedPlayerAI):
     STREET_INTEREST_HANDLE = (1 << 15) + 1
@@ -680,9 +675,7 @@ class Inventory:
                 continue
             self[i] = 0
 
-
 from ai import OTPGlobals
-
 
 class Experience:
     __slots__ = 'experience', 'toon'

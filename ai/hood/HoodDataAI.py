@@ -40,7 +40,6 @@ DNA_MAP = {
     PajamaPlace: 'donalds_dreamland_9200.dna',
 }
 
-
 class PlaceAI:
     def __init__(self, air, hood_id, zone_id):
         self.air = air

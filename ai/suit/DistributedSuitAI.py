@@ -13,7 +13,6 @@ from typing import Optional
 from .SuitGlobals import *
 from dna.objects import VICTORY_DANCE, TO_SKY, SuitLegType
 
-
 @with_slots
 @dataclass
 class SuitDNA:
@@ -28,7 +27,6 @@ class SuitDNA:
             return ''.join((self.type, self.dept)).encode('ascii')
         else:
             raise ValueError(f'Unknown suit dna type: {self.type}')
-
 
 class DistributedSuitBaseAI(DistributedObjectAI):
     def __init__(self, air):
