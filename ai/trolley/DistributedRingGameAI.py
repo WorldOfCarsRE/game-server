@@ -54,7 +54,7 @@ class DistributedRingGameAI(DistributedMinigameAI):
     def setToonGotRing(self, success):
         senderId = self.air.currentAvatarSender
 
-        sender = self.air.doTable[senderId]
+        sender = self.air.doTable.get(senderId)
         if not sender:
             return
 

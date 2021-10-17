@@ -75,7 +75,54 @@ class FishMovies:
     ExitMovie = 2
     CastMovie = 3
     PullInMovie = 4
-
+    
+class FishItems:
+    Nothing = 0
+    QuestItem = 1
+    FishItem = 2
+    JellybeanItem = 3
+    BootItem = 4
+    GagItem = 5
+    OverTankLimit = 8
+    FishItemNewEntry = 9
+    FishItemNewRecord = 10
+    item2Chance = {
+      JellybeanItem: 100,
+      FishItem: 0,
+      BootItem: 0
+    }
+    """
+    item2Chance = {
+      FishItem: 93,
+      JellybeanItem: 94,
+      BootItem: 100,
+    }
+    """
+    
+class FishGlobals:
+    FishingAngleMin = -50
+    FishingAngleMax = 50
+    ROD_WEIGHT_MIN_INDEX = 0
+    ROD_WEIGHT_MAX_INDEX = 1
+    ROD_CAST_COST_INDEX = 2
+    rodDict = {
+      0: (0, 4, 1),
+      1: (0, 8, 2),
+      2: (0, 12, 3),
+      3: (0, 16, 4),
+      4: (0, 20, 5),
+    }
+    rod2Jellybean = {
+      0: 10,
+      1: 20,
+      2: 30,
+      3: 75,
+      4: 150
+    }
+    
+    def getCastCost(rodId):
+        return FishGlobals.rodDict[rodId][FishGlobals.ROD_CAST_COST_INDEX]
+        
 class DistributedFishingTargetAI(DistributedNodeAI, FSM):
 
     def __init__(self, air, pond, hunger):
@@ -123,7 +170,7 @@ class DistributedFishingTargetAI(DistributedNodeAI, FSM):
         self.sendUpdate('setState', [stateIndex, angle, radius, time,
                                      globalClockDelta.getRealNetworkTime()])
 
-    def getHunter(self):
+    def getHungry(self):
         return self.hunger
 
     def isHungry(self):
@@ -227,7 +274,37 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.sendUpdate('setOccupied', [avId])
 
     def doCast(self, power, heading):
-        pass
+        senderId = self.air.getAvatarIdFromSender()
+        if self.avId != senderId:
+            return
+        if power <= 0 or power > 1:
+            return
+            
+        if heading < FishGlobals.FishingAngleMin:
+            return
+        if heading > FishGlobals.FishingAngleMax:
+            return
+            
+        sender = self.air.doTable.get(senderId)
+        if not sender:
+            return
+            
+        self.__stopTimeout()
+        money = sender.getMoney()
+        castCost = FishGlobals.getCastCost(sender.getFishingRod())
+        
+        if money < castCost:
+            self.normalExit()
+            return
+        
+        sender.b_setMoney(money - castCost)
+        self.d_setMoney(FishMovies.CastMovie, power=power, h=heading)
+        self.__startTimeout(self.TIMEOUT)
+        
+    def hitTarget(self, code, item):
+        if code == FishItems.JellybeanItem:
+            self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=item)
+        self.__startTimeout(self.TIMEOUT)
 
     def d_setMovie(self, mode, code=0, itemDesc1=0, itemDesc2=0, itemDesc3=0, power=0, h=0):
         self.sendUpdate('setMovie', [mode, code, itemDesc1, itemDesc2, itemDesc3, power, h])
@@ -264,17 +341,42 @@ class DistributedFishingPondAI(DistributedObjectAI):
         self.targets = Optional[Dict[DistributedFishingTargetAI]] = None
         DistributedObjectAI.DistributedObjectAI.delete(self)
 
-    def getCatch(self):
-        return 0, 0
+    def getCatch(self, av):
+        itemType = FishItems.BootItem
+        value = None
+        rodId = av.getFishingRod()
+    
+        # TODO: prioritize quest items
+        randNum = random.randint(0, 100)
+        for item, chance in FishItems.item2Chance.items():
+            if randNum <= chance:
+                itemType = item
+                break
+                
+        if itemType == FishItems.FishItem:
+            pass
+        elif itemType == FishItems.BootItem:
+            pass
+        elif itemType == FishItems.JellybeanItem:
+            value = FishGlobals.rod2Jellybean[rodId]
+            av.addMoney(value)
+    
+        return itemType, value
 
     def hitTarget(self, targetId):
         senderId = self.air.currentAvatarSender
-        sender = self.air.doTable.get(sender)
+        sender = self.air.doTable.get(senderId)
         if not sender:
+            return
+        spot = self.spots.get(senderId)
+        if not spot:
             return
         target = self.targets.get(targetId)
         if not target:
             return
+        if target.isHungry():
+            code, item = self.getCatch(sender)    
+            spot.hitTarget(code, item)
 
     def addSpot(self, avId, spot):
         self.spots[avId] = spot
