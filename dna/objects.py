@@ -28,6 +28,9 @@ class DNAGroup:
         self.parent = parent
         if not self.vis_group:
             self.vis_group = parent.vis_group
+            
+    def get_parent(self):
+        return self.parent
 
     def clear_parent(self):
         self.parent = None
@@ -66,6 +69,16 @@ class DNANode(DNAGroup):
         nodepath.setPosHprScale(self.pos, self.hpr, self.scale)
         for child in self.children:
             child.traverse(nodepath, storage)
+            
+    def get_pos_hpr(self):
+        return (
+          self.pos[0],
+          self.pos[1],
+          self.pos[2],
+          self.hpr[0],
+          self.hpr[1],
+          self.hpr[2]
+        )
 
 
 class DNAStreet(DNANode):

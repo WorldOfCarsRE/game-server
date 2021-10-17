@@ -2,8 +2,9 @@ from ai.ToontownGlobals import *
 from typing import List, Dict, Union, Optional
 from ai.DistributedObjectAI import DistributedObjectAI
 from dna.dnaparser import load_dna_file, DNAStorage
-from dna.objects import DNAGroup
+from dna.objects import DNAGroup, DNAVisGroup
 from ai.toon import NPCToons
+from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 from ai.safezone import ButterflyGlobals
 from ai.safezone.DistributedButterflyAI import DistributedButterflyAI
 from ai.trolley.DistributedTrolleyAI import DistributedTrolleyAI
@@ -11,6 +12,7 @@ from ai.suit.DistributedSuitPlannerAI import DistributedSuitPlannerAI
 from .Treasures import *
 from typing import Type
 
+# TODO: maybe add dist obj stuff
 
 DNA_MAP = {
     DonaldsDock: 'donalds_dock_sz.dna',
@@ -40,8 +42,9 @@ DNA_MAP = {
 
 
 class PlaceAI:
-    def __init__(self, air, zone_id):
+    def __init__(self, air, hood_id, zone_id):
         self.air = air
+        self.hood_id: int = hood_id
         self.zone_id: int = zone_id
 
         self._active = False
@@ -170,8 +173,9 @@ from ai.building.DistributedBuildingAI import DistributedBuildingAI
 
 
 class SafeZoneAI(PlaceAI):
-    def __init__(self, air, zone_id):
-        PlaceAI.__init__(self, air, zone_id)
+
+    def __init__(self, air, hood_id, zone_id):
+        PlaceAI.__init__(self, air, hood_id, zone_id)
         self.buildings: Dict[int, object] = {}
         self.hq: Union[HQBuildingAI, None] = None
         self.gagShop: Union[GagshopBuildingAI, None] = None
@@ -217,10 +221,27 @@ class SafeZoneAI(PlaceAI):
                 visibles.append(self.zone_id)
             self.air.vismap[zone] = tuple(visibles)
 
+        pondName2Obj = {}
+
+        for pondName in self.storage.ponds:
+            pond = DistributedFishingPondAI(self.air, self.hood_id)
+            pond.generateWithRequired(self.zone_id)
+            pondName2Obj[pondName] = pond 
+            
+        for spot in self.storage.spots:
+            group = self.storage.groups[spot]
+            pondNode = group.get_parent()
+            pondName = pondNode.name
+            distPond = pondName2Obj.get(pondName)
+            if distPond:
+                spot = DistributedFishingSpotAI(self.air, distPond, group.get_pos_hpr())
+                spot.generateWithRequired(self.zone_id)
+                
+        del pondName2Obj
 
 class StreetAI(SafeZoneAI):
-    def __init__(self, air, zone_id):
-        SafeZoneAI.__init__(self, air, zone_id)
+    def __init__(self, air, hood_id, zone_id):
+        SafeZoneAI.__init__(self, air, hood_id, zone_id)
 
         self.wantSuits = False
         self.suitPlanner: Optional[DistributedSuitPlannerAI] = None
@@ -238,8 +259,8 @@ class StreetAI(SafeZoneAI):
 class PlaygroundAI(SafeZoneAI):
     treasurePlannerClass: Optional[Type[RegenTreasurePlanner]] = None
 
-    def __init__(self, air, zone_id):
-        SafeZoneAI.__init__(self, air, zone_id)
+    def __init__(self, air, hood_id, zone_id):
+        SafeZoneAI.__init__(self, air, hood_id, zone_id)
         self.npcs = []
         self.butterflies = []
         self.trolley: Optional[DistributedTrolleyAI] = None
@@ -272,8 +293,8 @@ class HoodAI:
     zoneId = None
 
     def __init__(self, air):
-        self.playground = PlaygroundAI(air, self.zoneId)
-        self.streets: List[StreetAI] = [StreetAI(air, branchId) for branchId in HoodHierarchy[self.zoneId]]
+        self.playground = PlaygroundAI(air, self.zoneId, self.zoneId)
+        self.streets: List[StreetAI] = [StreetAI(air, self.zoneId, branchId) for branchId in HoodHierarchy[self.zoneId]]
 
     def startup(self):
         self.playground.active = True

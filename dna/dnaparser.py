@@ -20,6 +20,8 @@ class DNAError(Exception):
 class DNAStorage:
     def __init__(self):
         self.groups: Dict[str, DNAGroup] = dict()
+        self.ponds: List[str] = list()
+        self.spots: List[str] = list() 
         self.visgroups: List[DNAVisGroup] = list()
 
         self.suit_points: List[DNASuitPoint] = list()
@@ -575,6 +577,10 @@ class DNATransformer(Transformer):
 def traverse(node, storage: DNAStorage):
     if isinstance(node, DNAGroup):
         storage.groups[node.name] = node
+        if node.name.startswith('fishing_pond'):
+            storage.ponds.append(node.name)
+        elif node.name.startswith('fishing_spot'):
+            storage.spots.append(node.name)
     if isinstance(node, DNASuitEdge):
         storage.suit_edges.setdefault(node.start, []).append(node)
     elif isinstance(node, DNASuitPoint):
