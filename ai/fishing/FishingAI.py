@@ -69,8 +69,12 @@ class FishingTargetGlobals:
             return info[FishingTargetGlobals.WATER_LEVEL_INDEX]
         return 0
 
-class FishMovie:
-    pass
+class FishMovies:
+    NoMovie = 0
+    EnterMovie = 1
+    ExitMovie = 2
+    CastMovie = 3
+    PullInMovie = 4
 
 class DistributedFishingTargetAI(DistributedNodeAI, FSM):
 
@@ -97,7 +101,7 @@ class DistributedFishingTargetAI(DistributedNodeAI, FSM):
     def delete(self):
         taskMgr.remove(self.getMovingTask())
         del self.pond
-        DistributedNodeAI.DistributedNodeAI.delete(self)
+        DistributedNodeAI.delete(self)
 
     def getPondDoId(self):
         return self.pond.getDoId()
@@ -123,11 +127,11 @@ class DistributedFishingTargetAI(DistributedNodeAI, FSM):
         return self.hunger
 
     def isHungry(self):
-        return random.random() <= self.getHunter()
+        return random.random() <= self.getHungry()
 
     def getCurrPos(self):
         x = (self.radius * math.cos(self.angle)) + self.centerPoint[0]
-        y = (self.radius + math.sin(self.angle)) + self.centerPoint[1]
+        y = (self.radius * math.sin(self.angle)) + self.centerPoint[1]
         z = self.centerPoint[2]
         return (x, y, z)
 
@@ -143,9 +147,8 @@ class DistributedFishingTargetAI(DistributedNodeAI, FSM):
                               self.getMovingTask())
 
 class DistributedFishingSpotAI(DistributedObjectAI):
+    TIMEOUT = 45.0
     """
-      rejectEnter();
-      setOccupied(uint32) broadcast ram;
       sellFishComplete(uint8, uint16);
     """
 
@@ -166,10 +169,59 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         return self.posHpr
 
     def requestEnter(self):
-        pass
+        senderId = self.air.currentAvatarSender
+        if self.avId == senderId:
+            return
+        # if not ToontownAccessAI.canAccess(avId, self.zoneId):
+        # self.sendUpdateToAvatarId(avId, 'rejectEnter', [])
+        # return
+        if self.avId:
+            self.sendUpdateToAvatarId(senderId, 'rejectEnter', [])
+        else:
+            self.avId = senderId
+            self.pond.addSpot(senderId, self)
+            self.acceptOnce(self.air.getAvatarExitEvent(senderId), self.__handleUnexpectedEvent)
+            self.__stopTimeout()
+            self.d_setOccupied(self.avId)
+            self.d_setMovie(FishMovies.EnterMovie)
+            self.__startTimeout(self.TIMEOUT)
+
 
     def requestExit(self):
-        pass
+        senderId = self.air.currentAvatarSender
+        if self.avId != senderId:
+            return
+        self.normalExit()
+        
+    def __startTimeout(self, timeLimit):
+        self.__stopTimeout()
+        self.timeoutTask = taskMgr.doMethodLater(timeLimit,
+                                                 self.normalExit,
+                                                 self.uniqueName('timeout'))
+                                                 
+    def __stopTimeout(self):
+        if self.timeoutTask:
+            taskMgr.remove(self.timeoutTask)
+            self.timeoutTask = None
+        
+    def cleanupAvatar(self):
+        self.pond.removeSpot(self.avId, self)
+        self.ignore(self.air.getAvatarExitEvent(self.avId))
+        self.__stopTimeout()
+        self.avId = 0
+        
+    def normalExit(self, task=None):
+        self.cleanupAvatar()
+        self.d_setMovie(FishMovies.ExitMovie)
+        taskMgr.doMethodLater(1.2, self.__clearEmpty,
+                              self.uniqueName('clearEmpty'))
+                              
+    def __clearEmpty(self, task=None):
+        self.d_setOccupied(0)
+        
+    def __handleUnexpectedEvent(self):
+        self.cleanupAvatar()
+        self.d_setOccupied(0)
 
     def d_setOccupied(self, avId):
         self.sendUpdate('setOccupied', [avId])
@@ -177,8 +229,8 @@ class DistributedFishingSpotAI(DistributedObjectAI):
     def doCast(self, power, heading):
         pass
 
-    def d_setMovie(self, code):
-        pass
+    def d_setMovie(self, mode, code=0, itemDesc1=0, itemDesc2=0, itemDesc3=0, power=0, h=0):
+        self.sendUpdate('setMovie', [mode, code, itemDesc1, itemDesc2, itemDesc3, power, h])
 
     def sellFish(self):
         pass

@@ -220,23 +220,23 @@ class SafeZoneAI(PlaceAI):
                 visibles.append(self.zone_id)
             self.air.vismap[zone] = tuple(visibles)
 
-        pondName2Obj = {}
+        pondName2Do = {}
 
         for pondName in self.storage.ponds:
+            group = self.storage.groups[pondName]
+
             pond = DistributedFishingPondAI(self.air, self.hood_id)
             pond.generateWithRequired(self.zone_id)
-            pondName2Obj[pondName] = pond
+            pondName2Do[pondName] = pond
+            
+        for dnaspot in self.storage.spots:
+            group = dnaspot.get_group()
+            pondName = dnaspot.get_pond_name()
+            pond = pondName2Do[pondName]  
+            spot = DistributedFishingSpotAI(self.air, pond, group.get_pos_hpr())
+            spot.generateWithRequired(self.zone_id)
 
-        for spot in self.storage.spots:
-            group = self.storage.groups[spot]
-            pondNode = group.get_parent()
-            pondName = pondNode.name
-            distPond = pondName2Obj.get(pondName)
-            if distPond:
-                spot = DistributedFishingSpotAI(self.air, distPond, group.get_pos_hpr())
-                spot.generateWithRequired(self.zone_id)
-
-        del pondName2Obj
+        del pondName2Do
 
 class StreetAI(SafeZoneAI):
     def __init__(self, air, hood_id, zone_id):

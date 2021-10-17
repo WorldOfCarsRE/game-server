@@ -15,13 +15,30 @@ from weakref import WeakValueDictionary
 
 class DNAError(Exception):
     pass
+    
+class DNASpot:
 
+    def __init__(self):
+        self.pond_name = ''
+        self.group = None
+        
+    def set_pond_name(self, pond_name):
+        self.pond_name = pond_name
+        
+    def get_pond_name(self):
+        return self.pond_name        
+        
+    def set_group(self, group):
+        self.group = group
+        
+    def get_group(self):
+        return self.group
 
 class DNAStorage:
     def __init__(self):
         self.groups: Dict[str, DNAGroup] = dict()
         self.ponds: List[str] = list()
-        self.spots: List[str] = list() 
+        self.spots: List[DNASpot] = list()
         self.visgroups: List[DNAVisGroup] = list()
 
         self.suit_points: List[DNASuitPoint] = list()
@@ -580,7 +597,13 @@ def traverse(node, storage: DNAStorage):
         if node.name.startswith('fishing_pond'):
             storage.ponds.append(node.name)
         elif node.name.startswith('fishing_spot'):
-            storage.spots.append(node.name)
+            parent = node.get_parent()
+        
+            dnaSpot = DNASpot()
+            dnaSpot.set_pond_name(parent.name)
+            dnaSpot.set_group(node)
+            storage.spots.append(dnaSpot)
+
     if isinstance(node, DNASuitEdge):
         storage.suit_edges.setdefault(node.start, []).append(node)
     elif isinstance(node, DNASuitPoint):
