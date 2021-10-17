@@ -86,16 +86,16 @@ class HQBuildingAI(object):
     def __init__(self, air, exteriorZone, interiorZone, block):
         self.interior = DistributedHQInteriorAI(block, air, interiorZone)
         self.interior.generateWithRequired(interiorZone)
-        
+
         door0 = DistributedDoorAI(air, block, DoorTypes.EXT_HQ, doorIndex=0)
         door0.zoneId = exteriorZone
-        
+
         door1 = DistributedDoorAI(air, block, DoorTypes.EXT_HQ, doorIndex=1)
         door1.zoneId = exteriorZone
 
         insideDoor0 = DistributedDoorAI(air, block, DoorTypes.INT_HQ, doorIndex=0)
         insideDoor0.zoneId = interiorZone
-        
+
         insideDoor1 = DistributedDoorAI(air, block, DoorTypes.INT_HQ, doorIndex=1)
         insideDoor1.zoneId = interiorZone
 
@@ -108,7 +108,7 @@ class HQBuildingAI(object):
         door1.generateWithRequired(exteriorZone)
         insideDoor0.generateWithRequired(interiorZone)
         insideDoor1.generateWithRequired(interiorZone)
-        
+
         self.door0 = door0
         self.door1 = door1
         self.insideDoor0 = insideDoor0
@@ -226,8 +226,8 @@ class SafeZoneAI(PlaceAI):
         for pondName in self.storage.ponds:
             pond = DistributedFishingPondAI(self.air, self.hood_id)
             pond.generateWithRequired(self.zone_id)
-            pondName2Obj[pondName] = pond 
-            
+            pondName2Obj[pondName] = pond
+
         for spot in self.storage.spots:
             group = self.storage.groups[spot]
             pondNode = group.get_parent()
@@ -236,7 +236,7 @@ class SafeZoneAI(PlaceAI):
             if distPond:
                 spot = DistributedFishingSpotAI(self.air, distPond, group.get_pos_hpr())
                 spot.generateWithRequired(self.zone_id)
-                
+
         del pondName2Obj
 
 class StreetAI(SafeZoneAI):

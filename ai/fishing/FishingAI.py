@@ -9,10 +9,10 @@ import math
 class FishingTargetGlobals:
     OFF = 0
     MOVING = 1
-    
+
     StepTime = 5.0
     MinimumHunger = 1.0
-    
+
     NUM_TARGETS_INDEX = 0
     POS_START_INDEX = 1
     POS_END_INDEX = 4
@@ -50,19 +50,19 @@ class FishingTargetGlobals:
         if info:
             return info[FishingTargetGlobals.NUM_TARGETS_INDEX]
         return 2
-        
+
     def getTargetCenter(zoneId):
         info = FishingTargetGlobals.targetInfoDict.get(zoneId)
         if info:
             return info[FishingTargetGlobals.POS_START_INDEX:FishingTargetGlobals.POS_END_INDEX]
         return (0, 0, 0)
-        
+
     def getTargetRadius(zoneId):
         info = FishingTargetGlobals.targetInfoDict.get(zoneId)
         if info:
             return info[FishingTargetGlobals.RADIUS_INDEX]
         return 10
-        
+
     def getWaterLevel(zoneId):
         info = FishingTargetGlobals.targetInfoDict.get(zoneId)
         if info:
@@ -88,40 +88,40 @@ class DistributedFishingTargetAI(DistributedNodeAI, FSM):
         self.angle = 0.0
         self.radius = 0.0
         self.time = 0.0
-        
+
     def generate(self):
         DistributedNodeAI.generate(self)
         self.stateIndex = FishingTargetGlobals.MOVING
         self.demand('Moving')
-        
+
     def delete(self):
         taskMgr.remove(self.getMovingTask())
         del self.pond
         DistributedNodeAI.DistributedNodeAI.delete(self)
-        
+
     def getPondDoId(self):
         return self.pond.getDoId()
-        
+
     def getMovingTask(self):
         return self.uniqueName('moveFishingTarget')
-        
+
     def enterMoving(self):
         self.moveFishingTarget()
-        
+
     def exitMoving(self):
         taskMgr.remove(self.getMovingTask())
-        
+
     def getState(self):
-        return [self.stateIndex, self.angle, self.radius, self.time, 
+        return [self.stateIndex, self.angle, self.radius, self.time,
                 globalClockDelta.getRealNetworkTime()]
-        
+
     def d_setState(self, stateIndex, angle, radius, time):
         self.sendUpdate('setState', [stateIndex, angle, radius, time,
                                      globalClockDelta.getRealNetworkTime()])
-                                     
+
     def getHunter(self):
         return self.hunger
-        
+
     def isHungry(self):
         return random.random() <= self.getHunter()
 
@@ -141,7 +141,7 @@ class DistributedFishingTargetAI(DistributedNodeAI, FSM):
         taskMgr.doMethodLater(self.time + waitTime,
                               self.moveFishingTarget,
                               self.getMovingTask())
-        
+
 class DistributedFishingSpotAI(DistributedObjectAI):
     """
       rejectEnter();
@@ -155,31 +155,31 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.avId = 0
         self.timeoutTask = None
         self.pond = pond
-        
+
     def delete(self):
         DistributedObjectAI.DistributedObjectAI.delete(self)
-        
+
     def getPondDoId(self):
         return self.pond.getDoId()
-        
+
     def getPosHpr(self):
         return self.posHpr
-        
+
     def requestEnter(self):
         pass
-        
+
     def requestExit(self):
         pass
-        
+
     def d_setOccupied(self, avId):
         self.sendUpdate('setOccupied', [avId])
-        
+
     def doCast(self, power, heading):
         pass
-        
+
     def d_setMovie(self, code):
         pass
-        
+
     def sellFish(self):
         pass
 
@@ -190,13 +190,13 @@ class DistributedFishingPondAI(DistributedObjectAI):
         self.area = area
         self.targets: Optional[Dict[DistributedFishingTargetAI]] = {}
         self.spots: Dict[int] = {}
-        
+
     def getArea(self):
         return self.area
-        
+
     def getDoId(self):
         return self.do_id
-        
+
     def generate(self):
         DistributedObjectAI.generate(self)
         for i in range(FishingTargetGlobals.getNumTargets(self.getArea())):
@@ -204,17 +204,17 @@ class DistributedFishingPondAI(DistributedObjectAI):
                      random.random() * (1-FishingTargetGlobals.MinimumHunger)
             target = DistributedFishingTargetAI(self.air, self, hunger)
             target.generateWithRequired(self.zoneId)
-            self.targets[target.do_id] = target            
-        
+            self.targets[target.do_id] = target
+
     def delete(self):
         for target in self.targets.values():
             target.requestDelete()
         self.targets = Optional[Dict[DistributedFishingTargetAI]] = None
         DistributedObjectAI.DistributedObjectAI.delete(self)
-        
+
     def getCatch(self):
         return 0, 0
-        
+
     def hitTarget(self, targetId):
         senderId = self.air.currentAvatarSender
         sender = self.air.doTable.get(sender)
@@ -223,14 +223,12 @@ class DistributedFishingPondAI(DistributedObjectAI):
         target = self.targets.get(targetId)
         if not target:
             return
-            
+
     def addSpot(self, avId, spot):
         self.spots[avId] = spot
-        
+
     def removeSpot(self, avId, spot):
         if avId in self.spots:
             del self.spots[avId]
             return 1
         return 0
-        
-        
