@@ -597,21 +597,21 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         resp = Datagram()
         resp.add_uint16(CLIENT_DELETE_AVATAR_RESP)
-        resp.add_uint8(0)  # Return code
+        resp.add_uint8(0) # Return code
 
         av_count = sum((1 if pot_av else 0 for pot_av in self.potential_avatars))
-        dg.add_uint16(av_count)
+        resp.add_uint16(av_count)
 
         for pot_av in self.potential_avatars:
             if not pot_av:
                 continue
-            dg.add_uint32(pot_av.do_id)
-            dg.add_string16(pot_av.name.encode('utf-8'))
-            dg.add_string16(pot_av.wish_name.encode('utf-8'))
-            dg.add_string16(pot_av.approved_name.encode('utf-8'))
-            dg.add_string16(pot_av.rejected_name.encode('utf-8'))
-            dg.add_string16(pot_av.dna_string.encode('utf-8'))
-            dg.add_uint8(pot_av.index)
+            resp.add_uint32(pot_av.do_id)
+            resp.add_string16(pot_av.name.encode('utf-8'))
+            resp.add_string16(pot_av.wish_name.encode('utf-8'))
+            resp.add_string16(pot_av.approved_name.encode('utf-8'))
+            resp.add_string16(pot_av.rejected_name.encode('utf-8'))
+            resp.add_string16(pot_av.dna_string.encode('utf-8'))
+            resp.add_uint8(pot_av.index)
 
         self.send_datagram(resp)
 

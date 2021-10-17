@@ -232,6 +232,7 @@ async def handle_auth_delete(request):
     if len(password) > 255:
         return web.Response()
 
+    pool = request.app['pool']
     info = pool.accounts.find_one({'username': username})
 
     if not info:
