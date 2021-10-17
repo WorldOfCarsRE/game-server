@@ -185,7 +185,6 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
     def handle_datagram(self, dg, dgi):
         raise NotImplementedError
 
-
 class DownstreamMessageDirector(MessageDirector, DownstreamClient):
     upstream_protocol = MDUpstreamProtocol
 

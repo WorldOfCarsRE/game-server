@@ -207,6 +207,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                     self.service.log.debug(f'Unexpected field update for do_id {do_id} during avatar chooser.')
             elif msgtype == CLIENT_DELETE_AVATAR:
                 self.receive_delete_avatar(dgi)
+            elif msgtype == CLIENT_SET_WISHNAME_CLEAR:
+                self.receiveSetWishNameClear(dgi)
             else:
                 self.service.log.debug(f'Unexpected message type during avatar chooser {msgtype}.')
         elif self.state == ClientState.CREATING_AVATAR:
@@ -1147,3 +1149,14 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def annihilate(self):
         self.service.upstream.unsubscribe_all(self)
+
+    def receiveSetWishNameClear(self, dgi):
+        avatarId = dgi.get_uint32()
+        actionFlag = dgi.get_uint8()
+
+        # Send this to the Database server.
+        resp = Datagram()
+        resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
+        resp.add_uint32(avatarId)
+        resp.add_uint8(actionFlag)
+        self.service.send_datagram(resp)

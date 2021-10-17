@@ -2,9 +2,7 @@ from otp import config
 
 import asyncio
 
-
 import datetime
-
 
 from otp.networking import ChannelAllocator
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol
@@ -27,6 +25,8 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handle_get_stored_values(sender, dgi)
         elif msg_id == DBSERVER_SET_STORED_VALUES:
             self.handle_set_stored_values(sender, dgi)
+        elif msg_id == DBSERVER_WISHNAME_CLEAR:
+            self.handleClearWishName(dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
 
@@ -76,6 +76,11 @@ class DBServerProtocol(MDUpstreamProtocol):
     def handle_account_query(self, sender, dgi):
         do_id = dgi.get_uint32()
         self.service.loop.create_task(self.service.query_account(sender, do_id))
+
+    def handleClearWishName(self, dgi):
+        avatarId = dgi.get_uint32()
+        actionFlag = dgi.get_uint8()
+        self.service.loop.create_task(self.service.handleClearWishName(avatarId, actionFlag))
 
 from dc.parser import parse_dc_file
 from otp.dbbackend import MongoBackend, OTPCreateFailed
@@ -193,52 +198,79 @@ class DBServer(DownstreamMessageDirector):
     def on_upstream_connect(self):
         self.subscribe_channel(self._client, DBSERVERS_CHANNEL)
 
+    async def handleClearWishName(self, avatarId, actionFlag):
+        # Grab the fields from the avatar.
+        toonFields = await self.backend.query_object_fields(avatarId, ['WishName'], 'DistributedToon')
+
+        if actionFlag == 1:
+            # This name was approved.
+            # Set their name.
+            fields = [
+                ('WishNameState', ('',)),
+                ('WishName', ('',)),
+                ('setName', (toonFields['WishName'][0],))
+            ]
+        else:
+            # This name was rejected.
+            # Set them to the OPEN state so they can try again.
+            fields = [
+                ('WishNameState', ('OPEN',)),
+                ('WishName', ('',))
+            ]
+
+        # Set the fields in the database.
+        await self.set_stored_values(avatarId, fields)
+
     async def query_account(self, sender, do_id):
         dclass = self.dc.namespace['Account']
         toon_dclass = self.dc.namespace['DistributedToon']
-        field_dict = await self.backend.query_object_all(do_id, dclass.name)
+        fieldDict = await self.backend.query_object_all(do_id, dclass.name)
 
         temp = Datagram()
-        dclass['ACCOUNT_AV_SET'].pack_value(temp, field_dict['ACCOUNT_AV_SET'])
-        av_ids = dclass['ACCOUNT_AV_SET'].unpack_value(temp.iterator())
+        dclass['ACCOUNT_AV_SET'].pack_value(temp, fieldDict['ACCOUNT_AV_SET'])
+        avIds = dclass['ACCOUNT_AV_SET'].unpack_value(temp.iterator())
 
         tempTwo = Datagram()
-        dclass['ACCOUNT_AV_SET_DEL'].pack_value(tempTwo, field_dict['ACCOUNT_AV_SET_DEL'])
+        dclass['ACCOUNT_AV_SET_DEL'].pack_value(tempTwo, fieldDict['ACCOUNT_AV_SET_DEL'])
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_ACCOUNT_QUERY_RESP)
         dg.add_bytes(tempTwo.bytes())
-        av_count = sum((1 if av_id else 0 for av_id in av_ids))
-        self.log.debug(f'Account query for {do_id} from {sender}: {field_dict}')
-        dg.add_uint16(av_count) # Av count
-        for av_id in av_ids:
-            if not av_id:
+        avCount = sum((1 if avId else 0 for avId in avIds))
+        self.log.debug(f'Account query for {do_id} from {sender}: {fieldDict}')
+        dg.add_uint16(avCount) # Av count
+        for avId in avIds:
+            if not avId:
                 continue
-            toon_fields = await self.backend.query_object_fields(av_id, ['setName', 'WishNameState', 'WishName', 'setDNAString'], 'DistributedToon')
+            toonFields = await self.backend.query_object_fields(avId, ['setName', 'WishNameState', 'WishName', 'setDNAString'], 'DistributedToon')
 
-            wish_name = toon_fields['WishName'][0].encode()
-            name_state = toon_fields['WishNameState'][0]
+            wishName = toonFields['WishName']
 
-            dg.add_uint32(av_id)
-            dg.add_string16(toon_fields['setName'][0].encode())
+            if wishName:
+                wishName = wishName[0].encode()
 
-            pending_name = b''
-            approved_name = b''
-            rejected_name = b''
+            nameState = toonFields['WishNameState'][0]
 
-            if name_state == 'APPROVED':
-                approved_name = wish_name
-            elif name_state == 'REJECTED':
-                rejected_name = wish_name
+            dg.add_uint32(avId)
+            dg.add_string16(toonFields['setName'][0].encode())
+
+            pendingName = b''
+            approvedName = b''
+            rejectedName = b''
+
+            if nameState == 'APPROVED':
+                approvedName = wishName
+            elif nameState == 'REJECTED':
+                rejectedName = wishName
             else:
-                pending_name = wish_name
+                pendingName = wishName
 
-            dg.add_string16(pending_name)
-            dg.add_string16(approved_name)
-            dg.add_string16(rejected_name)
-            dg.add_string16(toon_fields['setDNAString'][0])
-            dg.add_uint8(av_ids.index(av_id))
-            dg.add_uint8(0)
+            dg.add_string16(pendingName)
+            dg.add_string16(approvedName)
+            dg.add_string16(rejectedName)
+            dg.add_string16(toonFields['setDNAString'][0])
+            dg.add_uint8(avIds.index(avId))
+            dg.add_uint8(1 if nameState == 'OPEN' else 0)
 
         self.send_datagram(dg)
 
