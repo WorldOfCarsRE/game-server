@@ -60,11 +60,6 @@ class ToontownDistrictAI(DistributedDistrictAI):
             obj.sendUpdate('arrivedOnDistrict', [self.do_id])
             self.air.incrementPopulation()
 
-    def handleChildLeave(self, obj, zoneId):
-        if isinstance(obj, DistributedToonAI):
-            obj.sendUpdate('arrivedOnDistrict', [0])
-            self.air.decrementPopulation()
-
 class ToontownDistrictStatsAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)

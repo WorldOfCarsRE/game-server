@@ -271,6 +271,13 @@ class AIRepository:
             print(f'Received delete for unknown object: {doId}!')
             return
 
+        # TODO: Is this the best place to put this?
+        from .toon.DistributedToonAI import DistributedToonAI
+
+        if isinstance(do, DistributedToonAI):
+            do.sendUpdate('arrivedOnDistrict', [0])
+            self.decrementPopulation()
+
         do.delete()
 
     def context(self):
