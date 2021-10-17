@@ -118,7 +118,6 @@ class DBServer(DownstreamMessageDirector):
         self.send_datagram(dg)
 
     async def create_toon(self, sender, context, dclass, disl_id, pos, fields):
-        print('create_toon', fields)
         try:
             do_id = await self.backend.create_object(dclass, fields)
             account = await self.backend.query_object_fields(disl_id, ['ACCOUNT_AV_SET'], 'Account')
