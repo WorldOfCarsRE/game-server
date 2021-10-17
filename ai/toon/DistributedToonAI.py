@@ -6,6 +6,7 @@ from dc.util import Datagram
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
 from ai import ToontownGlobals
+from ai.fishing.FishBase import FishBase
 
 class DistributedAvatarAI(DistributedSmoothNodeAI):
     def __init__(self, air):
@@ -93,6 +94,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.trackBonusLevel = [-1, -1, -1, -1, -1, -1, -1]
         self.experience = Experience()
         self.inventory = Inventory()
+        self.fishTank = FishTank()
         self.maxNPCFriends = 8
         self.npcFriends: Dict[int, int] = {}
         self.pinkSlips = 0
@@ -460,6 +462,27 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getMaxFishTank(self):
         return 20
+        
+    def setInventory(self, inventory):
+        self.inventory = Inventory.fromBytes(inventory)
+        self.inventory.toon = self
+
+    def getInventory(self):
+        return self.inventory.makeNetString()
+        
+    def b_setFishTank(self, genusList, speciesList, weightList):
+        self.setFishTank(genusList, speciesList, weightList)
+        self.d_setFishTank(genusList, speciesList, weightList)
+        
+    def d_setFishTank(self, genusList, speciesList, weightList):
+        self.sendUpdate("setFishTank", [genusList, speciesList, weightList])
+
+    def setFishTank(self, genusList, speciesList, weightList):
+        self.fishTank = FishTank()
+        self.fishTank.makeFromNetLists(genusList, speciesList, weightList)
+
+    def getFishTank(self):
+        return self.fishTank.getNetLists()
 
     def getFishTank(self):
         return [], [], []
@@ -724,6 +747,74 @@ class Inventory:
             self[i] = 0
 
 from ai import OTPGlobals
+
+class FishTank:
+    __slots__ = 'fishList'
+    
+    def __init__(self):
+        self.fishList: List[FishBase] = []
+        
+    def __len__(self):
+        return len(self.fishList)
+        
+    def getFish(self):
+        return self.fishList
+        
+    def makeFromNetLists(self, genusList, speciesList, weightList):
+        self.fishList: List[FishBase] = []
+        for genus, species, weight in zip(genusList, speciesList, weightList):
+            self.fishList.append(FishBase(genus, species, weight))
+            
+    def getNetLists(self):
+        genusList = []
+        speciesList = []
+        weightList = []
+        for fish in self.fishList:
+            genusList.append(fish.getGenus())
+            speciesList.append(fish.getSpecies())
+            weightList.append(fish.getWeight())
+        return [genusList, speciesList, weightList]
+        
+    def hasFish(self, genus, species):
+        for fish in self.fishList:
+            if (fish.getGenus() == genus) and (fish.getSpecies() == species):
+                return 1
+        return 0
+
+    def hasBiggerFish(self, genus, species, weight):
+        for fish in self.fishList:
+            if ((fish.getGenus() == genus) and
+                (fish.getSpecies() == species) and
+                (fish.getWeight() >= weight)):
+                return 1
+        return 0
+    
+    def addFish(self, fish):
+        self.fishList.append(fish)
+        return 1
+
+    def removeFishAtIndex(self, index):
+        if index >= len(self.fishList):
+            return 0
+        else:
+            del self.fishList[i]
+            return 1
+
+    def getTotalValue(self):
+        value = 0
+        for fish in self.fishList:
+            value += fish.getValue()
+        return value
+            
+    def __str__(self):
+        numFish = len(self.fishList)
+        value = 0
+        txt = ("Fish Tank (%s fish):" % (numFish))
+        for fish in self.fishList:
+            txt += ("\n" + str(fish))
+            value += fish.getValue()
+        txt += ("\nTotal value: %s" % (value))
+        return txt
 
 class Experience:
     __slots__ = 'experience', 'toon'

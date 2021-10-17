@@ -31,6 +31,9 @@ class DNAGroup:
             
     def get_parent(self):
         return self.parent
+        
+    def get_vis_group(self):
+        return self.vis_group
 
     def clear_parent(self):
         self.parent = None

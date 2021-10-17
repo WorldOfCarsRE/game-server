@@ -3,6 +3,7 @@ from ai.DistributedNodeAI import DistributedNodeAI
 from typing import Optional, Dict
 from direct.fsm.FSM import FSM
 from ai import ToontownGlobals
+from ai.fishing import FishBase
 import random
 import math
 

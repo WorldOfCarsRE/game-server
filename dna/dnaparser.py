@@ -17,6 +17,7 @@ class DNAError(Exception):
     pass
     
 class DNASpot:
+    __slots__ = 'pond_name', 'group'
 
     def __init__(self):
         self.pond_name = ''
