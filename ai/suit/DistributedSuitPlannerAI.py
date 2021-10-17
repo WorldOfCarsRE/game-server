@@ -248,7 +248,6 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
     def __battleFinished(self):
         pass
 
-
 class BattleManagerAI:
     BATTLE_CONSTRUCTOR = None
     __slots__ = 'air', 'cell2Battle'

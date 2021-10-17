@@ -6,11 +6,9 @@ from .DistributedDoorAI import DistributedDoorAI
 from ai.toon import NPCToons
 from ai.ToontownGlobals import ToonHall
 
-
 from direct.fsm.FSM import FSM
 
 from . import DoorTypes
-
 
 class DistributedBuildingAI(DistributedObjectAI, FSM):
     defaultTransitions = {

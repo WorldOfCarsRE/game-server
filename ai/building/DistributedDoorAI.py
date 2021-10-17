@@ -6,12 +6,9 @@ OUTWARD_SWING = 1
 LEFT_DOOR = 1 << 0
 RIGHT_DOOR = 1 << 1
 
-
 DEFAULT_SWING = (OUTWARD_SWING | LEFT_DOOR) | (INWARD_SWING | RIGHT_DOOR)
 
-
 from ai.DistributedObjectAI import DistributedObjectAI
-
 
 UNLOCKED = 0
 TALK_TO_TOM = 1
@@ -27,7 +24,6 @@ SB_DISGUISE_INCOMPLETE = 10
 CB_DISGUISE_INCOMPLETE = 11
 LB_DISGUISE_INCOMPLETE = 12
 BB_DISGUISE_INCOMPLETE = 13
-
 
 class DistributedDoorAI(DistributedObjectAI):
     def __init__(self, air, block, doorType, doorIndex=0, swing=DEFAULT_SWING):
@@ -137,7 +133,6 @@ class DistributedDoorAI(DistributedObjectAI):
             self.sendUpdate('suitEnter', [suitId])
 
         self.doorFSM.openDoor()
-
 
 class DoorFSM(FSM):
     ANIMATION_DURATION = 1.0

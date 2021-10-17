@@ -6,9 +6,7 @@ from asyncio import Queue
 import asyncio
 import par
 
-
 from typing import Dict, Set, List
-
 
 class MDProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):
@@ -184,7 +182,6 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
 
     def handle_datagram(self, dg, dgi):
         raise NotImplementedError
-
 
 class DownstreamMessageDirector(MessageDirector, DownstreamClient):
     upstream_protocol = MDUpstreamProtocol

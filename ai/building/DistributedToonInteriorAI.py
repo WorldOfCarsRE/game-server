@@ -1,12 +1,10 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 
-
 from direct.fsm.FSM import FSM
 
 from ai.toon import NPCToons
 
 import pickle
-
 
 class DistributedToonInteriorAI(DistributedObjectAI, FSM):
     defaultTransitions = {
@@ -70,8 +68,6 @@ class DistributedToonInteriorAI(DistributedObjectAI, FSM):
     def exitBeingTakenOver(self):
         pass
 
-
 class DistributedToonHallInteriorAI(DistributedToonInteriorAI):
     def __init__(self, air):
         DistributedToonInteriorAI.__init__(self, air)
-

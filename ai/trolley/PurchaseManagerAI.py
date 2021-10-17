@@ -1,14 +1,11 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 from ai.toon.DistributedToonAI import Inventory
 
-
 from typing import List, Optional
 
 from . import createMinigame, Purchaser, PurchaseState, INVENTORY_PENDING, INVENTORY_DONE, incZoneRef, decZoneRef
 
-
 PURCHASE_COUNTDOWN_TIME = 120
-
 
 class PurchaseManagerAI(DistributedObjectAI):
     def __init__(self, air, purchasers, minigameId, trolleyZone, metagameRound):
