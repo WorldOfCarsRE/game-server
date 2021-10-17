@@ -23,9 +23,6 @@ class DNAGroup:
 
     def at(self, index):
         return self.children[index]
-        
-    def get_children(self):
-        return self.children
 
     def set_parent(self, parent):
         self.parent = parent
