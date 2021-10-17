@@ -21,7 +21,6 @@ from . import AIZoneData
 
 from .ToontownGlobals import DynamicZonesBegin, DynamicZonesEnd
 
-
 class AIProtocol(ToontownProtocol):
     def connection_made(self, transport):
         ToontownProtocol.connection_made(self, transport)
@@ -36,7 +35,6 @@ class AIProtocol(ToontownProtocol):
     def send_datagram(self, data: Datagram):
         loop = self.service.loop
         loop.call_soon_threadsafe(self.outgoing_q.put_nowait, data.bytes())
-
 
 class AIRepository:
     def __init__(self):
@@ -273,6 +271,13 @@ class AIRepository:
             print(f'Received delete for unknown object: {doId}!')
             return
 
+        # TODO: Is this the best place to put this?
+        from .toon.DistributedToonAI import DistributedToonAI
+
+        if isinstance(do, DistributedToonAI):
+            do.sendUpdate('arrivedOnDistrict', [0])
+            self.decrementPopulation()
+
         do.delete()
 
     def context(self):
@@ -326,7 +331,7 @@ class AIRepository:
         self.registerForChannel(self.ourChannel)
 
         from .Objects import ToontownDistrictAI, ToontownDistrictStatsAI, DistributedInGameNewsMgrAI, NewsManagerAI, FriendManagerAI
-        from .Objects import ToontownMagicWordManagerAI
+        from .Objects import ToontownMagicWordManagerAI, EstateManagerAI
         from .TimeManagerAI import TimeManagerAI
 
         self.district = ToontownDistrictAI(self)
@@ -345,13 +350,13 @@ class AIRepository:
         dg.add_channel(self.ourChannel)
         self.send(dg)
 
-        stats = ToontownDistrictStatsAI(self)
-        stats.settoontownDistrictId(self.district.do_id)
-        self.generateWithRequired(stats, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS_STATS)
+        self.stats = ToontownDistrictStatsAI(self)
+        self.stats.settoontownDistrictId(self.district.do_id)
+        self.generateWithRequired(self.stats, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS_STATS)
 
         dg = Datagram()
         dg.add_server_header([STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
-        dg.add_uint32(stats.do_id)
+        dg.add_uint32(self.stats.do_id)
         dg.add_channel(self.ourChannel)
         self.send(dg)
 
@@ -369,6 +374,9 @@ class AIRepository:
 
         self.magicWordMgr = ToontownMagicWordManagerAI(self)
         self.magicWordMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
+
+        self.estateMgr = EstateManagerAI(self)
+        self.estateMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
 
         self.loadZones()
 
@@ -414,3 +422,9 @@ class AIRepository:
 
     def getAvatarDisconnectReason(self, avId):
         return self.timeManager.disconnectCodes.get(avId)
+
+    def incrementPopulation(self):
+        self.stats.b_setAvatarCount(self.stats.getAvatarCount() + 1)
+
+    def decrementPopulation(self):
+        self.stats.b_setAvatarCount(self.stats.getAvatarCount() - 1)

@@ -10,7 +10,6 @@ from dc.util import Datagram
 
 import asyncio
 
-
 class UberdogProtocol(MDUpstreamProtocol):
     def __init__(self, service):
         MDUpstreamProtocol.__init__(self, service)
@@ -119,13 +118,11 @@ class Uberdog(DownstreamMessageDirector):
 
         return parent_id, zone_id
 
-
 class CentralLoggerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_CENTRAL_LOGGER
 
     def sendMessage(self, category, event_str, target_disl_id, target_do_id):
         self.log.debug(f'category:{category}, disl_id: {target_disl_id}, do_id: {target_do_id}, event::{event_str}')
-
 
 CANCELLED = 1
 INACTIVE = 0
@@ -133,7 +130,6 @@ FRIEND_QUERY = 1
 FRIEND_CONSIDERING = 2
 NO = 0
 YES = 1
-
 
 class FriendRequest:
     __slots__ = 'avId', 'requestedId', 'state'
@@ -146,7 +142,6 @@ class FriendRequest:
     @property
     def cancelled(self):
         return self.state == CANCELLED
-
 
 class FriendManagerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_FRIEND_MANAGER
@@ -169,7 +164,7 @@ class FriendManagerUD(Uberdog):
     def inviteeFriendConsidering(self, todo0):
         pass
 
-    def inviteeFriendResponse(self, todo0):
+    def inviteeFriendResponse(self, response, context):
         pass
 
     def inviteeAcknowledgeCancel(self, todo0):
@@ -180,7 +175,6 @@ class FriendManagerUD(Uberdog):
 
     def submitSecret(self, todo0):
         pass
-
 
 async def main():
     import builtins

@@ -27,4 +27,7 @@ class DistributedNodeAI(DistributedObjectAI, NodePath):
             self.removeNode()
 
         DistributedObjectAI.delete(self)
+        
+    def d_setPos(self, x, y, z):
+        self.sendUpdate('setPos', [x, y, z])
 

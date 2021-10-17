@@ -21,16 +21,16 @@ class DistributedRingGameAI(DistributedMinigameAI):
         self.__numRingsPassed: List[int] = [0] * RingGameGlobals.NUM_RING_GROUPS
         self.__ringResultBitfield: List[int] = [0] * RingGameGlobals.NUM_RING_GROUPS
         self.failedOnce: List[int] = []
-        
+
         self.setTimeBase(globalClockDelta.localToNetworkTime(globalClock.getRealTime()))
         self.selectColorIndices()
-            
+
     def setTimeBase(self, timeBase):
         self.__timeBase = timeBase
 
     def getTimeBase(self):
         return self.__timeBase
-        
+
     def selectColorIndices(self):
         colorIndices = [None, None, None, None]
         chooseFrom = RingGameGlobals.RING_COLOR_SELECTION[:]
@@ -41,32 +41,32 @@ class DistributedRingGameAI(DistributedMinigameAI):
                 c = random.choice(c)
             colorIndices[color] = c
         self.setColorIndices(colorIndices)
-        
+
     def setColorIndices(self, colorIndices):
         self.colorIndices = colorIndices
-        
+
     def getColorIndices(self):
         return self.colorIndices[0], self.colorIndices[1], self.colorIndices[2], self.colorIndices[3]
 
     def onGameStart(self):
         taskMgr.doMethodLater(self.DURATION, self.gamesOver, self.uniqueName('timer'))
-        
+
     def setToonGotRing(self, success):
         senderId = self.air.currentAvatarSender
 
-        sender = self.air.doTable[senderId]
+        sender = self.air.doTable.get(senderId)
         if not sender:
             return
-            
+
         if senderId not in self.__nextRingGroup:
             self.__nextRingGroup[senderId] = 0
-            
+
         ringGroupIndex = self.__nextRingGroup[senderId]
         if ringGroupIndex >= RingGameGlobals.NUM_RING_GROUPS:
             return
-        
+
         self.__nextRingGroup[senderId] += 1
-        
+
         if success:
             if senderId in self.scoreDict:
                 self.scoreDict[senderId] += 1
@@ -76,7 +76,7 @@ class DistributedRingGameAI(DistributedMinigameAI):
             self.__ringResultBitfield[ringGroupIndex] |= 1 << self.participants.index(senderId)
             if senderId not in self.failedOnce:
                 self.failedOnce.append(senderId)
-                
+
         self.__numRingsPassed[ringGroupIndex] += 1
         if self.__numRingsPassed[ringGroupIndex] >= self.getNumParticipants():
             if not self.isSinglePlayer():
@@ -87,7 +87,7 @@ class DistributedRingGameAI(DistributedMinigameAI):
                             self.scoreDict[participant] += .5
 
                 self.sendUpdate('setRingGroupResults', [bitfield])
-                
+
             if ringGroupIndex >= (RingGameGlobals.NUM_RING_GROUPS-1):
                 perfectBonuses = {
                   1 : 5,
@@ -99,7 +99,7 @@ class DistributedRingGameAI(DistributedMinigameAI):
                 for participant in self.getParticipants():
                     if participant not in self.failedOnce:
                         numPerfectParticipants += 1
-                
+
                 for participant in self.getParticipants():
                     if participant not in self.scoreDict:
                         return
@@ -107,7 +107,7 @@ class DistributedRingGameAI(DistributedMinigameAI):
                         self.scoreDict[participant] += perfectBonuses[numPerfectParticipants]
                     if self.scoreDict[participant] < 1:
                         self.scoreDict[participant] = 1
-                        
+
                 self.gamesOver()
 
     def exitGameBegin(self):
@@ -115,4 +115,3 @@ class DistributedRingGameAI(DistributedMinigameAI):
 
     def gamesOver(self, task=None):
         self.demand('Cleanup')
-

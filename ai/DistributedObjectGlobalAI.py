@@ -1,6 +1,5 @@
 from .DistributedObjectAI import DistributedObjectAI
 
-
 class DistributedObjectGlobalAI(DistributedObjectAI):
     def announceGenerate(self):
         DistributedObjectAI.announceGenerate(self)

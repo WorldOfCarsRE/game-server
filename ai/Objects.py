@@ -2,6 +2,7 @@ import time
 
 from .DistributedObjectAI import DistributedObjectAI
 from ai.toon.DistributedToonAI import DistributedToonAI
+from ai.toon.DistributedToonAI import DistributedPlayerAI
 from typing import List, Optional, Dict
 from dataslots import with_slots
 from dataclasses import dataclass
@@ -9,7 +10,6 @@ from dataclasses import dataclass
 from dc.util import Datagram
 from otp.util import getPuppetChannel
 from otp.messagetypes import CLIENT_FRIEND_ONLINE
-
 
 class DistributedDistrictAI(DistributedObjectAI):
     def __init__(self, air):
@@ -37,7 +37,6 @@ class DistributedDistrictAI(DistributedObjectAI):
     def getAvailable(self):
         return self.available
 
-
 class ToontownDistrictAI(DistributedDistrictAI):
     def __init__(self, air):
         DistributedDistrictAI.__init__(self, air)
@@ -58,8 +57,8 @@ class ToontownDistrictAI(DistributedDistrictAI):
 
     def handleChildArrive(self, obj, zoneId):
         if isinstance(obj, DistributedToonAI):
-            obj.sendUpdate('arrivedOnDistrict', [self.do_id, ])
-
+            obj.sendUpdate('arrivedOnDistrict', [self.do_id])
+            self.air.incrementPopulation()
 
 class ToontownDistrictStatsAI(DistributedObjectAI):
     def __init__(self, air):
@@ -107,7 +106,6 @@ class ToontownDistrictStatsAI(DistributedObjectAI):
     def getNewAvatarCount(self):
         return self.newAvatarCount
 
-
 class DistributedInGameNewsMgrAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
@@ -116,7 +114,6 @@ class DistributedInGameNewsMgrAI(DistributedObjectAI):
 
     def getLatestIssueStr(self):
         return self.latest_issue
-
 
 @with_slots
 @dataclass
@@ -127,7 +124,6 @@ class WeeklyHoliday:
     def __iter__(self):
         yield self.holidayId
         yield self.weekday
-
 
 @with_slots
 @dataclass
@@ -142,7 +138,6 @@ class YearlyHoliday:
         yield self.holidayId
         yield (self.startMonth, self.startDay)
         yield (self.endMonth, self.endDay)
-
 
 @with_slots
 @dataclass
@@ -173,7 +168,6 @@ class MultipleStartDate:
         yield (self.startYear, self.startMonth, self.startDay)
         yield (self.endYear, self.endMonth, self.endDay)
 
-
 class MultipleStartHoliday:
     __slots__ = 'holidayId', 'times'
 
@@ -186,7 +180,6 @@ class MultipleStartHoliday:
         yield self.times
 
 from ai.HolidayGlobals import *
-
 
 class NewsManagerAI(DistributedObjectAI):
     def __init__(self, air):
@@ -229,7 +222,6 @@ class NewsManagerAI(DistributedObjectAI):
     def d_sendSystemMessage(self, msg, msgType = 0):
         self.sendUpdate('sendSystemMessage', [msg, msgType])
 
-
 class HolidayBaseAI:
     holidayId = None
 
@@ -244,9 +236,7 @@ class HolidayBaseAI:
         self.air.newsManager.holidayIds.remove(self.holidayId)
         self.air.newsManager.d_setHolidayIdList()
 
-
 from otp.constants import *
-
 
 class DistributedPhaseEventMgrAI(DistributedObjectAI):
     def getNumPhases(self):
@@ -261,7 +251,6 @@ class DistributedPhaseEventMgrAI(DistributedObjectAI):
     def getIsRunning(self):
         return False
 
-
 class DistributedSillyMeterMgrAI(DistributedPhaseEventMgrAI):
     def getNumPhases(self):
         return 15
@@ -274,7 +263,6 @@ class DistributedSillyMeterMgrAI(DistributedPhaseEventMgrAI):
 
     def getIsRunning(self):
         return 1
-
 
 class SillyMeterHolidayAI(HolidayBaseAI):
     holidayId = SILLYMETER_HOLIDAY
@@ -289,9 +277,7 @@ class SillyMeterHolidayAI(HolidayBaseAI):
         self.air.sillyMgr.requestDelete()
         del self.air.sillyMgr
 
-
 from .DistributedObjectGlobalAI import DistributedObjectGlobalAI
-
 
 class FriendRequest:
     CANCELLED = -1
@@ -311,7 +297,6 @@ class FriendRequest:
     def isRequestedId(self, avId):
         return avId == self.requestedId
 
-
 class InviteeResponse:
     NOT_AVAILABLE = 0
     ASKING = 1
@@ -322,10 +307,8 @@ class InviteeResponse:
     NO = 10
     TOO_MANY_FRIENDS = 13
 
-
 MAX_FRIENDS = 50
 MAX_PLAYER_FRIENDS = 300
-
 
 class FriendManagerAI(DistributedObjectGlobalAI):
     do_id = OTP_DO_ID_FRIEND_MANAGER
@@ -438,7 +421,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
     def __init__(self, air):
         MagicWordManagerAI.__init__(self, air)
 
-    def checkArguments(self, avId: int, magicWord: str, function, args):
+    def checkArguments(self, avId: int, magicWord: str, function, args) -> bool:
         fArgs = function.__code__.co_argcount - 1
         argCount = len(args)
 
@@ -459,14 +442,16 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
     def sendResponseMessage(self, avId: int, message: str):
         self.sendUpdateToAvatar(avId, 'setMagicWordResponse', [message])
 
-    def sendSystemMessage(self, av, msg: str):
+    def sendSystemMessage(self, av, msg: str) -> str:
         if msg == '':
             return
 
-        self.air.newsManager.d_sendSystemMessage(msg)
+        for doId, do in list(self.air.doTable.items()):
+            if isinstance(do, DistributedPlayerAI):
+                if str(doId)[0] != str(self.air.district.do_id)[0]:
+                    do.d_setSystemMessage(0, msg)
 
-        response = 'Sent system message!'
-        self.sendResponseMessage(av.do_id, response)
+        return 'Broadcasted message to everyone on this shard.'
 
     def setMagicWord(self, magicWord, avId, zoneId, signature):
         avId = self.air.currentAvatarSender
@@ -493,16 +478,130 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         stringVal = ' '.join(str(x) for x in args[2:])
 
         clientWords = [
-            'run'
+            'run',
+            'walk',
+            'fps'
         ]
 
         if magicWord in clientWords or magicWord == '':
             # We can ignore this.
             return
 
+        response = ''
+
         if magicWord in ('system', 'smsg'):
-            self.sendSystemMessage(av, msg = string)
+            response = self.sendSystemMessage(av, msg = string)
         else:
-            self.sendResponseMessage(avId, '{0} is not a valid Magic Word.'.format(magicWord))
+            response = '{0} is not a valid Magic Word.'.format(magicWord)
             print('Unknown Magic Word: {0} from avId: {1}!'.format(magicWord, avId))
-            return
+
+        # Send our response to the client.
+        self.sendResponseMessage(avId, response)
+
+@with_slots
+@dataclass
+class LawnItem:
+    itemType: int
+    hardPoint: int
+    waterLevel: int
+    growthLevel: int
+    optional: int
+
+class DistributedEstateAI(DistributedObjectAI):
+
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+        self.estateType = 0
+        self.dawnTime = 0
+        self.decorData: List[LawnItem] = []
+        self.lastEpochTimestamp = 0
+        self.rentalTimestamp = 0
+        self.rentalType = 0
+        self.lawnItems: List[LawnItem] = [[], [], [], [], [], []]
+        self.activeToons = [0, 0, 0, 0, 0, 0]
+        self.clouds = 0
+
+    def getEstateType(self) -> int:
+        return self.estateType
+
+    def getDawnTime(self) -> int:
+        return self.dawnTime
+
+    def getDecorData(self) -> List[LawnItem]:
+        return self.decorData
+
+    def getLastEpochTimeStamp(self) -> int:
+        return self.lastEpochTimestamp
+
+    def getRentalTimeStamp(self) -> int:
+        return self.rentalTimestamp
+
+    def getRentalType(self) -> int:
+        return self.rentalType
+
+    def getSlot0ToonId(self) -> int:
+        return self.activeToons[0]
+
+    def getSlot0Items(self) -> List[LawnItem]:
+        return self.lawnItems[0]
+
+    def getSlot1ToonId(self) -> int:
+        return self.activeToons[1]
+
+    def getSlot1Items(self) -> List[LawnItem]:
+        return self.lawnItems[1]
+
+    def getSlot2ToonId(self) -> int:
+        return self.activeToons[2]
+
+    def getSlot2Items(self) -> List[LawnItem]:
+        return self.lawnItems[2]
+
+    def getSlot3ToonId(self) -> int:
+        return self.activeToons[3]
+
+    def getSlot3Items(self) -> List[LawnItem]:
+        return self.lawnItems[3]
+
+    def getSlot4ToonId(self) -> int:
+        return self.activeToons[4]
+
+    def getSlot4Items(self) -> List[LawnItem]:
+        return self.lawnItems[4]
+
+    def getSlot5ToonId(self) -> int:
+        return self.activeToons[5]
+
+    def getSlot5Items(self) -> List[LawnItem]:
+        return self.lawnItems[5]
+
+    def getClouds(self) -> int:
+        return self.clouds
+
+class EstateManagerAI(DistributedObjectAI):
+
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+        self.estateZones: Dict[int] = {}
+
+    def getEstateZone(self, avId: int, name: str):
+        av = self.air.doTable.get(avId)
+
+        # Allocate our estate zone.
+        self.estateZones[avId] = self.air.allocateZone()
+
+        # Generate our estate object.
+        estate = DistributedEstateAI(self.air)
+        estate.generateWithRequired(self.estateZones[avId])
+
+        # Let the client know about our new zone.
+        self.sendUpdateToAvatar(avId, 'setEstateZone', [avId, self.estateZones[avId]])
+
+    def exitEstate(self):
+        avId = self.air.currentAvatarSender
+
+        # Deallocate this zone.
+        self.air.deallocateZone(self.estateZones[avId])
+
+        # Remove this avatar from our dictionary.
+        del self.estateZones[avId]

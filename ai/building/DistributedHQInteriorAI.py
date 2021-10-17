@@ -1,13 +1,10 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 
-
 import pickle
 
 from dataclasses import dataclass
 from dataslots import with_slots
 from typing import List
-
-
 
 @with_slots
 @dataclass
@@ -15,7 +12,6 @@ class ToonPlatoonEntry:
     avId: int
     name: str
     score: int
-
 
 class DistributedHQInteriorAI(DistributedObjectAI):
     def __init__(self, block, air, zoneId):
@@ -28,7 +24,7 @@ class DistributedHQInteriorAI(DistributedObjectAI):
         return [self.zoneId, self.block]
 
     def getLeaderBoard(self):
-        return pickle.dumps([(), (), ()], protocol=1)
+        return pickle.dumps([(), (), ()])
 
     def getTutorial(self):
         return self.tutorial

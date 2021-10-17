@@ -13,7 +13,6 @@ from typing import Optional
 from .SuitGlobals import *
 from dna.objects import VICTORY_DANCE, TO_SKY, SuitLegType
 
-
 @with_slots
 @dataclass
 class SuitDNA:
@@ -28,7 +27,6 @@ class SuitDNA:
             return ''.join((self.type, self.dept)).encode('ascii')
         else:
             raise ValueError(f'Unknown suit dna type: {self.type}')
-
 
 class DistributedSuitBaseAI(DistributedObjectAI):
     def __init__(self, air):
@@ -131,11 +129,8 @@ class DistributedSuitBaseAI(DistributedObjectAI):
     def prepareToJoinBattle(self):
         pass
 
-
 from dna.objects import SuitLegList, DNASuitPoint
 from typing import Optional, List
-
-
 
 class PathState(IntEnum):
     STOP = 0
@@ -144,9 +139,7 @@ class PathState(IntEnum):
     UNKNOWN = 3
     VICTORY_FLYAWAY = 4
 
-
 UPDATE_TIMESTAMP_INTERVAL = 60.0
-
 
 class DistributedSuitAI(DistributedSuitBaseAI):
     def __init__(self, air, suitPlanner):

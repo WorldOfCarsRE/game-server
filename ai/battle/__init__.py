@@ -1922,9 +1922,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.needAdjust = True
         self._requestAdjust()
 
-
 from direct.task import Task
-
 
 class DistributedBattleAI(DistributedBattleBaseAI):
 

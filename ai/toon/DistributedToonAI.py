@@ -5,7 +5,8 @@ from dc.util import Datagram
 
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
-
+from ai import ToontownGlobals
+from ai.fishing.FishBase import FishBase
 
 class DistributedAvatarAI(DistributedSmoothNodeAI):
     def __init__(self, air):
@@ -19,11 +20,9 @@ class DistributedAvatarAI(DistributedSmoothNodeAI):
     def getName(self):
         return self.name
 
-
 class FriendEntry(NamedTuple):
     doId: int
     trueFriend: bool
-
 
 class DistributedPlayerAI(DistributedAvatarAI):
     def __init__(self, air):
@@ -33,12 +32,18 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.DISLid = 0
         self.access = 0
         self.friendsList: List[FriendEntry] = []
+        self.defaultZone = 0
+        self.lastHood = 0
+        self.hoodsVisited = []
 
     def setAccountName(self, name):
         self.accountName = name
 
     def getAccountName(self):
         return self.accountName
+
+    def setFriendsList(self, friendsList):
+        self.friendsList = friendsList
 
     def getFriendsList(self):
         return self.friendsList
@@ -67,15 +72,16 @@ class DistributedPlayerAI(DistributedAvatarAI):
 
     def extendFriendsList(self, friendId: int, trueFriend: bool):
         for i, entry in enumerate(self.friendsList):
-            if entry.doId == friendId:
+            if entry[0] == friendId:
                 self.friendsList[i] = FriendEntry(friendId, trueFriend)
                 return
 
         self.friendsList.append(FriendEntry(friendId, trueFriend))
 
+    def d_setSystemMessage(self, aboutId: int, chatString: ''):
+        self.sendUpdate('setSystemMessage', [aboutId, chatString])
 
 MAX_NPC_FRIENDS_FLAG = 1 << 15
-
 
 class DistributedToonAI(DistributedPlayerAI):
     STREET_INTEREST_HANDLE = (1 << 15) + 1
@@ -94,6 +100,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.trackBonusLevel = [-1, -1, -1, -1, -1, -1, -1]
         self.experience = Experience()
         self.inventory = Inventory()
+        self.fishTank = FishTank()
         self.maxNPCFriends = 8
         self.npcFriends: Dict[int, int] = {}
         self.pinkSlips = 0
@@ -277,8 +284,19 @@ class DistributedToonAI(DistributedPlayerAI):
     def getDefaultShard(self):
         return 0
 
+    def setDefaultZone(self, zone: int):
+        self.defaultZone = zone
+
+    def d_setDefaultZone(self, zone: int):
+        self.sendUpdate('setDefaultZone', [zone])
+
+    def b_setDefaultZone(self, zone: int):
+        if zone != self.defaultZone:
+            self.setDefaultZone(zone)
+            self.d_setDefaultZone(zone)
+
     def getDefaultZone(self):
-        return 2000
+        return self.defaultZone
 
     def getShtickerBook(self):
         return b''
@@ -286,14 +304,32 @@ class DistributedToonAI(DistributedPlayerAI):
     def getZonesVisited(self):
         return []
 
+    def b_setHoodsVisited(self, hoodsVisited: list):
+        self.hoodsVisited = hoodsVisited
+        self.d_setHoodsVisited(hoodsVisited)
+
+    def d_setHoodsVisited(self, hoodsVisited: list):
+        self.sendUpdate('setHoodsVisited', [hoodsVisited])
+
     def getHoodsVisited(self):
-        return []
+        return self.hoodsVisited
 
     def getInterface(self):
         return b''
 
+    def setLastHood(self, hood: int):
+        self.lastHood = hood
+
+    def d_setLastHood(self, hood: int):
+        self.sendUpdate('setLastHood', [hood])
+
+    def b_setLastHood(self, hood: int):
+        if hood != self.lastHood:
+            self.setLastHood(hood)
+            self.d_setLastHood(hood)
+
     def getLastHood(self):
-        return 0
+        return self.lastHood
 
     def getTutorialAck(self):
         return 1
@@ -433,8 +469,26 @@ class DistributedToonAI(DistributedPlayerAI):
     def getMaxFishTank(self):
         return 20
 
+    def setInventory(self, inventory):
+        self.inventory = Inventory.fromBytes(inventory)
+        self.inventory.toon = self
+
+    def getInventory(self):
+        return self.inventory.makeNetString()
+
+    def b_setFishTank(self, genusList, speciesList, weightList):
+        self.setFishTank(genusList, speciesList, weightList)
+        self.d_setFishTank(genusList, speciesList, weightList)
+
+    def d_setFishTank(self, genusList, speciesList, weightList):
+        self.sendUpdate("setFishTank", [genusList, speciesList, weightList])
+
+    def setFishTank(self, genusList, speciesList, weightList):
+        self.fishTank = FishTank()
+        self.fishTank.makeFromNetLists(genusList, speciesList, weightList)
+
     def getFishTank(self):
-        return [], [], []
+        return self.fishTank.getNetLists()
 
     def getFishingRod(self):
         return 0
@@ -550,18 +604,33 @@ class DistributedToonAI(DistributedPlayerAI):
     def getNametagStyle(self):
         return 0
 
-    def handleZoneChange(self, old_zone: int, new_zone: int):
+    def getHoodId(self, zoneId):
+        return zoneId - zoneId % 1000
+
+    def handleZoneChange(self, oldZone: int, newZone: int):
         channel = getPuppetChannel(self.do_id)
 
-        if old_zone in self.air.vismap and new_zone not in self.air.vismap:
+        if oldZone in self.air.vismap and newZone not in self.air.vismap:
             self.air.removeInterest(channel, DistributedToonAI.STREET_INTEREST_HANDLE, 0)
-        elif new_zone in self.air.vismap:
-            visibles = self.air.vismap[new_zone][:]
-            if len(visibles) == 1 and visibles[0] == new_zone:
+        elif newZone in self.air.vismap:
+            visibles = self.air.vismap[newZone][:]
+            if len(visibles) == 1 and visibles[0] == newZone:
                 # Playground visgroup, ignore
                 return
             self.air.setInterest(channel, DistributedToonAI.STREET_INTEREST_HANDLE, 0, self.parentId, visibles)
 
+        # TODO: Should this be handled somewhere else?
+        if 100 <= newZone < ToontownGlobals.DynamicZonesBegin:
+            hood = self.getHoodId(newZone)
+
+            self.b_setLastHood(hood)
+            self.b_setDefaultZone(hood)
+
+            hoodsVisited = list(self.getHoodsVisited())
+
+            if hood not in hoodsVisited:
+                hoodsVisited.append(hood)
+                self.b_setHoodsVisited(hoodsVisited)
 
 class Inventory:
     __slots__ = 'inventory', 'toon'
@@ -680,9 +749,75 @@ class Inventory:
                 continue
             self[i] = 0
 
-
 from ai import OTPGlobals
 
+class FishTank:
+    __slots__ = 'fishList'
+
+    def __init__(self):
+        self.fishList: List[FishBase] = []
+
+    def __len__(self):
+        return len(self.fishList)
+
+    def getFish(self):
+        return self.fishList
+
+    def makeFromNetLists(self, genusList, speciesList, weightList):
+        self.fishList: List[FishBase] = []
+        for genus, species, weight in zip(genusList, speciesList, weightList):
+            self.fishList.append(FishBase(genus, species, weight))
+
+    def getNetLists(self):
+        genusList = []
+        speciesList = []
+        weightList = []
+        for fish in self.fishList:
+            genusList.append(fish.getGenus())
+            speciesList.append(fish.getSpecies())
+            weightList.append(fish.getWeight())
+        return [genusList, speciesList, weightList]
+
+    def hasFish(self, genus, species):
+        for fish in self.fishList:
+            if (fish.getGenus() == genus) and (fish.getSpecies() == species):
+                return 1
+        return 0
+
+    def hasBiggerFish(self, genus, species, weight):
+        for fish in self.fishList:
+            if ((fish.getGenus() == genus) and
+                (fish.getSpecies() == species) and
+                (fish.getWeight() >= weight)):
+                return 1
+        return 0
+
+    def addFish(self, fish):
+        self.fishList.append(fish)
+        return 1
+
+    def removeFishAtIndex(self, index):
+        if index >= len(self.fishList):
+            return 0
+        else:
+            del self.fishList[i]
+            return 1
+
+    def getTotalValue(self):
+        value = 0
+        for fish in self.fishList:
+            value += fish.getValue()
+        return value
+
+    def __str__(self):
+        numFish = len(self.fishList)
+        value = 0
+        txt = ("Fish Tank (%s fish):" % (numFish))
+        for fish in self.fishList:
+            txt += ("\n" + str(fish))
+            value += fish.getValue()
+        txt += ("\nTotal value: %s" % (value))
+        return txt
 
 class Experience:
     __slots__ = 'experience', 'toon'

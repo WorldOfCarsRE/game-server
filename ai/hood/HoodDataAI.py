@@ -2,8 +2,9 @@ from ai.ToontownGlobals import *
 from typing import List, Dict, Union, Optional
 from ai.DistributedObjectAI import DistributedObjectAI
 from dna.dnaparser import load_dna_file, DNAStorage
-from dna.objects import DNAGroup
+from dna.objects import DNAGroup, DNAVisGroup
 from ai.toon import NPCToons
+from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 from ai.safezone import ButterflyGlobals
 from ai.safezone.DistributedButterflyAI import DistributedButterflyAI
 from ai.trolley.DistributedTrolleyAI import DistributedTrolleyAI
@@ -11,6 +12,7 @@ from ai.suit.DistributedSuitPlannerAI import DistributedSuitPlannerAI
 from .Treasures import *
 from typing import Type
 
+# TODO: maybe add dist obj stuff
 
 DNA_MAP = {
     DonaldsDock: 'donalds_dock_sz.dna',
@@ -41,7 +43,6 @@ DNA_MAP = {
     CashbotHQ: 'cog_hq_cashbot_sz.dna',
     LawbotHQ: 'cog_hq_lawbot_sz.dna',
 }
-
 
 class PlaceAI:
     def __init__(self, air, zone_id):
@@ -87,16 +88,16 @@ class HQBuildingAI(object):
     def __init__(self, air, exteriorZone, interiorZone, block):
         self.interior = DistributedHQInteriorAI(block, air, interiorZone)
         self.interior.generateWithRequired(interiorZone)
-        
+
         door0 = DistributedDoorAI(air, block, DoorTypes.EXT_HQ, doorIndex=0)
         door0.zoneId = exteriorZone
-        
+
         door1 = DistributedDoorAI(air, block, DoorTypes.EXT_HQ, doorIndex=1)
         door1.zoneId = exteriorZone
 
         insideDoor0 = DistributedDoorAI(air, block, DoorTypes.INT_HQ, doorIndex=0)
         insideDoor0.zoneId = interiorZone
-        
+
         insideDoor1 = DistributedDoorAI(air, block, DoorTypes.INT_HQ, doorIndex=1)
         insideDoor1.zoneId = interiorZone
 
@@ -109,7 +110,7 @@ class HQBuildingAI(object):
         door1.generateWithRequired(exteriorZone)
         insideDoor0.generateWithRequired(interiorZone)
         insideDoor1.generateWithRequired(interiorZone)
-        
+
         self.door0 = door0
         self.door1 = door1
         self.insideDoor0 = insideDoor0
@@ -174,6 +175,7 @@ from ai.building.DistributedBuildingAI import DistributedBuildingAI
 
 
 class SafeZoneAI(PlaceAI):
+
     def __init__(self, air, zone_id):
         PlaceAI.__init__(self, air, zone_id)
         self.buildings: Dict[int, object] = {}
@@ -221,6 +223,28 @@ class SafeZoneAI(PlaceAI):
                 visibles.append(self.zone_id)
             self.air.vismap[zone] = tuple(visibles)
 
+        pondName2Do = {}
+
+        for pondName in self.storage.ponds:
+            group = self.storage.groups[pondName]
+            visName = group.get_vis_group().name
+            if ':' in visName:
+                zoneId = int(visName.split(':')[0])
+            else:
+                zoneId = int(visName)
+
+            pond = DistributedFishingPondAI(self.air, self.zone_id)
+            pond.generateWithRequired(zoneId)
+            pondName2Do[pondName] = pond
+            
+        for dnaspot in self.storage.spots:
+            group = dnaspot.get_group()
+            pondName = dnaspot.get_pond_name()
+            pond = pondName2Do[pondName]  
+            spot = DistributedFishingSpotAI(self.air, pond, group.get_pos_hpr())
+            spot.generateWithRequired(pond.zoneId)
+
+        del pondName2Do
 
 class StreetAI(SafeZoneAI):
     def __init__(self, air, zone_id):

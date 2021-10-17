@@ -7,7 +7,6 @@ import random
 from ai.hood.Treasures import TagTreasurePlanner
 from typing import Optional
 
-
 class DistributedTagGameAI(DistributedMinigameAI):
     MINIGAME_ID = TagGameId
     DURATION = 60

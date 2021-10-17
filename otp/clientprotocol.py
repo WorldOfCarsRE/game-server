@@ -207,6 +207,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                     self.service.log.debug(f'Unexpected field update for do_id {do_id} during avatar chooser.')
             elif msgtype == CLIENT_DELETE_AVATAR:
                 self.receive_delete_avatar(dgi)
+            elif msgtype == CLIENT_SET_WISHNAME_CLEAR:
+                self.receiveSetWishNameClear(dgi)
             else:
                 self.service.log.debug(f'Unexpected message type during avatar chooser {msgtype}.')
         elif self.state == ClientState.CREATING_AVATAR:
@@ -301,22 +303,17 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def receive_get_friend_list(self, dgi):
         self.service.log.debug(f'Friend list query received from {self.channel}')
-        error = 0
-
-        count = 0
 
         # Friend Structure
-        # uint32 do_id
+        # uint32 doId
         # string name
-        # string dna_string
-        # uint32 pet_id
+        # string dnaString
+        # uint32 petId
 
-        resp = Datagram()
-        resp.add_uint16(CLIENT_GET_FRIEND_LIST_RESP)
-        resp.add_uint8(error)
-        resp.add_uint16(count)
-
-        self.send_datagram(resp)
+        query = Datagram()
+        query.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_FRIENDS)
+        query.add_uint32(self.avatar_id)
+        self.service.send_datagram(query)
 
     def receive_set_avatar(self, dgi):
         av_id = dgi.get_uint32()
@@ -425,6 +422,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         default_toon['setDISLid'] = (self.account.disl_id,)
         default_toon['WishName'] = ('',)
         default_toon['WishNameState'] = ('CLOSED',)
+        default_toon['setAccountName'] = (self.account.username,)
 
         count = 0
         for field in dclass.inherited_fields:
@@ -967,7 +965,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp = Datagram()
         resp.add_uint16(CLIENT_GET_AVATAR_DETAILS_RESP)
         resp.add_uint32(self.avatar_id)
-        resp.add_uint8(0)  # Return code
+        resp.add_uint8(0) # Return code
         resp.add_bytes(dgi.remaining_bytes())
         self.send_datagram(resp)
 
@@ -1147,3 +1145,14 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def annihilate(self):
         self.service.upstream.unsubscribe_all(self)
+
+    def receiveSetWishNameClear(self, dgi):
+        avatarId = dgi.get_uint32()
+        actionFlag = dgi.get_uint8()
+
+        # Send this to the Database server.
+        resp = Datagram()
+        resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
+        resp.add_uint32(avatarId)
+        resp.add_uint8(actionFlag)
+        self.service.send_datagram(resp)
