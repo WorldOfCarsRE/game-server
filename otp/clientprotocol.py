@@ -303,22 +303,17 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def receive_get_friend_list(self, dgi):
         self.service.log.debug(f'Friend list query received from {self.channel}')
-        error = 0
-
-        count = 0
 
         # Friend Structure
-        # uint32 do_id
+        # uint32 doId
         # string name
-        # string dna_string
-        # uint32 pet_id
+        # string dnaString
+        # uint32 petId
 
-        resp = Datagram()
-        resp.add_uint16(CLIENT_GET_FRIEND_LIST_RESP)
-        resp.add_uint8(error)
-        resp.add_uint16(count)
-
-        self.send_datagram(resp)
+        query = Datagram()
+        query.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_FRIENDS)
+        query.add_uint32(self.avatar_id)
+        self.service.send_datagram(query)
 
     def receive_set_avatar(self, dgi):
         av_id = dgi.get_uint32()
@@ -970,7 +965,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp = Datagram()
         resp.add_uint16(CLIENT_GET_AVATAR_DETAILS_RESP)
         resp.add_uint32(self.avatar_id)
-        resp.add_uint8(0)  # Return code
+        resp.add_uint8(0) # Return code
         resp.add_bytes(dgi.remaining_bytes())
         self.send_datagram(resp)
 

@@ -27,6 +27,8 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handle_set_stored_values(sender, dgi)
         elif msg_id == DBSERVER_WISHNAME_CLEAR:
             self.handleClearWishName(dgi)
+        elif msg_id == DBSERVER_GET_FRIENDS:
+            self.handleGetFriends(dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
 
@@ -82,8 +84,13 @@ class DBServerProtocol(MDUpstreamProtocol):
         actionFlag = dgi.get_uint8()
         self.service.loop.create_task(self.service.handleClearWishName(avatarId, actionFlag))
 
+    def handleGetFriends(self, dgi):
+        avatarId = dgi.get_uint32()
+        self.service.loop.create_task(self.service.queryFriends(avatarId))
+
 from dc.parser import parse_dc_file
 from otp.dbbackend import MongoBackend, OTPCreateFailed
+from otp.util import getPuppetChannel
 from dc.util import Datagram
 
 class DBServer(DownstreamMessageDirector):
@@ -220,6 +227,37 @@ class DBServer(DownstreamMessageDirector):
 
         # Set the fields in the database.
         await self.set_stored_values(avatarId, fields)
+
+    async def queryFriends(self, avatarId):
+        fields = await self.backend.query_object_fields(avatarId, ['setFriendsList'], 'DistributedToon')
+        friendsList = fields['setFriendsList'][0]
+
+        dg = Datagram()
+        dg.add_server_header([getPuppetChannel(avatarId)], DBSERVERS_CHANNEL, CLIENT_GET_FRIEND_LIST_RESP)
+        dg.add_uint8(0) # errorCode
+
+        count = 0
+        friendData = {}
+
+        for i in range(0, len(friendsList)):
+            friendId = friendsList[i][0]
+
+            friend = await self.backend.query_object_fields(friendId, ['setName', 'setDNAString', 'setPetId'], 'DistributedToon')
+            friendData[count] = [friendId, friend['setName'][0], friend['setDNAString'][0], friend['setPetId'][0]]
+            count += 1
+
+        dg.add_uint16(count)
+
+        for i in friendData:
+            friend = friendData[i]
+
+            dg.add_uint32(friend[0]) # friendId
+            dg.add_string16(friend[1].encode()) # setName
+            dg.add_string16(friend[2]) # setDNAString
+            dg.add_uint32(friend[3]) # setPetId
+
+        # Send the response to the client.
+        self.send_datagram(dg)
 
     async def query_account(self, sender, do_id):
         dclass = self.dc.namespace['Account']
