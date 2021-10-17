@@ -80,6 +80,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main(), debug=True)
-
-#Shared ciphers:EDH-RSA-DES-CBC3-SHA:EDH-DSS-DES-CBC3-SHA:DES-CBC3-SHA:IDEA-CBC-SHA:RC4-SHA:RC4-MD5
-#CIPHER is EDH-RSA-DES-CBC3-SHA
