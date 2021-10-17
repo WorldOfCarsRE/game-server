@@ -120,8 +120,6 @@ async def handle_login(request):
         print(f'Creating new account for {username}...')
         info = await create_new_account(username, password, pool)
 
-    print(info['salt'])
-
     cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'].encode(), 10000)
 
     if cmp_hash != binascii.a2b_base64(info['hash']):
@@ -134,8 +132,6 @@ async def handle_login(request):
     del info['hash']
     del info['salt']
     del info['_id']
-
-    print('info', info)
 
     # Now make the token.
 
@@ -161,7 +157,7 @@ async def handle_login(request):
         'message': f'Welcome back, {username}.'
     }
 
-    print('sending reponse', response)
+    print('sending response', response)
 
     return web.json_response(response)
 
@@ -242,9 +238,9 @@ async def handle_auth_delete(request):
     if not info:
         return web.Response()
 
-    cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'], iterations=101337)
+    cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'].encode(), 10000)
 
-    if cmp_hash != info['hash']:
+    if cmp_hash != binascii.a2b_base64(info['hash']):
         print('hashes dont match', cmp_hash, info['hash'], len(info['hash']))
         return web.Response(text='ACCOUNT SERVER RESPONSE\n\nerrorCode=20\nerrorMsg=bad password')
 
