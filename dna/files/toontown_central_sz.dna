@@ -6,7 +6,7 @@ group "toontownCentral" [
    pos [ -124 -77.5 0.525 ]
    nhpr [ -15 0 0 ]
   ]
-  node "fishing_pond_1" [
+  group "fishing_pond_1" [
    prop "npc_fisherman_origin_0" [
     code [ "DCS" ]
     pos [ -68 -2 -1.975 ]
