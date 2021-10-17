@@ -56,7 +56,13 @@ class ToontownDistrictAI(DistributedDistrictAI):
 
     def handleChildArrive(self, obj, zoneId):
         if isinstance(obj, DistributedToonAI):
-            obj.sendUpdate('arrivedOnDistrict', [self.do_id, ])
+            obj.sendUpdate('arrivedOnDistrict', [self.do_id])
+            self.air.incrementPopulation()
+
+    def handleChildLeave(self, obj, zoneId):
+        if isinstance(obj, DistributedToonAI):
+            obj.sendUpdate('arrivedOnDistrict', [0])
+            self.air.decrementPopulation()
 
 class ToontownDistrictStatsAI(DistributedObjectAI):
     def __init__(self, air):
@@ -104,7 +110,6 @@ class ToontownDistrictStatsAI(DistributedObjectAI):
     def getNewAvatarCount(self):
         return self.newAvatarCount
 
-
 class DistributedInGameNewsMgrAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
@@ -113,7 +118,6 @@ class DistributedInGameNewsMgrAI(DistributedObjectAI):
 
     def getLatestIssueStr(self):
         return self.latest_issue
-
 
 @with_slots
 @dataclass
@@ -124,7 +128,6 @@ class WeeklyHoliday:
     def __iter__(self):
         yield self.holidayId
         yield self.weekday
-
 
 @with_slots
 @dataclass
@@ -139,7 +142,6 @@ class YearlyHoliday:
         yield self.holidayId
         yield (self.startMonth, self.startDay)
         yield (self.endMonth, self.endDay)
-
 
 @with_slots
 @dataclass

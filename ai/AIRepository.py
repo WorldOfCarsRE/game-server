@@ -343,13 +343,13 @@ class AIRepository:
         dg.add_channel(self.ourChannel)
         self.send(dg)
 
-        stats = ToontownDistrictStatsAI(self)
-        stats.settoontownDistrictId(self.district.do_id)
-        self.generateWithRequired(stats, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS_STATS)
+        self.stats = ToontownDistrictStatsAI(self)
+        self.stats.settoontownDistrictId(self.district.do_id)
+        self.generateWithRequired(self.stats, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS_STATS)
 
         dg = Datagram()
         dg.add_server_header([STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
-        dg.add_uint32(stats.do_id)
+        dg.add_uint32(self.stats.do_id)
         dg.add_channel(self.ourChannel)
         self.send(dg)
 
@@ -411,3 +411,9 @@ class AIRepository:
 
     def getAvatarDisconnectReason(self, avId):
         return self.timeManager.disconnectCodes.get(avId)
+
+    def incrementPopulation(self):
+        self.stats.b_setAvatarCount(self.stats.getAvatarCount() + 1)
+
+    def decrementPopulation(self):
+        self.stats.b_setAvatarCount(self.stats.getAvatarCount() - 1)
