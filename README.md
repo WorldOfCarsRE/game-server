@@ -9,6 +9,7 @@ The AI server is rewritten from scratch to take advantage of Python 3 features a
 The base of this project is [here](https://github.com/alexanderr/OpenOTP).
 
 ## Python Dependencies
+* [pydc](https://github.com/alexanderr/pydc)
 * [lark](https://github.com/lark-parser/lark)
 * [uvloop](https://github.com/MagicStack/uvloop) (optional)
 * aiohttp
