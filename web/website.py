@@ -71,7 +71,7 @@ async def handle_login(request):
     print(request.method, request.path, request.query)
     args = await request.post()
 
-    username = args.get('u')
+    username = args.get('u').lower()
 
     if not username:
         data = {
