@@ -65,11 +65,20 @@ MinigamePlayerMatrix = {
 
 
 def createMinigame(air, players: List[int], newbies: List[int], trolleyZone: int, zone: Optional[int] = None):
+    import random
+
     if zone is None:
         zone = acquireZone()
+        
+    # numPlayers = len(players)
+    # mgId = random.choice(MinigamePlayerMatrix[numPlayers])
 
     from . import DistributedTagGameAI
-    mg = DistributedTagGameAI.DistributedTagGameAI(air, players, trolleyZone)
+    from . import DistributedRingGameAI
+    if random.random() <= 0.5:
+        mg = DistributedRingGameAI.DistributedRingGameAI(air, players, trolleyZone)
+    else:
+        mg = DistributedTagGameAI.DistributedTagGameAI(air, players, trolleyZone)
     mg.newbies = newbies
     mg.generateWithRequired(zone)
 

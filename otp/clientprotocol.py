@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import List, Union, Dict, Tuple
 
-
 from Crypto.Cipher import AES
 from dataslots import with_slots
 from dc.objects import MolecularField
@@ -18,7 +17,6 @@ from otp.zone import *
 from otp.constants import *
 from otp.util import *
 
-
 class NamePart(IntEnum):
     BOY_TITLE = 0
     GIRL_TITLE = 1
@@ -29,7 +27,6 @@ class NamePart(IntEnum):
     CAP_PREFIX = 6
     LAST_PREFIX = 7
     LAST_SUFFIX = 8
-
 
 @with_slots
 @dataclass
@@ -42,7 +39,6 @@ class PotentialAvatar:
     dna_string: str
     index: int
 
-
 class ClientState(IntEnum):
     NEW = 0
     ANONYMOUS = 1
@@ -51,7 +47,6 @@ class ClientState(IntEnum):
     CREATING_AVATAR = 4
     SETTING_AVATAR = 5
     PLAY_GAME = 6
-
 
 class ClientDisconnect(IntEnum):
     INTERNAL_ERROR = 1
@@ -65,7 +60,6 @@ class ClientDisconnect(IntEnum):
     PERIOD_EXPIRED = 288
     PERIOD_EXPIRED2 = 349
 
-
 @with_slots
 @dataclass
 class PendingObject:
@@ -74,7 +68,6 @@ class PendingObject:
     parent_id: int
     zone_id: int
     datagrams: list
-
 
 class Interest:
     def __init__(self, client, handle, context, parent_id, zones):
@@ -87,9 +80,7 @@ class Interest:
         self.ai = False
         self.pending_objects: List[int] = []
 
-
 OTP_DO_ID_TOONTOWN = 4618
-
 
 @with_slots
 @dataclass
@@ -99,9 +90,7 @@ class ObjectInfo:
     parent_id: int
     zone_id: int
 
-
 CLIENTAGENT_SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
-
 
 @with_slots
 @dataclass
@@ -113,7 +102,6 @@ class DISLAccount:
     create_friends_with_chat: bytes
     chat_code_creation_rule: bytes
     whitelist_chat_enabled: bytes
-
 
 class ClientProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):
@@ -728,7 +716,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp = Datagram()
         resp.add_uint16(CLIENT_GET_AVATARS_RESP)
         dgi.seek(pos)
-        resp.add_uint8(0)  # Return code
+        resp.add_uint8(0) # Return code
         resp.add_bytes(dgi.remaining_bytes())
         self.send_datagram(resp)
 

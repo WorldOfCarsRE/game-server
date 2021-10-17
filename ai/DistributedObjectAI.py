@@ -1,13 +1,11 @@
 from otp.util import getPuppetChannel, getAccountChannel
 from direct.showbase.DirectObject import DirectObject
 
-
 from . import AIRepository
 
 from .AIZoneData import AIZoneData
 from typing import Optional
 from collections import deque
-
 
 class DistributedObjectAI(DirectObject):
     QUIET_ZONE = 1
