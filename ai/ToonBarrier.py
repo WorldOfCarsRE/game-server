@@ -1,7 +1,6 @@
 from direct.showbase.DirectObject import DirectObject
 from typing import List
 
-
 class ToonBarrier(DirectObject):
     def __init__(self, uniqueName, avIds, timeout, doneFunc, timeoutFunc=None, extraArgs=None):
         self.uniqueName = f'{uniqueName}-barrier'

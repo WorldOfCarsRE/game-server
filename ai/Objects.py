@@ -2,6 +2,7 @@ import time
 
 from .DistributedObjectAI import DistributedObjectAI
 from ai.toon.DistributedToonAI import DistributedToonAI
+from ai.toon.DistributedToonAI import DistributedPlayerAI
 from typing import List, Optional, Dict
 from dataslots import with_slots
 from dataclasses import dataclass
@@ -425,7 +426,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
     def __init__(self, air):
         MagicWordManagerAI.__init__(self, air)
 
-    def checkArguments(self, avId: int, magicWord: str, function, args):
+    def checkArguments(self, avId: int, magicWord: str, function, args) -> bool:
         fArgs = function.__code__.co_argcount - 1
         argCount = len(args)
 
@@ -446,14 +447,16 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
     def sendResponseMessage(self, avId: int, message: str):
         self.sendUpdateToAvatar(avId, 'setMagicWordResponse', [message])
 
-    def sendSystemMessage(self, av, msg: str):
+    def sendSystemMessage(self, av, msg: str) -> str:
         if msg == '':
             return
 
-        self.air.newsManager.d_sendSystemMessage(msg)
+        for doId, do in list(self.air.doTable.items()):
+            if isinstance(do, DistributedPlayerAI):
+                if str(doId)[0] != str(self.air.district.do_id)[0]:
+                    do.d_setSystemMessage(0, msg)
 
-        response = 'Sent system message!'
-        self.sendResponseMessage(av.do_id, response)
+        return 'Broadcasted message to everyone on this shard.'
 
     def setMagicWord(self, magicWord, avId, zoneId, signature):
         avId = self.air.currentAvatarSender
@@ -489,12 +492,16 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
             # We can ignore this.
             return
 
+        response = ''
+
         if magicWord in ('system', 'smsg'):
-            self.sendSystemMessage(av, msg = string)
+            response = self.sendSystemMessage(av, msg = string)
         else:
-            self.sendResponseMessage(avId, '{0} is not a valid Magic Word.'.format(magicWord))
+            response = '{0} is not a valid Magic Word.'.format(magicWord)
             print('Unknown Magic Word: {0} from avId: {1}!'.format(magicWord, avId))
-            return
+
+        # Send our response to the client.
+        self.sendResponseMessage(avId, response)
 
 @with_slots
 @dataclass

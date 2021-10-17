@@ -53,10 +53,10 @@ class DistributedMinigameAI(DistributedObjectAI, FSM):
 
     def getParticipants(self):
         return self.participants
-        
+
     def getNumParticipants(self):
         return len(self.getParticipants())
-        
+
     def isSinglePlayer(self):
         return self.getNumParticipants() == 1
 

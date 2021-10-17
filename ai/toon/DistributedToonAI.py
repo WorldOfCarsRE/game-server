@@ -75,6 +75,9 @@ class DistributedPlayerAI(DistributedAvatarAI):
 
         self.friendsList.append(FriendEntry(friendId, trueFriend))
 
+    def d_setSystemMessage(self, aboutId: int, chatString: ''):
+        self.sendUpdate('setSystemMessage', [aboutId, chatString])
+
 MAX_NPC_FRIENDS_FLAG = 1 << 15
 
 class DistributedToonAI(DistributedPlayerAI):
