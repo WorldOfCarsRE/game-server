@@ -274,7 +274,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.sendUpdate('setOccupied', [avId])
 
     def doCast(self, power, heading):
-        senderId = self.air.getAvatarIdFromSender()
+        senderId = self.air.currentAvatarSender
         if self.avId != senderId:
             return
         if power <= 0 or power > 1:
@@ -298,7 +298,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
             return
 
         sender.b_setMoney(money - castCost)
-        self.d_setMoney(FishMovies.CastMovie, power=power, h=heading)
+        self.d_setMovie(FishMovies.CastMovie, power=power, h=heading)
         self.__startTimeout(self.TIMEOUT)
 
     def hitTarget(self, code, item):
