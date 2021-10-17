@@ -92,7 +92,7 @@ class DBServer(DownstreamMessageDirector):
 
         self.pool = None
 
-        self.dc = parse_dc_file('toon.dc')
+        self.dc = parse_dc_file('etc/dclass/toon.dc')
 
         self.backend = MongoBackend(self)
 

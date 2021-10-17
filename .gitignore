@@ -222,7 +222,6 @@ dkms.conf
 # Phase files
 web/content/*.mf
 
-
 logs/*
 !logs/.gitkeep
 tests/_trial_temp
@@ -231,3 +230,7 @@ tests/_trial_temp
 
 # Python Path
 PYTHON_PATH
+
+# Keys
+etc/*.key
+etc/*.cert

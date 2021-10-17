@@ -184,7 +184,7 @@ class FriendManagerUD(Uberdog):
 
 async def main():
     import builtins
-    builtins.dc = parse_dc_file('toon.dc')
+    builtins.dc = parse_dc_file('etc/dclass/toon.dc')
 
     loop = asyncio.get_running_loop()
     central_logger = CentralLoggerUD(loop)
