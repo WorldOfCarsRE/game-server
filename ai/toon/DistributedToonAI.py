@@ -7,6 +7,7 @@ from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
 from ai import ToontownGlobals
 from ai.fishing.FishBase import FishBase
+from ai.fishing.FishCollectionEnum import *
 
 class DistributedAvatarAI(DistributedSmoothNodeAI):
     def __init__(self, air):
@@ -100,6 +101,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.trackBonusLevel = [-1, -1, -1, -1, -1, -1, -1]
         self.experience = Experience()
         self.inventory = Inventory()
+        self.fishCollection = FishCollection()
         self.fishTank = FishTank()
         self.maxNPCFriends = 8
         self.npcFriends: Dict[int, int] = {}
@@ -463,8 +465,19 @@ class DistributedToonAI(DistributedPlayerAI):
     def getPosIndex(self):
         return 0
 
+    def b_setFishCollection(self, genusList, speciesList, weightList):
+        self.setFishCollection(genusList, speciesList, weightList)
+        self.d_setFishCollection(genusList, speciesList, weightList)
+
+    def d_setFishCollection(self, genusList, speciesList, weightList):
+        self.sendUpdate("setFishCollection", [genusList, speciesList, weightList])
+
+    def setFishCollection(self, genusList, speciesList, weightList):
+        self.fishCollection = FishCollection()
+        self.fishCollection.makeFromNetLists(genusList, speciesList, weightList)
+
     def getFishCollection(self):
-        return [], [], []
+        return self.fishCollection.getNetLists()
 
     def getMaxFishTank(self):
         return 20
@@ -489,6 +502,15 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getFishTank(self):
         return self.fishTank.getNetLists()
+        
+    def addFishToTank(self, fish):
+        numFish = len(self.fishTank)
+        if numFish >= self.getMaxFishTank():
+            return 0
+        if self.fishTank.addFish(fish):
+            self.d_setFishTank(*self.getFishTank())
+            return 1
+        return 0            
 
     def getFishingRod(self):
         return 0
@@ -751,6 +773,76 @@ class Inventory:
 
 from ai import OTPGlobals
 
+class FishCollection:
+    __slots__ = 'fishList'
+
+    def __init__(self):
+        self.fishList: List[FishBase] = []
+
+    def __len__(self):
+        return len(self.fishList)
+
+    def getFish(self):
+        return self.fishList
+    
+    def makeFromNetLists(self, genusList, speciesList, weightList):
+        self.fishList: List[FishBase] = []
+        for genus, species, weight in zip(genusList, speciesList, weightList):
+            self.fishList.append(FishBase(genus, species, weight))        
+
+    def getNetLists(self):
+        """
+        Return lists formated for toon.dc style setting and getting
+        We store parallel lists of genus, species, and weight in the db
+        """
+        genusList = []
+        speciesList = []
+        weightList = []
+        for fish in self.fishList:
+            genusList.append(fish.getGenus())
+            speciesList.append(fish.getSpecies())
+            weightList.append(fish.getWeight())
+        return [genusList, speciesList, weightList]
+
+    def hasFish(self, genus, species):
+        for fish in self.fishList:
+            if (fish.getGenus() == genus) and (fish.getSpecies() == species):
+                return 1
+        return 0
+
+    def hasGenus(self, genus):
+        for fish in self.fishList:
+            if (fish.getGenus() == genus):
+                return 1
+        return 0
+
+    def __collect(self, newFish, updateCollection):
+        for fish in self.fishList:
+            if ((fish.getGenus() == newFish.getGenus()) and
+                (fish.getSpecies() == newFish.getSpecies())):
+                if (fish.getWeight() < newFish.getWeight()):
+                    if updateCollection:
+                        fish.setWeight(newFish.getWeight())
+                    return COLLECT_NEW_RECORD
+                else:
+                    return COLLECT_NO_UPDATE
+        if updateCollection:
+            self.fishList.append(newFish)
+        return COLLECT_NEW_ENTRY
+
+    def collectFish(self, newFish):
+        return self.__collect(newFish, updateCollection=1)
+
+    def getCollectResult(self, newFish):
+        return self.__collect(newFish, updateCollection=0)
+
+    def __str__(self):
+        numFish = len(self.fishList)
+        txt = ("Fish Collection (%s fish):" % (numFish))
+        for fish in self.fishList:
+            txt += ("\n" + str(fish))
+        return txt
+
 class FishTank:
     __slots__ = 'fishList'
 
@@ -777,20 +869,14 @@ class FishTank:
             speciesList.append(fish.getSpecies())
             weightList.append(fish.getWeight())
         return [genusList, speciesList, weightList]
-
-    def hasFish(self, genus, species):
+        
+    def hasFish(self, genus, species, weight):
         for fish in self.fishList:
             if (fish.getGenus() == genus) and (fish.getSpecies() == species):
-                return 1
-        return 0
-
-    def hasBiggerFish(self, genus, species, weight):
-        for fish in self.fishList:
-            if ((fish.getGenus() == genus) and
-                (fish.getSpecies() == species) and
-                (fish.getWeight() >= weight)):
-                return 1
-        return 0
+                if fish.getWeight() >= weight:
+                    return (1, 1)
+                return (1, 0)
+        return (0, 0)
 
     def addFish(self, fish):
         self.fishList.append(fish)

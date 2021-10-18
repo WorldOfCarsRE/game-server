@@ -14,3 +14,10 @@ class FishBase:
 
     def getWeight(self):
         return self.weight
+
+    def getVitals(self):
+        return(
+            self.getGenus(),
+            self.getSpecies(),
+            self.getWeight()
+        )

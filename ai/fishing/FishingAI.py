@@ -3,9 +3,11 @@ from ai.DistributedNodeAI import DistributedNodeAI
 from typing import Optional, Dict, NamedTuple
 from direct.fsm.FSM import FSM
 from ai import ToontownGlobals
-from ai.fishing import FishBase
+from ai.fishing.FishBase import FishBase
+from ai.fishing.FishCollectionEnum import *
 import random
 import math
+import copy
 
 class FishingTargetGlobals:
     OFF = 0
@@ -88,55 +90,83 @@ class FishItems:
     FishItemNewEntry = 9
     FishItemNewRecord = 10
     item2Chance = {
-      JellybeanItem: 100,
-      FishItem: 0,
-      BootItem: 0
-    }
-    """
-    item2Chance = {
       FishItem: 93,
       JellybeanItem: 94,
       BootItem: 100,
     }
-    """
+    
+class FishingRod(NamedTuple):
+    weightMin: int
+    weightMax: int
+    rarity: float
+    castCost: int
+    jellybeanReward: int
 
 class FishProperties(NamedTuple):
     weightMin: int
     weightMax: int
     rarity: int
     zoneList: tuple
+    
+class RarityHandler:
+    
+    def getEffectiveRarity(rarity, maxRarity, offset):
+        if rarity + (offset) > maxRarity:
+            return maxRarity
+        return rarity + (offset)
+        
+class WeightHandler:
+        
+    def getWeightRange(fishes, genus, species):
+        fishInfo = fishes[genus][species]
+        return (fishInfo.weightMin, fishInfo.weightMax)
+        
+    def getRodWeightRange(rodDict, rodIndex):
+        rodProps = rodDict[rodIndex]
+        return (rodProps.weightMin, rodProps.weightMax)
+        
+    def canBeCaughtByRod(fishes, rodDict, genus, species, rodIndex):
+        minFishWeight, maxFishWeight = WeightHandler.getWeightRange(fishes, genus, species)
+        minRodWeight, maxRodWeight = WeightHandler.getRodWeightRange(rodDict, rodIndex)
+        if ((minRodWeight <= maxFishWeight) and
+            (maxRodWeight >= minFishWeight)):
+            return 1
+        return 0
+        
+class RodHandler:
+    globalRarityDialBase = 4.3
+    rodDict = {
+      0: FishingRod(weightMin=0, weightMax=4, rarity=(1.0 / (globalRarityDialBase * 1)), 
+                    castCost=1, jellybeanReward=10),
+      1: FishingRod(weightMin=0, weightMax=8, rarity=(1.0 / (globalRarityDialBase * 1)), 
+                    castCost=2, jellybeanReward=20),
+      2: FishingRod(weightMin=0, weightMax=12, rarity=(1.0 / (globalRarityDialBase * 1)), 
+                    castCost=3, jellybeanReward=30),
+      3: FishingRod(weightMin=0, weightMax=16, rarity=(1.0 / (globalRarityDialBase * 1)), 
+                    castCost=4, jellybeanReward=75),
+      4: FishingRod(weightMin=0, weightMax=20, rarity=(1.0 / (globalRarityDialBase * 1)), 
+                    castCost=5, jellybeanReward=150),
+    }
+    
+    def getRodDict():
+        return RodHandler.rodDict
+        
+    def getRarity(rodId):
+        return RodHandler.getRodDict()[rodId].rarity
+
+    def getCastCost(rodId):
+        return RodHandler.getRodDict()[rodId].castCost
+        
+    def getJellybeanReward(rodId):
+        return RodHandler.getRodDict()[rodId].jellybeanReward
 
 class FishGlobals:
+    MAX_RARITY = 10
     FishingAngleMin = -50
     FishingAngleMax = 50
-    ROD_WEIGHT_MIN_INDEX = 0
-    ROD_WEIGHT_MAX_INDEX = 1
-    ROD_CAST_COST_INDEX = 2
-    rodDict = {
-      0: (0, 4, 1),
-      1: (0, 8, 2),
-      2: (0, 12, 3),
-      3: (0, 16, 4),
-      4: (0, 20, 5),
-    }
-    rod2Jellybean = {
-      0: 10,
-      1: 20,
-      2: 30,
-      3: 75,
-      4: 150
-    }
-    globalRarityDialBase = 4.3
-    rodRarityFactor = {
-        0: (1.0 / (globalRarityDialBase * 1)),
-        1: (1.0 / (globalRarityDialBase * 0.975)),
-        2: (1.0 / (globalRarityDialBase * 0.95)),
-        3: (1.0 / (globalRarityDialBase * 0.9)),
-        4: (1.0 / (globalRarityDialBase * 0.85)),
-    }
     Anywhere = 1
     TTG = ToontownGlobals
-    FISHS = {
+    FISHES = {
       0: ( FishProperties(weightMin=1, weightMax=3, rarity=1, zoneList=(Anywhere,)),
            FishProperties(weightMin=1, weightMax=1, rarity=4, zoneList=(TTG.ToontownCentral, Anywhere)),
            FishProperties(weightMin=3, weightMax=5, rarity=5, zoneList=(TTG.PunchlinePlace, TTG.TheBrrrgh)),
@@ -185,7 +215,7 @@ class FishGlobals:
             FishProperties(weightMin=14, weightMax=18, rarity=10, zoneList=(TTG.DonaldsDreamland,)),
             FishProperties(weightMin=6, weightMax=10, rarity=8, zoneList=(TTG.LullabyLane,)),
             FishProperties(weightMin=1, weightMax=1, rarity=3, zoneList=(TTG.DonaldsDreamland,)),
-            FishProperties(weightMin=2, weightMax=6, rarity=6, zoneList=(TTG.LullabyLane)),
+            FishProperties(weightMin=2, weightMax=6, rarity=6, zoneList=(TTG.LullabyLane,)),
             FishProperties(weightMin=10, weightMax=14, rarity=4, zoneList=(TTG.DonaldsDreamland, TTG.DaisyGardens)),
           ),
       22: ( FishProperties(weightMin=12, weightMax=16, rarity=2, zoneList=(TTG.MyEstate, TTG.DaisyGardens, Anywhere)),
@@ -226,15 +256,71 @@ class FishGlobals:
       34: ( FishProperties(weightMin=1, weightMax=20, rarity=10, zoneList=(TTG.DonaldsDreamland, Anywhere)),
           ),
     }
-    # pond info stuff goes here
-
-    def getCastCost(rodId):
-        return FishGlobals.rodDict[rodId][FishGlobals.ROD_CAST_COST_INDEX]
-
+    emptyRodDict = {}
+    for rodIndex in RodHandler.getRodDict():
+        emptyRodDict[rodIndex] = {}
+    anywhereDict = copy.deepcopy(emptyRodDict)
+    pondInfoDict = {}   
+    
+    for genus, speciesList in FISHES.items():
+        for species in range(len(speciesList)):
+            speciesDesc = speciesList[species]
+            rarity = speciesDesc.rarity
+            zoneList = speciesDesc.zoneList
+            for zoneIndex in range(len(zoneList)):
+                zone = zoneList[zoneIndex]
+                effectiveRarity = RarityHandler.getEffectiveRarity(rarity, MAX_RARITY, zoneIndex)
+                if zone == Anywhere:
+                    for rodIndex, rarityDict in anywhereDict.items():
+                        if WeightHandler.canBeCaughtByRod(FISHES, RodHandler.getRodDict(), genus, species, rodIndex):
+                            fishList = rarityDict.setdefault(effectiveRarity, [])
+                            fishList.append( (genus, species) )
+                else:
+                    pondZones = [zone]
+                    subZones = ToontownGlobals.HoodHierarchy.get(zone)
+                    if subZones:
+                        pondZones.extend(subZones)
+                    for pondZone in pondZones:
+                        if pondZone in pondInfoDict:
+                            pondRodDict = pondInfoDict[pondZone]
+                        else:
+                            pondRodDict = copy.deepcopy(emptyRodDict)
+                            pondInfoDict[pondZone] = pondRodDict
+                        for rodIndex, rarityDict in pondRodDict.items():
+                            if WeightHandler.canBeCaughtByRod(FISHES, RodHandler.getRodDict(), genus, species, rodIndex):
+                                fishList = rarityDict.setdefault(effectiveRarity, [])
+                                fishList.append( (genus, species) )
+    for zone, _rodDict in pondInfoDict.items():
+        for rodIndex, anywhereRarityDict in anywhereDict.items():
+            for rarity, anywhereFishList in anywhereRarityDict.items():
+                rarityDict = pondRodDict[rodIndex]
+                fishList = rarityDict.setdefault(rarity, [])
+                fishList.extend(anywhereFishList)
+        
+    def getRandomWeight(genus, species, rodIndex):
+        minFishWeight, maxFishWeight = WeightHandler.getWeightRange(FishGlobals.FISHES, genus, species)
+        if rodIndex == None:
+            minWeight = minFishWeight
+            maxWeight = maxFishWeight
+        else:
+            minWeight, maxWeight = WeightHandler.getRodWeightRange(RodHandler.getRodDict(), rodIndex)
+            if minFishWeight > minWeight:
+                minWeight = minFishWeight
+            if maxFishWeight < maxWeight:
+                maxWeight = maxFishWeight
+                
+        randNumA = random.random()
+        randNumB = random.random()
+        
+        randNum = (randNumA + randNumB) / 2.0
+        randWeight = minWeight + ((maxWeight - minWeight) * randNum)
+        
+        return int(round(randWeight * 16))
+        
     def rollRarityDice(rodId):
         diceRoll = random.random()
 
-        xp = FishGlobals.rodRarityFactor[rodId]
+        exp = RodHandler.getRarity(rodId)
         rarity = int(math.ceil(10 * (1 - math.pow(diceRoll, exp))))
 
         if rarity <= 0:
@@ -243,7 +329,15 @@ class FishGlobals:
         return rarity
 
     def getRandomFishVitals(zoneId, rodId):
-        rarity = rollRarityDice(rodId)
+        rarity = FishGlobals.rollRarityDice(rodId)
+        rodDict = FishGlobals.pondInfoDict.get(zoneId)
+        rarityDict = rodDict.get(rodId)
+        fishList = rarityDict.get(rarity)
+        if fishList:
+            genus, species = random.choice(fishList)
+            weight = FishGlobals.getRandomWeight(genus, species, rodId)
+            return (1, genus, species, weight)
+        return (0, 0, 0, 0)
 
 class DistributedFishingTargetAI(DistributedNodeAI, FSM):
 
@@ -396,10 +490,11 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.sendUpdate('setOccupied', [avId])
 
     def doCast(self, power, heading):
+        print(power, heading)
         senderId = self.air.currentAvatarSender
         if self.avId != senderId:
             return
-        if power <= 0 or power > 1:
+        if power < 0 or power > 1:
             return
 
         if heading < FishGlobals.FishingAngleMin:
@@ -413,7 +508,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
 
         self.__stopTimeout()
         money = sender.getMoney()
-        castCost = FishGlobals.getCastCost(sender.getFishingRod())
+        castCost = RodHandler.getCastCost(sender.getFishingRod())
 
         if money < castCost:
             self.normalExit()
@@ -424,8 +519,18 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.__startTimeout(self.TIMEOUT)
 
     def hitTarget(self, code, item):
-        if code == FishItems.JellybeanItem:
+        if code == FishItems.QuestItem:
             self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=item)
+        elif code in (FishItems.FishItem,
+                      FishItems.FishItemNewEntry,
+                      FishItems.FishItemNewRecord):
+            genus, species, weight = item.getVitals()
+            self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=genus, 
+                            itemDesc2=species, itemDesc3=weight)
+        elif code == FishItems.JellybeanItem:
+            self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=item)
+        else:
+            self.d_setMovie(FishMovies.PullInMovie, code=code)
         self.__startTimeout(self.TIMEOUT)
 
     def d_setMovie(self, mode, code=0, itemDesc1=0, itemDesc2=0, itemDesc3=0, power=0, h=0):
@@ -465,7 +570,6 @@ class DistributedFishingPondAI(DistributedObjectAI):
 
     def getCatch(self, av):
         itemType = FishItems.BootItem
-        value = None
         rodId = av.getFishingRod()
 
         # TODO: prioritize quest items
@@ -476,14 +580,35 @@ class DistributedFishingPondAI(DistributedObjectAI):
                 break
 
         if itemType == FishItems.FishItem:
-            pass
+            success, genus, species, weight = FishGlobals.getRandomFishVitals(self.getArea(), rodId)
+            if success:
+                fish = FishBase(genus, species, weight)
+                inTank, hasBiggerAlready = av.fishTank.hasFish(genus, species, weight)
+                added = av.addFishToTank(fish)
+                if added:
+                    collectResult = av.fishCollection.getCollectResult(fish)
+                    if collectResult == COLLECT_NO_UPDATE:
+                        return (itemType, fish)
+                    elif collectResult == COLLECT_NEW_ENTRY:
+                        if not inTank:
+                            return (FishItems.FishItemNewEntry, fish)
+                        elif not hasBiggerAlready:
+                            return (FishItems.FishItemNewRecord, fish)
+                        return (itemType, fish)
+                    elif collectResult == COLLECT_NEW_RECORD:
+                        if hasBiggerAlready:
+                            return (itemType, fish)
+                        return (FishItems.FishItemNewRecord, fish)
+                else:
+                    return (FishItems.OverTankLimit, None)
+            else:
+                return (FishItems.BootItem, None)
         elif itemType == FishItems.BootItem:
-            pass
+            return (FishItems.BootItem, None)
         elif itemType == FishItems.JellybeanItem:
-            value = FishGlobals.rod2Jellybean[rodId]
+            value = RodHandler.getJellybeanReward(rodId)
             av.addMoney(value)
-
-        return itemType, value
+            return(itemType, value)
 
     def hitTarget(self, targetId):
         senderId = self.air.currentAvatarSender
