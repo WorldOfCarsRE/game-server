@@ -1,3 +1,6 @@
+from ai.fishing.FishValueScales import *
+import math
+
 class FishBase:
     __slots__ = 'genus', 'species', 'weight'
 
@@ -21,3 +24,12 @@ class FishBase:
             self.getSpecies(),
             self.getWeight()
         )
+        
+    def getValue(self):
+        rarity = simbase.air.getFishes()[self.getGenus()][self.getSpecies()].rarity
+        rarityValue = math.pow(RARITY_VALUE_SCALE * rarity, 1.5)
+        weightValue = math.pow(WEIGHT_VALUE_SCALE * self.getWeight(), 1.1)
+        value = OVERALL_VALUE_SCALE * (rarityValue + weightValue)
+        finalValue = int(math.ceil(value))
+        # TODO: holiday stuff
+        return finalValue
