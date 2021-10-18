@@ -99,7 +99,7 @@ class FishItems:
       BootItem: 100,
     }
     """
-    
+
 class FishProperties(NamedTuple):
     weightMin: int
     weightMax: int
@@ -230,18 +230,18 @@ class FishGlobals:
 
     def getCastCost(rodId):
         return FishGlobals.rodDict[rodId][FishGlobals.ROD_CAST_COST_INDEX]
-        
+
     def rollRarityDice(rodId):
         diceRoll = random.random()
-        
+
         xp = FishGlobals.rodRarityFactor[rodId]
         rarity = int(math.ceil(10 * (1 - math.pow(diceRoll, exp))))
-        
+
         if rarity <= 0:
             rarity = 1
-        
+
         return rarity
-        
+
     def getRandomFishVitals(zoneId, rodId):
         rarity = rollRarityDice(rodId)
 

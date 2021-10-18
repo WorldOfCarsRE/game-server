@@ -20,6 +20,7 @@ import asyncio
 from . import AIZoneData
 
 from .ToontownGlobals import DynamicZonesBegin, DynamicZonesEnd
+from .MongoInterface import MongoInterface
 
 class AIProtocol(ToontownProtocol):
     def connection_made(self, transport):
@@ -72,6 +73,8 @@ class AIRepository:
         self.vismap: Dict[int, Tuple[int]] = {}
 
         self.connected = Event()
+
+        self.mongoInterface = MongoInterface(self)
 
     def run(self):
         self.net_thread = Thread(target=self.__event_loop)
@@ -229,6 +232,10 @@ class AIRepository:
     @property
     def currentAvatarSender(self):
         return getAvatarIDFromChannel(self.currentSender)
+
+    @property
+    def currentAccountSender(self):
+        return getAccountIDFromChannel(self.currentSender)
 
     def handleObjEntry(self, dgi):
         do_id = dgi.get_uint32()

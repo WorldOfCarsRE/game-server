@@ -2,7 +2,6 @@ from ai.DistributedObjectAI import DistributedObjectAI
 
 from panda3d.core import NodePath
 
-
 class DistributedNodeAI(DistributedObjectAI, NodePath):
     def __init__(self, air, name=None):
         DistributedObjectAI.__init__(self, air)
@@ -27,7 +26,6 @@ class DistributedNodeAI(DistributedObjectAI, NodePath):
             self.removeNode()
 
         DistributedObjectAI.delete(self)
-        
+
     def d_setPos(self, x, y, z):
         self.sendUpdate('setPos', [x, y, z])
-

@@ -31,12 +31,11 @@ class DatabaseBackend:
 class MongoBackend(DatabaseBackend):
     def __init__(self, service):
         DatabaseBackend.__init__(self, service)
-        self.client = None
         self.mongodb = None
 
     async def setup(self):
-        self.client = MongoClient(config['MongoDB.Host'])
-        self.mongodb = self.client[config['MongoDB.Name']]
+        client = MongoClient(config['MongoDB.Host'])
+        self.mongodb = client[config['MongoDB.Name']]
 
     async def _query_dclass(self, do_id: int) -> str:
         cursor = self.mongodb.objects

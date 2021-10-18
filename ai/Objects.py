@@ -460,7 +460,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         if not av:
             return
 
-        # Chop off the prefix at the start as its not needed
+        # Chop off the prefix at the start as its not needed.
         magicWord = magicWord[1:]
         # Split the Magic Word.
         splitWord = magicWord.split(' ')
@@ -475,7 +475,6 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         # Grab all of our string arguments.
         string = ' '.join(str(x) for x in args)
-        stringVal = ' '.join(str(x) for x in args[2:])
 
         clientWords = [
             'run',
@@ -582,6 +581,7 @@ class EstateManagerAI(DistributedObjectAI):
 
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
+
         self.estateZones: Dict[int] = {}
 
     def getEstateZone(self, avId: int, name: str):

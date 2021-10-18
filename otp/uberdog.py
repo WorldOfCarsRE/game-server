@@ -55,7 +55,6 @@ class UberdogProtocol(MDUpstreamProtocol):
         else:
             return False
 
-
 class Uberdog(DownstreamMessageDirector):
     upstream_protocol = UberdogProtocol
     GLOBAL_ID = None
