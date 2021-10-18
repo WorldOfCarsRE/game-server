@@ -595,8 +595,6 @@ class EstateManagerAI(DistributedObjectAI):
         estate = DistributedEstateAI(self.air)
         estate.generateWithRequired(self.estateZones[avId])
 
-        self.air.mongoInterface.updateField('DistributedToon', 'setName', avId, ['Sam Edwards'])
-
         # Let the client know about our new zone.
         self.sendUpdateToAvatar(avId, 'setEstateZone', [avId, self.estateZones[avId]])
 
