@@ -1,6 +1,5 @@
 from otp import config
 from pymongo import MongoClient
-from typing import Union
 
 class MongoInterface:
     def __init__(self, air):
