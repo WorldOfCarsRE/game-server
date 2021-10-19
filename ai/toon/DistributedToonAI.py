@@ -21,6 +21,13 @@ class DistributedAvatarAI(DistributedSmoothNodeAI):
     def getName(self):
         return self.name
 
+    def b_setName(self, name):
+        self.setName(name)
+        self.d_setName(name)
+
+    def d_setName(self, name):
+        self.sendUpdate('setName', [name])
+
 class FriendEntry(NamedTuple):
     doId: int
     trueFriend: bool

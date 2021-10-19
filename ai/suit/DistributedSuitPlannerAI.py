@@ -9,7 +9,6 @@ from panda3d.core import Point3
 
 from direct.task import Task
 
-
 @with_slots
 @dataclass
 class SuitHoodInfo:
@@ -24,7 +23,6 @@ class SuitHoodInfo:
     deptChances: Tuple[int]
     levels: Tuple[int]
     buildingDifficulties: Tuple[int]
-
 
 SUIT_HOOD_INFO = {
     SillyStreet: SuitHoodInfo(zoneId=SillyStreet, minSuits=5, maxSuits=15, minSuitBldgs=0, maxSuitBldgs=5, buildingWeight=20,
@@ -45,7 +43,6 @@ from typing import Optional
 from ai.suit.DistributedSuitAI import DistributedSuitAI, SuitDNA
 from ai.suit.SuitGlobals import SuitDept, SuitHeads, pickFromFreqList
 
-
 UPKEEP_DELAY = 10
 ADJUST_DELAY = 300
 PATH_COLLISION_BUFFER = 5
@@ -53,7 +50,6 @@ PATH_COLLISION_BUFFER = 5
 MIN_PATH_LEN = 40
 MAX_PATH_LEN = 300
 MAX_SUIT_TYPES = 6
-
 
 class DistributedSuitPlannerAI(DistributedObjectAI):
     def __init__(self, air, place):
