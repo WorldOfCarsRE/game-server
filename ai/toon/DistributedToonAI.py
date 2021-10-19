@@ -36,6 +36,7 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.defaultZone = 0
         self.lastHood = 0
         self.hoodsVisited = []
+        self.fishingTrophies = []
 
     def setAccountName(self, name):
         self.accountName = name
@@ -192,7 +193,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.setHp(hp)
         self.d_setHp(hp)
 
-    def toonUp(self, hpGained, quietly=0, sendTotal=1):
+    def toonUp(self, hpGained, quietly = 0, sendTotal = 1):
         hpGained = min(self.maxHp, hpGained)
         if not quietly:
             self.sendUpdate('toonUp', [hpGained])
@@ -204,7 +205,7 @@ class DistributedToonAI(DistributedPlayerAI):
         if sendTotal:
             self.d_setHp(clampedHp)
 
-    def takeDamage(self, hpLost, quietly=0, sendTotal=1):
+    def takeDamage(self, hpLost, quietly = 0, sendTotal = 1):
         if not quietly:
             self.sendUpdate('takeDamage', [hpLost])
         if hpLost > 0 and self.hp > 0:
@@ -216,7 +217,7 @@ class DistributedToonAI(DistributedPlayerAI):
 
     @staticmethod
     def getGoneSadMessageForAvId(avId):
-        return 'goneSad-%s' % avId
+        return f'goneSad-{avId}'
 
     def getGoneSadMessage(self):
         return self.getGoneSadMessageForAvId(self.do_id)
@@ -470,7 +471,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.d_setFishCollection(genusList, speciesList, weightList)
 
     def d_setFishCollection(self, genusList, speciesList, weightList):
-        self.sendUpdate("setFishCollection", [genusList, speciesList, weightList])
+        self.sendUpdate('setFishCollection', [genusList, speciesList, weightList])
 
     def setFishCollection(self, genusList, speciesList, weightList):
         self.fishCollection = FishCollection()
@@ -494,7 +495,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.d_setFishTank(genusList, speciesList, weightList)
 
     def d_setFishTank(self, genusList, speciesList, weightList):
-        self.sendUpdate("setFishTank", [genusList, speciesList, weightList])
+        self.sendUpdate('setFishTank', [genusList, speciesList, weightList])
 
     def setFishTank(self, genusList, speciesList, weightList):
         self.fishTank = FishTank()
@@ -515,8 +516,18 @@ class DistributedToonAI(DistributedPlayerAI):
     def getFishingRod(self):
         return 0
 
+    def b_setFishingTrophies(self, trophyList):
+        self.setFishingTrophies(trophyList)
+        self.d_setFishingTrophies(trophyList)
+
+    def setFishingTrophies(self, trophyList):
+        self.fishingTrophies = trophyList
+
+    def d_setFishingTrophies(self, trophyList):
+        self.sendUpdate('setFishingTrophies', [trophyList])
+
     def getFishingTrophies(self):
-        return []
+        return self.fishingTrophies
 
     def getFlowerCollection(self):
         return [], []
@@ -791,10 +802,10 @@ class FishCollection:
             self.fishList.append(FishBase(genus, species, weight))
 
     def getNetLists(self):
-        """
+        '''
         Return lists formated for toon.dc style setting and getting
         We store parallel lists of genus, species, and weight in the db
-        """
+        '''
         genusList = []
         speciesList = []
         weightList = []
@@ -838,9 +849,9 @@ class FishCollection:
 
     def __str__(self):
         numFish = len(self.fishList)
-        txt = ("Fish Collection (%s fish):" % (numFish))
+        txt = f'Fish Collection ({numFish} fish):'
         for fish in self.fishList:
-            txt += ("\n" + str(fish))
+            txt += ('\n' + str(fish))
         return txt
 
 class FishTank:
@@ -892,17 +903,17 @@ class FishTank:
     def getTotalValue(self):
         value = 0
         for fish in self.fishList:
-            value += simbase.air.fishManager.getFishValue(fish.getGenus(), fish.getWeight(), fish.getRarity())
+            value += simbase.air.fishManager.getFishValue(fish.getGenus(), fish.getSpecies(), fish.getWeight())
         return value
 
     def __str__(self):
         numFish = len(self.fishList)
         value = 0
-        txt = ("Fish Tank (%s fish):" % (numFish))
+        txt = f'Fish Tank ({numFish} fish)'
         for fish in self.fishList:
-            txt += ("\n" + str(fish))
-            value += simbase.air.fishManager.getFishValue(fish.getGenus(), fish.getWeight(), fish.getRarity())
-        txt += ("\nTotal value: %s" % (value))
+            txt += ('\n' + str(fish))
+            value += simbase.air.fishManager.getFishValue(fish.getGenus(), fish.getSpecies(), fish.getWeight())
+        txt += f'\nTotal value: {value}'
         return txt
 
 class Experience:

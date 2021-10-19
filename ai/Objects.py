@@ -7,6 +7,7 @@ from .DistributedObjectAI import DistributedObjectAI
 from ai.toon.DistributedToonAI import DistributedToonAI
 from ai.toon.DistributedToonAI import DistributedPlayerAI
 from ai.globals import HoodGlobals as HG
+from ai.ToontownGlobals import MaxHpLimit
 from typing import List, Optional, Dict, NamedTuple
 from dataslots import with_slots
 from dataclasses import dataclass
@@ -416,7 +417,7 @@ class FriendManagerAI(DistributedObjectGlobalAI):
         dg.add_server_header([getPuppetChannel(avId)], self.air.ourChannel, CLIENT_FRIEND_ONLINE)
         dg.add_uint32(otherAvId)
         self.air.send(dg)
-        
+
 class FishingRod(NamedTuple):
     weightMin: int
     weightMax: int
@@ -437,6 +438,8 @@ class FishManager:
     OVERALL_VALUE_SCALE = 15
     RARITY_VALUE_SCALE = 0.2
     WEIGHT_VALUE_SCALE = 0.05 / 16.0
+    FISH_PER_BONUS = 10
+    totalFish = 0
 
     def __init__(self):
         self.rodDict = {
@@ -548,6 +551,7 @@ class FishManager:
         self.pondInfoDict = {}
         for genus, speciesList in self.getFishes().items():
             for species in range(len(speciesList)):
+                self.totalFish += 1
                 speciesDesc = speciesList[species]
                 rarity = speciesDesc.rarity
                 zoneList = speciesDesc.zoneList
@@ -580,13 +584,13 @@ class FishManager:
                     rarityDict = pondRodDict[rodIndex]
                     fishList = rarityDict.setdefault(rarity, [])
                     fishList.extend(anywhereFishList)
-        
+
     def getFishes(self):
         return self.fishes
-        
+
     def getRodDict(self):
         return self.rodDict
-        
+
     def getWeightRange(self, genus, species):
         fishInfo = self.getFishes()[genus][species]
         return (fishInfo.weightMin, fishInfo.weightMax)
@@ -594,7 +598,7 @@ class FishManager:
     def getRodWeightRange(self, rodIndex):
         rodProps = self.getRodDict()[rodIndex]
         return (rodProps.weightMin, rodProps.weightMax)
-        
+
     def getRodRarity(self, rodId):
         return self.getRodDict()[rodId].rarity
 
@@ -616,7 +620,7 @@ class FishManager:
         if rarity + (offset) > self.MAX_RARITY:
             return self.MAX_RARITY
         return rarity + (offset)
-        
+
     def getFishValue(self, genus, species, weight):
         rarity = self.getFishes()[genus][species].rarity
         rarityValue = math.pow(self.RARITY_VALUE_SCALE * rarity, 1.5)
@@ -625,7 +629,7 @@ class FishManager:
         finalValue = int(math.ceil(value))
         # TODO: holiday stuff
         return finalValue
-        
+
     def getRandomWeight(self, genus, species, rodIndex):
         minFishWeight, maxFishWeight = self.getWeightRange(genus, species)
         if rodIndex == None:
@@ -668,6 +672,43 @@ class FishManager:
             return (1, genus, species, weight)
         return (0, 0, 0, 0)
 
+    def creditFishTank(self, av: DistributedToonAI) -> bool:
+        oldBonus = int(len(av.fishCollection) / self.FISH_PER_BONUS)
+
+        # Give the avatar jellybeans in exchange for his fish.
+        value = av.fishTank.getTotalValue()
+        av.addMoney(value)
+
+        # Update the avatar collection for each fish.
+        for fish in av.fishTank.fishList:
+            av.fishCollection.collectFish(fish)
+
+        # Clear out the fish tank.
+        av.b_setFishTank([], [], [])
+
+        # Update the collection in the database.
+        av.d_setFishCollection(*av.fishCollection.getNetLists())
+
+        newBonus = int(len(av.fishCollection) / self.FISH_PER_BONUS)
+
+        if newBonus > oldBonus:
+            oldMaxHp = av.getMaxHp()
+            newMaxHp = min(MaxHpLimit, oldMaxHp + newBonus - oldBonus)
+            av.b_setMaxHp(nwMaxHp)
+
+            # Also, give them a full heal.
+            av.toonUp(newMaxHp)
+
+            # Update their trophy list.
+            newTrophies = av.getFishingTrophies()
+            trophyId = len(newTrophies)
+            newTrophies.append(trophyId)
+            av.b_setFishingTrophies(newTrophies)
+
+            return True
+
+        return False
+
 class MagicWordManagerAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
@@ -708,6 +749,11 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         return 'Broadcasted message to everyone on this shard.'
 
+    def setName(self, av: DistributedToonAI, name: str) -> str:
+        av.b_setName(name)
+
+        return f'Changed name to {name}.'
+
     def setMagicWord(self, magicWord, avId, zoneId, signature):
         avId = self.air.currentAvatarSender
         av = self.air.doTable.get(avId)
@@ -745,9 +791,11 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         if magicWord in ('system', 'smsg'):
             response = self.sendSystemMessage(av, msg = string)
+        elif magicWord == 'name':
+            response = self.setName(av, name = string)
         else:
-            response = '{0} is not a valid Magic Word.'.format(magicWord)
-            print('Unknown Magic Word: {0} from avId: {1}!'.format(magicWord, avId))
+            response = f'{magicWord} is not a valid Magic Word.'
+            print(f'Unknown Magic Word: {magicWord} from avId: {avId}!')
 
         # Send our response to the client.
         self.sendResponseMessage(avId, response)

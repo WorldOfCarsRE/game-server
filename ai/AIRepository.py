@@ -378,7 +378,7 @@ class AIRepository:
 
         self.friendManager = FriendManagerAI(self)
         self.friendManager.generateGlobalObject(OTP_ZONE_ID_MANAGEMENT)
-        
+
         self.fishManager = FishManager()
 
         self.magicWordMgr = ToontownMagicWordManagerAI(self)

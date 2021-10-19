@@ -104,7 +104,33 @@ class DistributedNPCFishermanAI(DistributedNPCToonBaseAI):
         self.sendClearMovie()
 
     def completeSale(self, sell: bool):
-        pass
+        avId = self.air.currentAvatarSender
+
+        if self.occupier != avId:
+            # TODO: We need to write a event here.
+            return
+
+        av = self.air.doTable.get(avId)
+
+        if not av:
+            return
+
+        if sell:
+            trophyResult = self.air.fishManager.creditFishTank(av)
+
+            if trophyResult:
+                movieType = NPCToons.SELL_MOVIE_TROPHY
+                extraArgs = [len(av.fishCollection), self.air.fishManager.totalFish]
+            else:
+                movieType = NPCToons.SELL_MOVIE_COMPLETE
+                extraArgs = []
+
+            self.d_setMovie(movieType, args = extraArgs)
+        else:
+            self.d_setMovie(NPCToons.SELL_MOVIE_NOFISH)
+
+        taskMgr.remove(self.uniqueName('clearMovie'))
+        self.sendClearMovie()
 
 class DistributedNPCPartyPersonAI(DistributedNPCToonBaseAI):
     def avatarEnter(self):
