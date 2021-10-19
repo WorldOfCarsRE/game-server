@@ -502,7 +502,7 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getFishTank(self):
         return self.fishTank.getNetLists()
-        
+
     def addFishToTank(self, fish):
         numFish = len(self.fishTank)
         if numFish >= self.getMaxFishTank():
@@ -510,7 +510,7 @@ class DistributedToonAI(DistributedPlayerAI):
         if self.fishTank.addFish(fish):
             self.d_setFishTank(*self.getFishTank())
             return 1
-        return 0            
+        return 0
 
     def getFishingRod(self):
         return 0
@@ -784,11 +784,11 @@ class FishCollection:
 
     def getFish(self):
         return self.fishList
-    
+
     def makeFromNetLists(self, genusList, speciesList, weightList):
         self.fishList: List[FishBase] = []
         for genus, species, weight in zip(genusList, speciesList, weightList):
-            self.fishList.append(FishBase(genus, species, weight))        
+            self.fishList.append(FishBase(genus, species, weight))
 
     def getNetLists(self):
         """
@@ -869,7 +869,7 @@ class FishTank:
             speciesList.append(fish.getSpecies())
             weightList.append(fish.getWeight())
         return [genusList, speciesList, weightList]
-        
+
     def hasFish(self, genus, species, weight):
         for fish in self.fishList:
             if (fish.getGenus() == genus) and (fish.getSpecies() == species):

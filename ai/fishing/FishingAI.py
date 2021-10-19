@@ -94,7 +94,7 @@ class FishItems:
       JellybeanItem: 94,
       BootItem: 100,
     }
-    
+
 class FishingRod(NamedTuple):
     weightMin: int
     weightMax: int
@@ -107,24 +107,24 @@ class FishProperties(NamedTuple):
     weightMax: int
     rarity: int
     zoneList: tuple
-    
+
 class RarityHandler:
-    
+
     def getEffectiveRarity(rarity, maxRarity, offset):
         if rarity + (offset) > maxRarity:
             return maxRarity
         return rarity + (offset)
-        
+
 class WeightHandler:
-        
+
     def getWeightRange(fishes, genus, species):
         fishInfo = fishes[genus][species]
         return (fishInfo.weightMin, fishInfo.weightMax)
-        
+
     def getRodWeightRange(rodDict, rodIndex):
         rodProps = rodDict[rodIndex]
         return (rodProps.weightMin, rodProps.weightMax)
-        
+
     def canBeCaughtByRod(fishes, rodDict, genus, species, rodIndex):
         minFishWeight, maxFishWeight = WeightHandler.getWeightRange(fishes, genus, species)
         minRodWeight, maxRodWeight = WeightHandler.getRodWeightRange(rodDict, rodIndex)
@@ -132,31 +132,31 @@ class WeightHandler:
             (maxRodWeight >= minFishWeight)):
             return 1
         return 0
-        
+
 class RodHandler:
     globalRarityDialBase = 4.3
     rodDict = {
-      0: FishingRod(weightMin=0, weightMax=4, rarity=(1.0 / (globalRarityDialBase * 1)), 
+      0: FishingRod(weightMin=0, weightMax=4, rarity=(1.0 / (globalRarityDialBase * 1)),
                     castCost=1, jellybeanReward=10),
-      1: FishingRod(weightMin=0, weightMax=8, rarity=(1.0 / (globalRarityDialBase * 1)), 
+      1: FishingRod(weightMin=0, weightMax=8, rarity=(1.0 / (globalRarityDialBase * 1)),
                     castCost=2, jellybeanReward=20),
-      2: FishingRod(weightMin=0, weightMax=12, rarity=(1.0 / (globalRarityDialBase * 1)), 
+      2: FishingRod(weightMin=0, weightMax=12, rarity=(1.0 / (globalRarityDialBase * 1)),
                     castCost=3, jellybeanReward=30),
-      3: FishingRod(weightMin=0, weightMax=16, rarity=(1.0 / (globalRarityDialBase * 1)), 
+      3: FishingRod(weightMin=0, weightMax=16, rarity=(1.0 / (globalRarityDialBase * 1)),
                     castCost=4, jellybeanReward=75),
-      4: FishingRod(weightMin=0, weightMax=20, rarity=(1.0 / (globalRarityDialBase * 1)), 
+      4: FishingRod(weightMin=0, weightMax=20, rarity=(1.0 / (globalRarityDialBase * 1)),
                     castCost=5, jellybeanReward=150),
     }
-    
+
     def getRodDict():
         return RodHandler.rodDict
-        
+
     def getRarity(rodId):
         return RodHandler.getRodDict()[rodId].rarity
 
     def getCastCost(rodId):
         return RodHandler.getRodDict()[rodId].castCost
-        
+
     def getJellybeanReward(rodId):
         return RodHandler.getRodDict()[rodId].jellybeanReward
 
@@ -260,8 +260,8 @@ class FishGlobals:
     for rodIndex in RodHandler.getRodDict():
         emptyRodDict[rodIndex] = {}
     anywhereDict = copy.deepcopy(emptyRodDict)
-    pondInfoDict = {}   
-    
+    pondInfoDict = {}
+
     for genus, speciesList in FISHES.items():
         for species in range(len(speciesList)):
             speciesDesc = speciesList[species]
@@ -296,7 +296,7 @@ class FishGlobals:
                 rarityDict = pondRodDict[rodIndex]
                 fishList = rarityDict.setdefault(rarity, [])
                 fishList.extend(anywhereFishList)
-        
+
     def getRandomWeight(genus, species, rodIndex):
         minFishWeight, maxFishWeight = WeightHandler.getWeightRange(FishGlobals.FISHES, genus, species)
         if rodIndex == None:
@@ -308,15 +308,15 @@ class FishGlobals:
                 minWeight = minFishWeight
             if maxFishWeight < maxWeight:
                 maxWeight = maxFishWeight
-                
+
         randNumA = random.random()
         randNumB = random.random()
-        
+
         randNum = (randNumA + randNumB) / 2.0
         randWeight = minWeight + ((maxWeight - minWeight) * randNum)
-        
+
         return int(round(randWeight * 16))
-        
+
     def rollRarityDice(rodId):
         diceRoll = random.random()
 
@@ -525,7 +525,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
                       FishItems.FishItemNewEntry,
                       FishItems.FishItemNewRecord):
             genus, species, weight = item.getVitals()
-            self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=genus, 
+            self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=genus,
                             itemDesc2=species, itemDesc3=weight)
         elif code == FishItems.JellybeanItem:
             self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=item)
