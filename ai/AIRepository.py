@@ -19,9 +19,7 @@ import asyncio
 
 from . import AIZoneData
 
-from ai.fishing.FishProperties import FishProperties
-
-from . import ToontownGlobals
+from ai.globals.HoodGlobals import DynamicZonesBegin, DynamicZonesEnd
 from .MongoInterface import MongoInterface
 
 class AIProtocol(ToontownProtocol):
@@ -50,7 +48,7 @@ class AIRepository:
         self.minChannel = base_channel
         self.maxChannel = base_channel + max_channels
         self.channelAllocator = UniqueIdAllocator(self.minChannel, self.maxChannel)
-        self.zoneAllocator = UniqueIdAllocator(ToontownGlobals.DynamicZonesBegin, ToontownGlobals.DynamicZonesEnd)
+        self.zoneAllocator = UniqueIdAllocator(DynamicZonesBegin, DynamicZonesEnd)
 
         self._registedChannels = set()
 
@@ -73,8 +71,6 @@ class AIRepository:
         self.zoneDataStore = AIZoneData.AIZoneDataStore()
 
         self.vismap: Dict[int, Tuple[int]] = {}
-        
-        self.createFishes()
 
         self.connected = Event()
 
@@ -342,7 +338,7 @@ class AIRepository:
         self.registerForChannel(self.ourChannel)
 
         from .Objects import ToontownDistrictAI, ToontownDistrictStatsAI, DistributedInGameNewsMgrAI, NewsManagerAI, FriendManagerAI
-        from .Objects import ToontownMagicWordManagerAI, EstateManagerAI
+        from .Objects import FishManager, ToontownMagicWordManagerAI, EstateManagerAI
         from .TimeManagerAI import TimeManagerAI
 
         self.district = ToontownDistrictAI(self)
@@ -382,6 +378,8 @@ class AIRepository:
 
         self.friendManager = FriendManagerAI(self)
         self.friendManager.generateGlobalObject(OTP_ZONE_ID_MANAGEMENT)
+        
+        self.fishManager = FishManager()
 
         self.magicWordMgr = ToontownMagicWordManagerAI(self)
         self.magicWordMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
@@ -410,103 +408,6 @@ class AIRepository:
             hood.startup()
 
         print('All zones loaded.')
-        
-    def createFishes(self):
-        TTG = ToontownGlobals
-        Anywhere = 1
-        self.fishes = {
-          0: ( FishProperties(weightMin=1, weightMax=3, rarity=1, zoneList=(Anywhere,)),
-               FishProperties(weightMin=1, weightMax=1, rarity=4, zoneList=(TTG.ToontownCentral, Anywhere)),
-               FishProperties(weightMin=3, weightMax=5, rarity=5, zoneList=(TTG.PunchlinePlace, TTG.TheBrrrgh)),
-               FishProperties(weightMin=3, weightMax=5, rarity=3, zoneList=(TTG.SillyStreet, TTG.DaisyGardens)),
-               FishProperties(weightMin=1, weightMax=5, rarity=2, zoneList=(TTG.LoopyLane, TTG.ToontownCentral)),
-              ),
-          2: ( FishProperties(weightMin=2, weightMax=6, rarity=1, zoneList=(TTG.DaisyGardens, Anywhere)),
-               FishProperties(weightMin=2, weightMax=6, rarity=9, zoneList=(TTG.ElmStreet, TTG.DaisyGardens)),
-               FishProperties(weightMin=5, weightMax=11, rarity=4, zoneList=(TTG.LullabyLane,)),
-               FishProperties(weightMin=2, weightMax=6, rarity=3, zoneList=(TTG.DaisyGardens, TTG.MyEstate)),
-               FishProperties(weightMin=5, weightMax=11, rarity=2, zoneList=(TTG.DonaldsDreamland, TTG.MyEstate)),
-              ),
-          4: ( FishProperties(weightMin=2, weightMax=8, rarity=1, zoneList=(TTG.ToontownCentral, Anywhere,)),
-               FishProperties(weightMin=2, weightMax=8, rarity=4, zoneList=(TTG.ToontownCentral, Anywhere)),
-               FishProperties(weightMin=2, weightMax=8, rarity=2, zoneList=(TTG.ToontownCentral, Anywhere)),
-               FishProperties(weightMin=2, weightMax=8, rarity=6, zoneList=(TTG.ToontownCentral, TTG.MinniesMelodyland)),
-              ),
-          6: ( FishProperties(weightMin=8, weightMax=12, rarity=1, zoneList=(TTG.TheBrrrgh,)),
-              ),
-          8: ( FishProperties(weightMin=1, weightMax=5, rarity=1, zoneList=(Anywhere,)),
-               FishProperties(weightMin=2, weightMax=6, rarity=2, zoneList=(TTG.MinniesMelodyland, Anywhere)),
-               FishProperties(weightMin=5, weightMax=10, rarity=5, zoneList=(TTG.MinniesMelodyland, Anywhere)),
-               FishProperties(weightMin=1, weightMax=5, rarity=7, zoneList=(TTG.MyEstate, Anywhere)),
-               FishProperties(weightMin=1, weightMax=5, rarity=10, zoneList=(TTG.MyEstate, Anywhere)),
-              ),
-          10: ( FishProperties(weightMin=6, weightMax=10, rarity=9, zoneList=(TTG.MyEstate, Anywhere,)),
-              ),
-          12: ( FishProperties(weightMin=7, weightMax=15, rarity=1, zoneList=(TTG.DonaldsDock, Anywhere)),
-                FishProperties(weightMin=18, weightMax=20, rarity=6, zoneList=(TTG.DonaldsDock, TTG.MyEstate)),
-                FishProperties(weightMin=1, weightMax=5, rarity=5, zoneList=(TTG.DonaldsDock, TTG.MyEstate)),
-                FishProperties(weightMin=3, weightMax=7, rarity=4, zoneList=(TTG.DonaldsDock, TTG.MyEstate)),
-                FishProperties(weightMin=1, weightMax=2, rarity=2, zoneList=(TTG.DonaldsDock, Anywhere)),
-              ),
-          14: ( FishProperties(weightMin=2, weightMax=6, rarity=1, zoneList=(TTG.DaisyGardens, TTG.MyEstate, Anywhere)),
-                FishProperties(weightMin=2, weightMax=6, rarity=3, zoneList=(TTG.DaisyGardens, TTG.MyEstate)),
-              ),
-          16: ( FishProperties(weightMin=4, weightMax=12, rarity=5, zoneList=(TTG.MinniesMelodyland, Anywhere)),
-                FishProperties(weightMin=4, weightMax=12, rarity=7, zoneList=(TTG.BaritoneBoulevard, TTG.MinniesMelodyland)),
-                FishProperties(weightMin=4, weightMax=12, rarity=8, zoneList=(TTG.TenorTerrace, TTG.MinniesMelodyland)),
-              ),
-          18: ( FishProperties(weightMin=2, weightMax=4, rarity=3, zoneList=(TTG.DonaldsDock, Anywhere)),
-                FishProperties(weightMin=5, weightMax=8, rarity=7, zoneList=(TTG.TheBrrrgh,)),
-                FishProperties(weightMin=4, weightMax=6, rarity=8, zoneList=(TTG.LighthouseLane,)),
-              ),
-          20: ( FishProperties(weightMin=4, weightMax=6, rarity=1, zoneList=(TTG.DonaldsDreamland,)),
-                FishProperties(weightMin=14, weightMax=18, rarity=10, zoneList=(TTG.DonaldsDreamland,)),
-                FishProperties(weightMin=6, weightMax=10, rarity=8, zoneList=(TTG.LullabyLane,)),
-                FishProperties(weightMin=1, weightMax=1, rarity=3, zoneList=(TTG.DonaldsDreamland,)),
-                FishProperties(weightMin=2, weightMax=6, rarity=6, zoneList=(TTG.LullabyLane,)),
-                FishProperties(weightMin=10, weightMax=14, rarity=4, zoneList=(TTG.DonaldsDreamland, TTG.DaisyGardens)),
-              ),
-          22: ( FishProperties(weightMin=12, weightMax=16, rarity=2, zoneList=(TTG.MyEstate, TTG.DaisyGardens, Anywhere)),
-                FishProperties(weightMin=14, weightMax=18, rarity=3, zoneList=(TTG.MyEstate, TTG.DaisyGardens, Anywhere)),
-                FishProperties(weightMin=14, weightMax=20, rarity=5, zoneList=(TTG.MyEstate, TTG.DaisyGardens)),
-                FishProperties(weightMin=14, weightMax=20, rarity=7, zoneList=(TTG.MyEstate, TTG.DaisyGardens)),
-              ),
-          24: ( FishProperties(weightMin=9, weightMax=11, rarity=3, zoneList=(Anywhere,)),
-                FishProperties(weightMin=8, weightMax=12, rarity=5, zoneList=(TTG.DaisyGardens, TTG.DonaldsDock)),
-                FishProperties(weightMin=8, weightMax=12, rarity=6, zoneList=(TTG.DaisyGardens, TTG.DonaldsDock)),
-                FishProperties(weightMin=8, weightMax=16, rarity=7, zoneList=(TTG.DaisyGardens, TTG.DonaldsDock)),
-              ),
-          26: ( FishProperties(weightMin=10, weightMax=18, rarity=2, zoneList=(TTG.TheBrrrgh,)),
-                FishProperties(weightMin=10, weightMax=18, rarity=3, zoneList=(TTG.TheBrrrgh,)),
-                FishProperties(weightMin=10, weightMax=18, rarity=4, zoneList=(TTG.TheBrrrgh,)),
-                FishProperties(weightMin=10, weightMax=18, rarity=5, zoneList=(TTG.TheBrrrgh,)),
-                FishProperties(weightMin=12, weightMax=20, rarity=6, zoneList=(TTG.TheBrrrgh,)),
-                FishProperties(weightMin=14, weightMax=20, rarity=7, zoneList=(TTG.TheBrrrgh,)),
-                FishProperties(weightMin=14, weightMax=20, rarity=8, zoneList=(TTG.SleetStreet, TTG.TheBrrrgh)),
-                FishProperties(weightMin=16, weightMax=20, rarity=10, zoneList=(TTG.WalrusWay, TTG.TheBrrrgh)),
-              ),
-          28: ( FishProperties(weightMin=2, weightMax=10, rarity=2, zoneList=(TTG.DonaldsDock, Anywhere)),
-                FishProperties(weightMin=4, weightMax=10, rarity=6, zoneList=(TTG.BarnacleBoulevard, TTG.DonaldsDock)),
-                FishProperties(weightMin=4, weightMax=10, rarity=7, zoneList=(TTG.SeaweedStreet, TTG.DonaldsDock)),
-              ),
-          30: ( FishProperties(weightMin=13, weightMax=17, rarity=5, zoneList=(TTG.MinniesMelodyland, Anywhere)),
-                FishProperties(weightMin=16, weightMax=20, rarity=10, zoneList=(TTG.AltoAvenue, TTG.MinniesMelodyland)),
-                FishProperties(weightMin=12, weightMax=18, rarity=9, zoneList=(TTG.TenorTerrace, TTG.MinniesMelodyland)),
-                FishProperties(weightMin=12, weightMax=18, rarity=6, zoneList=(TTG.MinniesMelodyland,)),
-                FishProperties(weightMin=12, weightMax=18, rarity=7, zoneList=(TTG.MinniesMelodyland,)),
-              ),
-          32: ( FishProperties(weightMin=1, weightMax=5, rarity=2, zoneList=(TTG.ToontownCentral, TTG.MyEstate, Anywhere)),
-                FishProperties(weightMin=1, weightMax=5, rarity=3, zoneList=(TTG.TheBrrrgh, TTG.MyEstate, Anywhere)),
-                FishProperties(weightMin=1, weightMax=5, rarity=4, zoneList=(TTG.DaisyGardens, TTG.MyEstate)),
-                FishProperties(weightMin=1, weightMax=5, rarity=5, zoneList=(TTG.DonaldsDreamland, TTG.MyEstate)),
-                FishProperties(weightMin=1, weightMax=5, rarity=10, zoneList=(TTG.TheBrrrgh, TTG.DonaldsDreamland)),
-              ),
-          34: ( FishProperties(weightMin=1, weightMax=20, rarity=10, zoneList=(TTG.DonaldsDreamland, Anywhere)),
-              ),
-        }
-        
-    def getFishes(self):
-        return self.fishes
 
     def requestDelete(self, do):
         dg = Datagram()

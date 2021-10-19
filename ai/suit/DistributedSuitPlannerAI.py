@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from dataslots import with_slots
 from typing import List, Tuple, Dict
 
-from ai.ToontownGlobals import *
+from ai.globals.HoodGlobals import *
 from panda3d.core import Point3
 
 from direct.task import Task

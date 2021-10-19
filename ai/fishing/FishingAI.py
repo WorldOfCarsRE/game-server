@@ -2,7 +2,7 @@ from ai.DistributedObjectAI import DistributedObjectAI
 from ai.DistributedNodeAI import DistributedNodeAI
 from typing import Optional, Dict, NamedTuple
 from direct.fsm.FSM import FSM
-from ai import ToontownGlobals
+from ai.globals import HoodGlobals
 from ai.fishing.FishBase import FishBase
 from ai.fishing.FishCollectionEnum import *
 import random
@@ -22,30 +22,30 @@ class FishingTargetGlobals:
     RADIUS_INDEX = 4
     WATER_LEVEL_INDEX = 5
     targetInfoDict = {
-        ToontownGlobals.ToontownCentral : (2, -81, 31, -4.8, 14, -1.4),
-        ToontownGlobals.SillyStreet : (2, 20, -664, -1.4, 14, (-1.4 - 0.438)),
-        ToontownGlobals.LoopyLane : (2, -234, 175, -1.4, 14, (-1.4 - 0.462)),
-        ToontownGlobals.PunchlinePlace : (2, 529, -70, -1.4, 13, (-1.4 - 0.486)),
-        ToontownGlobals.DonaldsDock : (2, -17, 130, 1.730, 15, (1.730 - 3.615)),
-        ToontownGlobals.BarnacleBoulevard : (2, 381, -350, -2, 14, (-2 - 0.482)),
-        ToontownGlobals.SeaweedStreet : (2, -395, -226, -2, 14, (-2 - 0.482)),
-        ToontownGlobals.LighthouseLane : (2, 350, 100, -2, 14, (-2 - 0.482)),
-        ToontownGlobals.DaisyGardens : (2, 50, 47, -1.48, 13, (-1.48 - 0.345)),
-        ToontownGlobals.ElmStreet : (2, 149, 44, -1.43, 13, (-1.43 - 0.618)),
-        ToontownGlobals.MapleStreet : (2, 176, 100, -1.43, 13, (-1.43 - 0.618)),
-        ToontownGlobals.OakStreet : (2, 134, -70.5, -1.5, 13, (-1.5 - 0.377)),
-        ToontownGlobals.MinniesMelodyland : (2, -0.2, -20.2, -14.65, 14, (-14.65 - (-12))),
-        ToontownGlobals.AltoAvenue : (2, -580, -90, -0.87, 14, (-0.87 - 1.844)),
-        ToontownGlobals.BaritoneBoulevard : (2, -214, 250, -0.87, 14, (-0.87 - 1.844)),
-        ToontownGlobals.TenorTerrace : (2, 715, -15, -0.87, 14, (-0.87 - 1.844)),
-        ToontownGlobals.TheBrrrgh : (2, -58, -26, 1.7, 10, -0.8),
-        ToontownGlobals.WalrusWay : (2, 460, 29, -2, 13, (-2 - 0.4)),
-        ToontownGlobals.SleetStreet : (2, 340, 480, -2, 13, (-2 - 0.4)),
-        ToontownGlobals.PolarPlace : (2, 45.5, 90.86, -2, 13, (-2 - 0.4)),
-        ToontownGlobals.DonaldsDreamland : (2, 159, 0.2, -17.1, 14, (-17.1 - (- 14.6))),
-        ToontownGlobals.LullabyLane : (2, 118, -185, -2.1, 14, (-2.1 - 0.378)),
-        ToontownGlobals.PajamaPlace : (2, 241, -348, -2.1, 14, (-2.1 - 0.378)),
-        ToontownGlobals.MyEstate : (3, 30,-126,-0.3, 16, -0.83),
+        HoodGlobals.ToontownCentral : (2, -81, 31, -4.8, 14, -1.4),
+        HoodGlobals.SillyStreet : (2, 20, -664, -1.4, 14, (-1.4 - 0.438)),
+        HoodGlobals.LoopyLane : (2, -234, 175, -1.4, 14, (-1.4 - 0.462)),
+        HoodGlobals.PunchlinePlace : (2, 529, -70, -1.4, 13, (-1.4 - 0.486)),
+        HoodGlobals.DonaldsDock : (2, -17, 130, 1.730, 15, (1.730 - 3.615)),
+        HoodGlobals.BarnacleBoulevard : (2, 381, -350, -2, 14, (-2 - 0.482)),
+        HoodGlobals.SeaweedStreet : (2, -395, -226, -2, 14, (-2 - 0.482)),
+        HoodGlobals.LighthouseLane : (2, 350, 100, -2, 14, (-2 - 0.482)),
+        HoodGlobals.DaisyGardens : (2, 50, 47, -1.48, 13, (-1.48 - 0.345)),
+        HoodGlobals.ElmStreet : (2, 149, 44, -1.43, 13, (-1.43 - 0.618)),
+        HoodGlobals.MapleStreet : (2, 176, 100, -1.43, 13, (-1.43 - 0.618)),
+        HoodGlobals.OakStreet : (2, 134, -70.5, -1.5, 13, (-1.5 - 0.377)),
+        HoodGlobals.MinniesMelodyland : (2, -0.2, -20.2, -14.65, 14, (-14.65 - (-12))),
+        HoodGlobals.AltoAvenue : (2, -580, -90, -0.87, 14, (-0.87 - 1.844)),
+        HoodGlobals.BaritoneBoulevard : (2, -214, 250, -0.87, 14, (-0.87 - 1.844)),
+        HoodGlobals.TenorTerrace : (2, 715, -15, -0.87, 14, (-0.87 - 1.844)),
+        HoodGlobals.TheBrrrgh : (2, -58, -26, 1.7, 10, -0.8),
+        HoodGlobals.WalrusWay : (2, 460, 29, -2, 13, (-2 - 0.4)),
+        HoodGlobals.SleetStreet : (2, 340, 480, -2, 13, (-2 - 0.4)),
+        HoodGlobals.PolarPlace : (2, 45.5, 90.86, -2, 13, (-2 - 0.4)),
+        HoodGlobals.DonaldsDreamland : (2, 159, 0.2, -17.1, 14, (-17.1 - (- 14.6))),
+        HoodGlobals.LullabyLane : (2, 118, -185, -2.1, 14, (-2.1 - 0.378)),
+        HoodGlobals.PajamaPlace : (2, 241, -348, -2.1, 14, (-2.1 - 0.378)),
+        HoodGlobals.MyEstate : (3, 30,-126,-0.3, 16, -0.83),
     }
 
     def getNumTargets(zoneId):
@@ -95,157 +95,9 @@ class FishItems:
       BootItem: 100,
     }
 
-class FishingRod(NamedTuple):
-    weightMin: int
-    weightMax: int
-    rarity: float
-    castCost: int
-    jellybeanReward: int
-
-class FishProperties(NamedTuple):
-    weightMin: int
-    weightMax: int
-    rarity: int
-    zoneList: tuple
-
-class RarityHandler:
-
-    def getEffectiveRarity(rarity, maxRarity, offset):
-        if rarity + (offset) > maxRarity:
-            return maxRarity
-        return rarity + (offset)
-
-class WeightHandler:
-
-    def getWeightRange(genus, species):
-        fishInfo = simbase.air.getFishes()[genus][species]
-        return (fishInfo.weightMin, fishInfo.weightMax)
-
-    def getRodWeightRange(rodDict, rodIndex):
-        rodProps = rodDict[rodIndex]
-        return (rodProps.weightMin, rodProps.weightMax)
-
-    def canBeCaughtByRod(rodDict, genus, species, rodIndex):
-        minFishWeight, maxFishWeight = WeightHandler.getWeightRange(genus, species)
-        minRodWeight, maxRodWeight = WeightHandler.getRodWeightRange(rodDict, rodIndex)
-        if ((minRodWeight <= maxFishWeight) and
-            (maxRodWeight >= minFishWeight)):
-            return 1
-        return 0
-
-class RodHandler:
-    globalRarityDialBase = 4.3
-    rodDict = {
-      0: FishingRod(weightMin=0, weightMax=4, rarity=(1.0 / (globalRarityDialBase * 1)),
-                    castCost=1, jellybeanReward=10),
-      1: FishingRod(weightMin=0, weightMax=8, rarity=(1.0 / (globalRarityDialBase * 1)),
-                    castCost=2, jellybeanReward=20),
-      2: FishingRod(weightMin=0, weightMax=12, rarity=(1.0 / (globalRarityDialBase * 1)),
-                    castCost=3, jellybeanReward=30),
-      3: FishingRod(weightMin=0, weightMax=16, rarity=(1.0 / (globalRarityDialBase * 1)),
-                    castCost=4, jellybeanReward=75),
-      4: FishingRod(weightMin=0, weightMax=20, rarity=(1.0 / (globalRarityDialBase * 1)),
-                    castCost=5, jellybeanReward=150),
-    }
-
-    def getRodDict():
-        return RodHandler.rodDict
-
-    def getRarity(rodId):
-        return RodHandler.getRodDict()[rodId].rarity
-
-    def getCastCost(rodId):
-        return RodHandler.getRodDict()[rodId].castCost
-
-    def getJellybeanReward(rodId):
-        return RodHandler.getRodDict()[rodId].jellybeanReward
-
 class FishGlobals:
-    MAX_RARITY = 10
     FishingAngleMin = -50
     FishingAngleMax = 50
-    Anywhere = 1
-    emptyRodDict = {}
-    for rodIndex in RodHandler.getRodDict():
-        emptyRodDict[rodIndex] = {}
-    anywhereDict = copy.deepcopy(emptyRodDict)
-    pondInfoDict = {}
-    for genus, speciesList in simbase.air.getFishes().items():
-        for species in range(len(speciesList)):
-            speciesDesc = speciesList[species]
-            rarity = speciesDesc.rarity
-            zoneList = speciesDesc.zoneList
-            for zoneIndex in range(len(zoneList)):
-                zone = zoneList[zoneIndex]
-                effectiveRarity = RarityHandler.getEffectiveRarity(rarity, MAX_RARITY, zoneIndex)
-                if zone == Anywhere:
-                    for rodIndex, rarityDict in anywhereDict.items():
-                        if WeightHandler.canBeCaughtByRod(RodHandler.getRodDict(), genus, species, rodIndex):
-                            fishList = rarityDict.setdefault(effectiveRarity, [])
-                            fishList.append( (genus, species) )
-                else:
-                    pondZones = [zone]
-                    subZones = ToontownGlobals.HoodHierarchy.get(zone)
-                    if subZones:
-                        pondZones.extend(subZones)
-                    for pondZone in pondZones:
-                        if pondZone in pondInfoDict:
-                            pondRodDict = pondInfoDict[pondZone]
-                        else:
-                            pondRodDict = copy.deepcopy(emptyRodDict)
-                            pondInfoDict[pondZone] = pondRodDict
-                        for rodIndex, rarityDict in pondRodDict.items():
-                            if WeightHandler.canBeCaughtByRod(RodHandler.getRodDict(), genus, species, rodIndex):
-                                fishList = rarityDict.setdefault(effectiveRarity, [])
-                                fishList.append( (genus, species) )
-    for zone, _rodDict in pondInfoDict.items():
-        for rodIndex, anywhereRarityDict in anywhereDict.items():
-            for rarity, anywhereFishList in anywhereRarityDict.items():
-                rarityDict = pondRodDict[rodIndex]
-                fishList = rarityDict.setdefault(rarity, [])
-                fishList.extend(anywhereFishList)
-
-    def getRandomWeight(genus, species, rodIndex):
-        minFishWeight, maxFishWeight = WeightHandler.getWeightRange(genus, species)
-        if rodIndex == None:
-            minWeight = minFishWeight
-            maxWeight = maxFishWeight
-        else:
-            minWeight, maxWeight = WeightHandler.getRodWeightRange(RodHandler.getRodDict(), rodIndex)
-            if minFishWeight > minWeight:
-                minWeight = minFishWeight
-            if maxFishWeight < maxWeight:
-                maxWeight = maxFishWeight
-
-        randNumA = random.random()
-        randNumB = random.random()
-
-        randNum = (randNumA + randNumB) / 2.0
-        randWeight = minWeight + ((maxWeight - minWeight) * randNum)
-
-        return int(round(randWeight * 16))
-
-    def rollRarityDice(rodId):
-        diceRoll = random.random()
-
-        exp = RodHandler.getRarity(rodId)
-        rarity = int(math.ceil(10 * (1 - math.pow(diceRoll, exp))))
-
-        if rarity <= 0:
-            rarity = 1
-
-        return rarity
-
-    def getRandomFishVitals(zoneId, rodId):
-        rarity = FishGlobals.rollRarityDice(rodId)
-        rodDict = FishGlobals.pondInfoDict.get(zoneId)
-        rarityDict = rodDict.get(rodId)
-        fishList = rarityDict.get(rarity)
-        if fishList:
-            genus, species = random.choice(fishList)
-            weight = FishGlobals.getRandomWeight(genus, species, rodId)
-            return (1, genus, species, weight)
-        return (0, 0, 0, 0)
 
 class DistributedFishingTargetAI(DistributedNodeAI, FSM):
 
@@ -398,7 +250,6 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.sendUpdate('setOccupied', [avId])
 
     def doCast(self, power, heading):
-        print(power, heading)
         senderId = self.air.currentAvatarSender
         if self.avId != senderId:
             return
@@ -416,7 +267,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
 
         self.__stopTimeout()
         money = sender.getMoney()
-        castCost = RodHandler.getCastCost(sender.getFishingRod())
+        castCost = self.air.fishManager.getCastCost(sender.getFishingRod())
 
         if money < castCost:
             self.normalExit()
@@ -488,7 +339,7 @@ class DistributedFishingPondAI(DistributedObjectAI):
                 break
 
         if itemType == FishItems.FishItem:
-            success, genus, species, weight = FishGlobals.getRandomFishVitals(self.getArea(), rodId)
+            success, genus, species, weight = self.air.fishManager.getRandomFishVitals(self.getArea(), rodId)
             if success:
                 fish = FishBase(genus, species, weight)
                 inTank, hasBiggerAlready = av.fishTank.hasFish(genus, species, weight)
@@ -514,7 +365,7 @@ class DistributedFishingPondAI(DistributedObjectAI):
         elif itemType == FishItems.BootItem:
             return (FishItems.BootItem, None)
         elif itemType == FishItems.JellybeanItem:
-            value = RodHandler.getJellybeanReward(rodId)
+            value = self.air.fishManager.getRodJellybeanReward(rodId)
             av.addMoney(value)
             return(itemType, value)
 

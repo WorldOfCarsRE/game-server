@@ -1,4 +1,4 @@
-from ai.ToontownGlobals import *
+from ai.globals.HoodGlobals import *
 from typing import List, Dict, Union, Optional
 from ai.DistributedObjectAI import DistributedObjectAI
 from dna.dnaparser import load_dna_file, DNAStorage

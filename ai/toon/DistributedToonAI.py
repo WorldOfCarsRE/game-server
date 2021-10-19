@@ -5,7 +5,7 @@ from dc.util import Datagram
 
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
-from ai import ToontownGlobals
+from ai.globals import HoodGlobals
 from ai.fishing.FishBase import FishBase
 from ai.fishing.FishCollectionEnum import *
 
@@ -642,7 +642,7 @@ class DistributedToonAI(DistributedPlayerAI):
             self.air.setInterest(channel, DistributedToonAI.STREET_INTEREST_HANDLE, 0, self.parentId, visibles)
 
         # TODO: Should this be handled somewhere else?
-        if 100 <= newZone < ToontownGlobals.DynamicZonesBegin:
+        if 100 <= newZone < HoodGlobals.DynamicZonesBegin:
             hood = self.getHoodId(newZone)
 
             self.b_setLastHood(hood)
@@ -892,7 +892,7 @@ class FishTank:
     def getTotalValue(self):
         value = 0
         for fish in self.fishList:
-            value += fish.getValue()
+            value += simbase.air.fishManager.getFishValue(fish.getGenus(), fish.getWeight(), fish.getRarity())
         return value
 
     def __str__(self):
@@ -901,7 +901,7 @@ class FishTank:
         txt = ("Fish Tank (%s fish):" % (numFish))
         for fish in self.fishList:
             txt += ("\n" + str(fish))
-            value += fish.getValue()
+            value += simbase.air.fishManager.getFishValue(fish.getGenus(), fish.getWeight(), fish.getRarity())
         txt += ("\nTotal value: %s" % (value))
         return txt
 
