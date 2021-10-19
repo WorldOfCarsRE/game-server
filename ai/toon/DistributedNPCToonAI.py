@@ -70,10 +70,14 @@ class DistributedNPCTailorAI(DistributedNPCToonBaseAI):
         pass
 
 class DistributedNPCFishermanAI(DistributedNPCToonBaseAI):
-    def sendClearMovie(self, task = None):
+    def sendClearMovie(self):
         self.ignore(self.air.getAvatarExitEvent(self.occupier))
         self.occupier = 0
         self.d_setMovie(NPCToons.PURCHASE_MOVIE_CLEAR)
+
+    def sendTimeoutMovie(self, task):
+        self.d_setMovie(NPCToons.SELL_MOVIE_TIMEOUT)
+        self.sendClearMovie()
 
     def avatarEnter(self):
         avId = self.air.currentAvatarSender
