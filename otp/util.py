@@ -118,8 +118,6 @@ DEFAULT_TOON = {
     "setPinkSlips": (0,),
     "setNametagStyle": (0,),
 }
-
-
 def getPuppetChannel(avatarId: int) -> int:
     """Returns the channel for the associated avatar id."""
     return avatarId + (1001 << 32)

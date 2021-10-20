@@ -48,7 +48,7 @@ class MongoBackend(DatabaseBackend):
         for field in dclass.inherited_fields:
             if field.is_db and field.is_required:
                 if field.name not in columns:
-                    raise OTPCreateFailed('Missing required db field: %s' % field.name)
+                    raise OTPCreateFailed(f'Missing required db field: {field.name}')
 
         count = self.mongodb.objects.count()
 
