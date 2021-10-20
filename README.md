@@ -28,6 +28,6 @@ More database backends may be added in the future.
 * Use 4 spaces instead of tabs.
 * Do NOT use underscores in function names.
 * The first word in a variable is lowercase for code functions. (testVar = 1)
-* Make sure their is no trailing spaces in your code.
+* Make sure there are no trailing spaces in your code.
 * Do NOT use underscores for variables and argument names. (test_var = 1)
 * Do NOT do this with the equal sign. (testVar=1)
