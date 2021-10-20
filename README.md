@@ -27,7 +27,7 @@ More database backends may be added in the future.
 ### Contributing
 For coding, use 4 spaces instead of tabs.
 
-Also, when you are writing code, do not do something like this:
+When you are writing code, do not do something like this:
 
 ```
 exampleVar=0
@@ -38,5 +38,9 @@ Do something like this instead:
 ```
 exampleVar = 1
 ```
+
+Make sure the first word in a variable is lowercase for code functions.
+
+Do NOT use underscores.
 
 Finally, make sure their is no trailing spaces in the code you are going to push.
