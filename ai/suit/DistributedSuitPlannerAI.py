@@ -238,7 +238,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
     def requestBattle(self, zoneId, suit: DistributedSuitAI, toonId) -> bool:
         pos = self.zone2battlePos[zoneId]
 
-        battle = self.battleMgr.newBattle(suit, toonId, zoneId, pos)
+        battle = self.battleMgr.newBattle(suit, toonId, zoneId, zoneId, pos)
         return True
 
     def __battleFinished(self):
@@ -265,7 +265,7 @@ class BattleManagerAI:
             battle = DistributedBattleAI(self.air, self, pos, suit, toonId, zoneId)
             battle.generateWithRequired(zoneId)
             battle.battleCellId = cellId
-            self.cell2Battle[cellId]
+            self.cell2Battle[cellId] = battle
 
         return battle
 
