@@ -10,9 +10,10 @@ class EstateManagerAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
 
+        # Dict of estate zoneId's keyed by avId.
         self.estateZones: Dict[int] = {}
 
-        # Initialize our query context.
+        # These are used during estate retrieval.
         self.queryContext = 0
         self.queries = {}
 
