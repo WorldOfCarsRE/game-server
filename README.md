@@ -25,22 +25,9 @@ More database backends may be added in the future.
 * The python web server can be ran through the `web.website` module. This is required for authentication.
 
 ### Contributing
-For coding, use 4 spaces instead of tabs.
-
-When you are writing code, do not do something like this:
-
-```
-exampleVar=0
-```
-
-Do something like this instead:
-
-```
-exampleVar = 1
-```
-
-Make sure the first word in a variable is lowercase for code functions.
-
-Do NOT use underscores.
-
-Finally, make sure their is no trailing spaces in the code you are going to push.
+* Use 4 spaces instead of tabs.
+* Do NOT use underscores in function names.
+* The first word in a variable is lowercase for code functions. (testVar = 1)
+* Make sure their is no trailing spaces in your code.
+* Do NOT use underscores for variables and argument names. (test_var = 1)
+* Do NOT do this with the equal sign. (testVar=1)
