@@ -25,7 +25,7 @@ More database backends may be added in the future.
 * The python web server can be ran through the `web.website` module. This is required for authentication.
 
 ### Contributing
-For coding, do not use tabs, use 4 spaces instead of tabs.
+For coding, use 4 spaces instead of tabs.
 
 Also, when you are writing code, do not do something like this:
 
