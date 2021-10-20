@@ -2,7 +2,10 @@ from dataslots import with_slots
 from dataclasses import dataclass
 
 from ai.DistributedObjectAI import DistributedObjectAI
+from . import HouseGlobals
+
 from typing import List
+import time
 
 @with_slots
 @dataclass
@@ -83,3 +86,7 @@ class DistributedEstateAI(DistributedObjectAI):
 
     def getClouds(self) -> int:
         return self.clouds
+
+    def requestServerTime(self):
+        avId = self.air.currentAvatarSender
+        self.sendUpdateToAvatar(avId, 'setServerTime', [time.time() % HouseGlobals.DAY_NIGHT_PERIOD])

@@ -401,9 +401,9 @@ class StateServerProtocol(MDUpstreamProtocol):
             self.handle_generate(dgi, sender, False)
         elif msgtype == STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
             self.handle_generate(dgi, sender, True)
-        elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT:  # DBSS msg
+        elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT: # DBSS msg
             self.handle_db_generate(dgi, sender, False)
-        elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT:  # DBSS msg
+        elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT: # DBSS msg
             self.handle_db_generate(dgi, sender, True)
         elif msgtype == STATESERVER_ADD_AI_RECV:
             self.handle_add_ai(dgi, sender)
