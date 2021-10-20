@@ -2,9 +2,7 @@ from .DistributedNodeAI import DistributedNodeAI
 
 from panda3d.direct import CDistributedSmoothNodeBase
 
-
 from typing import Optional
-
 
 class DistributedSmoothNodeAI(DistributedNodeAI):
     def __init__(self, air, name=None):

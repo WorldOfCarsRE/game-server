@@ -2,7 +2,6 @@ from otp import config
 
 import asyncio
 
-
 from otp.messagedirector import MDUpstreamProtocol, DownstreamMessageDirector
 from dc.util import Datagram
 from otp.constants import STATESERVERS_CHANNEL
@@ -15,7 +14,6 @@ from dc.objects import MolecularField, AtomicField
 from typing import Dict, Set
 
 from otp.zone import *
-
 
 class DistributedObject(MDParticipant):
     def __init__(self, state_server, sender, do_id, parent_id, zone_id, dclass, required, ram, owner_channel=None, db=False):
@@ -393,7 +391,6 @@ class DistributedObject(MDParticipant):
 
         self.service.send_datagram(resp)
 
-
 class StateServerProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
         sender = dgi.get_channel()
@@ -404,9 +401,9 @@ class StateServerProtocol(MDUpstreamProtocol):
             self.handle_generate(dgi, sender, False)
         elif msgtype == STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
             self.handle_generate(dgi, sender, True)
-        elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT:  # DBSS msg
+        elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT: # DBSS msg
             self.handle_db_generate(dgi, sender, False)
-        elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT:  # DBSS msg
+        elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT: # DBSS msg
             self.handle_db_generate(dgi, sender, True)
         elif msgtype == STATESERVER_ADD_AI_RECV:
             self.handle_add_ai(dgi, sender)
@@ -606,9 +603,7 @@ class StateServerProtocol(MDUpstreamProtocol):
             if obj.ai_channel == ai_channel:
                 obj.annihilate(ai_channel)
 
-
 from dc.parser import parse_dc_file
-
 
 class StateServer(DownstreamMessageDirector, ChannelAllocator):
     upstream_protocol = StateServerProtocol
@@ -655,7 +650,6 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
                 return None
 
         return ai_channel
-
 
 async def main():
     loop = asyncio.get_running_loop()

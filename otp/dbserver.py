@@ -29,8 +29,18 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handleClearWishName(dgi)
         elif msg_id == DBSERVER_GET_FRIENDS:
             self.handleGetFriends(dgi)
+        elif msg_id == DBSERVER_GET_ESTATE:
+            self.handleGetEstate(sender, dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
+
+    def handleGetEstate(self, sender, dgi):
+        context = dgi.get_uint32()
+        avId = dgi.get_uint32()
+        parentId = dgi.get_uint32()
+        zoneId = dgi.get_uint32()
+
+        self.service.loop.create_task(self.service.queryEstate(sender, context, avId, parentId, zoneId))
 
     def handle_create_object(self, sender, dgi):
         context = dgi.get_uint32()
@@ -127,6 +137,69 @@ class DBServer(DownstreamMessageDirector):
         dg.add_uint32(context)
         dg.add_uint8(do_id == 0)
         dg.add_uint32(do_id)
+        self.send_datagram(dg)
+
+    async def queryEstate(self, sender, context, avId, parentId, zoneId):
+        toon = await self.backend.query_object_fields(avId, ['setDISLid'], 'DistributedToon')
+        accountId = toon['setDISLid'][0]
+
+        account = await self.backend.query_object_fields(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
+
+        houseIds = account['HOUSE_ID_SET']
+        avatars = account['ACCOUNT_AV_SET']
+        estateId = account['ESTATE_ID']
+
+        estateClass = self.dc.namespace['DistributedEstate']
+
+        # These Fields are REQUIRED but not stored in db.
+        estateOther = [
+            (estateClass['setDawnTime'], (0,)),
+            (estateClass['setClouds'], (0,)),
+        ]
+
+        if estateId == 0:
+            defaultFields = [
+                ('setEstateType', [0]),
+                ('setDecorData', [[]]),
+                ('setLastEpochTimeStamp', [0]),
+                ('setRentalTimeStamp', [0]),
+                ('setRentalType', [0]),
+                ('setSlot0Items', [[]]),
+                ('setSlot1Items', [[]]),
+                ('setSlot2Items', [[]]),
+                ('setSlot3Items', [[]]),
+                ('setSlot4Items', [[]]),
+                ('setSlot5Items', [[]]),
+                ('setSlot0ToonId', [avatars[0]]),
+                ('setSlot1ToonId', [avatars[1]]),
+                ('setSlot2ToonId', [avatars[2]]),
+                ('setSlot3ToonId', [avatars[3]]),
+                ('setSlot4ToonId', [avatars[4]]),
+                ('setSlot5ToonId', [avatars[5]])
+            ]
+
+            estateId = await self.backend.create_object(estateClass, defaultFields)
+            await self.backend.set_field(accountId, 'ESTATE_ID', estateId, 'Account')
+
+        # Generate the estate.
+        estate = Datagram()
+        estate.add_server_header([STATESERVERS_CHANNEL], DBSERVERS_CHANNEL, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
+        estate.add_uint32(estateId)
+        estate.add_uint32(parentId)
+        estate.add_uint32(zoneId)
+        estate.add_channel(DBSERVERS_CHANNEL)
+        estate.add_uint16(estateClass.number)
+        estate.add_uint16(len(estateOther))
+
+        for f, arg in estateOther:
+            estate.add_uint16(f.number)
+            f.pack_value(estate, arg)
+
+        self.send_datagram(estate)
+
+        dg = Datagram()
+        dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
+        dg.add_uint32(context)
         self.send_datagram(dg)
 
     async def create_toon(self, sender, context, dclass, disl_id, pos, fields):

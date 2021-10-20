@@ -53,6 +53,8 @@ NPC_SPECIALQUESTGIVER = 9
 NPC_FLIPPYTOONHALL = 10
 NPC_SCIENTIST = 11
 
+CLERK_COUNTDOWN_TIME = 120
+
 NPCToonDict = {
     20000: (-1, NPCToonNames[20000], ('dll', 'ms', 'm', 'm', 7, 0, 7, 7, 2, 6, 2, 6, 2, 16), 'm', 1, NPC_REGULAR),
     2001: (2513, NPCToonNames[2001], ('dss', 'ms', 'm', 'm', 17, 0, 17, 17, 3, 3, 3, 3, 7, 2), 'm', 1, NPC_FLIPPYTOONHALL),
