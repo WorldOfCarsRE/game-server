@@ -23,3 +23,20 @@ More database backends may be added in the future.
 * The OTP cluster can be ran through the `otp.otp` module.
 * The AI server can be ran through the `ai.AIStart` module.
 * The python web server can be ran through the `web.website` module. This is required for authentication.
+
+### Contributing
+For coding, do not use tabs, use 4 spaces instead of tabs.
+
+Also, when you are writing code, do not do something like this:
+
+```
+exampleVar=0
+```
+
+Do something like this instead:
+
+```
+exampleVar = 1
+```
+
+Finally, make sure their is no trailing spaces in the code you are going to push.
