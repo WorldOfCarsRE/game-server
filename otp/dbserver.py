@@ -260,11 +260,14 @@ class DBServer(DownstreamMessageDirector):
         # Update the account's house list.
         await self.backend.set_field(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
 
+        # Make a class containing estate data.
         info = EstateInfo()
         info.estateId = estateId
         info.parentId = parentId
         info.estateZone = zoneId
         info.houseIds = houseIds
+
+        # Map this avatar to their estate info.
         self.estates[avId] = info
 
         # Let the AI know that we are done.
