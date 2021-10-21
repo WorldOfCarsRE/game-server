@@ -38,6 +38,7 @@ class PotentialAvatar:
     rejected_name: str
     dna_string: str
     index: int
+    allowName: int
 
 class ClientState(IntEnum):
     NEW = 0
@@ -188,6 +189,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.receive_add_interest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
+            elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
+                self.receive_update_field(dgi)
             else:
                 self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
         elif self.state == ClientState.AVATAR_CHOOSER:
@@ -403,8 +406,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.log.debug(f'Client {self.channel} tried creating avatar in invalid position.')
             return
 
-        self.potential_avatar = PotentialAvatar(do_id=0, name='Toon', wish_name='', approved_name='',
-                                                      rejected_name='', dna_string=dna, index=pos)
+        self.potential_avatar = PotentialAvatar(do_id = 0, name = 'Toon', wish_name = '', approved_name = '',
+                                                      rejected_name = '', dna_string = dna, index = pos, allowName = 1)
 
         dclass = self.service.dc_file.namespace['DistributedToon']
 
@@ -701,9 +704,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         avatar_info = [None] * 6
 
         for i in range(dgi.get_uint16()):
-            pot_av = PotentialAvatar(do_id=dgi.get_uint32(), name=dgi.get_string16(), wish_name=dgi.get_string16(),
-                                     approved_name=dgi.get_string16(), rejected_name=dgi.get_string16(),
-                                     dna_string=dgi.get_blob16(), index=dgi.get_uint8())
+            pot_av = PotentialAvatar(do_id = dgi.get_uint32(), name = dgi.get_string16(), wish_name = dgi.get_string16(),
+                                     approved_name = dgi.get_string16(), rejected_name = dgi.get_string16(),
+                                     dna_string = dgi.get_blob16(), index = dgi.get_uint8(), allowName = dgi.get_uint8())
 
             avatar_info[pot_av.index] = pot_av
 

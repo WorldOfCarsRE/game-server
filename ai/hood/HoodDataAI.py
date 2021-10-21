@@ -72,11 +72,9 @@ class PlaceAI:
     def cleanup(self):
         raise NotImplementedError
 
-
 from ai.building.DistributedHQInteriorAI import DistributedHQInteriorAI
 from ai.building.DistributedDoorAI import DistributedDoorAI
 from ai.building import DoorTypes
-
 
 class HQBuildingAI(object):
     __slots__ = 'interior', 'door0', 'door1', 'insideDoor0', 'insideDoor1', 'npcs'
@@ -124,7 +122,6 @@ class HQBuildingAI(object):
         self.insideDoor1.requestDelete()
         self.interior.requestDelete()
 
-
 class GagshopBuildingAI(object):
     __slots__ = 'interior', 'door', 'insideDoor', 'npcs'
 
@@ -156,7 +153,6 @@ class GagshopBuildingAI(object):
         self.insideDoor.requestDelete()
         self.interior.requestDelete()
 
-
 class DistributedGagshopInteriorAI(DistributedObjectAI):
     def __init__(self, air, block, zoneId):
         DistributedObjectAI.__init__(self, air)
@@ -166,9 +162,7 @@ class DistributedGagshopInteriorAI(DistributedObjectAI):
     def getZoneIdAndBlock(self):
         return self.zoneId, self.block
 
-
 from ai.building.DistributedBuildingAI import DistributedBuildingAI
-
 
 class SafeZoneAI(PlaceAI):
 
@@ -232,11 +226,11 @@ class SafeZoneAI(PlaceAI):
             pond = DistributedFishingPondAI(self.air, self.zone_id)
             pond.generateWithRequired(zoneId)
             pondName2Do[pondName] = pond
-            
+
         for dnaspot in self.storage.spots:
             group = dnaspot.get_group()
             pondName = dnaspot.get_pond_name()
-            pond = pondName2Do[pondName]  
+            pond = pondName2Do[pondName]
             spot = DistributedFishingSpotAI(self.air, pond, group.get_pos_hpr())
             spot.generateWithRequired(pond.zoneId)
 
@@ -257,7 +251,6 @@ class StreetAI(SafeZoneAI):
             self.suitPlanner = DistributedSuitPlannerAI(self.air, self)
             self.suitPlanner.generateWithRequired(self.zone_id)
             self.suitPlanner.startup()
-
 
 class PlaygroundAI(SafeZoneAI):
     treasurePlannerClass: Optional[Type[RegenTreasurePlanner]] = None
@@ -291,7 +284,6 @@ class PlaygroundAI(SafeZoneAI):
                 butterfly.start()
                 self.butterflies.append(butterfly)
 
-
 class HoodAI:
     zoneId = None
 
@@ -309,14 +301,12 @@ class HoodAI:
         for street in self.streets:
             street.active = False
 
-
 class DDHoodAI(HoodAI):
     zoneId = DonaldsDock
 
     def startup(self):
         self.playground.treasurePlannerClass = DDTreasurePlanner
         super().startup()
-
 
 class TTHoodAI(HoodAI):
     zoneId = ToontownCentral
@@ -328,14 +318,12 @@ class TTHoodAI(HoodAI):
             street.wantSuits = True
         super().startup()
 
-
 class BRHoodAI(HoodAI):
     zoneId = TheBrrrgh
 
     def startup(self):
         self.playground.treasurePlannerClass = BRTreasurePlanner
         super().startup()
-
 
 class MMHoodAI(HoodAI):
     zoneId = MinniesMelodyland
@@ -344,7 +332,6 @@ class MMHoodAI(HoodAI):
         self.playground.treasurePlannerClass = MMTreasurePlanner
         super().startup()
 
-
 class DGHoodAI(HoodAI):
     zoneId = DaisyGardens
 
@@ -352,7 +339,6 @@ class DGHoodAI(HoodAI):
         self.playground.treasurePlannerClass = DGTreasurePlanner
         self.playground.createButterflies(ButterflyGlobals.DG)
         super().startup()
-
 
 class DLHoodAI(HoodAI):
     zoneId = DonaldsDreamland

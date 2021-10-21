@@ -115,10 +115,10 @@ class DistributedInGameNewsMgrAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
 
-        self.latest_issue = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1379606399))
+        self.latestIssue = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1379606399))
 
     def getLatestIssueStr(self):
-        return self.latest_issue
+        return self.latestIssue
 
 @with_slots
 @dataclass
@@ -224,8 +224,12 @@ class NewsManagerAI(DistributedObjectAI):
     def d_setHolidayIdList(self):
         self.sendUpdate('setHolidayIdList', [self.holidayIds])
 
-    def d_sendSystemMessage(self, msg, msgType = 0):
+    def d_sendSystemMessage(self, msg: str, msgType = 0):
         self.sendUpdate('sendSystemMessage', [msg, msgType])
+
+    def forceHolidayStart(self, holidayId: int):
+        self.holidayIds.append(holidayId)
+        self.d_setHolidayIdList()
 
 class HolidayBaseAI:
     holidayId = None
@@ -729,7 +733,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         minArgs = fArgs - (len(function.__defaults__) if function.__defaults__ else 0) - 1
 
         if argCount < minArgs:
-            response = '{0} requires at least {1} arguments but received {2}!'.format(magicWord, str(minArgs), str(argCount))
+            response = f'{magicWord} requires at least {str(minArgs)} arguments but received {str(argCount)}!'
             self.sendResponseMessage(avId, response)
             return False
 
@@ -754,7 +758,15 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         return f'Changed name to {name}.'
 
-    def setMagicWord(self, magicWord, avId, zoneId, signature):
+    def startHoliday(self, holidayId: int) -> str:
+        if holidayId in self.air.newsManager.holidayIds:
+            return f'Holiday {holidayId} is already running!'
+
+        self.air.newsManager.forceHolidayStart(holidayId)
+
+        return f'Holiday {holidayId} has started!'
+
+    def setMagicWord(self, magicWord: str, avId: int, zoneId: int, signature: str):
         avId = self.air.currentAvatarSender
         av = self.air.doTable.get(avId)
 
@@ -772,7 +784,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         del splitWord
 
         # Log this attempt.
-        print('{0} with avId of {1} executed Magic Word: {2}!'.format(av.getName(), avId, magicWord))
+        print(f'{av.getName()} ({avId}) executed Magic Word: {magicWord}.')
 
         # Grab all of our string arguments.
         string = ' '.join(str(x) for x in args)
@@ -780,7 +792,8 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         clientWords = [
             'run',
             'walk',
-            'fps'
+            'fps',
+            'sit'
         ]
 
         if magicWord in clientWords or magicWord == '':
@@ -793,9 +806,26 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
             response = self.sendSystemMessage(av, msg = string)
         elif magicWord == 'name':
             response = self.setName(av, name = string)
+        elif magicWord == 'startholiday':
+            if self.checkArguments(avId, magicWord, self.startHoliday, args):
+                response = self.startHoliday(holidayId = int(args[0]))
         else:
             response = f'{magicWord} is not a valid Magic Word.'
-            print(f'Unknown Magic Word: {magicWord} from avId: {avId}!')
+            print(f'Unknown Magic Word: {magicWord} from avId: {avId}.')
 
         # Send our response to the client.
         self.sendResponseMessage(avId, response)
+
+class TTCodeRedemptionMgrAI(DistributedObjectAI):
+
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+    def redeemCode(self, context, code):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if not av:
+            return
+
+        self.sendUpdateToAvatar(avId, 'redeemCodeResult', [context, 6, 0])

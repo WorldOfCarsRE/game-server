@@ -1,6 +1,6 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 from otp.constants import DBSERVERS_CHANNEL
-from otp.messagetypes import DBSERVER_GET_ESTATE
+from otp.messagetypes import DBSERVER_GET_ESTATE, DBSERVER_UNLOAD_ESTATE
 from ai.estate.DistributedEstateAI import DistributedEstateAI
 from direct.showbase.PythonUtil import Functor
 from dc.util import Datagram
@@ -52,11 +52,19 @@ class EstateManagerAI(DistributedObjectAI):
         # Remove this avatar from our dictionary.
         del self.estateZones[avId]
 
+        # Unload our estate.
+        dg = Datagram()
+        dg.add_server_header([DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_UNLOAD_ESTATE)
+        dg.add_uint32(avId)
+        dg.add_uint32(self.parentId)
+        self.air.send(dg)
+
     def handleGetEstateResp(self, dgi):
         context = dgi.get_uint32()
         callback = self.queries.get(context)
 
         if callback:
+            del self.queries[context]
             callback()
 
     def handleGetEstate(self, avId: int):
