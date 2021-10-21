@@ -127,16 +127,16 @@ class DBServer(DownstreamMessageDirector):
 
     async def create_object(self, sender, context, dclass, fields):
         try:
-            do_id = await self.backend.create_object(dclass, fields)
+            doId = await self.backend.create_object(dclass, fields)
         except OTPCreateFailed as e:
             print('creation failed', e)
-            do_id = 0
+            doId = 0
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
         dg.add_uint32(context)
-        dg.add_uint8(do_id == 0)
-        dg.add_uint32(do_id)
+        dg.add_uint8(doId == 0)
+        dg.add_uint32(doId)
         self.send_datagram(dg)
 
     async def queryEstate(self, sender, context, avId, parentId, zoneId):
@@ -374,10 +374,10 @@ class DBServer(DownstreamMessageDirector):
         # Send the response to the client.
         self.send_datagram(dg)
 
-    async def query_account(self, sender, do_id):
+    async def query_account(self, sender, doId):
         dclass = self.dc.namespace['Account']
         toon_dclass = self.dc.namespace['DistributedToon']
-        fieldDict = await self.backend.query_object_all(do_id, dclass.name)
+        fieldDict = await self.backend.query_object_all(doId, dclass.name)
 
         avIds = fieldDict['ACCOUNT_AV_SET']
 
@@ -388,7 +388,7 @@ class DBServer(DownstreamMessageDirector):
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_ACCOUNT_QUERY_RESP)
         dg.add_bytes(temp.bytes())
         avCount = sum((1 if avId else 0 for avId in avIds))
-        self.log.debug(f'Account query for {do_id} from {sender}: {fieldDict}')
+        self.log.debug(f'Account query for {doId} from {sender}: {fieldDict}')
         dg.add_uint16(avCount) # Av count
         for avId in avIds:
             if not avId:
