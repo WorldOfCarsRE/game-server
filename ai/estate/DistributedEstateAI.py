@@ -2,7 +2,7 @@ from dataslots import with_slots
 from dataclasses import dataclass
 
 from ai.DistributedObjectAI import DistributedObjectAI
-from . import HouseGlobals
+from ai.house import HouseGlobals
 
 from typing import List
 import time
