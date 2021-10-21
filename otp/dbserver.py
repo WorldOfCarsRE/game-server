@@ -140,9 +140,8 @@ class DBServer(DownstreamMessageDirector):
         self.send_datagram(dg)
 
     async def queryEstate(self, sender, context, avId, parentId, zoneId):
-        toon = await self.backend.query_object_fields(avId, ['setDISLid', 'setName'], 'DistributedToon')
+        toon = await self.backend.query_object_fields(avId, ['setDISLid'], 'DistributedToon')
         accountId = toon['setDISLid'][0]
-        toonName = toon['setName'][0]
 
         account = await self.backend.query_object_fields(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
 
@@ -189,39 +188,50 @@ class DBServer(DownstreamMessageDirector):
         for index, houseId in enumerate(houseIds):
             avatarId = avatars[index]
 
+            # These Fields are REQUIRED but not stored in db.
             houseOther = [
                 (houseClass['setHousePos'], (index,)),
                 (houseClass['setCannonEnabled'], (0,)),
             ]
 
-            if avatarId == avId:
-                if houseId == 0:
-                    houseDefaults = [
-                        ('setHouseType', [0]),
-                        ('setGardenPos', [0]),
-                        ('setAvatarId', [avatarId]),
-                        ('setName', [toonName]),
-                        ('setColor', [index]),
-                        ('setAtticItems', ['']),
-                        ('setInteriorItems', ['']),
-                        ('setAtticWallpaper', ['']),
-                        ('setInteriorWallpaper', ['']),
-                        ('setAtticWindows', ['']),
-                        ('setInteriorWindows', ['']),
-                        ('setDeletedItems', [''])
-                    ]
+            houseDefaults = [
+                ('setHouseType', [0]),
+                ('setGardenPos', [index]),
+                ('setAvatarId', [avatarId]),
+                ('setName', ['']),
+                ('setColor', [index]),
+                ('setAtticItems', ['']),
+                ('setInteriorItems', ['']),
+                ('setAtticWallpaper', ['']),
+                ('setInteriorWallpaper', ['']),
+                ('setAtticWindows', ['']),
+                ('setInteriorWindows', ['']),
+                ('setDeletedItems', [''])
+            ]
 
-                    houseId = await self.backend.create_object(houseClass, houseDefaults)
-                    houseIds[index] = houseId
-                    await self.backend.set_field(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
-                    await self.backend.set_field(avatarId, 'setHouseId', [houseId], 'DistributedToon')
+            if houseId == 0:
+                # Create a house.
+                houseId = await self.backend.create_object(houseClass, houseDefaults)
+                houseIds[index] = houseId
 
-                # Generate the house.
-                await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
-            else:
-                # TODO: Handle other houses on the account.
-                pass
+            if avatarId != 0:
+                # Update the toon with their new house.
+                await self.backend.set_field(avatarId, 'setHouseId', [houseId], 'DistributedToon')
 
+                # Update the house with the toon's name & avatarId.
+                owner = await self.backend.query_object_fields(avatarId, ['setName'], 'DistributedToon')
+                toonName = owner['setName'][0]
+
+                await self.backend.set_field(houseId, 'setName', [toonName], 'DistributedHouse')
+                await self.backend.set_field(houseId, 'setAvatarId', [avatarId], 'DistributedHouse')
+
+            # Generate the houses.
+            await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
+
+        # Update the account's house list.
+        await self.backend.set_field(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
+
+        # Let the AI know that we are done.
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
         dg.add_uint32(context)
@@ -245,29 +255,20 @@ class DBServer(DownstreamMessageDirector):
 
     async def create_toon(self, sender, context, dclass, disl_id, pos, fields):
         try:
-            do_id = await self.backend.create_object(dclass, fields)
+            doId = await self.backend.create_object(dclass, fields)
             account = await self.backend.query_object_fields(disl_id, ['ACCOUNT_AV_SET'], 'Account')
-
-            a = Datagram()
-            self.dc.namespace['Account']['ACCOUNT_AV_SET'].pack_value(a, account['ACCOUNT_AV_SET'])
-
-            temp = Datagram()
-            temp.add_bytes(a.bytes())
-            av_set = self.dc.namespace['Account']['ACCOUNT_AV_SET'].unpack_value(temp.iterator())
-            print(do_id, disl_id, pos, av_set)
-            av_set[pos] = do_id
-            temp.seek(0)
-            self.dc.namespace['Account']['ACCOUNT_AV_SET'].pack_value(temp, av_set)
-            await self.backend.set_field(disl_id, 'ACCOUNT_AV_SET', av_set, 'Account')
+            avSet = account['ACCOUNT_AV_SET']
+            avSet[pos] = doId
+            await self.backend.set_field(disl_id, 'ACCOUNT_AV_SET', avSet, 'Account')
         except OTPCreateFailed as e:
             print('creation failed', e)
-            do_id = 0
+            doId = 0
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
         dg.add_uint32(context)
-        dg.add_uint8(do_id == 0)
-        dg.add_uint32(do_id)
+        dg.add_uint8(doId == 0)
+        dg.add_uint32(doId)
         self.send_datagram(dg)
 
     async def get_stored_values(self, sender, context, do_id, fields):
@@ -378,16 +379,14 @@ class DBServer(DownstreamMessageDirector):
         toon_dclass = self.dc.namespace['DistributedToon']
         fieldDict = await self.backend.query_object_all(do_id, dclass.name)
 
-        temp = Datagram()
-        dclass['ACCOUNT_AV_SET'].pack_value(temp, fieldDict['ACCOUNT_AV_SET'])
-        avIds = dclass['ACCOUNT_AV_SET'].unpack_value(temp.iterator())
+        avIds = fieldDict['ACCOUNT_AV_SET']
 
-        tempTwo = Datagram()
-        dclass['ACCOUNT_AV_SET_DEL'].pack_value(tempTwo, fieldDict['ACCOUNT_AV_SET_DEL'])
+        temp = Datagram()
+        dclass['ACCOUNT_AV_SET_DEL'].pack_value(temp, fieldDict['ACCOUNT_AV_SET_DEL'])
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_ACCOUNT_QUERY_RESP)
-        dg.add_bytes(tempTwo.bytes())
+        dg.add_bytes(temp.bytes())
         avCount = sum((1 if avId else 0 for avId in avIds))
         self.log.debug(f'Account query for {do_id} from {sender}: {fieldDict}')
         dg.add_uint16(avCount) # Av count
