@@ -342,7 +342,7 @@ class AIRepository:
         self.registerForChannel(self.ourChannel)
 
         from .Objects import ToontownDistrictAI, ToontownDistrictStatsAI, DistributedInGameNewsMgrAI, NewsManagerAI, FriendManagerAI
-        from .Objects import FishManager, ToontownMagicWordManagerAI
+        from .Objects import FishManager, ToontownMagicWordManagerAI, TTCodeRedemptionMgrAI
         from ai.estate.EstateManagerAI import EstateManagerAI
         from .TimeManagerAI import TimeManagerAI
 
@@ -391,6 +391,9 @@ class AIRepository:
 
         self.estateMgr = EstateManagerAI(self)
         self.estateMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
+
+        self.codeRedemptionMgr = TTCodeRedemptionMgrAI(self)
+        self.codeRedemptionMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
 
         self.loadZones()
 

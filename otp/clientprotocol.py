@@ -189,6 +189,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.receive_add_interest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
+            elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
+                self.receive_update_field(dgi)
             else:
                 self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
         elif self.state == ClientState.AVATAR_CHOOSER:

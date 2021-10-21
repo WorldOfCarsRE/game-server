@@ -799,3 +799,17 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         # Send our response to the client.
         self.sendResponseMessage(avId, response)
+
+class TTCodeRedemptionMgrAI(DistributedObjectAI):
+
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+    def redeemCode(self, context, code):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if not av:
+            return
+
+        self.sendUpdateToAvatar(avId, 'redeemCodeResult', [context, 6, 0])

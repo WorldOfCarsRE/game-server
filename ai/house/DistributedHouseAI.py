@@ -2,6 +2,7 @@ from ai.DistributedObjectAI import DistributedObjectAI
 from ai.house.DistributedHouseDoorAI import DistributedHouseDoorAI
 from ai.house.DistributedHouseInteriorAI import DistributedHouseInteriorAI
 from ai.building import DoorTypes
+from ai.estate.DistributedMailboxAI import DistributedMailboxAI
 
 class DistributedHouseAI(DistributedObjectAI):
 
@@ -29,6 +30,11 @@ class DistributedHouseAI(DistributedObjectAI):
     def announceGenerate(self):
         # Toon interior:
         self.interiorZoneId = self.air.allocateZone()
+
+        # Outside mailbox (if we have one)
+        if self.avId:
+            self.mailbox = DistributedMailboxAI(self.air, self)
+            self.mailbox.generateWithRequired(self.zoneId)
 
         # Outside door:
         self.door = DistributedHouseDoorAI(self.air, self.do_id, DoorTypes.EXT_STANDARD)
@@ -76,6 +82,9 @@ class DistributedHouseAI(DistributedObjectAI):
 
     def getGardenPos(self) -> int:
         return self.gardenPos
+
+    def setAvatarId(self, avId):
+        self.avId = avId
 
     def getAvatarId(self) -> int:
         return self.avId
