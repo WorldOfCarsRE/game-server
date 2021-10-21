@@ -139,8 +139,6 @@ async def handle_login(request):
     ciphertext, tag = cipher.encrypt_and_digest(json.dumps(info).encode('utf-8'))
     token = b''.join([cipher.nonce, tag, ciphertext])
 
-    print(token)
-
     action = 'LOGIN_ACTION=PLAY'
     token = f'{token.hex()}'
     username = f'{username}'

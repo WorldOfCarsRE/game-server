@@ -12,6 +12,12 @@ from .exceptions import *
 
 from dc.objects import MolecularField
 
+class EstateInfo:
+    estateId: int
+    parentId: int
+    estateZone: int
+    houseIds = list
+
 class DBServerProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
         sender = dgi.get_channel()
@@ -31,6 +37,8 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handleGetFriends(dgi)
         elif msg_id == DBSERVER_GET_ESTATE:
             self.handleGetEstate(sender, dgi)
+        elif msg_id == DBSERVER_UNLOAD_ESTATE:
+            self.handleUnloadEstate(dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
 
@@ -41,6 +49,12 @@ class DBServerProtocol(MDUpstreamProtocol):
         zoneId = dgi.get_uint32()
 
         self.service.loop.create_task(self.service.queryEstate(sender, context, avId, parentId, zoneId))
+
+    def handleUnloadEstate(self, dgi):
+        avId = dgi.get_uint32()
+        parentId = dgi.get_uint32()
+
+        self.service.loop.create_task(self.service.unloadEstate(avId, parentId))
 
     def handle_create_object(self, sender, dgi):
         context = dgi.get_uint32()
@@ -120,6 +134,9 @@ class DBServer(DownstreamMessageDirector):
 
         self.operations = {}
 
+        # Avatar ID to Estate information.
+        self.estates: Dict[int] = {}
+
     async def run(self):
         await self.backend.setup()
         await self.connect(config['MessageDirector.HOST'], config['MessageDirector.PORT'])
@@ -138,6 +155,18 @@ class DBServer(DownstreamMessageDirector):
         dg.add_uint8(doId == 0)
         dg.add_uint32(doId)
         self.send_datagram(dg)
+
+    async def unloadEstate(self, avId, parentId):
+        if avId in self.estates:
+            info = self.estates[avId]
+            del self.estates[avId]
+
+            # Delete the estate object.
+            await self.deleteDO(info.estateId)
+
+            # Delete each house in the list.
+            for doId in info.houseIds:
+                await self.deleteDO(doId)
 
     async def queryEstate(self, sender, context, avId, parentId, zoneId):
         toon = await self.backend.query_object_fields(avId, ['setDISLid'], 'DistributedToon')
@@ -231,6 +260,13 @@ class DBServer(DownstreamMessageDirector):
         # Update the account's house list.
         await self.backend.set_field(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
 
+        info = EstateInfo()
+        info.estateId = estateId
+        info.parentId = parentId
+        info.estateZone = zoneId
+        info.houseIds = houseIds
+        self.estates[avId] = info
+
         # Let the AI know that we are done.
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
@@ -251,6 +287,12 @@ class DBServer(DownstreamMessageDirector):
             dg.add_uint16(f.number)
             f.pack_value(dg, arg)
 
+        self.send_datagram(dg)
+
+    async def deleteDO(self, doId: int):
+        dg = Datagram()
+        dg.add_server_header([doId], DBSERVERS_CHANNEL, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(doId)
         self.send_datagram(dg)
 
     async def create_toon(self, sender, context, dclass, disl_id, pos, fields):
