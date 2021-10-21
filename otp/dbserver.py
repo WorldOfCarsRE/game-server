@@ -87,7 +87,7 @@ class DBServerProtocol(MDUpstreamProtocol):
 
     def handle_account_query(self, sender, dgi):
         do_id = dgi.get_uint32()
-        self.service.loop.create_task(self.service.query_account(sender, do_id))
+        self.service.loop.create_task(self.service.queryObject(sender, do_id))
 
     def handleClearWishName(self, dgi):
         avatarId = dgi.get_uint32()
@@ -301,7 +301,7 @@ class DBServer(DownstreamMessageDirector):
 
             fieldValue = field_dict[field.name]
 
-            dcName = await self.backend._query_dclass(do_id)
+            dcName = await self.backend.queryDC(do_id)
 
             # Pack the field data.
             a = Datagram()
@@ -374,7 +374,13 @@ class DBServer(DownstreamMessageDirector):
         # Send the response to the client.
         self.send_datagram(dg)
 
-    async def query_account(self, sender, doId):
+    async def queryObject(self, sender, doId):
+        dcName = await self.backend.queryDC(doId)
+
+        if dcName in ['DistributedEstate', 'DistributedHouse']:
+            # TODO
+            return
+
         dclass = self.dc.namespace['Account']
         toon_dclass = self.dc.namespace['DistributedToon']
         fieldDict = await self.backend.query_object_all(doId, dclass.name)

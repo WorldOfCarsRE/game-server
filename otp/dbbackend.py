@@ -37,7 +37,7 @@ class MongoBackend(DatabaseBackend):
         client = MongoClient(config['MongoDB.Host'])
         self.mongodb = client[config['MongoDB.Name']]
 
-    async def _query_dclass(self, do_id: int) -> str:
+    async def queryDC(self, do_id: int) -> str:
         cursor = self.mongodb.objects
         fields = cursor.find_one({'do_id': do_id})
         return fields['class_name']
@@ -72,7 +72,7 @@ class MongoBackend(DatabaseBackend):
 
     async def query_object_all(self, do_id, dclass_name=None):
         if dclass_name is None:
-            dclass_name = await self._query_dclass(do_id)
+            dclass_name = await self.queryDC(do_id)
 
         try:
             cursor = getattr(self.mongodb, dclass_name)
@@ -84,7 +84,7 @@ class MongoBackend(DatabaseBackend):
 
     async def query_object_fields(self, do_id, field_names, dclass_name=None):
         if dclass_name is None:
-            dclass_name = await self._query_dclass(do_id)
+            dclass_name = await self.queryDC(do_id)
 
         cursor = getattr(self.mongodb, dclass_name)
         fields = cursor.find_one({'do_id': do_id})
@@ -99,7 +99,7 @@ class MongoBackend(DatabaseBackend):
 
     async def set_field(self, do_id, field_name, value, dclass_name=None):
         if dclass_name is None:
-            dclass_name = await self._query_dclass(do_id)
+            dclass_name = await self.queryDC(do_id)
 
         queryData = {'do_id': do_id}
         updatedVal = {'$set': {field_name: value}}
@@ -109,7 +109,7 @@ class MongoBackend(DatabaseBackend):
 
     async def set_fields(self, do_id, fields, dclass_name=None):
         if dclass_name is None:
-            dclass_name = await self._query_dclass(do_id)
+            dclass_name = await self.queryDC(do_id)
 
         queryData = {'do_id': do_id}
         table = getattr(self.mongodb, dclass_name)
