@@ -1,6 +1,5 @@
 import time
 
-
 from .DistributedObjectAI import DistributedObjectAI
 from . import OTPGlobals
 

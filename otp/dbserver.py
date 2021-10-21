@@ -140,8 +140,9 @@ class DBServer(DownstreamMessageDirector):
         self.send_datagram(dg)
 
     async def queryEstate(self, sender, context, avId, parentId, zoneId):
-        toon = await self.backend.query_object_fields(avId, ['setDISLid'], 'DistributedToon')
+        toon = await self.backend.query_object_fields(avId, ['setDISLid', 'setName'], 'DistributedToon')
         accountId = toon['setDISLid'][0]
+        toonName = toon['setName'][0]
 
         account = await self.backend.query_object_fields(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
 
@@ -150,6 +151,7 @@ class DBServer(DownstreamMessageDirector):
         estateId = account['ESTATE_ID']
 
         estateClass = self.dc.namespace['DistributedEstate']
+        houseClass = self.dc.namespace['DistributedHouse']
 
         # These Fields are REQUIRED but not stored in db.
         estateOther = [
@@ -182,24 +184,63 @@ class DBServer(DownstreamMessageDirector):
             await self.backend.set_field(accountId, 'ESTATE_ID', estateId, 'Account')
 
         # Generate the estate.
-        estate = Datagram()
-        estate.add_server_header([STATESERVERS_CHANNEL], DBSERVERS_CHANNEL, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
-        estate.add_uint32(estateId)
-        estate.add_uint32(parentId)
-        estate.add_uint32(zoneId)
-        estate.add_channel(DBSERVERS_CHANNEL)
-        estate.add_uint16(estateClass.number)
-        estate.add_uint16(len(estateOther))
+        await self.activateObjectWithOther(estateId, parentId, zoneId, estateClass, estateOther)
 
-        for f, arg in estateOther:
-            estate.add_uint16(f.number)
-            f.pack_value(estate, arg)
+        for index, houseId in enumerate(houseIds):
+            avatarId = avatars[index]
 
-        self.send_datagram(estate)
+            houseOther = [
+                (houseClass['setHousePos'], (index,)),
+                (houseClass['setCannonEnabled'], (0,)),
+            ]
+
+            if avatarId == avId:
+                if houseId == 0:
+                    houseDefaults = [
+                        ('setHouseType', [0]),
+                        ('setGardenPos', [0]),
+                        ('setAvatarId', [avatarId]),
+                        ('setName', [toonName]),
+                        ('setColor', [index]),
+                        ('setAtticItems', ['']),
+                        ('setInteriorItems', ['']),
+                        ('setAtticWallpaper', ['']),
+                        ('setInteriorWallpaper', ['']),
+                        ('setAtticWindows', ['']),
+                        ('setInteriorWindows', ['']),
+                        ('setDeletedItems', [''])
+                    ]
+
+                    houseId = await self.backend.create_object(houseClass, houseDefaults)
+                    houseIds[index] = houseId
+                    await self.backend.set_field(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
+                    await self.backend.set_field(avatarId, 'setHouseId', [houseId], 'DistributedToon')
+
+                # Generate the house.
+                await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
+            else:
+                # TODO: Handle other houses on the account.
+                pass
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
         dg.add_uint32(context)
+        self.send_datagram(dg)
+
+    async def activateObjectWithOther(self, doId: int, parentId: int, zoneId: int, dclass, other: list):
+        dg = Datagram()
+        dg.add_server_header([STATESERVERS_CHANNEL], DBSERVERS_CHANNEL, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
+        dg.add_uint32(doId)
+        dg.add_uint32(parentId)
+        dg.add_uint32(zoneId)
+        dg.add_channel(DBSERVERS_CHANNEL)
+        dg.add_uint16(dclass.number)
+        dg.add_uint16(len(other))
+
+        for f, arg in other:
+            dg.add_uint16(f.number)
+            f.pack_value(dg, arg)
+
         self.send_datagram(dg)
 
     async def create_toon(self, sender, context, dclass, disl_id, pos, fields):
