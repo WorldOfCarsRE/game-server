@@ -19,6 +19,9 @@ class DistributedHouseAI(DistributedObjectAI):
         self.deletedItems = ''
         self.cannonEnabled = 0
 
+    def announceGenerate(self):
+        self.sendUpdate('setHouseReady', [])
+
     def getHousePos(self) -> int:
         return self.housePos
 
