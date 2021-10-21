@@ -216,11 +216,8 @@ class DBServer(DownstreamMessageDirector):
                     await self.backend.set_field(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
                     await self.backend.set_field(avatarId, 'setHouseId', [houseId], 'DistributedToon')
 
-                    # Generate the house.
-                    await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
-                else:
-                    # Generate the house.
-                    await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
+                # Generate the house.
+                await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
             else:
                 # TODO: Handle other houses on the account.
                 pass
