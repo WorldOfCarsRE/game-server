@@ -199,7 +199,7 @@ class DBServer(DownstreamMessageDirector):
                     houseDefaults = [
                         ('setHouseType', [0]),
                         ('setGardenPos', [0]),
-                        ('setAvatarId', [0]),
+                        ('setAvatarId', [avatarId]),
                         ('setName', [toonName]),
                         ('setColor', [index]),
                         ('setAtticItems', ['']),
