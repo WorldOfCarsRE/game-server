@@ -201,7 +201,6 @@ class PurchaseManagerAI(DistributedObjectAI):
         decZoneRef(self.zoneId)
         DistributedObjectAI.delete(self)
 
-
 class NewbiePurchaseManagerAI(PurchaseManagerAI):
     def __init__(self, air, ownedNewbieId, purchasers, minigameId, trolleyZone, metagameRound):
         PurchaseManagerAI.__init__(self, air, purchasers, minigameId, trolleyZone, metagameRound)

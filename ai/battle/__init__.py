@@ -7,7 +7,6 @@ from ai.DistributedObjectAI import DistributedObjectAI
 from ai.ToonBarrier import ToonBarrier
 from ai.suit.DistributedSuitAI import DistributedSuitBaseAI
 
-
 FACEOFF_TAUNT_T = 3.5
 FACEOFF_LOOK_AT_PROP_T = 6
 CLIENT_INPUT_TIMEOUT = 20.0
@@ -16,23 +15,16 @@ SERVER_INPUT_TIMEOUT = CLIENT_INPUT_TIMEOUT + SERVER_BUFFER_TIME
 
 import random
 
-
 from ai.toon.NPCToons import getSOSCard, SOSCard
-
-
 
 from .BattleGlobals import *
 from ai.TimeManagerAI import DisconnectCloseWindow
 
-
 from dataslots import with_slots
 from dataclasses import dataclass, field
 
-
-
 NO_ID = -1
 NO_ATTACK = -1
-
 
 @with_slots
 @dataclass
@@ -285,7 +277,6 @@ class LuredSuitInfo(object):
     wakeChance: int
     lurerDict: Dict[int, LurerInfo]
 
-
 @dataclass
 class SuccessfulLure(object):
     toonId: int
@@ -293,14 +284,12 @@ class SuccessfulLure(object):
     acc: int
     damage: int = -1
 
-
 AttackExpPerTrack = [0, 10, 20, 30, 40, 50, 60]
 AccuracyBonuses = [0, 20, 40, 60]
 NumRoundsLured = [2, 2, 3, 3, 4, 4, 15]
 DamageBonuses = [0, 20, 20, 20]
 
 from ai.toon import NPCToons
-
 
 class BattleCalculator:
     def __init__(self, battle: 'DistributedBattleBaseAI'):
@@ -1196,21 +1185,17 @@ class BattleCalculator:
 
             foundAttacks.append(attack)
 
-        foundAttacks.sort(key=lambda atk: atk.level)
+        foundAttacks.sort(key = lambda atk: atk.level)
 
         return foundAttacks
-
 
 MAX_JOIN_T = 20.0
 
 from direct.directnotify import DirectNotifyGlobal
 
-
 def test():
     yield 5
     yield from ToonAttack(-1)(None)
-
-
 
 class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     notify = DirectNotifyGlobal.directNotify.newCategory('DistributedBattleBaseAI')
@@ -1933,7 +1918,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.d_setMembers()
         self.needAdjust = True
         self._requestAdjust()
-        
+
     def enterResume(self):
         pass
 
@@ -1941,7 +1926,7 @@ from direct.task import Task
 
 class DistributedBattleAI(DistributedBattleBaseAI):
 
-    def __init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback=None):
+    def __init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback = None):
         DistributedBattleBaseAI.__init__(self, air, finishCallback)
         self.battleMgr = battleMgr
         self.zoneId = zoneId
