@@ -113,7 +113,7 @@ class DBServerProtocol(MDUpstreamProtocol):
         self.service.loop.create_task(self.service.queryFriends(avatarId))
 
 from dc.parser import parse_dc_file
-from otp.dbbackend import MongoBackend, OTPCreateFailed
+from otp.dbbackend import SQLBackend, MongoBackend, OTPCreateFailed
 from otp.util import getPuppetChannel
 from dc.util import Datagram
 
@@ -130,7 +130,10 @@ class DBServer(DownstreamMessageDirector):
 
         self.dc = parse_dc_file('etc/dclass/toon.dc')
 
-        self.backend = MongoBackend(self)
+        if config['DatabaseServer.SQL']:
+            self.backend = SQLBackend(self)
+        else:
+            self.backend = MongoBackend(self)
 
         self.operations = {}
 
