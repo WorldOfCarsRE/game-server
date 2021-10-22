@@ -81,8 +81,6 @@ class Interest:
         self.ai = False
         self.pending_objects: List[int] = []
 
-OTP_DO_ID_TOONTOWN = 4618
-
 @with_slots
 @dataclass
 class ObjectInfo:
@@ -801,7 +799,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {context_id} '
                                f'for location {parent_id} {zones}')
 
-        if self.state <= ClientState.AUTHENTICATED and parent_id != 4618:
+        if self.state <= ClientState.AUTHENTICATED and parent_id != OTP_DO_ID_TOONTOWN:
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 

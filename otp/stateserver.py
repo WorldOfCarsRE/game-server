@@ -608,7 +608,7 @@ from dc.parser import parse_dc_file
 class StateServer(DownstreamMessageDirector, ChannelAllocator):
     upstream_protocol = StateServerProtocol
     service_channels = []
-    root_object_id = 4618
+    root_object_id = OTP_DO_ID_TOONTOWN
 
     min_channel = 100000000
     max_channel = 399999999
