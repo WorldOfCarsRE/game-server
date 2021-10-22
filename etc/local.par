@@ -33,5 +33,5 @@ Name=Dialga
 
 [AI]
 # For support for stock Toontown Online clients.
-# This swaps the pickle protcol to be one supported by Python 2.4.
+# This swaps the pickle protocol to be one supported by Python 2.4.
 LegacyProtocol=1
