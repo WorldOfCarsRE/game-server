@@ -227,6 +227,22 @@ class DistributedToonAI(DistributedPlayerAI):
         if sendTotal:
             self.d_setHp(self.hp)
 
+    def getToonUpTaskName(self):
+        return self.uniqueName('toonUpTask')
+
+    def startToonUp(self, frequency, amount):
+        self.stopToonUp()
+        taskMgr.doMethodLater(frequency, self.doToonUpTask, 
+                              self.getToonUpTaskName(), extraArgs=[amount])
+
+    def stopToonUp(self):
+        taskMgr.remove(self.getToonUpTaskName())
+
+    def doToonUpTask(self, amount, task=None):
+        self.toonUp(amount)
+        if task:
+            return task.cont
+
     @staticmethod
     def getGoneSadMessageForAvId(avId):
         return f'goneSad-{avId}'

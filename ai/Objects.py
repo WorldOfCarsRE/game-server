@@ -849,3 +849,22 @@ class TTCodeRedemptionMgrAI(DistributedObjectAI):
             return
 
         self.sendUpdateToAvatar(avId, 'redeemCodeResult', [context, 6, 0])
+
+class SafeZoneManagerAI(DistributedObjectAI):
+
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+        self.healFrequency = 30
+        self.healAmount = 1
+
+    def enterSafeZone(self):
+        senderId = self.air.currentAvatarSender
+        sender = self.air.doTable.get(senderId)
+        if sender:
+            sender.startToonUp(self.healFrequency, self.healAmount)
+
+    def exitSafeZone(self):
+        senderId = self.air.currentAvatarSender
+        sender = self.air.doTable.get(senderId)
+        if sender:
+            sender.stopToonUp()
