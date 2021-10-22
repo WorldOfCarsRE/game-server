@@ -5,6 +5,7 @@ from otp.zone import *
 from otp.util import *
 
 from panda3d.core import UniqueIdAllocator
+from direct.showbase.MessengerGlobal import *
 from dc.parser import parse_dc_file
 import queue
 
