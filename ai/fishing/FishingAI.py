@@ -203,7 +203,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         else:
             self.avId = senderId
             self.pond.addSpot(senderId, self)
-            self.acceptOnce(self.air.getAvatarExitEvent(senderId), self.__handleUnexpectedEvent)
+            self.acceptOnce(self.air.getDeleteDoIdEvent(senderId), self.__handleUnexpectedEvent)
             self.__stopTimeout()
             self.d_setOccupied(self.avId)
             self.d_setMovie(FishMovies.EnterMovie)
@@ -229,7 +229,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
 
     def cleanupAvatar(self):
         self.pond.removeSpot(self.avId, self)
-        self.ignore(self.air.getAvatarExitEvent(self.avId))
+        self.ignore(self.air.getDeleteDoIdEvent(self.avId))
         self.__stopTimeout()
         self.avId = 0
 

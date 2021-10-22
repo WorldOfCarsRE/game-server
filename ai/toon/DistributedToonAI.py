@@ -45,6 +45,11 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.hoodsVisited = []
         self.fishingTrophies = []
 
+    def delete(self):
+        self.sendUpdate('arrivedOnDistrict', [0])
+        self.air.decrementPopulation()
+        DistributedAvatarAI.delete(self)
+
     def setAccountName(self, name):
         self.accountName = name
 

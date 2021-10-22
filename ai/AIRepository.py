@@ -282,14 +282,9 @@ class AIRepository:
             print(f'Received delete for unknown object: {doId}!')
             return
 
-        # TODO: Is this the best place to put this?
-        from .toon.DistributedToonAI import DistributedToonAI
-
-        if isinstance(do, DistributedToonAI):
-            do.sendUpdate('arrivedOnDistrict', [0])
-            self.decrementPopulation()
-
         do.delete()
+
+        messenger.send(self.getDeleteDoIdEvent(doId))
 
     def context(self):
         self.__contextCounter = (self.__contextCounter + 1) & 0xFFFFFFFF
@@ -424,8 +419,8 @@ class AIRepository:
         self.send(dg)
 
     @staticmethod
-    def getAvatarExitEvent(avId):
-        return f'do-deleted-{avId}'
+    def getDeleteDoIdEvent(doId):
+        return f'do-deleted-{doId}'
 
     def allocateZone(self):
         return self.zoneAllocator.allocate()
