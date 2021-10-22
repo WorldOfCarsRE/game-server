@@ -860,11 +860,13 @@ class SafeZoneManagerAI(DistributedObjectAI):
     def enterSafeZone(self):
         senderId = self.air.currentAvatarSender
         sender = self.air.doTable.get(senderId)
+
         if sender:
             sender.startToonUp(self.healFrequency, self.healAmount)
 
     def exitSafeZone(self):
         senderId = self.air.currentAvatarSender
         sender = self.air.doTable.get(senderId)
+
         if sender:
             sender.stopToonUp()

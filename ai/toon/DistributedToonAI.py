@@ -232,13 +232,13 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def startToonUp(self, frequency, amount):
         self.stopToonUp()
-        taskMgr.doMethodLater(frequency, self.doToonUpTask, 
-                              self.getToonUpTaskName(), extraArgs=[amount])
+        taskMgr.doMethodLater(frequency, self.doToonUpTask,
+                              self.getToonUpTaskName(), extraArgs = [amount])
 
     def stopToonUp(self):
         taskMgr.remove(self.getToonUpTaskName())
 
-    def doToonUpTask(self, amount, task=None):
+    def doToonUpTask(self, amount, task = None):
         self.toonUp(amount)
         if task:
             return task.cont
