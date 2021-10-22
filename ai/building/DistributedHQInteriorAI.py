@@ -27,7 +27,7 @@ class DistributedHQInteriorAI(DistributedObjectAI):
         if builtins.legacyProtocol:
             protocol = 1
         else:
-            protcol = 5
+            protocol = 5
 
         return pickle.dumps([(), (), ()], protocol = protocol)
 
