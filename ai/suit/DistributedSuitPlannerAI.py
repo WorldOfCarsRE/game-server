@@ -236,11 +236,9 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             self.numFlyInSuits -= 1
 
     def requestBattle(self, zoneId, suit: DistributedSuitAI, toonId) -> bool:
-        from ai.battle import DistributedBattleAI
         pos = self.zone2battlePos[zoneId]
 
-        battle = DistributedBattleAI(self.air, pos, suit, toonId, zoneId, finishCallback=self.__battleFinished)
-        battle.generateWithRequired(zoneId)
+        battle = self.battleMgr.newBattle(suit, toonId, zoneId, zoneId, pos)
         return True
 
     def __battleFinished(self):
@@ -255,10 +253,29 @@ class BattleManagerAI:
         self.cell2Battle: Dict[int, object] = {}
 
     def newBattle(self, suit, toonId, cellId, zoneId, pos):
-        pass
+        from ai.battle import DistributedBattleAI
+
+        if cellId in self.cell2Battle:
+            if not self.requestBattleAddSuit(cellId, suit):
+                suit.flyAwayNow()
+
+            battle = self.cell2Battle[cellId]
+            battle.signupToon(toonId, pos[0], pos[1], pos[2])
+        else:
+            battle = DistributedBattleAI(self.air, self, pos, suit, toonId, zoneId)
+            battle.generateWithRequired(zoneId)
+            battle.battleCellId = cellId
+            self.cell2Battle[cellId] = battle
+
+        return battle
+
+    def removeBattle(self, cellId):
+        if cellId in self.cell2Battle:
+            self.cell2Battle[cellId].requestDelete()
+            del self.cell2Battle[cellId]
 
     def requestBattleAddSuit(self, cellId, suit):
-        pass
+        return self.cell2Battle[cellId].suitRequestJoin(suit)
 
     def cellHasBattle(self, cellId):
         return cellId in self.cell2Battle

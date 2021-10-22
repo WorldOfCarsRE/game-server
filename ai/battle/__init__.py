@@ -1271,6 +1271,16 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         self.battleExperience: List[BattleExperience] = []
 
+    def enterOff(self):
+        pass
+
+    def exitOff(self):
+        pass
+
+    def requestDelete(self):
+        self.demand('Off')
+        DistributedObjectAI.requestDelete(self)
+
     def getLevelDoId(self):
         return self.levelDoId
 
@@ -1654,6 +1664,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                     index = self.activeSuits.index(suit)
                     if attack.suitsDiedFlag & 1 << index and suit not in deadSuits:
                         deadSuits.append(suit)
+        self.exitedToons = []
 
         for suit in deadSuits:
             self._removeSuit(suit)
@@ -1893,6 +1904,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             self.d_setMembers()
             suit.prepareToJoinBattle()
             return 1
+        return 0
 
     def addSuit(self, suit, joining=True):
         self.suits.append(suit)
@@ -1921,13 +1933,17 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.d_setMembers()
         self.needAdjust = True
         self._requestAdjust()
+        
+    def enterResume(self):
+        pass
 
 from direct.task import Task
 
 class DistributedBattleAI(DistributedBattleBaseAI):
 
-    def __init__(self, air, pos, suit, toonId, zoneId, finishCallback=None):
+    def __init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback=None):
         DistributedBattleBaseAI.__init__(self, air, finishCallback)
+        self.battleMgr = battleMgr
         self.zoneId = zoneId
 
         self.initialSuitPos = suit.confrontPos
@@ -2011,3 +2027,10 @@ class DistributedBattleAI(DistributedBattleBaseAI):
                 if len(deadSuits) and not lastActiveSuitDied or len(deadToons):
                     self.needAdjust = True
                 self.demand('WaitForJoin')
+
+    def enterResume(self):
+        DistributedBattleBaseAI.enterResume(self)
+        if self.finishCallback:
+            self.finishCallback(self.zoneId)
+
+        self.battleMgr.removeBattle(self.battleCellId)
