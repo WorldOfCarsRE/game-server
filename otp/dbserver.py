@@ -39,6 +39,8 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handleGetEstate(sender, dgi)
         elif msg_id == DBSERVER_UNLOAD_ESTATE:
             self.handleUnloadEstate(dgi)
+        elif msg_id == DBSERVER_GET_AVATAR_DETAILS:
+            self.handleGetAvatarDetails(dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
 
@@ -111,6 +113,12 @@ class DBServerProtocol(MDUpstreamProtocol):
     def handleGetFriends(self, dgi):
         avatarId = dgi.get_uint32()
         self.service.loop.create_task(self.service.queryFriends(avatarId))
+
+    def handleGetAvatarDetails(self, dgi):
+        avatarId = dgi.get_uint32()
+        doId = dgi.get_uint32()
+        access = dgi.get_uint8()
+        self.service.loop.create_task(self.service.queryAvatarDetails(avatarId, doId, access))
 
 from dc.parser import parse_dc_file
 from otp.dbbackend import SQLBackend, MongoBackend, OTPCreateFailed
@@ -477,6 +485,31 @@ class DBServer(DownstreamMessageDirector):
             dg.add_uint8(avIds.index(avId))
             dg.add_uint8(1 if nameState == 'OPEN' else 0)
 
+        self.send_datagram(dg)
+
+    async def queryAvatarDetails(self, avatarId: int, doId: int, access: int):
+        fieldDict = await self.backend.query_object_all(doId, 'DistributedToon')
+        dclass = self.dc.namespace['DistributedToon']
+
+        # These are necessary too.
+        fieldDict['setAccess'] = [access]
+        fieldDict['setAsGM'] = [False]
+        fieldDict['setBattleId'] = [0]
+
+        # Prepare our response.
+        dg = Datagram()
+        dg.add_server_header([getPuppetChannel(avatarId)], DBSERVERS_CHANNEL, CLIENT_GET_AVATAR_DETAILS_RESP)
+        dg.add_uint32(doId)
+        dg.add_uint8(0)
+
+        # Pack our field data to go to the client.
+        for field in dclass.inherited_fields:
+            if not field.is_required or isinstance(field, MolecularField):
+                continue
+
+            field.pack_value(dg, fieldDict[field.name])
+
+        # Send the response to the client.
         self.send_datagram(dg)
 
 async def main():
