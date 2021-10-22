@@ -1749,7 +1749,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     def addToon(self, toon, joining=True):
         # toon.stopToonUp()
         toonId = toon.do_id
-        event = self.air.getAvatarExitEvent(toonId)
+        event = self.air.getDeleteDoIdEvent(toonId)
         self.avatarExitEvents.append(event)
         self.accept(event, self.__handleUnexpectedExit, extraArgs=[toonId])
         if self.do_id is not None:
@@ -1834,7 +1834,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         if self._barrier is not None and self._barrier.active:
             self._barrier.clear(toonId)
 
-        event = self.air.getAvatarExitEvent(toonId)
+        event = self.air.getDeleteDoIdEvent(toonId)
         self.avatarExitEvents.remove(event)
         self.ignore(event)
 
