@@ -1933,6 +1933,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.d_setMembers()
         self.needAdjust = True
         self._requestAdjust()
+        
+    def enterResume(self):
+        pass
 
 from direct.task import Task
 
