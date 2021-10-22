@@ -12,7 +12,6 @@ binary_test=0b1111111
 str_test=Test**5t9854g32r2
 """
 
-
 class TestParPar(unittest.TestCase):
     def test1(self):
         conf = parparser.parse_par(TEST_CONFIG)
@@ -22,7 +21,6 @@ class TestParPar(unittest.TestCase):
         self.assertEqual(conf['General.int_test'], 25932)
         self.assertEqual(conf['General.hex_test'], 0xFFF)
         self.assertEqual(conf['General.binary_test'], 0b1111111)
-
 
 if __name__ == '__main__':
     unittest.main()

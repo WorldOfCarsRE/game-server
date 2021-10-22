@@ -140,6 +140,7 @@ def main():
     builtins.simbase = AIBase()
     builtins.taskMgr = simbase.taskMgr
     builtins.messenger = simbase.messenger
+    builtins.legacyProtocol = config['AI.LegacyProtocol']
     simbase.run()
 
 if __name__ == '__main__':
