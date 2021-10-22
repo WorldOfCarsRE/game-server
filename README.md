@@ -15,7 +15,7 @@ The base of this project is [here](https://github.com/alexanderr/OpenOTP).
 * aiohttp
 
 ## Database Backends
-Currently only MongoDB is supported.
+Currently only MySQL and MongoDB is supported. More database backends will be added in the future.
 
 More database backends may be added in the future.
 
