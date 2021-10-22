@@ -2,6 +2,7 @@ import time
 import math
 import copy
 import random
+import string
 
 from .DistributedObjectAI import DistributedObjectAI
 from ai.toon.DistributedToonAI import DistributedToonAI
@@ -413,6 +414,25 @@ class FriendManagerAI(DistributedObjectGlobalAI):
                                   extraArgs=[requested.do_id, requester.do_id])
             taskMgr.doMethodLater(1, self.sendFriendOnline, f'send-online-{requester.do_id}-{requested.do_id}',
                                   extraArgs=[requester.do_id, requested.do_id])
+
+    def requestSecret(self):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if len(av.getFriendsList()) >= MAX_FRIENDS:
+            self.d_requestSecretResponse(0, '')
+        else:
+            first = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(3))
+            second = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(3))
+
+            code = f'{first.lower()} {second.lower()}'
+            self.d_requestSecretResponse(avId, 1, code)
+
+    def d_requestSecretResponse(self, avId, result, secret):
+        if not avId:
+            return
+
+        self.sendUpdateToAvatar(avId, 'requestSecretResponse', [result, secret])
 
     def sendFriendOnline(self, avId, otherAvId):
         # Need this delay so that `setFriendsList` is set first to avoid
