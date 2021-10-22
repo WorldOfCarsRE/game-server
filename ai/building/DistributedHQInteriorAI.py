@@ -1,6 +1,6 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 
-import pickle
+import pickle, builtins
 
 from dataclasses import dataclass
 from dataslots import with_slots
@@ -24,7 +24,12 @@ class DistributedHQInteriorAI(DistributedObjectAI):
         return [self.zoneId, self.block]
 
     def getLeaderBoard(self):
-        return pickle.dumps([(), (), ()])
+        if builtins.legacyProtocol:
+            protocol = 1
+        else:
+            protcol = 5
+
+        return pickle.dumps([(), (), ()], protocol = protocol)
 
     def getTutorial(self):
         return self.tutorial

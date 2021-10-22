@@ -30,3 +30,8 @@ PORT=8080
 [MongoDB]
 Host=mongodb://127.0.0.1:27017
 Name=Dialga
+
+[AI]
+# For support for stock Toontown Online clients.
+# This swaps the pickle protcol to be one supported by Python 2.4.
+LegacyProtocol=1
