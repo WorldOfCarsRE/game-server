@@ -5,7 +5,6 @@ from direct.showbase import Messenger, BulletinBoard, EventManager
 from direct.task import Task
 from direct.interval.IntervalGlobal import ivalMgr
 
-
 from panda3d.core import GraphicsEngine, ClockObject, TrueClock, PandaNode, NodePath
 
 directNotify = DirectNotify.DirectNotify()
@@ -13,7 +12,6 @@ directNotify = DirectNotify.DirectNotify()
 from .AIRepository import AIRepository
 import builtins
 import time
-
 
 from direct.showbase.DirectObject import DirectObject
 import math
@@ -23,7 +21,6 @@ NetworkTimeBits = 16
 NetworkTimePrecision = 100.0
 NetworkTimeMask = ((1 << NetworkTimeBits) - 1)
 NetworkTimeTopBits = (32 - NetworkTimeBits)
-
 
 class TTClockDelta(DirectObject):
     def __init__(self):
@@ -76,7 +73,6 @@ class TTClockDelta(DirectObject):
 
     def __signExtend(self, networkTime):
         return (int16(networkTime & NetworkTimeMask) << NetworkTimeTopBits) >> NetworkTimeTopBits
-
 
 class AIBase:
     AISleep = 0.01
@@ -138,15 +134,14 @@ class AIBase:
     def start_read_poll_task(self):
         self.taskMgr.add(self.air.readUntilEmpty, 'readPoll', priority=-30)
 
-
 def main():
     print('running main')
     import builtins
     builtins.simbase = AIBase()
     builtins.taskMgr = simbase.taskMgr
     builtins.messenger = simbase.messenger
+    builtins.legacyProtocol = config['AI.LegacyProtocol']
     simbase.run()
-
 
 if __name__ == '__main__':
     main()

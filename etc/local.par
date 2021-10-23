@@ -7,7 +7,7 @@ HOST=127.0.0.1
 PORT=46668
 
 [ClientAgent]
-HOST=127.0.0.1
+HOST=0.0.0.0
 PORT=6667
 SSL=0
 MIN_CHANNEL=2000000000
@@ -20,13 +20,25 @@ PORT=46669
 [DatabaseServer]
 HOST=127.0.0.1
 PORT=46670
+SQL=0
 
 [WebServer]
 CONTENT_DIR=web/content/
 WRITE_PATCH_FILES=0
-HOST=127.0.0.1
+HOST=0.0.0.0
 PORT=8080
+
+[SQL]
+HOST=127.0.0.1
+PORT=3306
+USER=root
+PASSWORD=root
 
 [MongoDB]
 Host=mongodb://127.0.0.1:27017
 Name=Dialga
+
+[AI]
+# For support for stock Toontown Online clients.
+# This swaps the pickle protocol to be one supported by Python 2.4.
+LegacyProtocol=1

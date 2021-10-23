@@ -38,6 +38,7 @@ class PotentialAvatar:
     rejected_name: str
     dna_string: str
     index: int
+    allowName: int
 
 class ClientState(IntEnum):
     NEW = 0
@@ -79,8 +80,6 @@ class Interest:
         self.done = False
         self.ai = False
         self.pending_objects: List[int] = []
-
-OTP_DO_ID_TOONTOWN = 4618
 
 @with_slots
 @dataclass
@@ -188,6 +187,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.receive_add_interest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
+            elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
+                self.receive_update_field(dgi)
             else:
                 self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
         elif self.state == ClientState.AVATAR_CHOOSER:
@@ -239,6 +240,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.receive_update_field(dgi)
             elif msgtype == CLIENT_SET_AVATAR:
                 self.receive_set_avatar(dgi)
+            elif msgtype == CLIENT_GET_AVATAR_DETAILS:
+                self.receiveGetAvatarDetails(dgi)
             else:
                 self.service.log.debug(f'Unhandled msg type {msgtype} in state {self.state}')
 
@@ -403,8 +406,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.log.debug(f'Client {self.channel} tried creating avatar in invalid position.')
             return
 
-        self.potential_avatar = PotentialAvatar(do_id=0, name='Toon', wish_name='', approved_name='',
-                                                      rejected_name='', dna_string=dna, index=pos)
+        self.potential_avatar = PotentialAvatar(do_id = 0, name = 'Toon', wish_name = '', approved_name = '',
+                                                      rejected_name = '', dna_string = dna, index = pos, allowName = 1)
 
         dclass = self.service.dc_file.namespace['DistributedToon']
 
@@ -701,9 +704,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         avatar_info = [None] * 6
 
         for i in range(dgi.get_uint16()):
-            pot_av = PotentialAvatar(do_id=dgi.get_uint32(), name=dgi.get_string16(), wish_name=dgi.get_string16(),
-                                     approved_name=dgi.get_string16(), rejected_name=dgi.get_string16(),
-                                     dna_string=dgi.get_blob16(), index=dgi.get_uint8())
+            pot_av = PotentialAvatar(do_id = dgi.get_uint32(), name = dgi.get_string16(), wish_name = dgi.get_string16(),
+                                     approved_name = dgi.get_string16(), rejected_name = dgi.get_string16(),
+                                     dna_string = dgi.get_blob16(), index = dgi.get_uint8(), allowName = dgi.get_uint8())
 
             avatar_info[pot_av.index] = pot_av
 
@@ -798,7 +801,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {context_id} '
                                f'for location {parent_id} {zones}')
 
-        if self.state <= ClientState.AUTHENTICATED and parent_id != 4618:
+        if self.state <= ClientState.AUTHENTICATED and parent_id != OTP_DO_ID_TOONTOWN:
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 
@@ -926,7 +929,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.receive_add_interest(dgi, ai=True)
         elif msgtype == CLIENT_AGENT_REMOVE_INTEREST:
             self.receive_remove_interest(dgi, ai=True)
-        elif msgtype in {CLIENT_FRIEND_ONLINE, CLIENT_FRIEND_OFFLINE, CLIENT_GET_FRIEND_LIST_RESP}:
+        elif msgtype in {CLIENT_FRIEND_ONLINE, CLIENT_FRIEND_OFFLINE, CLIENT_GET_FRIEND_LIST_RESP, CLIENT_GET_AVATAR_DETAILS_RESP}:
             dg = Datagram()
             dg.add_uint16(msgtype)
             dg.add_bytes(dgi.remaining_bytes())
@@ -1155,4 +1158,16 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
         resp.add_uint32(avatarId)
         resp.add_uint8(actionFlag)
+        self.service.send_datagram(resp)
+
+    def receiveGetAvatarDetails(self, dgi):
+        doId = dgi.get_uint32()
+        access = 2 if self.account.access == b'FULL' else 1
+
+        # Send this to the Database server.
+        resp = Datagram()
+        resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_AVATAR_DETAILS)
+        resp.add_uint32(self.avatar_id)
+        resp.add_uint32(doId)
+        resp.add_uint8(access)
         self.service.send_datagram(resp)

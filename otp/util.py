@@ -30,8 +30,8 @@ DEFAULT_TOON = {
     "setDefaultShard": (0,),
     "setDefaultZone": (2000,),
     "setShtickerBook": (b'',),
-    "setZonesVisited": ([],),
-    "setHoodsVisited": ([],),
+    "setZonesVisited": ([2000],),
+    "setHoodsVisited": ([2000],),
     "setInterface": (b'',),
     "setLastHood": (0,),
     "setTutorialAck": (1,),
@@ -118,17 +118,13 @@ DEFAULT_TOON = {
     "setPinkSlips": (0,),
     "setNametagStyle": (0,),
 }
-
-
 def getPuppetChannel(avatarId: int) -> int:
     """Returns the channel for the associated avatar id."""
     return avatarId + (1001 << 32)
 
-
 def getAccountChannel(dislId: int) -> int:
     """Returns the channel for the associated DISL id."""
     return dislId + (1003 << 32)
-
 
 def getClientSenderChannel(dislId: int, avatarId: int) -> int:
     """
@@ -137,11 +133,9 @@ def getClientSenderChannel(dislId: int, avatarId: int) -> int:
     """
     return dislId << 32 | avatarId
 
-
 def getAccountIDFromChannel(sender: int) -> int:
     """Returns the account/disl id from a client agent sender channel."""
     return sender >> 32
-
 
 def getAvatarIDFromChannel(sender: int) -> int:
     """Returns the avatar id (if present) from a client agent sender channel."""

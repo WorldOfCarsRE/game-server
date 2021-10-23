@@ -78,7 +78,7 @@ class DistributedMinigameAI(DistributedObjectAI, FSM):
 
     def enterWaitForJoin(self):
         for avId in self.participants:
-            self.acceptOnce(self.air.getAvatarExitEvent(avId), self.handleExitedAvatar, extraArgs=[avId])
+            self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleExitedAvatar, extraArgs=[avId])
 
         self.__barrier = ToonBarrier(self.uniqueName('wait-join'), self.participants, JOIN_TIMEOUT, self.allJoined, self.timeout)
 

@@ -163,7 +163,6 @@ class ToontownProtocol(asyncio.Protocol):
             f.set_result((sender, dgi))
             self.futures.remove(f)
 
-
 class MDParticipant:
     def __init__(self, service: Service):
         self.channels = set()
@@ -175,7 +174,6 @@ class MDParticipant:
 
     def unsubscribe_channel(self, channel):
         self.service.unsubscribe_channel(self, channel)
-
 
 class ChannelAllocator:
     min_channel = None

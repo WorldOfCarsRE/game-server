@@ -1,4 +1,5 @@
 from ai.DistributedNodeAI import DistributedNodeAI
+from ai.toon import NPCToons
 
 class DistributedNPCToonBaseAI(DistributedNodeAI):
     def __init__(self, air, npcId, name=None):
@@ -9,6 +10,13 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
         self.name = name
         self.dna = ''
         self.index = 0
+        self.occupier = 0
+
+    def d_setMovie(self, movie, args = []):
+        self.sendUpdate('setMovie', [movie, self.npcId, self.occupier, args, globalClockDelta.getRealNetworkTime()])
+
+    def isOccupied(self):
+        return self.occupier != 0
 
     def getName(self):
         return self.name
@@ -28,7 +36,10 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
 
     def avatarEnter(self):
         sender = self.air.currentAvatarSender
-        self.sendUpdateToAvatar(sender, 'freeAvatar', [])
+        self.freeAvatar(sender)
+
+    def freeAvatar(self, avId):
+        self.sendUpdateToAvatar(avId, 'freeAvatar', [])
 
 class DistributedNPCToonAI(DistributedNPCToonBaseAI):
     def setMovieDone(self):
@@ -59,10 +70,92 @@ class DistributedNPCTailorAI(DistributedNPCToonBaseAI):
         pass
 
 class DistributedNPCFishermanAI(DistributedNPCToonBaseAI):
+    def sendClearMovie(self):
+        self.ignore(self.air.getDeleteDoIdEvent(self.occupier))
+        self.occupier = 0
+        self.d_setMovie(NPCToons.PURCHASE_MOVIE_CLEAR)
+
+    def sendTimeoutMovie(self, task):
+        self.d_setMovie(NPCToons.SELL_MOVIE_TIMEOUT)
+        self.sendClearMovie()
+
+    def avatarEnter(self):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if av is None:
+            return
+
+        if self.isOccupied():
+            self.freeAvatar(avId)
+
+        elif av.fishTank.getTotalValue():
+            self.occupier = avId
+            self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.__handleUnexpectedExit, extraArgs = [avId])
+            self.d_setMovie(NPCToons.SELL_MOVIE_START)
+            taskMgr.doMethodLater(NPCToons.CLERK_COUNTDOWN_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+        else:
+            self.occupier = avId
+            self.d_setMovie(NPCToons.SELL_MOVIE_NOFISH)
+            self.sendClearMovie()
+
+    def __handleUnexpectedExit(self, avId):
+        taskMgr.remove(self.uniqueName('clearMovie'))
+        self.sendClearMovie()
+
     def completeSale(self, sell: bool):
-        pass
+        avId = self.air.currentAvatarSender
+
+        if self.occupier != avId:
+            # TODO: We need to write a event here.
+            return
+
+        av = self.air.doTable.get(avId)
+
+        if not av:
+            return
+
+        if sell:
+            trophyResult = self.air.fishManager.creditFishTank(av)
+
+            if trophyResult:
+                movieType = NPCToons.SELL_MOVIE_TROPHY
+                extraArgs = [len(av.fishCollection), self.air.fishManager.totalFish]
+            else:
+                movieType = NPCToons.SELL_MOVIE_COMPLETE
+                extraArgs = []
+
+            self.d_setMovie(movieType, args = extraArgs)
+        else:
+            self.d_setMovie(NPCToons.SELL_MOVIE_NOFISH)
+
+        taskMgr.remove(self.uniqueName('clearMovie'))
+        self.sendClearMovie()
 
 class DistributedNPCPartyPersonAI(DistributedNPCToonBaseAI):
+    def avatarEnter(self):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if av is None:
+            return
+
+        if self.isOccupied():
+            self.freeAvatar(avId)
+
+        # TODO
+        flag = NPCToons.PARTY_MOVIE_COMINGSOON
+        self.d_setMovie(avId, flag)
+        self.sendClearMovie()
+
+    def sendClearMovie(self):
+        self.ignore(self.air.getDeleteDoIdEvent(self.occupier))
+        self.occupier = 0
+        self.d_setMovie(0, NPCToons.PARTY_MOVIE_CLEAR)
+
+    def d_setMovie(self, avId, flag, extraArgs = []):
+        self.sendUpdate('setMovie', [flag, self.npcId, avId, extraArgs, globalClockDelta.getRealNetworkTime()])
+
     def answer(self, plan: bool):
         pass
 

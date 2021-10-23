@@ -2,7 +2,6 @@ from typing import List
 
 from panda3d.core import PandaNode, Vec3, Point3, VBase3, VBase4
 
-
 class DNAGroup:
     __slots__ = 'name', 'children', 'parent', 'vis_group'
 
@@ -28,10 +27,10 @@ class DNAGroup:
         self.parent = parent
         if not self.vis_group:
             self.vis_group = parent.vis_group
-            
+
     def get_parent(self):
         return self.parent
-        
+
     def get_vis_group(self):
         return self.vis_group
 
@@ -44,7 +43,6 @@ class DNAGroup:
         nodePath = nodePath.attachNewNode(node, 0)
         for child in self.children:
             child.traverse(nodePath, dnaStorage)
-
 
 class DNAVisGroup(DNAGroup):
     __slots__ = 'visibles', 'suit_edges', 'battle_cells'
@@ -72,7 +70,7 @@ class DNANode(DNAGroup):
         nodepath.setPosHprScale(self.pos, self.hpr, self.scale)
         for child in self.children:
             child.traverse(nodepath, storage)
-            
+
     def get_pos_hpr(self):
         return (
           self.pos[0],

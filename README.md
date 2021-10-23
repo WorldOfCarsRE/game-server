@@ -15,7 +15,7 @@ The base of this project is [here](https://github.com/alexanderr/OpenOTP).
 * aiohttp
 
 ## Database Backends
-Currently only MongoDB is supported.
+Currently only MySQL and MongoDB is supported.
 
 More database backends may be added in the future.
 
@@ -23,3 +23,11 @@ More database backends may be added in the future.
 * The OTP cluster can be ran through the `otp.otp` module.
 * The AI server can be ran through the `ai.AIStart` module.
 * The python web server can be ran through the `web.website` module. This is required for authentication.
+
+### Contributing
+* Use 4 spaces instead of tabs.
+* Do NOT use underscores in function names.
+* The first word in a variable is lowercase for code functions. (testVar = 1)
+* Make sure there are no trailing spaces in your code.
+* Do NOT use underscores for variables and argument names. (test_var = 1)
+* Do NOT do this with the equal sign. (testVar=1)

@@ -1,11 +1,13 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 from ai.DistributedNodeAI import DistributedNodeAI
-from typing import Optional, Dict
+from typing import Optional, Dict, NamedTuple
 from direct.fsm.FSM import FSM
-from ai import ToontownGlobals
-from ai.fishing import FishBase
+from ai.globals import HoodGlobals
+from ai.fishing.FishBase import FishBase
+from ai.fishing.FishCollectionEnum import *
 import random
 import math
+import copy
 
 class FishingTargetGlobals:
     OFF = 0
@@ -20,30 +22,30 @@ class FishingTargetGlobals:
     RADIUS_INDEX = 4
     WATER_LEVEL_INDEX = 5
     targetInfoDict = {
-        ToontownGlobals.ToontownCentral : (2, -81, 31, -4.8, 14, -1.4),
-        ToontownGlobals.SillyStreet : (2, 20, -664, -1.4, 14, (-1.4 - 0.438)),
-        ToontownGlobals.LoopyLane : (2, -234, 175, -1.4, 14, (-1.4 - 0.462)),
-        ToontownGlobals.PunchlinePlace : (2, 529, -70, -1.4, 13, (-1.4 - 0.486)),
-        ToontownGlobals.DonaldsDock : (2, -17, 130, 1.730, 15, (1.730 - 3.615)),
-        ToontownGlobals.BarnacleBoulevard : (2, 381, -350, -2, 14, (-2 - 0.482)),
-        ToontownGlobals.SeaweedStreet : (2, -395, -226, -2, 14, (-2 - 0.482)),
-        ToontownGlobals.LighthouseLane : (2, 350, 100, -2, 14, (-2 - 0.482)),
-        ToontownGlobals.DaisyGardens : (2, 50, 47, -1.48, 13, (-1.48 - 0.345)),
-        ToontownGlobals.ElmStreet : (2, 149, 44, -1.43, 13, (-1.43 - 0.618)),
-        ToontownGlobals.MapleStreet : (2, 176, 100, -1.43, 13, (-1.43 - 0.618)),
-        ToontownGlobals.OakStreet : (2, 134, -70.5, -1.5, 13, (-1.5 - 0.377)),
-        ToontownGlobals.MinniesMelodyland : (2, -0.2, -20.2, -14.65, 14, (-14.65 - (-12))),
-        ToontownGlobals.AltoAvenue : (2, -580, -90, -0.87, 14, (-0.87 - 1.844)),
-        ToontownGlobals.BaritoneBoulevard : (2, -214, 250, -0.87, 14, (-0.87 - 1.844)),
-        ToontownGlobals.TenorTerrace : (2, 715, -15, -0.87, 14, (-0.87 - 1.844)),
-        ToontownGlobals.TheBrrrgh : (2, -58, -26, 1.7, 10, -0.8),
-        ToontownGlobals.WalrusWay : (2, 460, 29, -2, 13, (-2 - 0.4)),
-        ToontownGlobals.SleetStreet : (2, 340, 480, -2, 13, (-2 - 0.4)),
-        ToontownGlobals.PolarPlace : (2, 45.5, 90.86, -2, 13, (-2 - 0.4)),
-        ToontownGlobals.DonaldsDreamland : (2, 159, 0.2, -17.1, 14, (-17.1 - (- 14.6))),
-        ToontownGlobals.LullabyLane : (2, 118, -185, -2.1, 14, (-2.1 - 0.378)),
-        ToontownGlobals.PajamaPlace : (2, 241, -348, -2.1, 14, (-2.1 - 0.378)),
-        ToontownGlobals.MyEstate : (3, 30,-126,-0.3, 16, -0.83),
+        HoodGlobals.ToontownCentral : (2, -81, 31, -4.8, 14, -1.4),
+        HoodGlobals.SillyStreet : (2, 20, -664, -1.4, 14, (-1.4 - 0.438)),
+        HoodGlobals.LoopyLane : (2, -234, 175, -1.4, 14, (-1.4 - 0.462)),
+        HoodGlobals.PunchlinePlace : (2, 529, -70, -1.4, 13, (-1.4 - 0.486)),
+        HoodGlobals.DonaldsDock : (2, -17, 130, 1.730, 15, (1.730 - 3.615)),
+        HoodGlobals.BarnacleBoulevard : (2, 381, -350, -2, 14, (-2 - 0.482)),
+        HoodGlobals.SeaweedStreet : (2, -395, -226, -2, 14, (-2 - 0.482)),
+        HoodGlobals.LighthouseLane : (2, 350, 100, -2, 14, (-2 - 0.482)),
+        HoodGlobals.DaisyGardens : (2, 50, 47, -1.48, 13, (-1.48 - 0.345)),
+        HoodGlobals.ElmStreet : (2, 149, 44, -1.43, 13, (-1.43 - 0.618)),
+        HoodGlobals.MapleStreet : (2, 176, 100, -1.43, 13, (-1.43 - 0.618)),
+        HoodGlobals.OakStreet : (2, 134, -70.5, -1.5, 13, (-1.5 - 0.377)),
+        HoodGlobals.MinniesMelodyland : (2, -0.2, -20.2, -14.65, 14, (-14.65 - (-12))),
+        HoodGlobals.AltoAvenue : (2, -580, -90, -0.87, 14, (-0.87 - 1.844)),
+        HoodGlobals.BaritoneBoulevard : (2, -214, 250, -0.87, 14, (-0.87 - 1.844)),
+        HoodGlobals.TenorTerrace : (2, 715, -15, -0.87, 14, (-0.87 - 1.844)),
+        HoodGlobals.TheBrrrgh : (2, -58, -26, 1.7, 10, -0.8),
+        HoodGlobals.WalrusWay : (2, 460, 29, -2, 13, (-2 - 0.4)),
+        HoodGlobals.SleetStreet : (2, 340, 480, -2, 13, (-2 - 0.4)),
+        HoodGlobals.PolarPlace : (2, 45.5, 90.86, -2, 13, (-2 - 0.4)),
+        HoodGlobals.DonaldsDreamland : (2, 159, 0.2, -17.1, 14, (-17.1 - (- 14.6))),
+        HoodGlobals.LullabyLane : (2, 118, -185, -2.1, 14, (-2.1 - 0.378)),
+        HoodGlobals.PajamaPlace : (2, 241, -348, -2.1, 14, (-2.1 - 0.378)),
+        HoodGlobals.MyEstate : (3, 30,-126,-0.3, 16, -0.83),
     }
 
     def getNumTargets(zoneId):
@@ -88,41 +90,14 @@ class FishItems:
     FishItemNewEntry = 9
     FishItemNewRecord = 10
     item2Chance = {
-      JellybeanItem: 100,
-      FishItem: 0,
-      BootItem: 0
-    }
-    """
-    item2Chance = {
       FishItem: 93,
       JellybeanItem: 94,
       BootItem: 100,
     }
-    """
 
 class FishGlobals:
     FishingAngleMin = -50
     FishingAngleMax = 50
-    ROD_WEIGHT_MIN_INDEX = 0
-    ROD_WEIGHT_MAX_INDEX = 1
-    ROD_CAST_COST_INDEX = 2
-    rodDict = {
-      0: (0, 4, 1),
-      1: (0, 8, 2),
-      2: (0, 12, 3),
-      3: (0, 16, 4),
-      4: (0, 20, 5),
-    }
-    rod2Jellybean = {
-      0: 10,
-      1: 20,
-      2: 30,
-      3: 75,
-      4: 150
-    }
-
-    def getCastCost(rodId):
-        return FishGlobals.rodDict[rodId][FishGlobals.ROD_CAST_COST_INDEX]
 
 class DistributedFishingTargetAI(DistributedNodeAI, FSM):
 
@@ -228,7 +203,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         else:
             self.avId = senderId
             self.pond.addSpot(senderId, self)
-            self.acceptOnce(self.air.getAvatarExitEvent(senderId), self.__handleUnexpectedEvent)
+            self.acceptOnce(self.air.getDeleteDoIdEvent(senderId), self.__handleUnexpectedEvent)
             self.__stopTimeout()
             self.d_setOccupied(self.avId)
             self.d_setMovie(FishMovies.EnterMovie)
@@ -254,7 +229,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
 
     def cleanupAvatar(self):
         self.pond.removeSpot(self.avId, self)
-        self.ignore(self.air.getAvatarExitEvent(self.avId))
+        self.ignore(self.air.getDeleteDoIdEvent(self.avId))
         self.__stopTimeout()
         self.avId = 0
 
@@ -278,7 +253,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         senderId = self.air.currentAvatarSender
         if self.avId != senderId:
             return
-        if power <= 0 or power > 1:
+        if power < 0 or power > 1:
             return
 
         if heading < FishGlobals.FishingAngleMin:
@@ -292,7 +267,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
 
         self.__stopTimeout()
         money = sender.getMoney()
-        castCost = FishGlobals.getCastCost(sender.getFishingRod())
+        castCost = self.air.fishManager.getCastCost(sender.getFishingRod())
 
         if money < castCost:
             self.normalExit()
@@ -303,8 +278,18 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.__startTimeout(self.TIMEOUT)
 
     def hitTarget(self, code, item):
-        if code == FishItems.JellybeanItem:
+        if code == FishItems.QuestItem:
             self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=item)
+        elif code in (FishItems.FishItem,
+                      FishItems.FishItemNewEntry,
+                      FishItems.FishItemNewRecord):
+            genus, species, weight = item.getVitals()
+            self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=genus,
+                            itemDesc2=species, itemDesc3=weight)
+        elif code == FishItems.JellybeanItem:
+            self.d_setMovie(FishMovies.PullInMovie, code=code, itemDesc1=item)
+        else:
+            self.d_setMovie(FishMovies.PullInMovie, code=code)
         self.__startTimeout(self.TIMEOUT)
 
     def d_setMovie(self, mode, code=0, itemDesc1=0, itemDesc2=0, itemDesc3=0, power=0, h=0):
@@ -344,7 +329,6 @@ class DistributedFishingPondAI(DistributedObjectAI):
 
     def getCatch(self, av):
         itemType = FishItems.BootItem
-        value = None
         rodId = av.getFishingRod()
 
         # TODO: prioritize quest items
@@ -355,14 +339,35 @@ class DistributedFishingPondAI(DistributedObjectAI):
                 break
 
         if itemType == FishItems.FishItem:
-            pass
+            success, genus, species, weight = self.air.fishManager.getRandomFishVitals(self.getArea(), rodId)
+            if success:
+                fish = FishBase(genus, species, weight)
+                inTank, hasBiggerAlready = av.fishTank.hasFish(genus, species, weight)
+                added = av.addFishToTank(fish)
+                if added:
+                    collectResult = av.fishCollection.getCollectResult(fish)
+                    if collectResult == COLLECT_NO_UPDATE:
+                        return (itemType, fish)
+                    elif collectResult == COLLECT_NEW_ENTRY:
+                        if not inTank:
+                            return (FishItems.FishItemNewEntry, fish)
+                        elif not hasBiggerAlready:
+                            return (FishItems.FishItemNewRecord, fish)
+                        return (itemType, fish)
+                    elif collectResult == COLLECT_NEW_RECORD:
+                        if hasBiggerAlready:
+                            return (itemType, fish)
+                        return (FishItems.FishItemNewRecord, fish)
+                else:
+                    return (FishItems.OverTankLimit, None)
+            else:
+                return (FishItems.BootItem, None)
         elif itemType == FishItems.BootItem:
-            pass
+            return (FishItems.BootItem, None)
         elif itemType == FishItems.JellybeanItem:
-            value = FishGlobals.rod2Jellybean[rodId]
+            value = self.air.fishManager.getRodJellybeanReward(rodId)
             av.addMoney(value)
-
-        return itemType, value
+            return(itemType, value)
 
     def hitTarget(self, targetId):
         senderId = self.air.currentAvatarSender

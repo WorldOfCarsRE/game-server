@@ -217,4 +217,3 @@ class DoorFSM(FSM):
 
     def d_setState(self, state):
         self.door.sendUpdate(self.field, [state.lower(), globalClockDelta.getRealNetworkTime()])
-

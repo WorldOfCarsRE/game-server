@@ -22,7 +22,7 @@ class ToonBarrier(DirectObject):
         self.task = taskMgr.doMethodLater(timeout, self.__timerExpired, self.timeoutName)
 
         for avId in avIds:
-            event = simbase.air.getAvatarExitEvent(avId)
+            event = simbase.air.getDeleteDoIdEvent(avId)
             self.acceptOnce(event, self.__handleUnexpectedExit, extraArgs=[avId])
 
         self.timedOut = False

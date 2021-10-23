@@ -67,7 +67,7 @@ class PurchaseManagerAI(DistributedObjectAI):
         for purchaser in self.purchasers:
             avId = purchaser.avId
             if avId:
-                self.acceptOnce(self.air.getAvatarExitEvent(avId), self.__handleUnexpectedExit, extraArgs=[avId])
+                self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.__handleUnexpectedExit, extraArgs=[avId])
 
         self.startCountdown()
 
@@ -106,7 +106,7 @@ class PurchaseManagerAI(DistributedObjectAI):
             if purchaser:
                 purchaser.state = PurchaseState.DISCONNECTED
                 purchaser.inventoryState = INVENTORY_DONE
-                self.ignore(self.air.getAvatarExitEvent(avId))
+                self.ignore(self.air.getDeleteDoIdEvent(avId))
                 self.d_setPlayerStates()
             return
 
@@ -200,7 +200,6 @@ class PurchaseManagerAI(DistributedObjectAI):
     def delete(self):
         decZoneRef(self.zoneId)
         DistributedObjectAI.delete(self)
-
 
 class NewbiePurchaseManagerAI(PurchaseManagerAI):
     def __init__(self, air, ownedNewbieId, purchasers, minigameId, trolleyZone, metagameRound):

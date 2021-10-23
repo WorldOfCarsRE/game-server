@@ -7,7 +7,6 @@ from ai.DistributedObjectAI import DistributedObjectAI
 from ai.ToonBarrier import ToonBarrier
 from ai.suit.DistributedSuitAI import DistributedSuitBaseAI
 
-
 FACEOFF_TAUNT_T = 3.5
 FACEOFF_LOOK_AT_PROP_T = 6
 CLIENT_INPUT_TIMEOUT = 20.0
@@ -16,23 +15,16 @@ SERVER_INPUT_TIMEOUT = CLIENT_INPUT_TIMEOUT + SERVER_BUFFER_TIME
 
 import random
 
-
 from ai.toon.NPCToons import getSOSCard, SOSCard
-
-
 
 from .BattleGlobals import *
 from ai.TimeManagerAI import DisconnectCloseWindow
 
-
 from dataslots import with_slots
 from dataclasses import dataclass, field
 
-
-
 NO_ID = -1
 NO_ATTACK = -1
-
 
 @with_slots
 @dataclass
@@ -285,7 +277,6 @@ class LuredSuitInfo(object):
     wakeChance: int
     lurerDict: Dict[int, LurerInfo]
 
-
 @dataclass
 class SuccessfulLure(object):
     toonId: int
@@ -293,14 +284,12 @@ class SuccessfulLure(object):
     acc: int
     damage: int = -1
 
-
 AttackExpPerTrack = [0, 10, 20, 30, 40, 50, 60]
 AccuracyBonuses = [0, 20, 40, 60]
 NumRoundsLured = [2, 2, 3, 3, 4, 4, 15]
 DamageBonuses = [0, 20, 20, 20]
 
 from ai.toon import NPCToons
-
 
 class BattleCalculator:
     def __init__(self, battle: 'DistributedBattleBaseAI'):
@@ -1196,21 +1185,17 @@ class BattleCalculator:
 
             foundAttacks.append(attack)
 
-        foundAttacks.sort(key=lambda atk: atk.level)
+        foundAttacks.sort(key = lambda atk: atk.level)
 
         return foundAttacks
-
 
 MAX_JOIN_T = 20.0
 
 from direct.directnotify import DirectNotifyGlobal
 
-
 def test():
     yield 5
     yield from ToonAttack(-1)(None)
-
-
 
 class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     notify = DirectNotifyGlobal.directNotify.newCategory('DistributedBattleBaseAI')
@@ -1270,6 +1255,16 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.numSuitsEver = 0
 
         self.battleExperience: List[BattleExperience] = []
+
+    def enterOff(self):
+        pass
+
+    def exitOff(self):
+        pass
+
+    def requestDelete(self):
+        self.demand('Off')
+        DistributedObjectAI.requestDelete(self)
 
     def getLevelDoId(self):
         return self.levelDoId
@@ -1654,6 +1649,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                     index = self.activeSuits.index(suit)
                     if attack.suitsDiedFlag & 1 << index and suit not in deadSuits:
                         deadSuits.append(suit)
+        self.exitedToons = []
 
         for suit in deadSuits:
             self._removeSuit(suit)
@@ -1749,7 +1745,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     def addToon(self, toon, joining=True):
         # toon.stopToonUp()
         toonId = toon.do_id
-        event = self.air.getAvatarExitEvent(toonId)
+        event = self.air.getDeleteDoIdEvent(toonId)
         self.avatarExitEvents.append(event)
         self.accept(event, self.__handleUnexpectedExit, extraArgs=[toonId])
         if self.do_id is not None:
@@ -1834,7 +1830,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         if self._barrier is not None and self._barrier.active:
             self._barrier.clear(toonId)
 
-        event = self.air.getAvatarExitEvent(toonId)
+        event = self.air.getDeleteDoIdEvent(toonId)
         self.avatarExitEvents.remove(event)
         self.ignore(event)
 
@@ -1893,6 +1889,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             self.d_setMembers()
             suit.prepareToJoinBattle()
             return 1
+        return 0
 
     def addSuit(self, suit, joining=True):
         self.suits.append(suit)
@@ -1922,12 +1919,16 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.needAdjust = True
         self._requestAdjust()
 
+    def enterResume(self):
+        pass
+
 from direct.task import Task
 
 class DistributedBattleAI(DistributedBattleBaseAI):
 
-    def __init__(self, air, pos, suit, toonId, zoneId, finishCallback=None):
+    def __init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback = None):
         DistributedBattleBaseAI.__init__(self, air, finishCallback)
+        self.battleMgr = battleMgr
         self.zoneId = zoneId
 
         self.initialSuitPos = suit.confrontPos
@@ -2011,3 +2012,10 @@ class DistributedBattleAI(DistributedBattleBaseAI):
                 if len(deadSuits) and not lastActiveSuitDied or len(deadToons):
                     self.needAdjust = True
                 self.demand('WaitForJoin')
+
+    def enterResume(self):
+        DistributedBattleBaseAI.enterResume(self)
+        if self.finishCallback:
+            self.finishCallback(self.zoneId)
+
+        self.battleMgr.removeBattle(self.battleCellId)

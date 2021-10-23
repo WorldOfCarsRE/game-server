@@ -12,6 +12,12 @@ from .exceptions import *
 
 from dc.objects import MolecularField
 
+class EstateInfo:
+    estateId: int
+    parentId: int
+    estateZone: int
+    houseIds = list
+
 class DBServerProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
         sender = dgi.get_channel()
@@ -29,8 +35,28 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handleClearWishName(dgi)
         elif msg_id == DBSERVER_GET_FRIENDS:
             self.handleGetFriends(dgi)
+        elif msg_id == DBSERVER_GET_ESTATE:
+            self.handleGetEstate(sender, dgi)
+        elif msg_id == DBSERVER_UNLOAD_ESTATE:
+            self.handleUnloadEstate(dgi)
+        elif msg_id == DBSERVER_GET_AVATAR_DETAILS:
+            self.handleGetAvatarDetails(dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
+
+    def handleGetEstate(self, sender, dgi):
+        context = dgi.get_uint32()
+        avId = dgi.get_uint32()
+        parentId = dgi.get_uint32()
+        zoneId = dgi.get_uint32()
+
+        self.service.loop.create_task(self.service.queryEstate(sender, context, avId, parentId, zoneId))
+
+    def handleUnloadEstate(self, dgi):
+        avId = dgi.get_uint32()
+        parentId = dgi.get_uint32()
+
+        self.service.loop.create_task(self.service.unloadEstate(avId, parentId))
 
     def handle_create_object(self, sender, dgi):
         context = dgi.get_uint32()
@@ -77,7 +103,7 @@ class DBServerProtocol(MDUpstreamProtocol):
 
     def handle_account_query(self, sender, dgi):
         do_id = dgi.get_uint32()
-        self.service.loop.create_task(self.service.query_account(sender, do_id))
+        self.service.loop.create_task(self.service.queryObject(sender, do_id))
 
     def handleClearWishName(self, dgi):
         avatarId = dgi.get_uint32()
@@ -88,8 +114,14 @@ class DBServerProtocol(MDUpstreamProtocol):
         avatarId = dgi.get_uint32()
         self.service.loop.create_task(self.service.queryFriends(avatarId))
 
+    def handleGetAvatarDetails(self, dgi):
+        avatarId = dgi.get_uint32()
+        doId = dgi.get_uint32()
+        access = dgi.get_uint8()
+        self.service.loop.create_task(self.service.queryAvatarDetails(avatarId, doId, access))
+
 from dc.parser import parse_dc_file
-from otp.dbbackend import MongoBackend, OTPCreateFailed
+from otp.dbbackend import SQLBackend, MongoBackend, OTPCreateFailed
 from otp.util import getPuppetChannel
 from dc.util import Datagram
 
@@ -106,9 +138,15 @@ class DBServer(DownstreamMessageDirector):
 
         self.dc = parse_dc_file('etc/dclass/toon.dc')
 
-        self.backend = MongoBackend(self)
+        if config['DatabaseServer.SQL']:
+            self.backend = SQLBackend(self)
+        else:
+            self.backend = MongoBackend(self)
 
         self.operations = {}
+
+        # Avatar ID to Estate information.
+        self.estates: Dict[int] = {}
 
     async def run(self):
         await self.backend.setup()
@@ -117,43 +155,176 @@ class DBServer(DownstreamMessageDirector):
 
     async def create_object(self, sender, context, dclass, fields):
         try:
-            do_id = await self.backend.create_object(dclass, fields)
+            doId = await self.backend.create_object(dclass, fields)
         except OTPCreateFailed as e:
             print('creation failed', e)
-            do_id = 0
+            doId = 0
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
         dg.add_uint32(context)
-        dg.add_uint8(do_id == 0)
-        dg.add_uint32(do_id)
+        dg.add_uint8(doId == 0)
+        dg.add_uint32(doId)
+        self.send_datagram(dg)
+
+    async def unloadEstate(self, avId, parentId):
+        if avId in self.estates:
+            info = self.estates[avId]
+            del self.estates[avId]
+
+            # Delete the estate object.
+            await self.deleteDO(info.estateId)
+
+            # Delete each house in the list.
+            for doId in info.houseIds:
+                await self.deleteDO(doId)
+
+    async def queryEstate(self, sender, context, avId, parentId, zoneId):
+        toon = await self.backend.query_object_fields(avId, ['setDISLid'], 'DistributedToon')
+        accountId = toon['setDISLid'][0]
+
+        account = await self.backend.query_object_fields(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
+
+        houseIds = account['HOUSE_ID_SET']
+        avatars = account['ACCOUNT_AV_SET']
+        estateId = account['ESTATE_ID']
+
+        estateClass = self.dc.namespace['DistributedEstate']
+        houseClass = self.dc.namespace['DistributedHouse']
+
+        # These Fields are REQUIRED but not stored in db.
+        estateOther = [
+            (estateClass['setDawnTime'], (0,)),
+            (estateClass['setClouds'], (0,)),
+        ]
+
+        if estateId == 0:
+            defaultFields = [
+                ('setEstateType', [0]),
+                ('setDecorData', [[]]),
+                ('setLastEpochTimeStamp', [0]),
+                ('setRentalTimeStamp', [0]),
+                ('setRentalType', [0]),
+                ('setSlot0Items', [[]]),
+                ('setSlot1Items', [[]]),
+                ('setSlot2Items', [[]]),
+                ('setSlot3Items', [[]]),
+                ('setSlot4Items', [[]]),
+                ('setSlot5Items', [[]]),
+                ('setSlot0ToonId', [avatars[0]]),
+                ('setSlot1ToonId', [avatars[1]]),
+                ('setSlot2ToonId', [avatars[2]]),
+                ('setSlot3ToonId', [avatars[3]]),
+                ('setSlot4ToonId', [avatars[4]]),
+                ('setSlot5ToonId', [avatars[5]])
+            ]
+
+            estateId = await self.backend.create_object(estateClass, defaultFields)
+            await self.backend.set_field(accountId, 'ESTATE_ID', estateId, 'Account')
+
+        # Generate the estate.
+        await self.activateObjectWithOther(estateId, parentId, zoneId, estateClass, estateOther)
+
+        for index, houseId in enumerate(houseIds):
+            avatarId = avatars[index]
+
+            # These Fields are REQUIRED but not stored in db.
+            houseOther = [
+                (houseClass['setHousePos'], (index,)),
+                (houseClass['setCannonEnabled'], (0,)),
+            ]
+
+            houseDefaults = [
+                ('setHouseType', [0]),
+                ('setGardenPos', [index]),
+                ('setAvatarId', [avatarId]),
+                ('setName', ['']),
+                ('setColor', [index]),
+                ('setAtticItems', ['']),
+                ('setInteriorItems', ['']),
+                ('setAtticWallpaper', ['']),
+                ('setInteriorWallpaper', ['']),
+                ('setAtticWindows', ['']),
+                ('setInteriorWindows', ['']),
+                ('setDeletedItems', [''])
+            ]
+
+            if houseId == 0:
+                # Create a house.
+                houseId = await self.backend.create_object(houseClass, houseDefaults)
+                houseIds[index] = houseId
+
+            if avatarId != 0:
+                # Update the toon with their new house.
+                await self.backend.set_field(avatarId, 'setHouseId', [houseId], 'DistributedToon')
+
+                # Update the house with the toon's name & avatarId.
+                owner = await self.backend.query_object_fields(avatarId, ['setName'], 'DistributedToon')
+                toonName = owner['setName'][0]
+
+                await self.backend.set_field(houseId, 'setName', [toonName], 'DistributedHouse')
+                await self.backend.set_field(houseId, 'setAvatarId', [avatarId], 'DistributedHouse')
+
+            # Generate the houses.
+            await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
+
+        # Update the account's house list.
+        await self.backend.set_field(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
+
+        # Make a class containing estate data.
+        info = EstateInfo()
+        info.estateId = estateId
+        info.parentId = parentId
+        info.estateZone = zoneId
+        info.houseIds = houseIds
+
+        # Map this avatar to their estate info.
+        self.estates[avId] = info
+
+        # Let the AI know that we are done.
+        dg = Datagram()
+        dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
+        dg.add_uint32(context)
+        self.send_datagram(dg)
+
+    async def activateObjectWithOther(self, doId: int, parentId: int, zoneId: int, dclass, other: list):
+        dg = Datagram()
+        dg.add_server_header([STATESERVERS_CHANNEL], DBSERVERS_CHANNEL, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
+        dg.add_uint32(doId)
+        dg.add_uint32(parentId)
+        dg.add_uint32(zoneId)
+        dg.add_channel(DBSERVERS_CHANNEL)
+        dg.add_uint16(dclass.number)
+        dg.add_uint16(len(other))
+
+        for f, arg in other:
+            dg.add_uint16(f.number)
+            f.pack_value(dg, arg)
+
+        self.send_datagram(dg)
+
+    async def deleteDO(self, doId: int):
+        dg = Datagram()
+        dg.add_server_header([doId], DBSERVERS_CHANNEL, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(doId)
         self.send_datagram(dg)
 
     async def create_toon(self, sender, context, dclass, disl_id, pos, fields):
         try:
-            do_id = await self.backend.create_object(dclass, fields)
+            doId = await self.backend.create_object(dclass, fields)
             account = await self.backend.query_object_fields(disl_id, ['ACCOUNT_AV_SET'], 'Account')
-
-            a = Datagram()
-            self.dc.namespace['Account']['ACCOUNT_AV_SET'].pack_value(a, account['ACCOUNT_AV_SET'])
-
-            temp = Datagram()
-            temp.add_bytes(a.bytes())
-            av_set = self.dc.namespace['Account']['ACCOUNT_AV_SET'].unpack_value(temp.iterator())
-            print(do_id, disl_id, pos, av_set)
-            av_set[pos] = do_id
-            temp.seek(0)
-            self.dc.namespace['Account']['ACCOUNT_AV_SET'].pack_value(temp, av_set)
-            await self.backend.set_field(disl_id, 'ACCOUNT_AV_SET', av_set, 'Account')
+            avSet = account['ACCOUNT_AV_SET']
+            avSet[pos] = doId
+            await self.backend.set_field(disl_id, 'ACCOUNT_AV_SET', avSet, 'Account')
         except OTPCreateFailed as e:
             print('creation failed', e)
-            do_id = 0
+            doId = 0
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
         dg.add_uint32(context)
-        dg.add_uint8(do_id == 0)
-        dg.add_uint32(do_id)
+        dg.add_uint8(doId == 0)
+        dg.add_uint32(doId)
         self.send_datagram(dg)
 
     async def get_stored_values(self, sender, context, do_id, fields):
@@ -186,7 +357,7 @@ class DBServer(DownstreamMessageDirector):
 
             fieldValue = field_dict[field.name]
 
-            dcName = await self.backend._query_dclass(do_id)
+            dcName = await self.backend.queryDC(do_id)
 
             # Pack the field data.
             a = Datagram()
@@ -259,23 +430,27 @@ class DBServer(DownstreamMessageDirector):
         # Send the response to the client.
         self.send_datagram(dg)
 
-    async def query_account(self, sender, do_id):
+    async def queryObject(self, sender, doId):
+        dcName = await self.backend.queryDC(doId)
+
+        if dcName in ['DistributedEstate', 'DistributedHouse']:
+            # TODO
+            return
+
         dclass = self.dc.namespace['Account']
         toon_dclass = self.dc.namespace['DistributedToon']
-        fieldDict = await self.backend.query_object_all(do_id, dclass.name)
+        fieldDict = await self.backend.query_object_all(doId, dclass.name)
+
+        avIds = fieldDict['ACCOUNT_AV_SET']
 
         temp = Datagram()
-        dclass['ACCOUNT_AV_SET'].pack_value(temp, fieldDict['ACCOUNT_AV_SET'])
-        avIds = dclass['ACCOUNT_AV_SET'].unpack_value(temp.iterator())
-
-        tempTwo = Datagram()
-        dclass['ACCOUNT_AV_SET_DEL'].pack_value(tempTwo, fieldDict['ACCOUNT_AV_SET_DEL'])
+        dclass['ACCOUNT_AV_SET_DEL'].pack_value(temp, fieldDict['ACCOUNT_AV_SET_DEL'])
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_ACCOUNT_QUERY_RESP)
-        dg.add_bytes(tempTwo.bytes())
+        dg.add_bytes(temp.bytes())
         avCount = sum((1 if avId else 0 for avId in avIds))
-        self.log.debug(f'Account query for {do_id} from {sender}: {fieldDict}')
+        self.log.debug(f'Account query for {doId} from {sender}: {fieldDict}')
         dg.add_uint16(avCount) # Av count
         for avId in avIds:
             if not avId:
@@ -310,6 +485,31 @@ class DBServer(DownstreamMessageDirector):
             dg.add_uint8(avIds.index(avId))
             dg.add_uint8(1 if nameState == 'OPEN' else 0)
 
+        self.send_datagram(dg)
+
+    async def queryAvatarDetails(self, avatarId: int, doId: int, access: int):
+        fieldDict = await self.backend.query_object_all(doId, 'DistributedToon')
+        dclass = self.dc.namespace['DistributedToon']
+
+        # These are necessary too.
+        fieldDict['setAccess'] = [access]
+        fieldDict['setAsGM'] = [False]
+        fieldDict['setBattleId'] = [0]
+
+        # Prepare our response.
+        dg = Datagram()
+        dg.add_server_header([getPuppetChannel(avatarId)], DBSERVERS_CHANNEL, CLIENT_GET_AVATAR_DETAILS_RESP)
+        dg.add_uint32(doId)
+        dg.add_uint8(0)
+
+        # Pack our field data to go to the client.
+        for field in dclass.inherited_fields:
+            if not field.is_required or isinstance(field, MolecularField):
+                continue
+
+            field.pack_value(dg, fieldDict[field.name])
+
+        # Send the response to the client.
         self.send_datagram(dg)
 
 async def main():

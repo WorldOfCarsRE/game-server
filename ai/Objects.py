@@ -1,9 +1,15 @@
 import time
+import math
+import copy
+import random
+import string
 
 from .DistributedObjectAI import DistributedObjectAI
 from ai.toon.DistributedToonAI import DistributedToonAI
 from ai.toon.DistributedToonAI import DistributedPlayerAI
-from typing import List, Optional, Dict
+from ai.globals import HoodGlobals as HG
+from ai.ToontownGlobals import MaxHpLimit
+from typing import List, Optional, Dict, NamedTuple
 from dataslots import with_slots
 from dataclasses import dataclass
 
@@ -110,10 +116,10 @@ class DistributedInGameNewsMgrAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
 
-        self.latest_issue = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1379606399))
+        self.latestIssue = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(1379606399))
 
     def getLatestIssueStr(self):
-        return self.latest_issue
+        return self.latestIssue
 
 @with_slots
 @dataclass
@@ -219,8 +225,12 @@ class NewsManagerAI(DistributedObjectAI):
     def d_setHolidayIdList(self):
         self.sendUpdate('setHolidayIdList', [self.holidayIds])
 
-    def d_sendSystemMessage(self, msg, msgType = 0):
+    def d_sendSystemMessage(self, msg: str, msgType = 0):
         self.sendUpdate('sendSystemMessage', [msg, msgType])
+
+    def forceHolidayStart(self, holidayId: int):
+        self.holidayIds.append(holidayId)
+        self.d_setHolidayIdList()
 
 class HolidayBaseAI:
     holidayId = None
@@ -405,6 +415,25 @@ class FriendManagerAI(DistributedObjectGlobalAI):
             taskMgr.doMethodLater(1, self.sendFriendOnline, f'send-online-{requester.do_id}-{requested.do_id}',
                                   extraArgs=[requester.do_id, requested.do_id])
 
+    def requestSecret(self):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if len(av.getFriendsList()) >= MAX_FRIENDS:
+            self.d_requestSecretResponse(0, '')
+        else:
+            first = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(3))
+            second = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(3))
+
+            code = f'{first.lower()} {second.lower()}'
+            self.d_requestSecretResponse(avId, 1, code)
+
+    def d_requestSecretResponse(self, avId, result, secret):
+        if not avId:
+            return
+
+        self.sendUpdateToAvatar(avId, 'requestSecretResponse', [result, secret])
+
     def sendFriendOnline(self, avId, otherAvId):
         # Need this delay so that `setFriendsList` is set first to avoid
         # the online whisper message.
@@ -412,6 +441,297 @@ class FriendManagerAI(DistributedObjectGlobalAI):
         dg.add_server_header([getPuppetChannel(avId)], self.air.ourChannel, CLIENT_FRIEND_ONLINE)
         dg.add_uint32(otherAvId)
         self.air.send(dg)
+
+class FishingRod(NamedTuple):
+    weightMin: int
+    weightMax: int
+    rarity: float
+    castCost: int
+    jellybeanReward: int
+
+class FishProperties(NamedTuple):
+    weightMin: int
+    weightMax: int
+    rarity: int
+    zoneList: tuple
+
+class FishManager:
+    ANYWHERE = 1
+    GLOBAL_RARITY_DIAL_BASE = 4.3
+    MAX_RARITY = 10
+    OVERALL_VALUE_SCALE = 15
+    RARITY_VALUE_SCALE = 0.2
+    WEIGHT_VALUE_SCALE = 0.05 / 16.0
+    FISH_PER_BONUS = 10
+    totalFish = 0
+
+    def __init__(self):
+        self.rodDict = {
+          0: FishingRod(weightMin=0, weightMax=4, rarity=(1.0 / (self.GLOBAL_RARITY_DIAL_BASE * 1)),
+                        castCost=1, jellybeanReward=10),
+          1: FishingRod(weightMin=0, weightMax=8, rarity=(1.0 / (self.GLOBAL_RARITY_DIAL_BASE * 1)),
+                        castCost=2, jellybeanReward=20),
+          2: FishingRod(weightMin=0, weightMax=12, rarity=(1.0 / (self.GLOBAL_RARITY_DIAL_BASE * 1)),
+                        castCost=3, jellybeanReward=30),
+          3: FishingRod(weightMin=0, weightMax=16, rarity=(1.0 / (self.GLOBAL_RARITY_DIAL_BASE * 1)),
+                        castCost=4, jellybeanReward=75),
+          4: FishingRod(weightMin=0, weightMax=20, rarity=(1.0 / (self.GLOBAL_RARITY_DIAL_BASE * 1)),
+                        castCost=5, jellybeanReward=150),
+        }
+        self.fishes = {
+          0: ( FishProperties(weightMin=1, weightMax=3, rarity=1, zoneList=(self.ANYWHERE,)),
+               FishProperties(weightMin=1, weightMax=1, rarity=4, zoneList=(HG.ToontownCentral, self.ANYWHERE)),
+               FishProperties(weightMin=3, weightMax=5, rarity=5, zoneList=(HG.PunchlinePlace, HG.TheBrrrgh)),
+               FishProperties(weightMin=3, weightMax=5, rarity=3, zoneList=(HG.SillyStreet, HG.DaisyGardens)),
+               FishProperties(weightMin=1, weightMax=5, rarity=2, zoneList=(HG.LoopyLane, HG.ToontownCentral)),
+              ),
+          2: ( FishProperties(weightMin=2, weightMax=6, rarity=1, zoneList=(HG.DaisyGardens, self.ANYWHERE)),
+               FishProperties(weightMin=2, weightMax=6, rarity=9, zoneList=(HG.ElmStreet, HG.DaisyGardens)),
+               FishProperties(weightMin=5, weightMax=11, rarity=4, zoneList=(HG.LullabyLane,)),
+               FishProperties(weightMin=2, weightMax=6, rarity=3, zoneList=(HG.DaisyGardens, HG.MyEstate)),
+               FishProperties(weightMin=5, weightMax=11, rarity=2, zoneList=(HG.DonaldsDreamland, HG.MyEstate)),
+              ),
+          4: ( FishProperties(weightMin=2, weightMax=8, rarity=1, zoneList=(HG.ToontownCentral, self.ANYWHERE,)),
+               FishProperties(weightMin=2, weightMax=8, rarity=4, zoneList=(HG.ToontownCentral, self.ANYWHERE)),
+               FishProperties(weightMin=2, weightMax=8, rarity=2, zoneList=(HG.ToontownCentral, self.ANYWHERE)),
+               FishProperties(weightMin=2, weightMax=8, rarity=6, zoneList=(HG.ToontownCentral, HG.MinniesMelodyland)),
+              ),
+          6: ( FishProperties(weightMin=8, weightMax=12, rarity=1, zoneList=(HG.TheBrrrgh,)),
+              ),
+          8: ( FishProperties(weightMin=1, weightMax=5, rarity=1, zoneList=(self.ANYWHERE,)),
+               FishProperties(weightMin=2, weightMax=6, rarity=2, zoneList=(HG.MinniesMelodyland, self.ANYWHERE)),
+               FishProperties(weightMin=5, weightMax=10, rarity=5, zoneList=(HG.MinniesMelodyland, self.ANYWHERE)),
+               FishProperties(weightMin=1, weightMax=5, rarity=7, zoneList=(HG.MyEstate, self.ANYWHERE)),
+               FishProperties(weightMin=1, weightMax=5, rarity=10, zoneList=(HG.MyEstate, self.ANYWHERE)),
+              ),
+          10: ( FishProperties(weightMin=6, weightMax=10, rarity=9, zoneList=(HG.MyEstate, self.ANYWHERE,)),
+              ),
+          12: ( FishProperties(weightMin=7, weightMax=15, rarity=1, zoneList=(HG.DonaldsDock, self.ANYWHERE)),
+                FishProperties(weightMin=18, weightMax=20, rarity=6, zoneList=(HG.DonaldsDock, HG.MyEstate)),
+                FishProperties(weightMin=1, weightMax=5, rarity=5, zoneList=(HG.DonaldsDock, HG.MyEstate)),
+                FishProperties(weightMin=3, weightMax=7, rarity=4, zoneList=(HG.DonaldsDock, HG.MyEstate)),
+                FishProperties(weightMin=1, weightMax=2, rarity=2, zoneList=(HG.DonaldsDock, self.ANYWHERE)),
+              ),
+          14: ( FishProperties(weightMin=2, weightMax=6, rarity=1, zoneList=(HG.DaisyGardens, HG.MyEstate, self.ANYWHERE)),
+                FishProperties(weightMin=2, weightMax=6, rarity=3, zoneList=(HG.DaisyGardens, HG.MyEstate)),
+              ),
+          16: ( FishProperties(weightMin=4, weightMax=12, rarity=5, zoneList=(HG.MinniesMelodyland, self.ANYWHERE)),
+                FishProperties(weightMin=4, weightMax=12, rarity=7, zoneList=(HG.BaritoneBoulevard, HG.MinniesMelodyland)),
+                FishProperties(weightMin=4, weightMax=12, rarity=8, zoneList=(HG.TenorTerrace, HG.MinniesMelodyland)),
+              ),
+          18: ( FishProperties(weightMin=2, weightMax=4, rarity=3, zoneList=(HG.DonaldsDock, self.ANYWHERE)),
+                FishProperties(weightMin=5, weightMax=8, rarity=7, zoneList=(HG.TheBrrrgh,)),
+                FishProperties(weightMin=4, weightMax=6, rarity=8, zoneList=(HG.LighthouseLane,)),
+              ),
+          20: ( FishProperties(weightMin=4, weightMax=6, rarity=1, zoneList=(HG.DonaldsDreamland,)),
+                FishProperties(weightMin=14, weightMax=18, rarity=10, zoneList=(HG.DonaldsDreamland,)),
+                FishProperties(weightMin=6, weightMax=10, rarity=8, zoneList=(HG.LullabyLane,)),
+                FishProperties(weightMin=1, weightMax=1, rarity=3, zoneList=(HG.DonaldsDreamland,)),
+                FishProperties(weightMin=2, weightMax=6, rarity=6, zoneList=(HG.LullabyLane,)),
+                FishProperties(weightMin=10, weightMax=14, rarity=4, zoneList=(HG.DonaldsDreamland, HG.DaisyGardens)),
+              ),
+          22: ( FishProperties(weightMin=12, weightMax=16, rarity=2, zoneList=(HG.MyEstate, HG.DaisyGardens, self.ANYWHERE)),
+                FishProperties(weightMin=14, weightMax=18, rarity=3, zoneList=(HG.MyEstate, HG.DaisyGardens, self.ANYWHERE)),
+                FishProperties(weightMin=14, weightMax=20, rarity=5, zoneList=(HG.MyEstate, HG.DaisyGardens)),
+                FishProperties(weightMin=14, weightMax=20, rarity=7, zoneList=(HG.MyEstate, HG.DaisyGardens)),
+              ),
+          24: ( FishProperties(weightMin=9, weightMax=11, rarity=3, zoneList=(self.ANYWHERE,)),
+                FishProperties(weightMin=8, weightMax=12, rarity=5, zoneList=(HG.DaisyGardens, HG.DonaldsDock)),
+                FishProperties(weightMin=8, weightMax=12, rarity=6, zoneList=(HG.DaisyGardens, HG.DonaldsDock)),
+                FishProperties(weightMin=8, weightMax=16, rarity=7, zoneList=(HG.DaisyGardens, HG.DonaldsDock)),
+              ),
+          26: ( FishProperties(weightMin=10, weightMax=18, rarity=2, zoneList=(HG.TheBrrrgh,)),
+                FishProperties(weightMin=10, weightMax=18, rarity=3, zoneList=(HG.TheBrrrgh,)),
+                FishProperties(weightMin=10, weightMax=18, rarity=4, zoneList=(HG.TheBrrrgh,)),
+                FishProperties(weightMin=10, weightMax=18, rarity=5, zoneList=(HG.TheBrrrgh,)),
+                FishProperties(weightMin=12, weightMax=20, rarity=6, zoneList=(HG.TheBrrrgh,)),
+                FishProperties(weightMin=14, weightMax=20, rarity=7, zoneList=(HG.TheBrrrgh,)),
+                FishProperties(weightMin=14, weightMax=20, rarity=8, zoneList=(HG.SleetStreet, HG.TheBrrrgh)),
+                FishProperties(weightMin=16, weightMax=20, rarity=10, zoneList=(HG.WalrusWay, HG.TheBrrrgh)),
+              ),
+          28: ( FishProperties(weightMin=2, weightMax=10, rarity=2, zoneList=(HG.DonaldsDock, self.ANYWHERE)),
+                FishProperties(weightMin=4, weightMax=10, rarity=6, zoneList=(HG.BarnacleBoulevard, HG.DonaldsDock)),
+                FishProperties(weightMin=4, weightMax=10, rarity=7, zoneList=(HG.SeaweedStreet, HG.DonaldsDock)),
+              ),
+          30: ( FishProperties(weightMin=13, weightMax=17, rarity=5, zoneList=(HG.MinniesMelodyland, self.ANYWHERE)),
+                FishProperties(weightMin=16, weightMax=20, rarity=10, zoneList=(HG.AltoAvenue, HG.MinniesMelodyland)),
+                FishProperties(weightMin=12, weightMax=18, rarity=9, zoneList=(HG.TenorTerrace, HG.MinniesMelodyland)),
+                FishProperties(weightMin=12, weightMax=18, rarity=6, zoneList=(HG.MinniesMelodyland,)),
+                FishProperties(weightMin=12, weightMax=18, rarity=7, zoneList=(HG.MinniesMelodyland,)),
+              ),
+          32: ( FishProperties(weightMin=1, weightMax=5, rarity=2, zoneList=(HG.ToontownCentral, HG.MyEstate, self.ANYWHERE)),
+                FishProperties(weightMin=1, weightMax=5, rarity=3, zoneList=(HG.TheBrrrgh, HG.MyEstate, self.ANYWHERE)),
+                FishProperties(weightMin=1, weightMax=5, rarity=4, zoneList=(HG.DaisyGardens, HG.MyEstate)),
+                FishProperties(weightMin=1, weightMax=5, rarity=5, zoneList=(HG.DonaldsDreamland, HG.MyEstate)),
+                FishProperties(weightMin=1, weightMax=5, rarity=10, zoneList=(HG.TheBrrrgh, HG.DonaldsDreamland)),
+              ),
+          34: ( FishProperties(weightMin=1, weightMax=20, rarity=10, zoneList=(HG.DonaldsDreamland, self.ANYWHERE)),
+              ),
+        }
+        self.emptyRodDict = {}
+        for rodIndex in self.getRodDict():
+            self.emptyRodDict[rodIndex] = {}
+        self.anywhereDict = copy.deepcopy(self.emptyRodDict)
+        self.pondInfoDict = {}
+        for genus, speciesList in self.getFishes().items():
+            for species in range(len(speciesList)):
+                self.totalFish += 1
+                speciesDesc = speciesList[species]
+                rarity = speciesDesc.rarity
+                zoneList = speciesDesc.zoneList
+                for zoneIndex in range(len(zoneList)):
+                    zone = zoneList[zoneIndex]
+                    effectiveRarity = self.getEffectiveRarity(rarity, zoneIndex)
+                    if zone == self.ANYWHERE:
+                        for rodIndex, rarityDict in self.anywhereDict.items():
+                            if self.canBeCaughtByRod(genus, species, rodIndex):
+                                fishList = rarityDict.setdefault(effectiveRarity, [])
+                                fishList.append( (genus, species) )
+                    else:
+                        pondZones = [zone]
+                        subZones = HG.HoodHierarchy.get(zone)
+                        if subZones:
+                            pondZones.extend(subZones)
+                        for pondZone in pondZones:
+                            if pondZone in self.pondInfoDict:
+                                pondRodDict = self.pondInfoDict[pondZone]
+                            else:
+                                pondRodDict = copy.deepcopy(self.emptyRodDict)
+                                self.pondInfoDict[pondZone] = pondRodDict
+                            for rodIndex, rarityDict in pondRodDict.items():
+                                if self.canBeCaughtByRod(genus, species, rodIndex):
+                                    fishList = rarityDict.setdefault(effectiveRarity, [])
+                                    fishList.append( (genus, species) )
+        for zone, _rodDict in self.pondInfoDict.items():
+            for rodIndex, self.anywhereRarityDict in self.anywhereDict.items():
+                for rarity, anywhereFishList in self.anywhereRarityDict.items():
+                    rarityDict = pondRodDict[rodIndex]
+                    fishList = rarityDict.setdefault(rarity, [])
+                    fishList.extend(anywhereFishList)
+
+    def getFishes(self):
+        return self.fishes
+
+    def getRodDict(self):
+        return self.rodDict
+
+    def getWeightRange(self, genus, species):
+        fishInfo = self.getFishes()[genus][species]
+        return (fishInfo.weightMin, fishInfo.weightMax)
+
+    def getRodWeightRange(self, rodIndex):
+        rodProps = self.getRodDict()[rodIndex]
+        return (rodProps.weightMin, rodProps.weightMax)
+
+    def getRodRarity(self, rodId):
+        return self.getRodDict()[rodId].rarity
+
+    def getCastCost(self, rodId):
+        return self.getRodDict()[rodId].castCost
+
+    def getRodJellybeanReward(self, rodId):
+        return self.getRodDict()[rodId].jellybeanReward
+
+    def canBeCaughtByRod(self, genus, species, rodIndex):
+        minFishWeight, maxFishWeight = self.getWeightRange(genus, species)
+        minRodWeight, maxRodWeight = self.getRodWeightRange(rodIndex)
+        if ((minRodWeight <= maxFishWeight) and
+            (maxRodWeight >= minFishWeight)):
+            return 1
+        return 0
+
+    def getEffectiveRarity(self, rarity, offset):
+        if rarity + (offset) > self.MAX_RARITY:
+            return self.MAX_RARITY
+        return rarity + (offset)
+
+    def getFishValue(self, genus, species, weight):
+        rarity = self.getFishes()[genus][species].rarity
+        rarityValue = math.pow(self.RARITY_VALUE_SCALE * rarity, 1.5)
+        weightValue = math.pow(self.WEIGHT_VALUE_SCALE * weight, 1.1)
+        value = self.OVERALL_VALUE_SCALE * (rarityValue + weightValue)
+        finalValue = int(math.ceil(value))
+        # TODO: holiday stuff
+        return finalValue
+
+    def getRandomWeight(self, genus, species, rodIndex):
+        minFishWeight, maxFishWeight = self.getWeightRange(genus, species)
+        if rodIndex == None:
+            minWeight = minFishWeight
+            maxWeight = maxFishWeight
+        else:
+            minWeight, maxWeight = self.getRodWeightRange(rodIndex)
+            if minFishWeight > minWeight:
+                minWeight = minFishWeight
+            if maxFishWeight < maxWeight:
+                maxWeight = maxFishWeight
+
+        randNumA = random.random()
+        randNumB = random.random()
+
+        randNum = (randNumA + randNumB) / 2.0
+        randWeight = minWeight + ((maxWeight - minWeight) * randNum)
+
+        return int(round(randWeight * 16))
+
+    def rollRarityDice(self, rodId):
+        diceRoll = random.random()
+
+        exp = self.getRodRarity(rodId)
+        rarity = int(math.ceil(10 * (1 - math.pow(diceRoll, exp))))
+
+        if rarity <= 0:
+            rarity = 1
+
+        return rarity
+
+    def getRandomFishVitals(self, zoneId, rodId):
+        rarity = self.rollRarityDice(rodId)
+        rodDict = self.pondInfoDict.get(zoneId)
+        rarityDict = rodDict.get(rodId)
+        fishList = rarityDict.get(rarity)
+        if fishList:
+            genus, species = random.choice(fishList)
+            weight = self.getRandomWeight(genus, species, rodId)
+            return (1, genus, species, weight)
+        return (0, 0, 0, 0)
+
+    def creditFishTank(self, av: DistributedToonAI) -> bool:
+        oldBonus = int(len(av.fishCollection) / self.FISH_PER_BONUS)
+
+        # Give the avatar jellybeans in exchange for his fish.
+        value = av.fishTank.getTotalValue()
+        av.addMoney(value)
+
+        # Update the avatar collection for each fish.
+        for fish in av.fishTank.fishList:
+            av.fishCollection.collectFish(fish)
+
+        # Clear out the fish tank.
+        av.b_setFishTank([], [], [])
+
+        # Update the collection in the database.
+        av.d_setFishCollection(*av.fishCollection.getNetLists())
+
+        newBonus = int(len(av.fishCollection) / self.FISH_PER_BONUS)
+
+        if newBonus > oldBonus:
+            oldMaxHp = av.getMaxHp()
+            newMaxHp = min(MaxHpLimit, oldMaxHp + newBonus - oldBonus)
+            av.b_setMaxHp(nwMaxHp)
+
+            # Also, give them a full heal.
+            av.toonUp(newMaxHp)
+
+            # Update their trophy list.
+            newTrophies = av.getFishingTrophies()
+            trophyId = len(newTrophies)
+            newTrophies.append(trophyId)
+            av.b_setFishingTrophies(newTrophies)
+
+            return True
+
+        return False
 
 class MagicWordManagerAI(DistributedObjectAI):
     def __init__(self, air):
@@ -433,7 +753,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         minArgs = fArgs - (len(function.__defaults__) if function.__defaults__ else 0) - 1
 
         if argCount < minArgs:
-            response = '{0} requires at least {1} arguments but received {2}!'.format(magicWord, str(minArgs), str(argCount))
+            response = f'{magicWord} requires at least {str(minArgs)} arguments but received {str(argCount)}!'
             self.sendResponseMessage(avId, response)
             return False
 
@@ -453,14 +773,27 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         return 'Broadcasted message to everyone on this shard.'
 
-    def setMagicWord(self, magicWord, avId, zoneId, signature):
+    def setName(self, av: DistributedToonAI, name: str) -> str:
+        av.b_setName(name)
+
+        return f'Changed name to {name}.'
+
+    def startHoliday(self, holidayId: int) -> str:
+        if holidayId in self.air.newsManager.holidayIds:
+            return f'Holiday {holidayId} is already running!'
+
+        self.air.newsManager.forceHolidayStart(holidayId)
+
+        return f'Holiday {holidayId} has started!'
+
+    def setMagicWord(self, magicWord: str, avId: int, zoneId: int, signature: str):
         avId = self.air.currentAvatarSender
         av = self.air.doTable.get(avId)
 
         if not av:
             return
 
-        # Chop off the prefix at the start as its not needed
+        # Chop off the prefix at the start as its not needed.
         magicWord = magicWord[1:]
         # Split the Magic Word.
         splitWord = magicWord.split(' ')
@@ -471,16 +804,16 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         del splitWord
 
         # Log this attempt.
-        print('{0} with avId of {1} executed Magic Word: {2}!'.format(av.getName(), avId, magicWord))
+        print(f'{av.getName()} ({avId}) executed Magic Word: {magicWord}.')
 
         # Grab all of our string arguments.
         string = ' '.join(str(x) for x in args)
-        stringVal = ' '.join(str(x) for x in args[2:])
 
         clientWords = [
             'run',
             'walk',
-            'fps'
+            'fps',
+            'sit'
         ]
 
         if magicWord in clientWords or magicWord == '':
@@ -491,117 +824,49 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         if magicWord in ('system', 'smsg'):
             response = self.sendSystemMessage(av, msg = string)
+        elif magicWord == 'name':
+            response = self.setName(av, name = string)
+        elif magicWord == 'startholiday':
+            if self.checkArguments(avId, magicWord, self.startHoliday, args):
+                response = self.startHoliday(holidayId = int(args[0]))
         else:
-            response = '{0} is not a valid Magic Word.'.format(magicWord)
-            print('Unknown Magic Word: {0} from avId: {1}!'.format(magicWord, avId))
+            response = f'{magicWord} is not a valid Magic Word.'
+            print(f'Unknown Magic Word: {magicWord} from avId: {avId}.')
 
         # Send our response to the client.
         self.sendResponseMessage(avId, response)
 
-@with_slots
-@dataclass
-class LawnItem:
-    itemType: int
-    hardPoint: int
-    waterLevel: int
-    growthLevel: int
-    optional: int
-
-class DistributedEstateAI(DistributedObjectAI):
+class TTCodeRedemptionMgrAI(DistributedObjectAI):
 
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
-        self.estateType = 0
-        self.dawnTime = 0
-        self.decorData: List[LawnItem] = []
-        self.lastEpochTimestamp = 0
-        self.rentalTimestamp = 0
-        self.rentalType = 0
-        self.lawnItems: List[LawnItem] = [[], [], [], [], [], []]
-        self.activeToons = [0, 0, 0, 0, 0, 0]
-        self.clouds = 0
 
-    def getEstateType(self) -> int:
-        return self.estateType
-
-    def getDawnTime(self) -> int:
-        return self.dawnTime
-
-    def getDecorData(self) -> List[LawnItem]:
-        return self.decorData
-
-    def getLastEpochTimeStamp(self) -> int:
-        return self.lastEpochTimestamp
-
-    def getRentalTimeStamp(self) -> int:
-        return self.rentalTimestamp
-
-    def getRentalType(self) -> int:
-        return self.rentalType
-
-    def getSlot0ToonId(self) -> int:
-        return self.activeToons[0]
-
-    def getSlot0Items(self) -> List[LawnItem]:
-        return self.lawnItems[0]
-
-    def getSlot1ToonId(self) -> int:
-        return self.activeToons[1]
-
-    def getSlot1Items(self) -> List[LawnItem]:
-        return self.lawnItems[1]
-
-    def getSlot2ToonId(self) -> int:
-        return self.activeToons[2]
-
-    def getSlot2Items(self) -> List[LawnItem]:
-        return self.lawnItems[2]
-
-    def getSlot3ToonId(self) -> int:
-        return self.activeToons[3]
-
-    def getSlot3Items(self) -> List[LawnItem]:
-        return self.lawnItems[3]
-
-    def getSlot4ToonId(self) -> int:
-        return self.activeToons[4]
-
-    def getSlot4Items(self) -> List[LawnItem]:
-        return self.lawnItems[4]
-
-    def getSlot5ToonId(self) -> int:
-        return self.activeToons[5]
-
-    def getSlot5Items(self) -> List[LawnItem]:
-        return self.lawnItems[5]
-
-    def getClouds(self) -> int:
-        return self.clouds
-
-class EstateManagerAI(DistributedObjectAI):
-
-    def __init__(self, air):
-        DistributedObjectAI.__init__(self, air)
-        self.estateZones: Dict[int] = {}
-
-    def getEstateZone(self, avId: int, name: str):
+    def redeemCode(self, context, code):
+        avId = self.air.currentAvatarSender
         av = self.air.doTable.get(avId)
 
-        # Allocate our estate zone.
-        self.estateZones[avId] = self.air.allocateZone()
+        if not av:
+            return
 
-        # Generate our estate object.
-        estate = DistributedEstateAI(self.air)
-        estate.generateWithRequired(self.estateZones[avId])
+        self.sendUpdateToAvatar(avId, 'redeemCodeResult', [context, 6, 0])
 
-        # Let the client know about our new zone.
-        self.sendUpdateToAvatar(avId, 'setEstateZone', [avId, self.estateZones[avId]])
+class SafeZoneManagerAI(DistributedObjectAI):
 
-    def exitEstate(self):
-        avId = self.air.currentAvatarSender
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+        self.healFrequency = 30
+        self.healAmount = 1
 
-        # Deallocate this zone.
-        self.air.deallocateZone(self.estateZones[avId])
+    def enterSafeZone(self):
+        senderId = self.air.currentAvatarSender
+        sender = self.air.doTable.get(senderId)
 
-        # Remove this avatar from our dictionary.
-        del self.estateZones[avId]
+        if sender:
+            sender.startToonUp(self.healFrequency, self.healAmount)
+
+    def exitSafeZone(self):
+        senderId = self.air.currentAvatarSender
+        sender = self.air.doTable.get(senderId)
+
+        if sender:
+            sender.stopToonUp()

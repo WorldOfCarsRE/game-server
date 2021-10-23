@@ -4,7 +4,7 @@ from direct.fsm.FSM import FSM
 
 from ai.toon import NPCToons
 
-import pickle
+import pickle, builtins
 
 class DistributedToonInteriorAI(DistributedObjectAI, FSM):
     defaultTransitions = {
@@ -36,7 +36,12 @@ class DistributedToonInteriorAI(DistributedObjectAI, FSM):
         return [self.zoneId, self.block]
 
     def getToonData(self):
-        return pickle.dumps({}, protocol=1)
+        if builtins.legacyProtocol:
+            protocol = 1
+        else:
+            protocol = 5
+
+        return pickle.dumps({}, protocol = protocol)
 
     def getState(self):
         state = self.state[0].lower() + self.state[1:]

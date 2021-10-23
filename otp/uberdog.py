@@ -55,7 +55,6 @@ class UberdogProtocol(MDUpstreamProtocol):
         else:
             return False
 
-
 class Uberdog(DownstreamMessageDirector):
     upstream_protocol = UberdogProtocol
     GLOBAL_ID = None
@@ -65,7 +64,7 @@ class Uberdog(DownstreamMessageDirector):
 
         self.dclass = dc.namespace[self.__class__.__name__[:-2]]
 
-        self.last_sender = None
+        self.lastSender = None
 
     async def run(self):
         await self.connect(config['MessageDirector.HOST'], config['MessageDirector.PORT'])
@@ -86,7 +85,7 @@ class Uberdog(DownstreamMessageDirector):
         self.send_datagram(dg)
 
     def receive_update(self, sender, dgi):
-        self.last_sender = sender
+        self.lastSender = sender
         field_number = dgi.get_uint16()
         field = dc.fields[field_number]()
         self.log.debug(f'Receiving field update for field {field.name} from {sender}.')
@@ -170,7 +169,7 @@ class FriendManagerUD(Uberdog):
     def inviteeAcknowledgeCancel(self, todo0):
         pass
 
-    def requestSecret(self, todo0):
+    def requestSecret(self):
         pass
 
     def submitSecret(self, todo0):
