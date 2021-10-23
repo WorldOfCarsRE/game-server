@@ -39,8 +39,8 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handleGetEstate(sender, dgi)
         elif msg_id == DBSERVER_UNLOAD_ESTATE:
             self.handleUnloadEstate(dgi)
-        elif msg_id == DBSERVER_GET_AVATAR_DETAILS:
-            self.handleGetAvatarDetails(dgi)
+        elif msg_id in (DBSERVER_GET_AVATAR_DETAILS, DBSERVER_GET_PET_DETAILS):
+            self.handleGetObjectDetails(dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
 
@@ -114,11 +114,12 @@ class DBServerProtocol(MDUpstreamProtocol):
         avatarId = dgi.get_uint32()
         self.service.loop.create_task(self.service.queryFriends(avatarId))
 
-    def handleGetAvatarDetails(self, dgi):
+    def handleGetObjectDetails(self, dgi):
         avatarId = dgi.get_uint32()
         doId = dgi.get_uint32()
         access = dgi.get_uint8()
-        self.service.loop.create_task(self.service.queryAvatarDetails(avatarId, doId, access))
+        dcName = dgi.get_string16()
+        self.service.loop.create_task(self.service.queryObjectDetails(avatarId, doId, access, dcName))
 
 from dc.parser import parse_dc_file
 from otp.dbbackend import SQLBackend, MongoBackend, OTPCreateFailed
@@ -487,14 +488,15 @@ class DBServer(DownstreamMessageDirector):
 
         self.send_datagram(dg)
 
-    async def queryAvatarDetails(self, avatarId: int, doId: int, access: int):
-        fieldDict = await self.backend.query_object_all(doId, 'DistributedToon')
-        dclass = self.dc.namespace['DistributedToon']
+    async def queryObjectDetails(self, avatarId: int, doId: int, access: int, dcName: str):
+        fieldDict = await self.backend.query_object_all(doId, dcName)
+        dclass = self.dc.namespace[dcName]
 
-        # These are necessary too.
-        fieldDict['setAccess'] = [access]
-        fieldDict['setAsGM'] = [False]
-        fieldDict['setBattleId'] = [0]
+        if dcName == 'DistributedToon':
+            # These are necessary too.
+            fieldDict['setAccess'] = [access]
+            fieldDict['setAsGM'] = [False]
+            fieldDict['setBattleId'] = [0]
 
         # Prepare our response.
         dg = Datagram()

@@ -240,8 +240,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.receive_update_field(dgi)
             elif msgtype == CLIENT_SET_AVATAR:
                 self.receive_set_avatar(dgi)
-            elif msgtype == CLIENT_GET_AVATAR_DETAILS:
-                self.receiveGetAvatarDetails(dgi)
+            elif msgtype in (CLIENT_GET_AVATAR_DETAILS, CLIENT_GET_PET_DETAILS):
+                self.receiveGetObjectDetails(dgi, msgtype)
             else:
                 self.service.log.debug(f'Unhandled msg type {msgtype} in state {self.state}')
 
@@ -1160,9 +1160,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.add_uint8(actionFlag)
         self.service.send_datagram(resp)
 
-    def receiveGetAvatarDetails(self, dgi):
+    def receiveGetObjectDetails(self, dgi, msgType: int):
         doId = dgi.get_uint32()
         access = 2 if self.account.access == b'FULL' else 1
+        dclass = messageToClass[msgType]
 
         # Send this to the Database server.
         resp = Datagram()
@@ -1170,4 +1171,5 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.add_uint32(self.avatar_id)
         resp.add_uint32(doId)
         resp.add_uint8(access)
+        resp.add_string16(dclass)
         self.service.send_datagram(resp)
