@@ -71,7 +71,7 @@ class DistributedNPCTailorAI(DistributedNPCToonBaseAI):
 
 class DistributedNPCFishermanAI(DistributedNPCToonBaseAI):
     def sendClearMovie(self):
-        self.ignore(self.air.getAvatarExitEvent(self.occupier))
+        self.ignore(self.air.getDeleteDoIdEvent(self.occupier))
         self.occupier = 0
         self.d_setMovie(NPCToons.PURCHASE_MOVIE_CLEAR)
 
@@ -91,7 +91,7 @@ class DistributedNPCFishermanAI(DistributedNPCToonBaseAI):
 
         elif av.fishTank.getTotalValue():
             self.occupier = avId
-            self.acceptOnce(self.air.getAvatarExitEvent(avId), self.__handleUnexpectedExit, extraArgs = [avId])
+            self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.__handleUnexpectedExit, extraArgs = [avId])
             self.d_setMovie(NPCToons.SELL_MOVIE_START)
             taskMgr.doMethodLater(NPCToons.CLERK_COUNTDOWN_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
         else:
@@ -149,7 +149,7 @@ class DistributedNPCPartyPersonAI(DistributedNPCToonBaseAI):
         self.sendClearMovie()
 
     def sendClearMovie(self):
-        self.ignore(self.air.getAvatarExitEvent(self.occupier))
+        self.ignore(self.air.getDeleteDoIdEvent(self.occupier))
         self.occupier = 0
         self.d_setMovie(0, NPCToons.PARTY_MOVIE_CLEAR)
 

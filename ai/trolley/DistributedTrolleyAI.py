@@ -119,7 +119,7 @@ class DistributedTrolleyAI(DistributedObjectAI, FSM):
     def fillSeat(self, avId):
         seatIndex = self.getAvailableSeat()
         self.seats[seatIndex] = avId
-        self.acceptOnce(self.air.getAvatarExitEvent(avId), self.__handleUnexpectedExit, extraArgs=[avId])
+        self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.__handleUnexpectedExit, extraArgs=[avId])
         self.lastBoardTime = globalClock.getRealTime()
         self.sendUpdate(f'fillSlot{seatIndex}', [avId])
 
@@ -130,7 +130,7 @@ class DistributedTrolleyAI(DistributedObjectAI, FSM):
             return
 
         self.sendUpdate(f'fillSlot{index}', [0])
-        self.ignore(self.air.getAvatarExitEvent(avId))
+        self.ignore(self.air.getDeleteDoIdEvent(avId))
 
     def clearEmptySlot(self, index):
         self.sendUpdate(f'emptySlot{index}', [0, globalClockDelta.getRealNetworkTime()])
