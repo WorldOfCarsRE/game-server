@@ -64,25 +64,24 @@ MAX_PATH_LEN = 300
 MAX_SUIT_TYPES = 6
 
 class DistributedSuitPlannerAI(DistributedObjectAI):
-    def __init__(self, air, place):
+    def __init__(self, air, place, zoneId):
         DistributedObjectAI.__init__(self, air)
         self.place = place
-        self.zoneId = self.place.zone_id
-        self.info: SuitHoodInfo = SUIT_HOOD_INFO[place.zone_id]
+        self.zoneId = zoneId
+        self.info: SuitHoodInfo = SUIT_HOOD_INFO[zoneId]
         self.battleMgr: BattleManagerAI = BattleManagerAI(self.air)
 
         self.zone2battlePos: Dict[int, Point3] = {}
-
         for visGroup in self.storage.visgroups:
-            zoneId = int(visGroup.name)
+            visZone = int(visGroup.name)
             if not visGroup.battle_cells:
-                print('zone has no battle cells: %d' % zoneId)
+                print('zone has no battle cells: %d' % visZone)
                 continue
 
-            self.zone2battlePos[zoneId] = visGroup.battle_cells[0].pos
+            self.zone2battlePos[visZone] = visGroup.battle_cells[0].pos
 
             if len(visGroup.battle_cells) > 1:
-                print('Multiple battle cells for zoneId: %d' % zoneId)
+                print('Multiple battle cells for zoneId: %d' % visZone)
 
         self.streetPoints: List[DNASuitPoint] = []
         self.frontDoorPoints: List[DNASuitPoint] = []
@@ -112,11 +111,11 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
     @property
     def dna(self):
-        return self.place.dna
+        return self.place.dna[self.zoneId]
 
     @property
     def storage(self):
-        return self.place.storage
+        return self.place.storage[self.zoneId]
 
     def startup(self):
         self.upkeep()
@@ -143,12 +142,12 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         suit.flyInSuit = 1
 
         if not self.chooseDestination(suit, FROM_SKY):
-            print('failed to choose destination')
+            print('(%s) failed to choose destination' % self.zoneId)
             suit.delete()
             return False
 
         level = random.choice(self.info.levels)
-        tiers = range(max(level - 4, 0), min(level, MAX_SUIT_TYPES))
+        tiers = (max(level - 4, 0), min(level, MAX_SUIT_TYPES))
         tier = random.choice(tiers)
         department = pickFromFreqList(self.info.deptChances)
         head = SuitHeads.at(department * 8 + tier)

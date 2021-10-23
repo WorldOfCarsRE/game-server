@@ -111,7 +111,8 @@ class DistributedObjectAI(DirectObject):
             self.air = None
             self.zoneId = 0
             self.parentId = 0
-            messenger.send('do-deleted-%d' % self.do_id)
+            if self.do_id != None:
+                messenger.send('do-deleted-%d' % self.do_id)
             self.do_id = None
 
     @property

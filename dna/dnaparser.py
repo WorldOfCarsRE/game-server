@@ -113,7 +113,8 @@ class DNAStorage:
             max_length -= len(path)
             for adj in self.get_adjacent_points(start):
                 subpath = self.get_suit_path_breadth_first(self.suit_point_map[adj], end_point, min_length, max_length)
-                path.extend(subpath)
+                if subpath != None: # This is TEMP, door points are broke for some reason
+                    path.extend(subpath)
                 break
 
         return path
