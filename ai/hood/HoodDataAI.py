@@ -77,7 +77,7 @@ class PlaceAI:
         raise NotImplementedError
 
 from ai.building.DistributedHQInteriorAI import DistributedHQInteriorAI
-from ai.building.DistributedDoorAI import DistributedDoorAI
+from ai.building.DistributedDoorAI import DistributedDoorAI, DistributedCogHQDoorAI
 from ai.building import DoorTypes
 
 class HQBuildingAI(object):
@@ -261,7 +261,6 @@ class CogHQAI(PlaceAI):
     suitZones = []
     elevatorZones = []
     numExtDoors = 0
-    numIntDoors = 0
 
     def __init__(self, air, zone_id, facilityMgr):
         PlaceAI.__init__(self, air, zone_id)
@@ -283,17 +282,40 @@ class CogHQAI(PlaceAI):
                 suitPlanner.generateWithRequired(zone_id)
                 suitPlanner.startup()
                 self.suitPlanners.append(suitPlanner)
-                
+
+        extDoors = []
+
+        for i in range(self.numExtDoors):
+            extDoor = DistributedCogHQDoorAI(self.air, i, DoorTypes.EXT_COGHQ, i, self.lobbyZone)
+            extDoors.append(extDoor)
+
+        for suitPlanner in self.suitPlanners:
+            if suitPlanner.zoneId == self.zoneId:
+                suitPlanner.cogHQDoors = extDoors
+
+        intDoor = DistributedCogHQDoorAI(self.air, 0, DoorTypes.INT_COGHQ, 0, self.zoneId)
+
+        for extDoor in extDoors:
+            extDoor.setOtherDoor(intDoor)
+            extDoor.zoneId = self.zoneId
+            extDoor.generateWithRequired(self.zoneId)
+            extDoor.sendUpdate('setDoorIndex', [extDoor.getDoorIndex()])
+
+        intDoor.generateWithRequired(self.lobbyZone)
+        intDoor.sendUpdate('setDoorIndex', [intDoor.getDoorIndex()])             
             
 class SBHQHoodAI(CogHQAI):
     zoneId = SellbotHQ
+    lobbyZone = SellbotLobby
     suitZones = [SellbotHQ, SellbotFactoryExt]
+    numExtDoors = 4
 
     def __init__(self, air, facilityMgr):
         CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
         
 class CBHQHoodAI(CogHQAI):
     zoneId = CashbotHQ
+    lobbyZone = CashbotLobby
     suitZones = [CashbotHQ]
 
     def __init__(self, air, facilityMgr):
@@ -301,6 +323,7 @@ class CBHQHoodAI(CogHQAI):
 
 class LBHQHoodAI(CogHQAI):
     zoneId = LawbotHQ
+    lobbyZone = BossbotLobby
     suitZones = [LawbotHQ]
 
     def __init__(self, air, facilityMgr):
@@ -308,6 +331,7 @@ class LBHQHoodAI(CogHQAI):
         
 class BBHQHoodAI(CogHQAI):
     zoneId = BossbotHQ
+    lobbyZone = BossbotLobby
 
     def __init__(self, air, facilityMgr):
         CogHQAI.__init__(self, air, self.zoneId, facilityMgr)

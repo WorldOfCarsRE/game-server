@@ -130,9 +130,44 @@ class DistributedDoorAI(DistributedObjectAI):
     def d_suitEnter(self, suitId):
         if suitId not in self.doorFSM.queue:
             self.doorFSM.queue.append(suitId)
-            self.sendUpdate('suitEnter', [suitId])
+            self.sendUpdate('avatarEnter', [suitId])
 
         self.doorFSM.openDoor()
+
+    def d_suitExit(self, suitId):
+        self.sendUpdate('avatarExit', [suitId])
+
+        self.handleExit(suitId)
+
+class DistributedCogHQDoorAI(DistributedDoorAI):
+
+    def __init__(self, air, block, doorType, doorIndex, destinationZone, swing=RIGHT_DOOR):
+        DistributedDoorAI.__init__(self, air, block, doorType, doorIndex, swing)
+        self.destinationZone = destinationZone
+
+    def requestEnter(self):
+        avId = self.air.currentAvatarSender
+
+        if self.doorLock:
+            self.sendUpdateToAvatar(avId, 'rejectEnter', [self.doorLock])
+            return
+
+        self.handleEnter(avId)
+
+    def handleEnter(self, avId): # TODO: checks
+        if avId not in self.doorFSM.queue:
+            self.doorFSM.queue.append(avId)
+            self.sendUpdate('avatarEnter', [avId])
+
+        self.doorFSM.openDoor()
+
+        self.sendUpdateToAvatar(avId, 'setOtherZoneIdAndDoId', [self.destinationZone, self.otherDoor.do_id])
+
+    def requestExit(self):
+        avId = self.air.currentAvatarSender
+        self.sendUpdate('avatarExit', [avId])
+
+        self.handleExit(avId)
 
 class DoorFSM(FSM):
     ANIMATION_DURATION = 1.0

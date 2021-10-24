@@ -88,6 +88,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.frontDoorPoints: List[DNASuitPoint] = []
         self.sideDoorPoints: List[DNASuitPoint] = []
         self.cogHQDoorPoints: List[DNASuitPoint] = []
+        self.cogHQDoors = []
 
         for suitPoint in self.storage.suit_points:
             if suitPoint.point_type == SuitPointType.STREET_POINT:

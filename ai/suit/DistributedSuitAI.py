@@ -271,6 +271,10 @@ class DistributedSuitAI(DistributedSuitBaseAI):
 
     def __beginLegType(self, legType):
         self.legType = legType
+        if legType == SuitLegType.TToCoghq:
+            self.openCogHQDoor(1)
+        elif legType == SuitLegType.TFromCoghq:
+            self.openCogHQDoor(0)
 
     def __enterZone(self, zoneId):
         if zoneId != self.zoneId:
@@ -286,6 +290,16 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             self.requestRemoval()
         else:
             self.danceNowFlyAwayLater()
+
+    def openCogHQDoor(self, enter):
+        blockNumber = self.legList.get_block_number(self.currentLeg)
+        if blockNumber in self.suitPlanner.cogHQDoors:
+            door = self.suitPlanner.cogHQDoors[blockNumber]
+
+            if enter:
+                door.d_suitEnter(self.getDoId())
+            else:
+                door.d_suitExit(self.getDoId())
 
     def stopPathNow(self):
         taskMgr.remove(self.uniqueName('move'))
