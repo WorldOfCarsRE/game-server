@@ -268,12 +268,12 @@ class CogHQAI(PlaceAI):
         self.wantSuits = True
         self.suitPlanners = []
         self.facilityMgr = facilityMgr
-        
+
     def create(self):
         for zoneId in self.suitZones:
             if zoneId in DNA_MAP:
                 self.dna[zoneId], self.storage[zoneId] = load_dna_file('dna/files/' + DNA_MAP[zoneId])
-        
+
     def startup(self):
         self.active = True
         if self.wantSuits:
@@ -302,8 +302,8 @@ class CogHQAI(PlaceAI):
             extDoor.sendUpdate('setDoorIndex', [extDoor.getDoorIndex()])
 
         intDoor.generateWithRequired(self.lobbyZone)
-        intDoor.sendUpdate('setDoorIndex', [intDoor.getDoorIndex()])             
-            
+        intDoor.sendUpdate('setDoorIndex', [intDoor.getDoorIndex()])
+
 class SBHQHoodAI(CogHQAI):
     zoneId = SellbotHQ
     lobbyZone = SellbotLobby
@@ -312,7 +312,7 @@ class SBHQHoodAI(CogHQAI):
 
     def __init__(self, air, facilityMgr):
         CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
-        
+
 class CBHQHoodAI(CogHQAI):
     zoneId = CashbotHQ
     lobbyZone = CashbotLobby
@@ -328,7 +328,7 @@ class LBHQHoodAI(CogHQAI):
 
     def __init__(self, air, facilityMgr):
         CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
-        
+
 class BBHQHoodAI(CogHQAI):
     zoneId = BossbotHQ
     lobbyZone = BossbotLobby

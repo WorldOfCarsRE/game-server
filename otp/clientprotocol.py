@@ -795,6 +795,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         num_zones = dgi.remaining() // 4
 
         zones = []
+
         for i in range(num_zones):
             zoneId = dgi.get_uint32()
             if zoneId == 1:
