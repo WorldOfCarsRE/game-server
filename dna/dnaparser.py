@@ -113,8 +113,7 @@ class DNAStorage:
             max_length -= len(path)
             for adj in self.get_adjacent_points(start):
                 subpath = self.get_suit_path_breadth_first(self.suit_point_map[adj], end_point, min_length, max_length)
-                if subpath != None: # This is TEMP, door points are broke for some reason
-                    path.extend(subpath)
+                path.extend(subpath)
                 break
 
         return path
@@ -145,7 +144,7 @@ class DNAStorage:
                 visited.add(point)
 
                 # Check for a non-door point.
-                if self.suit_point_map[point].point_type == SuitPointType.STREET_POINT:
+                if self.suit_point_map[point].point_type in [SuitPointType.STREET_POINT, SuitPointType.COGHQ_IN_POINT, SuitPointType.COGHQ_OUT_POINT]:
                     considering.append(path + [point])
 
 

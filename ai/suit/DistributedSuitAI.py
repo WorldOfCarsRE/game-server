@@ -292,14 +292,16 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             self.danceNowFlyAwayLater()
 
     def openCogHQDoor(self, enter):
-        blockNumber = self.legList.get_block_number(self.currentLeg)
-        if blockNumber in self.suitPlanner.cogHQDoors:
+        blockNumber = int(self.legList.get_block_number(self.currentLeg))
+        try:
             door = self.suitPlanner.cogHQDoors[blockNumber]
+        except:
+            return
 
-            if enter:
-                door.d_suitEnter(self.getDoId())
-            else:
-                door.d_suitExit(self.getDoId())
+        if enter:
+            door.d_suitEnter(self.do_id)
+        else:
+            door.d_suitExit(self.do_id)
 
     def stopPathNow(self):
         taskMgr.remove(self.uniqueName('move'))
