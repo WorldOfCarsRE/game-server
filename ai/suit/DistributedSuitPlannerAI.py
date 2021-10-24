@@ -72,6 +72,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.battleMgr: BattleManagerAI = BattleManagerAI(self.air)
 
         self.zone2battlePos: Dict[int, Point3] = {}
+
         for visGroup in self.storage.visgroups:
             visZone = int(visGroup.name)
             if not visGroup.battle_cells:
@@ -142,7 +143,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         suit.flyInSuit = 1
 
         if not self.chooseDestination(suit, FROM_SKY):
-            print('(%s) failed to choose destination' % self.zoneId)
+            print(f'({self.zoneId}) failed to choose destination')
             suit.delete()
             return False
 
