@@ -1,6 +1,4 @@
 from . import CatalogItem
-from toontown.toonbase import ToontownGlobals
-from toontown.toonbase import TTLocalizer
 from toontown.toon import ToonDNA
 import random
 from direct.showbase import PythonUtil

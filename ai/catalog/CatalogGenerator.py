@@ -22,8 +22,6 @@ from .CatalogGardenStarterItem import CatalogGardenStarterItem
 from .CatalogNametagItem import CatalogNametagItem
 from .CatalogAccessoryItem import CatalogAccessoryItem
 from direct.actor import Actor
-from toontown.toonbase import TTLocalizer
-from toontown.toonbase import ToontownGlobals
 import types
 import random
 import time

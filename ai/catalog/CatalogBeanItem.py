@@ -1,8 +1,5 @@
 from . import CatalogItem
 from toontown.toonbase import ToontownGlobals
-from toontown.toonbase import TTLocalizer
-from otp.otpbase import OTPLocalizer
-from direct.interval.IntervalGlobal import *
 
 class CatalogBeanItem(CatalogItem.CatalogItem):
     sequenceNumber = 0

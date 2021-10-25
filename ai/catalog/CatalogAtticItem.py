@@ -1,8 +1,6 @@
 from . import CatalogItem
-from toontown.toonbase import TTLocalizer
 from direct.showbase import PythonUtil
 from direct.gui.DirectGui import *
-from toontown.toonbase import ToontownGlobals
 
 class CatalogAtticItem(CatalogItem.CatalogItem):
 

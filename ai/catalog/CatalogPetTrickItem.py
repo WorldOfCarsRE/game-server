@@ -1,9 +1,5 @@
 from . import CatalogItem
 from toontown.pets import PetTricks
-from toontown.toonbase import ToontownGlobals
-from toontown.toonbase import TTLocalizer
-from otp.otpbase import OTPLocalizer
-from direct.interval.IntervalGlobal import *
 
 class CatalogPetTrickItem(CatalogItem.CatalogItem):
     sequenceNumber = 0

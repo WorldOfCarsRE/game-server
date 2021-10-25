@@ -1,8 +1,6 @@
 from pandac.PandaModules import *
 from . import CatalogItem
 from toontown.toonbase import ToontownGlobals
-from otp.otpbase import OTPLocalizer
-from toontown.toonbase import TTLocalizer
 
 class CatalogChatItem(CatalogItem.CatalogItem):
 

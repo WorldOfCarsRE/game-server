@@ -1,10 +1,5 @@
 from . import CatalogItem
 import time
-from toontown.toonbase import ToontownGlobals
-from toontown.toonbase import TTLocalizer
-from otp.otpbase import OTPLocalizer
-from direct.interval.IntervalGlobal import *
-from toontown.toontowngui import TTDialog
 
 class CatalogRentalItem(CatalogItem.CatalogItem):
 

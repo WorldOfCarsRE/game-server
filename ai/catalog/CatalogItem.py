@@ -1,8 +1,5 @@
 from direct.directnotify import DirectNotifyGlobal
 from pandac.PandaModules import *
-from toontown.toonbase import TTLocalizer
-from toontown.toonbase import ToontownGlobals
-from direct.interval.IntervalGlobal import *
 from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
 import sys
