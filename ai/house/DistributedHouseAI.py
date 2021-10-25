@@ -226,6 +226,9 @@ class DistributedHouseAI(DistributedObjectAI):
     def getInteriorWallpaper(self):
         return self.interiorWallpaper.getBlob(store = CatalogItem.Customization)
 
+    def setAtticWindows(self, items):
+        self.atticWindows = CatalogItemList(items, store = CatalogItem.Customization)
+
     def getAtticWindows(self):
         return self.atticWindows.getBlob(store = CatalogItem.Customization)
 
@@ -303,6 +306,12 @@ class DistributedHouseAI(DistributedObjectAI):
     def b_setAtticWindows(self, items):
         self.setAtticWindows(items)
         self.d_setAtticWindows(items)
+
+    def d_setAtticWindows(self, items):
+        self.sendUpdate('setAtticWindows', [items.getBlob(store = CatalogItem.Customization)])
+
+        if self.interiorManager:
+            self.interiorManager.d_setAtticWindows(items)
 
     def setInteriorWindows(self, items):
         self.interiorWindows = CatalogItemList(items, store = CatalogItem.Customization | CatalogItem.WindowPlacement)
