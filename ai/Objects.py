@@ -778,6 +778,11 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         return f'Changed name to {name}.'
 
+    def healUp(self, av: DistributedToonAI) -> str:
+        av.b_setHp(av.getMaxHp())
+
+        return 'Healed avatar.'
+
     def startHoliday(self, holidayId: int) -> str:
         if holidayId in self.air.newsManager.holidayIds:
             return f'Holiday {holidayId} is already running!'
@@ -829,6 +834,8 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         elif magicWord == 'startholiday':
             if self.checkArguments(avId, magicWord, self.startHoliday, args):
                 response = self.startHoliday(holidayId = int(args[0]))
+        elif magicWord == 'heal':
+            response = self.healUp(av)
         else:
             response = f'{magicWord} is not a valid Magic Word.'
             print(f'Unknown Magic Word: {magicWord} from avId: {avId}.')
