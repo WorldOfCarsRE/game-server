@@ -621,14 +621,12 @@ class CatalogWallpaperItem(CatalogSurfaceItem):
             dg.addUint16(self.borderIndex)
             dg.addUint8(self.borderColorIndex)
 
-
 def getWallpapers(*typeList):
     list = []
     for type in typeList:
         list.append(CatalogWallpaperItem(type))
 
     return list
-
 
 def getAllWallpapers(*typeList):
     list = []
@@ -649,9 +647,8 @@ def getAllWallpapers(*typeList):
 
     return list
 
-
 def getWallpaperRange(fromIndex, toIndex, *otherRanges):
-    list = []
+    wallpaperList = []
     froms = [fromIndex]
     tos = [toIndex]
     i = 0
@@ -660,7 +657,7 @@ def getWallpaperRange(fromIndex, toIndex, *otherRanges):
         tos.append(otherRanges[i + 1])
         i += 2
 
-    for patternIndex in list(WallpaperTypes.keys()):
+    for patternIndex in WallpaperTypes.keys():
         for fromIndex, toIndex in zip(froms, tos):
             if patternIndex >= fromIndex and patternIndex <= toIndex:
                 borderKeys = WallpaperTypes[patternIndex][WTBorderList]
@@ -673,6 +670,6 @@ def getWallpaperRange(fromIndex, toIndex, *otherRanges):
                     for borderColorIndex in range(numBorderColors):
                         colors = WallpaperTypes[patternIndex][WTColor]
                         for n in range(len(colors)):
-                            list.append(CatalogWallpaperItem(patternIndex, n, borderKey, borderColorIndex))
+                            wallpaperList.append(CatalogWallpaperItem(patternIndex, n, borderKey, borderColorIndex))
 
-    return list
+    return wallpaperList
