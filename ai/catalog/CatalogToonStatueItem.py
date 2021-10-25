@@ -1,6 +1,6 @@
 from . import CatalogGardenItem
 from direct.interval.IntervalGlobal import *
-from toontown.estate import GardenGlobals
+from ai.estate import GardenGlobals
 
 class CatalogToonStatueItem(CatalogGardenItem.CatalogGardenItem):
     pictureToonStatue = None
