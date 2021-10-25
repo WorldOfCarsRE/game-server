@@ -794,3 +794,11 @@ def getRecipeBeanText(beanTuple):
 PlantItWith = ' Plant with %s.'
 MakeSureWatered = ' Make sure all your plants are watered first.'
 UseFromSpecialsTab = ' Use from the specials tab of the garden page.'
+
+GardenTrophyNameDict = {0: 'Wheelbarrow',
+ 1: 'Shovels',
+ 2: 'Flower',
+ 3: 'Watering Can',
+ 4: 'Shark',
+ 5: 'Swordfish',
+ 6: 'Killer Whale'}
