@@ -7,6 +7,7 @@ from ai.house.DistributedFurnitureManagerAI import DistributedFurnitureManagerAI
 from ai.catalog.CatalogItemList import CatalogItemList
 from ai.catalog import CatalogItem
 from ai.catalog.CatalogFurnitureItem import CatalogFurnitureItem
+from ai.catalog import CatalogWallpaperItem, CatalogMouldingItem, CatalogFlooringItem, CatalogWainscotingItem
 import time, random
 
 class DistributedHouseAI(DistributedObjectAI):
@@ -18,10 +19,6 @@ class DistributedHouseAI(DistributedObjectAI):
         self.gardenPos = 0
         self.avId = 0
         self.name = ''
-        self.color = 0
-        self.atticItems = CatalogItemList()
-        self.interiorItems = CatalogItemList()
-        self.atticWallpaper = CatalogItemList()
         self.interiorWallpaper = CatalogItemList()
         self.atticWindows = CatalogItemList()
         self.interiorWindows = CatalogItemList()
@@ -217,6 +214,9 @@ class DistributedHouseAI(DistributedObjectAI):
     def getInteriorItems(self):
         return self.interiorItems.getBlob(store = CatalogItem.Location | CatalogItem.Customization)
 
+    def setAtticWallpaper(self, items):
+        self.atticWallpaper = CatalogItemList(items, store = CatalogItem.Customization)
+
     def getAtticWallpaper(self):
         return self.atticWallpaper.getBlob(store = CatalogItem.Customization)
 
@@ -317,3 +317,9 @@ class DistributedHouseAI(DistributedObjectAI):
         # so we don't break the connection between items on the list
         # and manifested DistributedFurnitureItems.
         self.interiorItems = CatalogItemList(items, store = CatalogItem.Location | CatalogItem.Customization)
+
+    def d_setAtticWallpaper(self, items):
+        self.sendUpdate('setAtticWallpaper', [items.getBlob(store = CatalogItem.Customization)])
+
+        if self.interiorManager:
+            self.interiorManager.d_setAtticWallpaper(items)
