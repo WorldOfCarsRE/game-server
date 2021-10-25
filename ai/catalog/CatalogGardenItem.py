@@ -1,5 +1,5 @@
 from . import CatalogItem
-from toontown.estate import GardenGlobals
+from ai.estate import GardenGlobals
 from pandac.PandaModules import NodePath
 
 class CatalogGardenItem(CatalogItem.CatalogItem):

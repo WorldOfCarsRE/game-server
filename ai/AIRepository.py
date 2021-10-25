@@ -78,6 +78,7 @@ class AIRepository:
         self.connected = Event()
 
         self.mongoInterface = MongoInterface(self)
+        self.doLiveUpdates = True
 
     def run(self):
         self.net_thread = Thread(target=self.__event_loop)

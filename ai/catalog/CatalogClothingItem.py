@@ -1,5 +1,5 @@
 from . import CatalogItem
-from toontown.toon import ToonDNA
+from ai.toon import ToonDNA
 import random
 from direct.showbase import PythonUtil
 from direct.gui.DirectGui import *

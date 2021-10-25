@@ -1,5 +1,5 @@
 from . import CatalogItem
-from toontown.toonbase import ToontownGlobals
+from ai import ToontownGlobals
 
 class CatalogBeanItem(CatalogItem.CatalogItem):
     sequenceNumber = 0

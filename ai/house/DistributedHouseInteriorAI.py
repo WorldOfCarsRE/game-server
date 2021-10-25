@@ -1,4 +1,6 @@
 from ai.DistributedObjectAI import DistributedObjectAI
+from ai.catalog.CatalogItemList import CatalogItemList
+from ai.catalog import CatalogItem
 
 class DistributedHouseInteriorAI(DistributedObjectAI):
 
@@ -7,8 +9,8 @@ class DistributedHouseInteriorAI(DistributedObjectAI):
         self.house = house
         self.houseId = 0
         self.houseIndex = 0
-        self.wallpaper = ''
-        self.windows = ''
+        self.wallpaper = self.house.interiorWallpaper
+        self.windows = self.house.interiorWindows
 
     def setHouseId(self, houseId):
         self.houseId = houseId
@@ -37,10 +39,10 @@ class DistributedHouseInteriorAI(DistributedObjectAI):
         return self.houseIndex
 
     def setWallpaper(self, wallpaper):
-        self.wallpaper = wallpaper
+        self.wallpaper = CatalogItemList(wallpaper, store = CatalogItem.Customization)
 
-    def d_setWallpaper(self, wallpaper):
-        self.sendUpdate('setWallpaper', [wallpaper])
+    def d_setWallpaper(self, items):
+        self.sendUpdate('setWallpaper', [items.getBlob(store = CatalogItem.Customization)])
 
     def b_setWallpaper(self, wallpaper):
         self.setWallpaper(wallpaper)
@@ -49,13 +51,13 @@ class DistributedHouseInteriorAI(DistributedObjectAI):
             self.d_setWallpaper(wallpaper)
 
     def getWallpaper(self) -> str:
-        return self.wallpaper
+        return self.wallpaper.getBlob(store = CatalogItem.Customization)
 
     def setWindows(self, windows):
-        self.windows = windows
+        self.windows = CatalogItemList(windows, store = CatalogItem.Customization | CatalogItem.WindowPlacement)
 
     def d_setWindows(self, windows):
-        self.sendUpdate('setWindows', [windows])
+        self.sendUpdate('setWindows', [windows.getBlob(store = CatalogItem.Customization | CatalogItem.WindowPlacement)])
 
     def b_setWindows(self, windows):
         self.setWindows(windows)
@@ -64,4 +66,4 @@ class DistributedHouseInteriorAI(DistributedObjectAI):
             self.d_setWindows(windows)
 
     def getWindows(self) -> str:
-        return self.windows
+        return self.windows.getBlob(store = CatalogItem.Customization | CatalogItem.WindowPlacement)

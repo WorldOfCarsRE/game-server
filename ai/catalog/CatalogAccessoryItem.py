@@ -1,6 +1,6 @@
 from . import CatalogItem
 from .CatalogAccessoryItemGlobals import *
-from toontown.toon import ToonDNA
+from ai.toon import ToonDNA
 import random
 from direct.showbase import PythonUtil
 from pandac.PandaModules import *

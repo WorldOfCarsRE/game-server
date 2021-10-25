@@ -9,6 +9,8 @@ from ai.globals import HoodGlobals
 from ai.fishing.FishBase import FishBase
 from ai.fishing.FishCollectionEnum import *
 
+from ai.toon.ToonDNA import ToonDNA
+
 class DistributedAvatarAI(DistributedSmoothNodeAI):
     def __init__(self, air):
         DistributedSmoothNodeAI.__init__(self, air)
@@ -126,6 +128,9 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getDNAString(self):
         return self.dnaString
+
+    def getStyle(self):
+        return ToonDNA(Datagram(self.dnaString).iterator())
 
     def getGM(self):
         return False

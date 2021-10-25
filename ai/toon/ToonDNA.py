@@ -1100,7 +1100,7 @@ class ToonDNA:
         if type != b't':
             raise Exception(f'unknown avatar type {type}')
 
-        head = toonTorsoTypes[dgi.get_uint8()]
+        head = toonHeadTypes[dgi.get_uint8()]
         torso = toonTorsoTypes[dgi.get_uint8()]
         legs = toonLegTypes[dgi.get_uint8()]
         gender = dgi.get_uint8()

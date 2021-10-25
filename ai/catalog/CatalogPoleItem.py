@@ -1,5 +1,5 @@
 from . import CatalogItem
-from toontown.fishing import FishGlobals
+from ai.fishing.FishingAI import FishGlobals
 from direct.actor import Actor
 
 class CatalogPoleItem(CatalogItem.CatalogItem):

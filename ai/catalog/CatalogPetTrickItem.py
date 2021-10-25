@@ -1,5 +1,5 @@
 from . import CatalogItem
-from toontown.pets import PetTricks
+from ai.pets import PetTricks
 
 class CatalogPetTrickItem(CatalogItem.CatalogItem):
     sequenceNumber = 0
