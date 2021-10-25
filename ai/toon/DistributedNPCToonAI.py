@@ -1,5 +1,6 @@
 from ai.DistributedNodeAI import DistributedNodeAI
 from ai.toon import NPCToons
+from ai.toon.Inventory import Inventory
 
 class DistributedNPCToonBaseAI(DistributedNodeAI):
     def __init__(self, air, npcId, name=None):
@@ -62,8 +63,79 @@ class DistributedNPCSpecialQuestGiverAI(DistributedNPCToonBaseAI):
         pass
 
 class DistributedNPCClerkAI(DistributedNPCToonBaseAI):
-    def setInventory(self, inventory, money, done):
-        pass
+    def d_setMovie(self, movie):
+        self.sendUpdate('setMovie', [movie, self.npcId, self.occupier, globalClockDelta.getRealNetworkTime()])
+
+    def sendClearMovie(self):
+        self.ignore(self.air.getDeleteDoIdEvent(self.occupier))
+        self.occupier = 0
+        self.timedOut = 0
+        self.d_setMovie(NPCToons.PURCHASE_MOVIE_CLEAR)
+
+    def sendTimeoutMovie(self, task):
+        self.d_setMovie(NPCToons.SELL_MOVIE_TIMEOUT)
+        self.sendClearMovie()
+
+    def avatarEnter(self):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if av is None:
+            return
+
+        if self.isOccupied():
+            self.freeAvatar(avId)
+
+        elif (av.getMoney()):
+            self.occupier = avId
+            self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.__handleUnexpectedExit, extraArgs = [avId])
+            self.d_setMovie(NPCToons.PURCHASE_MOVIE_START)
+            self.timedOut = 0
+            taskMgr.doMethodLater(NPCToons.CLERK_COUNTDOWN_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+        else:
+            self.occupier = avId
+            self.d_setMovie(NPCToons.PURCHASE_MOVIE_NO_MONEY)
+            self.sendClearMovie()
+
+    def __handleUnexpectedExit(self, avId):
+        taskMgr.remove(self.uniqueName('clearMovie'))
+        self.sendClearMovie()
+
+    def setInventory(self, blob, newMoney, done):
+        avId = self.air.currentAvatarSender
+
+        av = self.air.doTable.get(avId)
+        if not av:
+            return
+
+        if avId != self.occupier:
+            return
+
+        newInventory = Inventory.fromBytes(blob)
+        newInventory.toon = av
+        currentMoney = av.getMoney()
+
+        if not av.inventory.validatePurchase(newInventory, currentMoney, newMoney):
+            # Invalid purchase. Send updates to revert the changes on their end.
+            print('INVALID PURCHASE', blob, newMoney)
+            av.d_setInventory(av.inventory.makeNetString())
+            av.d_setMoney(currentMoney)
+            return
+
+        av.inventory = newInventory
+        av.money = newMoney
+
+        if not done:
+            return
+
+        av.d_setInventory(av.inventory.makeNetString())
+        av.d_setMoney(newMoney)
+
+        self.d_setMovie(NPCToons.PURCHASE_MOVIE_COMPLETE)
+        taskMgr.remove(self.uniqueName('clearMovie'))
+        self.sendClearMovie()
+
+        
 
 class DistributedNPCTailorAI(DistributedNPCToonBaseAI):
     def setDNA(self, dna, finished, which):
