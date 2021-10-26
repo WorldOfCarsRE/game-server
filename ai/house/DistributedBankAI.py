@@ -77,7 +77,7 @@ class DistributedBankAI(DistributedFurnitureItemAI):
         elif amount < 0:
             if abs(amount) > avBankMoney:
                 pass
-            elif (abs(amount) + avMoney) > avMaxMoney:
+            elif (abs(amount) + avMoney)) > avMaxMoney:
                 pass
             else:
                 av.b_setMoney(avMoney - amount)
