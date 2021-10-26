@@ -39,6 +39,753 @@ NEWBIE_HP = 25
 SELLBOT_HQ_NEWBIE_HP = 50
 CASHBOT_HQ_NEWBIE_HP = 85
 
+class Quest:
+
+    def __init__(self, id, quest):
+        self.id = id
+        self.quest = quest
+
+    def getId(self):
+        return self.id
+
+    def getNumQuestItems(self):
+        return -1
+
+    def __repr__(self):
+        return 'Quest type: %s id: %s params: %s' % (self.__class__.__name__, self.id, self.quest[0:])
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return 0
+
+    def doesVPCount(self, avId, cogDict, zoneId, avList):
+        return 0
+
+    def doesCFOCount(self, avId, cogDict, zoneId, avList):
+        return 0
+
+    def doesFactoryCount(self, avId, location, avList):
+        return 0
+
+    def doesMintCount(self, avId, location, avList):
+        return 0
+
+    def doesCogPartCount(self, avId, location, avList):
+        return 0
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        print('getCompletionStatus(): please override me!')
+        return None
+
+
+class LocationBasedQuest(Quest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+        self.checkLocation(self.quest[0])
+
+    def getLocation(self):
+        return self.quest[0]
+
+    def isLocationMatch(self, zoneId):
+        loc = self.getLocation()
+        if loc is Anywhere:
+            return 1
+        if ZoneUtil.isPlayground(loc):
+            if loc == ZoneUtil.getCanonicalHoodId(zoneId):
+                return 1
+            else:
+                return 0
+        elif loc == ZoneUtil.getCanonicalBranchZone(zoneId):
+            return 1
+        elif loc == zoneId:
+            return 1
+        else:
+            return 0
+
+class NewbieQuest:
+    def getNewbieLevel(self):
+        notify.error('Pure virtual - please override me')
+
+    def getNumNewbies(self, avId, avList):
+        newbieHp = self.getNewbieLevel()
+        num = 0
+        for av in avList:
+            if av.getDoId() != avId and av.getMaxHp() <= newbieHp:
+                num += 1
+
+        return num
+
+
+class CogQuest(LocationBasedQuest):
+    def __init__(self, id, quest):
+        LocationBasedQuest.__init__(self, id, quest)
+        if self.__class__ == CogQuest:
+            self.checkNumCogs(self.quest[1])
+            self.checkCogType(self.quest[2])
+
+    def getCogType(self):
+        return self.quest[2]
+
+    def getNumQuestItems(self):
+        return self.getNumCogs()
+
+    def getNumCogs(self):
+        return self.quest[1]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= self.getNumCogs()
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        questCogType = self.getCogType()
+        return (questCogType is Any or questCogType is cogDict['type']) and avId in cogDict['activeToons'] and self.isLocationMatch(zoneId)
+
+
+class CogNewbieQuest(CogQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        if self.__class__ == CogNewbieQuest:
+            self.checkNumCogs(self.quest[1])
+            self.checkCogType(self.quest[2])
+            self.checkNewbieLevel(self.quest[3])
+
+    def getNewbieLevel(self):
+        return self.quest[3]
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        if CogQuest.doesCogCount(self, avId, cogDict, zoneId, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return 0
+
+
+class CogTrackQuest(CogQuest):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        if self.__class__ == CogTrackQuest:
+            self.checkNumCogs(self.quest[1])
+            self.checkCogTrack(self.quest[2])
+
+    def getCogTrack(self):
+        return self.quest[2]
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        questCogTrack = self.getCogTrack()
+        return questCogTrack == cogDict['track'] and avId in cogDict['activeToons'] and self.isLocationMatch(zoneId)
+
+
+class CogLevelQuest(CogQuest):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        self.checkNumCogs(self.quest[1])
+        self.checkCogLevel(self.quest[2])
+
+    def getCogType(self):
+        return Any
+
+    def getCogLevel(self):
+        return self.quest[2]
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        questCogLevel = self.getCogLevel()
+        return questCogLevel <= cogDict['level'] and avId in cogDict['activeToons'] and self.isLocationMatch(zoneId)
+
+
+class SkelecogQBase:
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return cogDict['isSkelecog'] and avId in cogDict['activeToons'] and self.isLocationMatch(zoneId)
+
+
+class SkelecogQuest(CogQuest, SkelecogQBase):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        self.checkNumSkelecogs(self.quest[1])
+
+    def getCogType(self):
+        return Any
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return SkelecogQBase.doesCogCount(self, avId, cogDict, zoneId, avList)
+
+
+class SkelecogNewbieQuest(SkelecogQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        SkelecogQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        if SkelecogQuest.doesCogCount(self, avId, cogDict, zoneId, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return 0
+
+
+class SkelecogTrackQuest(CogTrackQuest, SkelecogQBase):
+
+    def __init__(self, id, quest):
+        CogTrackQuest.__init__(self, id, quest)
+        self.checkNumSkelecogs(self.quest[1])
+        self.checkSkelecogTrack(self.quest[2])
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return SkelecogQBase.doesCogCount(self, avId, cogDict, zoneId, avList) and self.getCogTrack() == cogDict['track']
+
+
+class SkelecogLevelQuest(CogLevelQuest, SkelecogQBase):
+    def __init__(self, id, quest):
+        CogLevelQuest.__init__(self, id, quest)
+        self.checkNumSkelecogs(self.quest[1])
+        self.checkSkelecogLevel(self.quest[2])
+
+    def getCogType(self):
+        return Any
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return SkelecogQBase.doesCogCount(self, avId, cogDict, zoneId, avList) and self.getCogLevel() <= cogDict['level']
+
+
+class SkeleReviveQBase:
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return cogDict['hasRevives'] and avId in cogDict['activeToons'] and self.isLocationMatch(zoneId)
+
+
+class SkeleReviveQuest(CogQuest, SkeleReviveQBase):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        self.checkNumSkeleRevives(self.quest[1])
+
+    def getCogType(self):
+        return Any
+
+    def getCogNameString(self):
+        return SkeleReviveQBase.getCogNameString(self)
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return SkeleReviveQBase.doesCogCount(self, avId, cogDict, zoneId, avList)
+
+
+class ForemanQuest(CogQuest):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        self.checkNumForemen(self.quest[1])
+
+    def getCogType(self):
+        return Any
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return bool(CogQuest.doesCogCount(self, avId, cogDict, zoneId, avList) and cogDict['isForeman'])
+
+
+class ForemanNewbieQuest(ForemanQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        ForemanQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        if ForemanQuest.doesCogCount(self, avId, cogDict, zoneId, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return 0
+
+
+class VPQuest(CogQuest):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        self.checkNumVPs(self.quest[1])
+
+    def getCogType(self):
+        return Any
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return 0
+
+    def doesVPCount(self, avId, cogDict, zoneId, avList):
+        return self.isLocationMatch(zoneId)
+
+
+class VPNewbieQuest(VPQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        VPQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def doesVPCount(self, avId, cogDict, zoneId, avList):
+        if VPQuest.doesVPCount(self, avId, cogDict, zoneId, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return 0
+
+
+class SupervisorQuest(CogQuest):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        self.checkNumSupervisors(self.quest[1])
+
+    def getCogType(self):
+        return Any
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return bool(CogQuest.doesCogCount(self, avId, cogDict, zoneId, avList) and cogDict['isSupervisor'])
+
+
+class SupervisorNewbieQuest(SupervisorQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        SupervisorQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        if SupervisorQuest.doesCogCount(self, avId, cogDict, zoneId, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return 0
+
+
+class CFOQuest(CogQuest):
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        self.checkNumCFOs(self.quest[1])
+
+    def getCogType(self):
+        return Any
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return 0
+
+    def doesCFOCount(self, avId, cogDict, zoneId, avList):
+        return self.isLocationMatch(zoneId)
+
+
+class CFONewbieQuest(CFOQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        CFOQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def doesCFOCount(self, avId, cogDict, zoneId, avList):
+        if CFOQuest.doesCFOCount(self, avId, cogDict, zoneId, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return 0
+
+
+class RescueQuest(VPQuest):
+    def __init__(self, id, quest):
+        VPQuest.__init__(self, id, quest)
+
+    def getNumToons(self):
+        return self.getNumCogs()
+
+
+class RescueNewbieQuest(RescueQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        RescueQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def doesVPCount(self, avId, cogDict, zoneId, avList):
+        if RescueQuest.doesVPCount(self, avId, cogDict, zoneId, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return 0
+
+
+class BuildingQuest(CogQuest):
+
+    def __init__(self, id, quest):
+        CogQuest.__init__(self, id, quest)
+        self.checkNumBuildings(self.quest[1])
+        self.checkBuildingTrack(self.quest[2])
+        self.checkBuildingFloors(self.quest[3])
+
+    def getNumFloors(self):
+        return self.quest[3]
+
+    def getBuildingTrack(self):
+        return self.quest[2]
+
+    def getNumQuestItems(self):
+        return self.getNumBuildings()
+
+    def getNumBuildings(self):
+        return self.quest[1]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= self.getNumBuildings()
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def doesCogCount(self, avId, cogDict, zoneId, avList):
+        return 0
+
+    def doesBuildingCount(self, avId, avList):
+        return 1
+
+
+class BuildingNewbieQuest(BuildingQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        BuildingQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[4])
+
+    def getNewbieLevel(self):
+        return self.quest[4]
+
+    def doesBuildingCount(self, avId, avList):
+        return self.getNumNewbies(avId, avList)
+
+
+class FactoryQuest(LocationBasedQuest):
+    factoryTypeNames = {FT_FullSuit: TTLocalizer.Cog,
+     FT_Leg: TTLocalizer.FactoryTypeLeg,
+     FT_Arm: TTLocalizer.FactoryTypeArm,
+     FT_Torso: TTLocalizer.FactoryTypeTorso}
+
+    def __init__(self, id, quest):
+        LocationBasedQuest.__init__(self, id, quest)
+        self.checkNumFactories(self.quest[1])
+
+    def getNumQuestItems(self):
+        return self.getNumFactories()
+
+    def getNumFactories(self):
+        return self.quest[1]
+
+    def getFactoryType(self):
+        loc = self.getLocation()
+        type = Any
+        if loc in ToontownGlobals.factoryId2factoryType:
+            type = ToontownGlobals.factoryId2factoryType[loc]
+        return type
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= self.getNumFactories()
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def doesFactoryCount(self, avId, location, avList):
+        return self.isLocationMatch(location)
+
+
+class FactoryNewbieQuest(FactoryQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        FactoryQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def doesFactoryCount(self, avId, location, avList):
+        if FactoryQuest.doesFactoryCount(self, avId, location, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return num
+
+
+class MintQuest(LocationBasedQuest):
+    def __init__(self, id, quest):
+        LocationBasedQuest.__init__(self, id, quest)
+        self.checkNumMints(self.quest[1])
+
+    def getNumQuestItems(self):
+        return self.getNumMints()
+
+    def getNumMints(self):
+        return self.quest[1]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= self.getNumMints()
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def doesMintCount(self, avId, location, avList):
+        return self.isLocationMatch(location)
+
+
+class MintNewbieQuest(MintQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        MintQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def getString(self):
+        return NewbieQuest.getString(self)
+
+    def getHeadlineString(self):
+        return TTLocalizer.QuestsNewbieQuestHeadline
+
+    def doesMintCount(self, avId, location, avList):
+        if MintQuest.doesMintCount(self, avId, location, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return num
+
+
+class CogPartQuest(LocationBasedQuest):
+    def __init__(self, id, quest):
+        LocationBasedQuest.__init__(self, id, quest)
+        self.checkNumCogParts(self.quest[1])
+
+    def getNumQuestItems(self):
+        return self.getNumParts()
+
+    def getNumParts(self):
+        return self.quest[1]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= self.getNumParts()
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def doesCogPartCount(self, avId, location, avList):
+        return self.isLocationMatch(location)
+
+
+class CogPartNewbieQuest(CogPartQuest, NewbieQuest):
+    def __init__(self, id, quest):
+        CogPartQuest.__init__(self, id, quest)
+        self.checkNewbieLevel(self.quest[2])
+
+    def getNewbieLevel(self):
+        return self.quest[2]
+
+    def doesCogPartCount(self, avId, location, avList):
+        if CogPartQuest.doesCogPartCount(self, avId, location, avList):
+            return self.getNumNewbies(avId, avList)
+        else:
+            return num
+
+class DeliverGagQuest(Quest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+        self.checkNumGags(self.quest[0])
+        self.checkGagTrack(self.quest[1])
+        self.checkGagItem(self.quest[2])
+
+    def getGagType(self):
+        return (self.quest[1], self.quest[2])
+
+    def getNumQuestItems(self):
+        return self.getNumGags()
+
+    def getNumGags(self):
+        return self.quest[0]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        gag = self.getGagType()
+        num = self.getNumGags()
+        track = gag[0]
+        level = gag[1]
+        questComplete = npc and av.inventory and av.inventory.numItem(track, level) >= num
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+
+class DeliverItemQuest(Quest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+        self.checkDeliveryItem(self.quest[0])
+
+    def getItem(self):
+        return self.quest[0]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        if npc and npcMatches(toNpcId, npc):
+            return COMPLETE
+        else:
+            return INCOMPLETE_WRONG_NPC
+
+
+class VisitQuest(Quest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        if npc and npcMatches(toNpcId, npc):
+            return COMPLETE
+        else:
+            return INCOMPLETE_WRONG_NPC
+
+
+class RecoverItemQuest(LocationBasedQuest):
+    def __init__(self, id, quest):
+        LocationBasedQuest.__init__(self, id, quest)
+        self.checkNumItems(self.quest[1])
+        self.checkRecoveryItem(self.quest[2])
+        self.checkPercentChance(self.quest[3])
+        if len(self.quest) > 5:
+            self.checkRecoveryItemHolderAndType(self.quest[4], self.quest[5])
+        else:
+            self.checkRecoveryItemHolderAndType(self.quest[4])
+
+    def getNumQuestItems(self):
+        return self.getNumItems()
+
+    def getNumItems(self):
+        return self.quest[1]
+
+    def getItem(self):
+        return self.quest[2]
+
+    def getPercentChance(self):
+        return self.quest[3]
+
+    def getHolder(self):
+        return self.quest[4]
+
+    def getHolderType(self):
+        if len(self.quest) == 5:
+            return 'type'
+        else:
+            return self.quest[5]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        forwardProgress = toonProgress & pow(2, 16) - 1
+        questComplete = forwardProgress >= self.getNumItems()
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+class TrackChoiceQuest(Quest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+        self.checkTrackChoice(self.quest[0])
+        self.checkTrackChoice(self.quest[1])
+
+    def getChoices(self):
+        return (self.quest[0], self.quest[1])
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        if npc and npcMatches(toNpcId, npc):
+            return COMPLETE
+        else:
+            return INCOMPLETE_WRONG_NPC
+
+class FriendQuest(Quest):
+    def filterFunc(avatar):
+        if len(avatar.getFriendsList()) == 0:
+            return 1
+        else:
+            return 0
+
+    filterFunc = staticmethod(filterFunc)
+
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= 1 or len(av.getFriendsList()) > 0
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def doesFriendCount(self, av, otherAv):
+        return 1
+
+
+class FriendNewbieQuest(FriendQuest, NewbieQuest):
+    def filterFunc(avatar):
+        return 1
+
+    filterFunc = staticmethod(filterFunc)
+
+    def __init__(self, id, quest):
+        FriendQuest.__init__(self, id, quest)
+        self.checkNumFriends(self.quest[0])
+        self.checkNewbieLevel(self.quest[1])
+
+    def getNumQuestItems(self):
+        return self.getNumFriends()
+
+    def getNumFriends(self):
+        return self.quest[0]
+
+    def getNewbieLevel(self):
+        return self.quest[1]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= self.getNumFriends()
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def doesFriendCount(self, av, otherAv):
+        if otherAv != None and otherAv.getMaxHp() <= self.getNewbieLevel():
+            return 1
+        return 0
+
+class TrolleyQuest(Quest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= 1
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+class MailboxQuest(Quest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= 1
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+class PhoneQuest(Quest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= 1
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+class MinigameNewbieQuest(Quest, NewbieQuest):
+    def __init__(self, id, quest):
+        Quest.__init__(self, id, quest)
+        self.checkNumMinigames(self.quest[0])
+        self.checkNewbieLevel(self.quest[1])
+
+    def getNumQuestItems(self):
+        return self.getNumMinigames()
+
+    def getNumMinigames(self):
+        return self.quest[0]
+
+    def getNewbieLevel(self):
+        return self.quest[1]
+
+    def getCompletionStatus(self, av, questDesc, npc = None):
+        questId, fromNpcId, toNpcId, rewardId, toonProgress = questDesc
+        questComplete = toonProgress >= self.getNumMinigames()
+        return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def doesMinigameCount(self, av, avList):
+        newbieHp = self.getNewbieLevel()
+        points = 0
+        for toon in avList:
+            if toon != av and toon.getMaxHp() <= newbieHp:
+                points += 1
+
+        return points
+
 class QuestProperties(NamedTuple):
     tier: int
     start: int
