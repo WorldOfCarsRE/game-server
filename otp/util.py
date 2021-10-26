@@ -35,7 +35,7 @@ DEFAULT_TOON = {
     "setInterface": (b'',),
     "setLastHood": (0,),
     "setTutorialAck": (1,),
-    "setMaxClothes": (0,),
+    "setMaxClothes": (10,),
     "setClothesTopsList": ([],),
     "setClothesBottomsList": ([],),
     "setMaxAccessories": (0,),
