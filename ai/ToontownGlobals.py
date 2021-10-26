@@ -401,3 +401,5 @@ ExtraDeletedItems = 5
 DeletedItemLifetime = 7 * 24 * 60
 CatalogNumWeeksPerSeries = 13
 CatalogNumWeeks = 78
+
+MaxBackCatalog = 48
