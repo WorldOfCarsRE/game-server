@@ -16,6 +16,7 @@ from otp.networking import ToontownProtocol, DatagramFuture
 from otp.zone import *
 from otp.constants import *
 from otp.util import *
+from otp.zoneutil import VIS_ZONES, getCanonicalZoneId, getTrueZoneId
 
 class NamePart(IntEnum):
     BOY_TITLE = 0
@@ -796,7 +797,16 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         zones = []
 
         for i in range(num_zones):
-            zones.append(dgi.get_uint32())
+            zoneId = dgi.get_uint32()
+            if zoneId == 1:
+                continue
+            zones.append(zoneId)
+            if num_zones == 1:
+                canonicalZoneId = getCanonicalZoneId(zoneId)
+                if canonicalZoneId in VIS_ZONES:
+                    for visZoneId in VIS_ZONES[canonicalZoneId]:
+                        trueZoneId = getTrueZoneId(visZoneId, zoneId)
+                        zones.append(trueZoneId)
 
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {context_id} '
                                f'for location {parent_id} {zones}')

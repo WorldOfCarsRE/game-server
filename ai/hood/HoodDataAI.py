@@ -38,6 +38,10 @@ DNA_MAP = {
     DonaldsDreamland: 'donalds_dreamland_sz.dna',
     LullabyLane: 'donalds_dreamland_9100.dna',
     PajamaPlace: 'donalds_dreamland_9200.dna',
+    SellbotHQ: 'cog_hq_sellbot_sz.dna',
+    SellbotFactoryExt: 'cog_hq_sellbot_11200.dna',
+    CashbotHQ: 'cog_hq_cashbot_sz.dna',
+    LawbotHQ: 'cog_hq_lawbot_sz.dna',
 }
 
 class PlaceAI:
@@ -47,8 +51,8 @@ class PlaceAI:
 
         self._active = False
         # self.doTable: Dict[int, DistributedObjectAI] = {}
-        self.storage: Union[DNAStorage, None] = None
-        self.dna: Union[DNAGroup, None] = None
+        self.storage: Tuple[DNAStorage] = {}
+        self.dna: Tuple[DNAGroup] = {}
 
     @property
     def active(self) -> bool:
@@ -73,7 +77,7 @@ class PlaceAI:
         raise NotImplementedError
 
 from ai.building.DistributedHQInteriorAI import DistributedHQInteriorAI
-from ai.building.DistributedDoorAI import DistributedDoorAI
+from ai.building.DistributedDoorAI import DistributedDoorAI, DistributedCogHQDoorAI
 from ai.building import DoorTypes
 
 class HQBuildingAI(object):
@@ -177,12 +181,12 @@ class SafeZoneAI(PlaceAI):
         return zoneId - zoneId % 100 + 500 + block
 
     def create(self):
-        self.dna, self.storage = load_dna_file('dna/files/' + DNA_MAP[self.zone_id])
+        self.dna[self.zone_id], self.storage[self.zone_id] = load_dna_file('dna/files/' + DNA_MAP[self.zone_id])
 
-        for block in self.storage.blocks:
-            building_type = self.storage.block_building_types[block]
+        for block in self.storage[self.zone_id].blocks:
+            building_type = self.storage[self.zone_id].block_building_types[block]
             interiorZone = self.getInteriorZone(self.zone_id, block)
-            exteriorZone = self.storage.block_zones.get(block, self.zone_id)
+            exteriorZone = self.storage[self.zone_id].block_zones.get(block, self.zone_id)
 
             if building_type == 'hq':
                 self.buildings[block] = HQBuildingAI(self.air, exteriorZone, interiorZone, block)
@@ -206,7 +210,7 @@ class SafeZoneAI(PlaceAI):
                 bldg.request('Toon')
                 self.buildings[block] = bldg
 
-        for visgroup in self.storage.visgroups:
+        for visgroup in self.storage[self.zone_id].visgroups:
             zone = int(visgroup.name.split(':')[0])
             visibles = visgroup.visibles
             if self.zone_id not in visibles:
@@ -215,8 +219,8 @@ class SafeZoneAI(PlaceAI):
 
         pondName2Do = {}
 
-        for pondName in self.storage.ponds:
-            group = self.storage.groups[pondName]
+        for pondName in self.storage[self.zone_id].ponds:
+            group = self.storage[self.zone_id].groups[pondName]
             visName = group.get_vis_group().name
             if ':' in visName:
                 zoneId = int(visName.split(':')[0])
@@ -227,7 +231,7 @@ class SafeZoneAI(PlaceAI):
             pond.generateWithRequired(zoneId)
             pondName2Do[pondName] = pond
 
-        for dnaspot in self.storage.spots:
+        for dnaspot in self.storage[self.zone_id].spots:
             group = dnaspot.get_group()
             pondName = dnaspot.get_pond_name()
             pond = pondName2Do[pondName]
@@ -248,9 +252,89 @@ class StreetAI(SafeZoneAI):
 
         # TODO: suits
         if self.wantSuits:
-            self.suitPlanner = DistributedSuitPlannerAI(self.air, self)
+            self.suitPlanner = DistributedSuitPlannerAI(self.air, self, self.zone_id)
             self.suitPlanner.generateWithRequired(self.zone_id)
             self.suitPlanner.startup()
+
+class CogHQAI(PlaceAI):
+    lobbyZone = None
+    suitZones = []
+    elevatorZones = []
+    numExtDoors = 0
+
+    def __init__(self, air, zone_id, facilityMgr):
+        PlaceAI.__init__(self, air, zone_id)
+
+        self.wantSuits = True
+        self.suitPlanners = []
+        self.facilityMgr = facilityMgr
+
+    def create(self):
+        for zoneId in self.suitZones:
+            if zoneId in DNA_MAP:
+                self.dna[zoneId], self.storage[zoneId] = load_dna_file('dna/files/' + DNA_MAP[zoneId])
+
+    def startup(self):
+        self.active = True
+        if self.wantSuits:
+            for zone_id in self.suitZones:
+                suitPlanner = DistributedSuitPlannerAI(self.air, self, zone_id)
+                suitPlanner.generateWithRequired(zone_id)
+                suitPlanner.startup()
+                self.suitPlanners.append(suitPlanner)
+
+        extDoors = []
+
+        for i in range(self.numExtDoors):
+            extDoor = DistributedCogHQDoorAI(self.air, i, DoorTypes.EXT_COGHQ, i, self.lobbyZone)
+            extDoors.append(extDoor)
+
+        for suitPlanner in self.suitPlanners:
+            if suitPlanner.zoneId == self.zoneId:
+                suitPlanner.cogHQDoors = extDoors
+
+        intDoor = DistributedCogHQDoorAI(self.air, 0, DoorTypes.INT_COGHQ, 0, self.zoneId)
+
+        for extDoor in extDoors:
+            extDoor.setOtherDoor(intDoor)
+            extDoor.zoneId = self.zoneId
+            extDoor.generateWithRequired(self.zoneId)
+            extDoor.sendUpdate('setDoorIndex', [extDoor.getDoorIndex()])
+
+        intDoor.generateWithRequired(self.lobbyZone)
+        intDoor.sendUpdate('setDoorIndex', [intDoor.getDoorIndex()])
+
+class SBHQHoodAI(CogHQAI):
+    zoneId = SellbotHQ
+    lobbyZone = SellbotLobby
+    suitZones = [SellbotHQ, SellbotFactoryExt]
+    numExtDoors = 4
+
+    def __init__(self, air, facilityMgr):
+        CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
+
+class CBHQHoodAI(CogHQAI):
+    zoneId = CashbotHQ
+    lobbyZone = CashbotLobby
+    suitZones = [CashbotHQ]
+
+    def __init__(self, air, facilityMgr):
+        CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
+
+class LBHQHoodAI(CogHQAI):
+    zoneId = LawbotHQ
+    lobbyZone = BossbotLobby
+    suitZones = [LawbotHQ]
+
+    def __init__(self, air, facilityMgr):
+        CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
+
+class BBHQHoodAI(CogHQAI):
+    zoneId = BossbotHQ
+    lobbyZone = BossbotLobby
+
+    def __init__(self, air, facilityMgr):
+        CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
 
 class PlaygroundAI(SafeZoneAI):
     treasurePlannerClass: Optional[Type[RegenTreasurePlanner]] = None

@@ -144,7 +144,7 @@ class DNAStorage:
                 visited.add(point)
 
                 # Check for a non-door point.
-                if self.suit_point_map[point].point_type == SuitPointType.STREET_POINT:
+                if self.suit_point_map[point].point_type in [SuitPointType.STREET_POINT, SuitPointType.COGHQ_IN_POINT, SuitPointType.COGHQ_OUT_POINT]:
                     considering.append(path + [point])
 
 
