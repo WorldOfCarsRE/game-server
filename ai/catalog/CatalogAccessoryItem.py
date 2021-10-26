@@ -227,7 +227,7 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
         return 'CatalogAccessoryItem(%s, %s)' % (self.accessoryType, self.formatOptionalData(store))
 
     def getColor(self):
-        return None
+        pass
 
     def compareTo(self, other):
         return self.accessoryType - other.accessoryType
@@ -278,11 +278,10 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
         else:
             return 1
 
-
 def getAllAccessories(*accessoryTypes):
-    list = []
+    accessoryList = []
     for accessoryType in accessoryTypes:
         base = CatalogAccessoryItem(accessoryType)
-        list.append(base)
+        accessoryList.append(base)
 
-    return list
+    return accessoryList

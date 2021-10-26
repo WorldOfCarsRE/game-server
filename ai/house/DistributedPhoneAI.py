@@ -72,14 +72,14 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
 
         # Handle unexpected exit
         self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.__handleUnexpectedExit, extraArgs = [avId])
-        self.acceptOnce(f'bootAvFromEstate-{str(avId)}', self.__handleBootMessage, extraArgs= [ avId])
+        self.acceptOnce(f'bootAvFromEstate-{str(avId)}', self.__handleBootMessage, extraArgs = [avId])
 
         # Update the quest manager. Yes, there are phone quests.
         self.air.questManager.toonUsedPhone(self.av)
 
         # We don't care who the owner of the phone is--anyone can use
         # any phone.
-        if len(av.weeklyCatalog) + len(av.monthlyCatalog) + len(av.backCatalog) != 0:
+        if not any((av.weeklyCatalog, av.backCatalog, av.monthlyCatalog)):
             self.lookupHouse()
         else:
             # No catalog yet.
@@ -108,7 +108,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
 
     def sendCatalog(self, numHouseItems):
         # Send the setMovie command to the user to tell him to open up
-        # his catalog.  But first, tell him how much stuff he's got in
+        # his catalog. But first, tell him how much stuff he's got in
         # his house.
         self.sendUpdateToAvatar(self.av.do_id, 'setLimits', [numHouseItems])
 
@@ -123,7 +123,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
         avId = self.air.currentAvatarSender
 
         if self.busy == avId:
-            self.d_setMovie(PHONE_MOVIE_HANGUP, self.av.doId)
+            self.d_setMovie(PHONE_MOVIE_HANGUP, self.av.do_id)
             self.sendClearMovie()
         else:
             self.freeAvatar(avId)

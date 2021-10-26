@@ -21,6 +21,8 @@ class EstateManagerAI(DistributedObjectAI):
         av = self.air.doTable.get(avId)
         accId = self.air.currentAccountSender
 
+        self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleUnexpectedEdit, extraArgs = [avId])
+
         # Allocate our estate zone.
         self.estateZones[avId] = self.air.allocateZone()
 
@@ -43,14 +45,23 @@ class EstateManagerAI(DistributedObjectAI):
         dg.add_uint32(zone)
         self.air.send(dg)
 
+    def handleUnexpectedEdit(self, avId: int):
+        self.ignore(self.air.getDeleteDoIdEvent(avId))
+
+        self.handleCleanup(avId)
+
     def exitEstate(self):
         avId = self.air.currentAvatarSender
 
-        # Deallocate this zone.
-        self.air.deallocateZone(self.estateZones[avId])
+        self.handleCleanup(avId)
 
-        # Remove this avatar from our dictionary.
-        del self.estateZones[avId]
+    def handleCleanup(self, avId: int):
+        if avId in self.estateZones:
+            # Deallocate this zone.
+            self.air.deallocateZone(self.estateZones[avId])
+
+            # Remove this avatar from our dictionary.
+            del self.estateZones[avId]
 
         # Unload our estate.
         dg = Datagram()

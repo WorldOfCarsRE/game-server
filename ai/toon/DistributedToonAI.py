@@ -47,25 +47,6 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.DISLid = 0
         self.access = 0
         self.friendsList: List[FriendEntry] = []
-        self.defaultZone = 0
-        self.lastHood = 0
-        self.hoodsVisited = []
-        self.fishingTrophies = []
-        self.catalogNotify = ToontownGlobals.NoItems
-        self.mailboxNotify = ToontownGlobals.NoItems
-        self.catalogScheduleCurrentWeek = 0
-        self.catalogScheduleNextTime = 0
-        self.monthlyCatalog = CatalogItemList()
-        self.weeklyCatalog = CatalogItemList()
-        self.backCatalog = CatalogItemList()
-        self.quests = []
-        self.houseId = 0
-        self.onOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
-        self.onGiftOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
-        self.mailboxContents = CatalogItemList(store = CatalogItem.Customization)
-        self.awardMailboxContents = CatalogItemList(store = CatalogItem.Customization)
-        self.onAwardOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
-        self.customMessages = []
 
     def delete(self):
         self.stopToonUp()
@@ -147,6 +128,25 @@ class DistributedToonAI(DistributedPlayerAI):
         self.npcFriends: Dict[int, int] = {}
         self.pinkSlips = 0
         self.battleId = 0
+        self.defaultZone = 0
+        self.lastHood = 0
+        self.hoodsVisited = []
+        self.fishingTrophies = []
+        self.catalogNotify = ToontownGlobals.NoItems
+        self.mailboxNotify = ToontownGlobals.NoItems
+        self.catalogScheduleCurrentWeek = 0
+        self.catalogScheduleNextTime = 0
+        self.monthlyCatalog = CatalogItemList()
+        self.weeklyCatalog = CatalogItemList()
+        self.backCatalog = CatalogItemList()
+        self.quests = []
+        self.houseId = 0
+        self.onOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+        self.onGiftOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+        self.mailboxContents = CatalogItemList(store = CatalogItem.Customization)
+        self.awardMailboxContents = CatalogItemList(store = CatalogItem.Customization)
+        self.onAwardOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+        self.customMessages = []
 
     def setDNAString(self, dnaString):
         self.dnaString = dnaString

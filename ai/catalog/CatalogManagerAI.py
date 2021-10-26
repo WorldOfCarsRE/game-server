@@ -158,7 +158,6 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
                 # Truncate the old items in the back catalog if it's too
                 # long.
 
-
                 #import pdb; pdb.set_trace()
 
                 if len(backCatalog) > ToontownGlobals.MaxBackCatalog:
@@ -168,7 +167,7 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
                         itemType, numSticky = item.getBackSticky()
                         #print ("type %s numSticky %s" % (itemType, numSticky))
                         if numSticky > 0:
-                            if stickDict.has_key(itemType):
+                            if itemType in stickDict:
                                 #print("has Key")
                                 if (len(stickDict[itemType]) < numSticky):
                                     stickDict[itemType].append(item)
