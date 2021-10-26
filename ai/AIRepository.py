@@ -342,6 +342,8 @@ class AIRepository:
         from .Objects import FishManager, ToontownMagicWordManagerAI, TTCodeRedemptionMgrAI, SafeZoneManagerAI
         from ai.estate.EstateManagerAI import EstateManagerAI
         from .TimeManagerAI import TimeManagerAI
+        from ai.quest.QuestManagerAI import QuestManagerAI
+        from ai.catalog.CatalogManagerAI import CatalogManagerAI
 
         self.district = ToontownDistrictAI(self)
         self.district.name = 'Sillyville'
@@ -394,6 +396,11 @@ class AIRepository:
 
         self.safeZoneManager = SafeZoneManagerAI(self)
         self.safeZoneManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
+
+        self.questManager = QuestManagerAI(self)
+
+        self.catalogManager = CatalogManagerAI(self)
+        self.catalogManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
 
         self.loadZones()
 

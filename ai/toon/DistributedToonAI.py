@@ -11,6 +11,9 @@ from ai.fishing.FishCollectionEnum import *
 from ai.toon.Inventory import Inventory
 
 from ai.toon.ToonDNA import ToonDNA
+from ai import ToontownGlobals
+from ai.catalog.CatalogItemList import CatalogItemList
+import time
 
 class DistributedAvatarAI(DistributedSmoothNodeAI):
     def __init__(self, air):
@@ -47,6 +50,13 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.lastHood = 0
         self.hoodsVisited = []
         self.fishingTrophies = []
+        self.catalogNotify = ToontownGlobals.NoItems
+        self.mailboxNotify = ToontownGlobals.NoItems
+        self.catalogScheduleCurrentWeek = 0
+        self.catalogScheduleNextTime = 0
+        self.monthlyCatalog = CatalogItemList()
+        self.weeklyCatalog = CatalogItemList()
+        self.backCatalog = CatalogItemList()
 
     def delete(self):
         self.sendUpdate('arrivedOnDistrict', [0])
@@ -422,11 +432,32 @@ class DistributedToonAI(DistributedPlayerAI):
     def getPetTrickPhrases(self):
         return []
 
+    def b_setCatalogSchedule(self, currentWeek, nextTime):
+        self.setCatalogSchedule(currentWeek, nextTime)
+        self.d_setCatalogSchedule(currentWeek, nextTime)
+
+    def d_setCatalogSchedule(self, currentWeek, nextTime):
+        self.sendUpdate('setCatalogSchedule', [currentWeek, nextTime])
+
+    def setCatalogSchedule(self, currentWeek, nextTime):
+        self.catalogScheduleCurrentWeek = currentWeek
+        self.catalogScheduleNextTime = nextTime
+
+        if self.air.doLiveUpdates:
+            taskName = self.uniqueName('next-catalog')
+            taskMgr.remove(taskName)
+            duration = max(10.0, nextTime * 60 - time.time())
+            taskMgr.doMethodLater(duration, self.__deliverCatalog, taskName)
+
     def getCatalogSchedule(self):
-        return 0, 0
+        return (self.catalogScheduleCurrentWeek, self.catalogScheduleNextTime)
+
+    def __deliverCatalog(self, task):
+        self.air.catalogManager.deliverCatalogFor(self)
+        return Task.done
 
     def getCatalog(self):
-        return b'', b'', b''
+        return (self.monthlyCatalog.getBlob(), self.weeklyCatalog.getBlob(), self.backCatalog.getBlob())
 
     def getMailboxContents(self):
         return b''
@@ -446,8 +477,24 @@ class DistributedToonAI(DistributedPlayerAI):
     def getAwardNotify(self):
         return 0
 
+    def b_setCatalogNotify(self, catalogNotify, mailboxNotify):
+        self.setCatalogNotify(catalogNotify, mailboxNotify)
+        self.d_setCatalogNotify(catalogNotify, mailboxNotify)
+
+    def d_setCatalogNotify(self, catalogNotify, mailboxNotify):
+        self.sendUpdate('setCatalogNotify', [catalogNotify, mailboxNotify])
+
+    def setCatalogNotify(self, catalogNotify, mailboxNotify):
+        self.catalogNotify = catalogNotify
+        self.mailboxNotify = mailboxNotify
+
+    def setCatalog(self, monthlyCatalog, weeklyCatalog, backCatalog):
+        self.monthlyCatalog = CatalogItemList(monthlyCatalog)
+        self.weeklyCatalog = CatalogItemList(weeklyCatalog)
+        self.backCatalog = CatalogItemList(backCatalog)
+
     def getCatalogNotify(self):
-        return 0, 0
+        return (self.catalogNotify, self.mailboxNotify)
 
     def getSpeedChatStyleIndex(self):
         return 1

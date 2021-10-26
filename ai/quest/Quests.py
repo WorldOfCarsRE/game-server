@@ -1,5 +1,6 @@
 from typing import NamedTuple
 from ai.globals import HoodGlobals
+from ai.battle.BattleGlobals import Tracks
 
 Any = 1
 OBSOLETE = 'OBSOLETE'
@@ -450,10 +451,6 @@ class BuildingNewbieQuest(BuildingQuest, NewbieQuest):
 
 
 class FactoryQuest(LocationBasedQuest):
-    factoryTypeNames = {FT_FullSuit: TTLocalizer.Cog,
-     FT_Leg: TTLocalizer.FactoryTypeLeg,
-     FT_Arm: TTLocalizer.FactoryTypeArm,
-     FT_Torso: TTLocalizer.FactoryTypeTorso}
 
     def __init__(self, id, quest):
         LocationBasedQuest.__init__(self, id, quest)
@@ -526,9 +523,6 @@ class MintNewbieQuest(MintQuest, NewbieQuest):
 
     def getString(self):
         return NewbieQuest.getString(self)
-
-    def getHeadlineString(self):
-        return TTLocalizer.QuestsNewbieQuestHeadline
 
     def doesMintCount(self, avId, location, avList):
         if MintQuest.doesMintCount(self, avId, location, avList):

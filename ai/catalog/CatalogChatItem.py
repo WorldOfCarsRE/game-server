@@ -2,6 +2,8 @@ from pandac.PandaModules import *
 from . import CatalogItem
 from ai import ToontownGlobals
 
+bannedPhrases = [11009]
+
 class CatalogChatItem(CatalogItem.CatalogItem):
 
     def makeNewItem(self, customIndex):
@@ -52,7 +54,7 @@ class CatalogChatItem(CatalogItem.CatalogItem):
         dg.addUint16(self.customIndex)
 
 def getChatRange(fromIndex, toIndex, *otherRanges):
-    list = []
+    chatList = []
     froms = [fromIndex]
     tos = [toIndex]
     i = 0
@@ -61,9 +63,9 @@ def getChatRange(fromIndex, toIndex, *otherRanges):
         tos.append(otherRanges[i + 1])
         i += 2
 
-    for chatId in list(OTPLocalizer.CustomSCStrings.keys()):
+    for chatId in ToontownGlobals.CustomSCStrings.keys():
         for fromIndex, toIndex in zip(froms, tos):
             if chatId >= fromIndex and chatId <= toIndex and chatId not in bannedPhrases:
-                list.append(CatalogChatItem(chatId))
+                chatList.append(CatalogChatItem(chatId))
 
-    return list
+    return chatList
