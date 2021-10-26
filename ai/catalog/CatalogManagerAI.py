@@ -191,9 +191,6 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
             if (len(monthlyCatalog) + len(weeklyCatalog) != 0):
                 avatar.b_setCatalogNotify(ToontownGlobals.NewItems, avatar.mailboxNotify)
 
-            self.air.writeServerEvent(
-                'issue-catalog', avatar.do_id, "%s" % (modCurrentWeek))
-
     def purchaseItem(self, avatar, item, optional):
         # Purchases the item for the given avatar.  Returns the
         # appropriate status code from ToontownGlobals.py.  If the item
@@ -209,14 +206,12 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
         elif item in avatar.backCatalog:
             catalogType = CatalogItem.CatalogTypeBackorder
         else:
-            self.air.writeServerEvent('suspicious', avatar.do_id, 'purchaseItem %s not in catalog' % (item))
             self.notify.warning("Avatar %s attempted to purchase %s, not on catalog." % (avatar.do_id, item))
             self.notify.warning("Avatar %s weekly: %s" % (avatar.do_id, avatar.weeklyCatalog))
             return ToontownGlobals.P_NotInCatalog
 
         price = item.getPrice(catalogType)
         if price > avatar.getTotalMoney():
-            self.air.writeServerEvent('suspicious', avatar.do_id, 'purchaseItem %s not enough money' % (item))
             self.notify.warning("Avatar %s attempted to purchase %s, not enough money." % (avatar.do_id, item))
             return ToontownGlobals.P_NotEnoughMoney
 
@@ -247,18 +242,12 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
             avatar.b_setBankMoney(avatar.getBankMoney() - bankPrice)
             avatar.b_setMoney(avatar.getMoney() - walletPrice)
 
-            self.air.writeServerEvent(
-                'catalog-purchase', avatar.do_id, "%s|%s" %
-                (price, item))
             #pdb.set_trace()
 
     def refundMoney(self, avatarId, refund):
             avatar = self.air.doTable.get(avatarId)
             if avatar:
                 avatar.addMoney(refund)
-                self.air.writeServerEvent(
-                    'refunded-money', avatar.do_id, "%s" %
-                    (refund))
                 #pdb.set_trace()
 
     def setDelivery(self, avatar, item, deliveryTime, retcode, doUpdateLater):
@@ -293,7 +282,6 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
         elif item in avatar.backCatalog:
             catalogType = CatalogItem.CatalogTypeBackorder
         else:
-            self.air.writeServerEvent('suspicious', avatar.do_id, 'purchaseItem %s not in catalog' % (item))
             self.notify.warning("Avatar %s attempted to purchase %s, not on catalog." % (avatar.do_id, item))
             self.notify.warning("Avatar %s weekly: %s" % (avatar.do_id, avatar.weeklyCatalog))
             retcode = ToontownGlobals.P_NotInCatalog
@@ -301,7 +289,6 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
 
         price = item.getPrice(catalogType)
         if price > avatar.getTotalMoney():
-            self.air.writeServerEvent('suspicious', avatar.do_id, 'purchaseItem %s not enough money' % (item))
             self.notify.warning("Avatar %s attempted to purchase %s, not enough money." % (avatar.do_id, item))
             retcode = ToontownGlobals.P_NotEnoughMoney
             return 0
@@ -318,4 +305,3 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
         if avatar and avatar.catalogScheduleNextTime == 0:
             print("starting catalog for %s" % (avatar.getName()))
             self.deliverCatalogFor(avatar)
-

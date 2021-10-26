@@ -523,6 +523,13 @@ class DistributedToonAI(DistributedPlayerAI):
         self.catalogNotify = catalogNotify
         self.mailboxNotify = mailboxNotify
 
+    def b_setCatalog(self, monthlyCatalog, weeklyCatalog, backCatalog):
+        self.setCatalog(monthlyCatalog, weeklyCatalog, backCatalog)
+        self.d_setCatalog(monthlyCatalog, weeklyCatalog, backCatalog)
+
+    def d_setCatalog(self, monthlyCatalog, weeklyCatalog, backCatalog):
+        self.sendUpdate('setCatalog', [monthlyCatalog.getBlob(), weeklyCatalog.getBlob(), backCatalog.getBlob()])
+
     def setCatalog(self, monthlyCatalog, weeklyCatalog, backCatalog):
         self.monthlyCatalog = CatalogItemList(monthlyCatalog)
         self.weeklyCatalog = CatalogItemList(weeklyCatalog)
