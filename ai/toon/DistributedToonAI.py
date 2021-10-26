@@ -66,8 +66,6 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.awardMailboxContents = CatalogItemList(store = CatalogItem.Customization)
         self.onAwardOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
         self.customMessages = []
-        self.clothesTopsList = []
-        self.clothesBottomsList = []
 
     def delete(self):
         self.sendUpdate('arrivedOnDistrict', [0])
@@ -134,6 +132,10 @@ class DistributedToonAI(DistributedPlayerAI):
         self.money = 0
         self.bankMoney = 0
         self.maxBankMoney = 1000
+        self.petTrickPhrases: List[int] = []
+        self.clothesTopsList: List[int] = []
+        self.clothesBottomsList: List[int] = []
+        self.maxClothes = 10
         self.trackAccess = [0, 0, 0, 0, 1, 1, 0]
         self.trackBonusLevel = [-1, -1, -1, -1, -1, -1, -1]
         self.experience = Experience()
@@ -339,6 +341,138 @@ class DistributedToonAI(DistributedPlayerAI):
     def getNPCFriendsDict(self):
         return list(self.npcFriends.items())
 
+    def d_setMaxClothes(self, max):
+        self.sendUpdate("setMaxClothes", [self.maxClothes])
+
+    def setMaxClothes(self, max):
+        self.maxClothes = max
+
+    def b_setMaxClothes(self, max):
+        self.setMaxClothes(max)
+        self.d_setMaxClothes(max)
+        
+    def getMaxClothes(self):
+        return self.maxClothes
+
+    def isClosetFull(self, extraClothes = 0):
+        numClothes = len(self.clothesTopsList)/4 + len(self.clothesBottomsList)/2
+        return (numClothes + extraClothes >= self.maxClothes)
+
+    def d_setClothesTopsList(self, clothesList):
+        self.sendUpdate("setClothesTopsList", [clothesList])
+
+    def setClothesTopsList(self, clothesList):
+        self.clothesTopsList = clothesList
+
+    def b_setClothesTopsList(self, clothesList):
+        self.setClothesTopsList(clothesList)
+        self.d_setClothesTopsList(clothesList)
+        
+    def getClothesTopsList(self):
+        return self.clothesTopsList    
+
+    def addToClothesTopsList(self, topTex, topTexColor, 
+                                sleeveTex, sleeveTexColor):
+        if self.isClosetFull():
+            return 0
+
+        index = 0
+        for i in range(0, len(self.clothesTopsList), 4):
+            if (self.clothesTopsList[i] == topTex and
+                self.clothesTopsList[i+1] == topTexColor and
+                self.clothesTopsList[i+2] == sleeveTex and
+                self.clothesTopsList[i+3] == sleeveTexColor):
+                return 0            
+
+        self.clothesTopsList.append(topTex)
+        self.clothesTopsList.append(topTexColor)
+        self.clothesTopsList.append(sleeveTex)
+        self.clothesTopsList.append(sleeveTexColor)
+        return 1
+
+    def replaceItemInClothesTopsList(self, topTexA, topTexColorA, 
+                                     sleeveTexA, sleeveTexColorA,
+                                     topTexB, topTexColorB, 
+                                     sleeveTexB, sleeveTexColorB):
+        index = 0
+        for i in range(0, len(self.clothesTopsList), 4):
+            if (self.clothesTopsList[i] == topTexA and
+                self.clothesTopsList[i+1] == topTexColorA and
+                self.clothesTopsList[i+2] == sleeveTexA and
+                self.clothesTopsList[i+3] == sleeveTexColorA):
+                self.clothesTopsList[i] = topTexB
+                self.clothesTopsList[i+1] = topTexColorB
+                self.clothesTopsList[i+2] = sleeveTexB
+                self.clothesTopsList[i+3] = sleeveTexColorB
+                return 1
+        return 0
+
+    def removeItemInClothesTopsList(self, topTex, topTexColor, 
+                                    sleeveTex, sleeveTexColor):
+        listLen = len(self.clothesTopsList) 
+        if listLen < 4:
+            print("Clothes top list is not long enough to delete anything")
+            return 0
+        index = 0
+        for i in range(0, listLen, 4):
+            if (self.clothesTopsList[i] == topTex and
+                self.clothesTopsList[i+1] == topTexColor and
+                self.clothesTopsList[i+2] == sleeveTex and
+                self.clothesTopsList[i+3] == sleeveTexColor):
+                self.clothesTopsList = self.clothesTopsList[0:i] + self.clothesTopsList[i+4:listLen]
+                return 1
+        return 0
+        
+    def d_setClothesBottomsList(self, clothesList):
+        self.sendUpdate("setClothesBottomsList", [clothesList])
+
+    def setClothesBottomsList(self, clothesList):
+        self.clothesBottomsList = clothesList
+
+    def b_setClothesBottomsList(self, clothesList):
+        self.setClothesBottomsList(clothesList)
+        self.d_setClothesBottomsList(clothesList)
+        
+    def getClothesBottomsList(self):
+        return self.clothesBottomsList    
+
+    def addToClothesBottomsList(self, botTex, botTexColor):
+        if self.isClosetFull():
+            print("clothes bottoms list is full")
+            return 0
+        index = 0
+        for i in range(0, len(self.clothesBottomsList), 2):
+            if (self.clothesBottomsList[i] == botTex and
+                self.clothesBottomsList[i+1] == botTexColor):
+                return 0            
+        self.clothesBottomsList.append(botTex)
+        self.clothesBottomsList.append(botTexColor)
+        return 1
+
+    def replaceItemInClothesBottomsList(self, botTexA, botTexColorA, 
+                                        botTexB, botTexColorB):
+        index = 0
+        for i in range(0, len(self.clothesBottomsList), 2):
+            if (self.clothesBottomsList[i] == botTexA and
+                self.clothesBottomsList[i+1] == botTexColorA):
+                self.clothesBottomsList[i] = botTexB
+                self.clothesBottomsList[i+1] = botTexColorB
+                return 1
+        return 0
+
+    def removeItemInClothesBottomsList(self, botTex, botTexColor): 
+        listLen = len(self.clothesBottomsList) 
+        if listLen < 2:
+            print("Clothes bottoms list is not long enough to delete anything")
+            return 0
+        index = 0
+        for i in range(0, len(self.clothesBottomsList), 2):
+            if (self.clothesBottomsList[i] == botTex and
+                self.clothesBottomsList[i+1] == botTexColor):
+                self.clothesBottomsList = self.clothesBottomsList[0:i] + self.clothesBottomsList[i+2:listLen]
+                return 1
+        return 0
+
     def getDefaultShard(self):
         return 0
 
@@ -391,9 +525,6 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getTutorialAck(self):
         return 1
-
-    def getMaxClothes(self):
-        return 0
 
     def setClothesTopsList(self, clothesList):
         self.clothesTopsList = clothesList
@@ -465,7 +596,7 @@ class DistributedToonAI(DistributedPlayerAI):
         return []
 
     def getPetTrickPhrases(self):
-        return []
+        return self.petTrickPhrases
 
     def b_setCatalogSchedule(self, currentWeek, nextTime):
         self.setCatalogSchedule(currentWeek, nextTime)

@@ -98,6 +98,7 @@ class FishItems:
 class FishGlobals:
     FishingAngleMin = -50
     FishingAngleMax = 50
+    MaxRodId = 4
 
 class DistributedFishingTargetAI(DistributedNodeAI, FSM):
 
