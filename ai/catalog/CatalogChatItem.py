@@ -63,7 +63,7 @@ def getChatRange(fromIndex, toIndex, *otherRanges):
         tos.append(otherRanges[i + 1])
         i += 2
 
-    for chatId in ToontownGlobals.CustomSCStrings.keys():
+    for chatId in ToontownGlobals.ValidCustomSC:
         for fromIndex, toIndex in zip(froms, tos):
             if chatId >= fromIndex and chatId <= toIndex and chatId not in bannedPhrases:
                 chatList.append(CatalogChatItem(chatId))
