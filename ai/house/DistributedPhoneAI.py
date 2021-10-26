@@ -1,4 +1,5 @@
 from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
+from ai import ToontownGlobals
 
 PHONE_MOVIE_CLEAR = 2
 PHONE_MOVIE_EMPTY = 3
@@ -109,7 +110,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
         # Send the setMovie command to the user to tell him to open up
         # his catalog.  But first, tell him how much stuff he's got in
         # his house.
-        self.sendUpdateToAvatarId(self.av.do_id, 'setLimits', [numHouseItems])
+        self.sendUpdateToAvatar(self.av.do_id, 'setLimits', [numHouseItems])
 
         # Now open the catalog up on the client.
         self.d_setMovie(PHONE_MOVIE_PICKUP, self.av.do_id)

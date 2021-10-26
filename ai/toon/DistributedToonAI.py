@@ -489,7 +489,9 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def __deliverCatalog(self, task):
         self.air.catalogManager.deliverCatalogFor(self)
-        return Task.done
+
+        if task:
+            return task.done
 
     def getCatalog(self):
         return (self.monthlyCatalog.getBlob(), self.weeklyCatalog.getBlob(), self.backCatalog.getBlob())
