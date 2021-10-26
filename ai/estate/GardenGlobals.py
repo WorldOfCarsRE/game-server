@@ -44,14 +44,12 @@ def getWateringCanPower(wateringCan, wateringCanSkill):
 
     return numBoxes * WateringMult
 
-
 def getMaxWateringCanPower():
     retval = 0
     for wateringCanAttrib in list(WateringCanAttributes.values()):
         retval += wateringCanAttrib['numBoxes']
 
     return retval * WateringMult
-
 
 FlowerColors = [(0.804, 0.2, 0.2),
  (0.922, 0.463, 0.0),
@@ -192,10 +190,8 @@ def getTreeTrackAndLevel(typeIndex):
     level = typeIndex % 7
     return (track, level)
 
-
 def getTreeTypeIndex(track, level):
     return track * 7 + level
-
 
 NUM_GAGS = 7 * 7
 for i in range(NUM_GAGS):
@@ -345,7 +341,6 @@ def getRecipeKey(beans, special):
 
     return -1
 
-
 def getRecipeKeyUsingSpecial(special):
     for key in list(Recipes.keys()):
         recipe = Recipes[key]
@@ -353,7 +348,6 @@ def getRecipeKeyUsingSpecial(special):
             return key
 
     return -1
-
 
 SHOVEL_TIN = 0
 SHOVEL_STEEL = 1
