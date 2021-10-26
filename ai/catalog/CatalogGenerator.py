@@ -1509,7 +1509,7 @@ class CatalogGenerator:
 
     def generateWeeklyCatalog(self, avatar, week, monthlyCatalog):
         weeklyCatalog = CatalogItemList.CatalogItemList()
-        self.notify.debug('Generating catalog for %s for week %s.' % (avatar.doId, week))
+        self.notify.debug('Generating catalog for %s for week %s.' % (avatar.do_id, week))
         if week >= 1 and week <= len(WeeklySchedule):
             saleItem = 0
             schedule = WeeklySchedule[week - 1]
@@ -1568,7 +1568,7 @@ class CatalogGenerator:
             return itemLists
         else:
             self.__releasedItemLists.clear()
-        testDaysAhead = simbase.config.GetInt('test-server-holiday-days-ahead', 0)
+        testDaysAhead = 0 # TODO: Config?
         nowtuple = time.localtime(weekStart * 60 + testDaysAhead * 24 * 60 * 60)
         year = nowtuple[0]
         month = nowtuple[1]
@@ -1598,7 +1598,7 @@ class CatalogGenerator:
         itemLists = self.__itemLists.get(dayNumber)
         if itemLists != None:
             return itemLists
-        testDaysAhead = simbase.config.GetInt('test-server-holiday-days-ahead', 0)
+        testDaysAhead = 0 # TODO: Config?
         nowtuple = time.localtime(weekStart * 60 + testDaysAhead * 24 * 60 * 60)
         year = nowtuple[0]
         month = nowtuple[1]

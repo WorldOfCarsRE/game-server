@@ -26,7 +26,7 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
          ABoysGlasses,
          ABoysBackpack,
          ABoysShoes]
-        if avatar.getStyle().getGender() == 'm':
+        if avatar.getStyle().gender == 'm':
             return not forBoys
         else:
             return forBoys

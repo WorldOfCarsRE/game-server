@@ -315,7 +315,7 @@ class CatalogClothingItem(CatalogItem.CatalogItem):
         if article == AShirt or article == AShorts:
             return 0
         forBoys = (article == ABoysShirt or article == ABoysShorts)
-        if avatar.getStyle().getGender() == 'm':
+        if avatar.getStyle().gender == 'm':
             return not forBoys
         else:
             return forBoys
@@ -399,7 +399,7 @@ class CatalogClothingItem(CatalogItem.CatalogItem):
             defn = ToonDNA.BottomStyles[str]
             dna.botTex = defn[0]
             dna.botTexColor = defn[1][self.colorIndex]
-        if dna.getGender() == 'f':
+        if dna.gender == 'f':
             try:
                 bottomPair = ToonDNA.GirlBottoms[dna.botTex]
             except:

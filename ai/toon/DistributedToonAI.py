@@ -13,6 +13,7 @@ from ai.toon.Inventory import Inventory
 from ai.toon.ToonDNA import ToonDNA
 from ai import ToontownGlobals
 from ai.catalog.CatalogItemList import CatalogItemList
+from ai.catalog import CatalogItem
 import time
 
 class DistributedAvatarAI(DistributedSmoothNodeAI):
@@ -58,6 +59,15 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.weeklyCatalog = CatalogItemList()
         self.backCatalog = CatalogItemList()
         self.quests = []
+        self.houseId = 0
+        self.onOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+        self.onGiftOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+        self.mailboxContents = CatalogItemList(store = CatalogItem.Customization)
+        self.awardMailboxContents = CatalogItemList(store = CatalogItem.Customization)
+        self.onAwardOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+        self.customMessages = []
+        self.clothesTopsList = []
+        self.clothesBottomsList = []
 
     def delete(self):
         self.sendUpdate('arrivedOnDistrict', [0])
@@ -385,11 +395,25 @@ class DistributedToonAI(DistributedPlayerAI):
     def getMaxClothes(self):
         return 0
 
+    def setClothesTopsList(self, clothesList):
+        self.clothesTopsList = clothesList
+
+    def b_setClothesTopsList(self, clothesList):
+        self.setClothesTopsList(clothesList)
+        self.d_setClothesTopsList(clothesList)
+
     def getClothesTopsList(self):
-        return []
+        return self.clothesTopsList
+
+    def setClothesBottomsList(self, clothesList):
+        self.clothesBottomsList = clothesList
+
+    def b_setClothesBottomsList(self, clothesList):
+        self.setClothesBottomsList(clothesList)
+        self.d_setClothesBottomsList(clothesList)
 
     def getClothesBottomsList(self):
-        return []
+        return self.clothesBottomsList
 
     def getMaxAccessories(self):
         return 0
@@ -424,8 +448,18 @@ class DistributedToonAI(DistributedPlayerAI):
     def getEmoteAccess(self):
         return [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+    def b_setCustomMessages(self, customMessages):
+        self.d_setCustomMessages(customMessages)
+        self.setCustomMessages(customMessages)
+
+    def d_setCustomMessages(self, customMessages):
+        self.sendUpdate('setCustomMessages', [customMessages])
+
+    def setCustomMessages(self, customMessages):
+        self.customMessages = customMessages
+
     def getCustomMessages(self):
-        return []
+        return self.customMessages
 
     def getResistanceMessages(self):
         return []
@@ -527,8 +561,11 @@ class DistributedToonAI(DistributedPlayerAI):
     def getCogMerits(self):
         return [0] * 4
 
+    def setHouseId(self, houseId):
+        self.houseId = houseId
+
     def getHouseId(self):
-        return 0
+        return self.houseId
 
     def b_setQuests(self, questList):
         flattenedQuests = []

@@ -927,7 +927,7 @@ class CatalogFurnitureItem(CatalogAtticItem.CatalogAtticItem):
         if self.getFlags() & FLCloset or self.getFlags() & FLTrunk:
             decade = self.furnitureType - self.furnitureType % 10
             forBoys = (decade == 500 or decade == 4000)
-            if avatar.getStyle().getGender() == 'm':
+            if avatar.getStyle().gender == 'm':
                 return not forBoys
             else:
                 return forBoys
@@ -1056,7 +1056,7 @@ class CatalogFurnitureItem(CatalogAtticItem.CatalogAtticItem):
 
 
 def nextAvailableCloset(avatar, duplicateItems):
-    if avatar.getStyle().getGender() == 'm':
+    if avatar.getStyle().gender == 'm':
         index = 0
     else:
         index = 1
@@ -1080,7 +1080,7 @@ def nextAvailableCloset(avatar, duplicateItems):
 
 
 def get50ItemCloset(avatar, duplicateItems):
-    if avatar.getStyle().getGender() == 'm':
+    if avatar.getStyle().gender == 'm':
         index = 0
     else:
         index = 1
@@ -1108,7 +1108,7 @@ def getAllClosets():
 
 
 def get50ItemTrunk(avatar, duplicateItems):
-    if avatar.getStyle().getGender() == 'm':
+    if avatar.getStyle().gender == 'm':
         index = 0
     else:
         index = 1
