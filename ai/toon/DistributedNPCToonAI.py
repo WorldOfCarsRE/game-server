@@ -135,8 +135,6 @@ class DistributedNPCClerkAI(DistributedNPCToonBaseAI):
         taskMgr.remove(self.uniqueName('clearMovie'))
         self.sendClearMovie()
 
-        
-
 class DistributedNPCTailorAI(DistributedNPCToonBaseAI):
     def setDNA(self, dna, finished, which):
         pass

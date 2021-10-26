@@ -8,6 +8,7 @@ from ai.catalog.CatalogItemList import CatalogItemList
 from ai.catalog import CatalogItem
 from ai.catalog.CatalogFurnitureItem import CatalogFurnitureItem
 from ai.catalog import CatalogWallpaperItem, CatalogMouldingItem, CatalogFlooringItem, CatalogWainscotingItem
+from ai.catalog.CatalogWindowItem import CatalogWindowItem
 import time, random
 
 class DistributedHouseAI(DistributedObjectAI):

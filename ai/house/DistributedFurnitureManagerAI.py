@@ -1,6 +1,11 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 from ai.catalog.CatalogItemList import CatalogItemList
 from ai.catalog import CatalogItem
+from ai.house.DistributedBankAI import DistributedBankAI
+from ai.house.DistributedClosetAI import DistributedClosetAI
+from ai.house.DistributedPhoneAI import DistributedPhoneAI
+from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
+from ai.catalog import CatalogFurnitureItem
 
 class DistributedFurnitureManagerAI(DistributedObjectAI):
 
@@ -10,14 +15,14 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
         self.house = house
         self.isInterior = isInterior
         self.director = 0
-        self.items = []
+        self.dfitems = []
         self.deletedItems = CatalogItemList(store = CatalogItem.Customization)
 
     def delete(self):
-        for item in self.items:
-            item.requestDelete()
+        for dfitem in self.dfitems:
+            dfitem.requestDelete()
 
-        self.items = None
+        self.dfitems = None
         self.director = None
 
         self.ignoreAll()
@@ -73,3 +78,31 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
 
     def d_setDeletedItems(self, items):
         self.sendUpdate('setDeletedItems', [items.getBlob(store = CatalogItem.Customization)])
+
+    def manifestInteriorItem(self, item):
+        # Creates and returns a DistributedFurnitureItem for the
+        # indicated furniture item.
+
+        if not hasattr(item, 'getFlags'):
+            return None
+
+        # Choose the appropriate kind of object to create.  Usually it
+        # is just a DistributedFurnitureItemAI, but sometimes we have
+        # to be more specific.
+        if item.getFlags() & CatalogFurnitureItem.FLBank:
+            cl = DistributedBankAI
+        elif item.getFlags() & CatalogFurnitureItem.FLCloset:
+            cl = DistributedClosetAI
+        elif item.getFlags() & CatalogFurnitureItem.FLPhone:
+            cl = DistributedPhoneAI
+        else:
+            cl = DistributedFurnitureItemAI
+
+        dfitem = cl(self.air, self, item)
+        dfitem.generateWithRequired(self.house.interiorZoneId)
+        item.dfitem = dfitem
+        self.dfitems.append(dfitem)
+
+        # Send the initial position.
+        dfitem.d_setPosHpr(*item.posHpr)
+        return dfitem
