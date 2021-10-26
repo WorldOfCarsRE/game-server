@@ -106,7 +106,7 @@ class QuestManagerAI:
                     else:
                         fromNpcId = npc.getNpcId()
                     self.assignQuest(avId, fromNpcId, *quests[0])
-                    npc.assignQuest(av.getDoId(), *quests[0])
+                    npc.assignQuest(av.do_id, *quests[0])
                 else:
                     # if this avatar requested a quest, include it
                     if self.NextQuestDict.has_key(avId):
@@ -127,7 +127,7 @@ class QuestManagerAI:
                                 toNpcId = Quests.ToonHQ
                             quests[0] = [questId, reward, toNpcId]
 
-                    npc.presentQuestChoice(av.getDoId(), quests)
+                    npc.presentQuestChoice(av.do_id, quests)
                 return
             else:
                 needsQuestButNoneLeft = 1
@@ -157,9 +157,9 @@ class QuestManagerAI:
                                 else:
                                     fromNpcId = npc.getNpcId()
                                 self.assignQuest(avId, fromNpcId, *quests[0])
-                                npc.assignQuest(av.getDoId(), *quests[0])
+                                npc.assignQuest(av.do_id, *quests[0])
                             else:
-                                npc.presentQuestChoice(av.getDoId(), quests)
+                                npc.presentQuestChoice(av.do_id, quests)
                             return
                     else:
                         # No more quests, sorry
@@ -195,13 +195,13 @@ class QuestManagerAI:
         return 0
 
     def rejectAvatar(self, av, npc):
-        self.notify.debug("rejecting avatar: avId: %s" % (av.getDoId()))
-        npc.rejectAvatar(av.getDoId())
+        self.notify.debug("rejecting avatar: avId: %s" % (av.do_id))
+        npc.rejectAvatar(av.do_id)
         return
 
     def rejectAvatarTierNotDone(self, av, npc):
-        self.notify.debug("rejecting avatar because tier not done: avId: %s" % (av.getDoId()))
-        npc.rejectAvatarTierNotDone(av.getDoId())
+        self.notify.debug("rejecting avatar because tier not done: avId: %s" % (av.do_id))
+        npc.rejectAvatarTierNotDone(av.do_id)
         return
 
     def hasQuest(self, av, npc):
@@ -215,30 +215,30 @@ class QuestManagerAI:
             # if you have a toNpc then return this questId
             if (fromNpcId == npc.getNpcId()):
                 self.notify.debug("hasQuest: found quest: %s avId: %s fromNpcId: %s" %
-                                  (questId, av.getDoId(), fromNpcId))
+                                  (questId, av.do_id, fromNpcId))
                 return questDesc
             elif (toNpcId == npc.getNpcId()):
                 # If the quest has this npc as the toNpc, then we are done
                 self.notify.debug("hasQuest: found quest with toNpc: %s avId: %s toNpcId: %s" %
-                                  (questId, av.getDoId(), toNpcId))
+                                  (questId, av.do_id, toNpcId))
                 return questDesc
             elif (toNpcId == Quests.Any):
                 # If the quest has "any" as the toNpc, than this guy will do
                 self.notify.debug("hasQuest: found quest with any toNpc: %s avId: %s toNpcId: %s" %
-                                  (questId, av.getDoId(), toNpcId))
+                                  (questId, av.do_id, toNpcId))
                 return questDesc
             elif ((toNpcId == Quests.ToonHQ) and (npc.getHq())):
                 # If the quest is for the HQ, and this toon has HQ powers, its a match
                 self.notify.debug("hasQuest: found quest with HQ toNpc: %s avId: %s toNpcId: %s" %
-                                  (questId, av.getDoId(), toNpcId))
+                                  (questId, av.do_id, toNpcId))
                 return questDesc
             elif ((toNpcId == Quests.ToonTailor) and (npc.getTailor())):
                 # If the quest is for a tailor, and this toon is a tailor, its a match
                 self.notify.debug("hasQuest: found quest with Tailor toNpc: %s avId: %s toNpcId: %s" %
-                                  (questId, av.getDoId(), toNpcId))
+                                  (questId, av.do_id, toNpcId))
                 return questDesc
         self.notify.debug("hasQuest: did not find quest for avId: %s npcId: %s" %
-                          (av.getDoId(), npc.getNpcId()))
+                          (av.do_id, npc.getNpcId()))
         return None
 
     def isQuestComplete(self, av, npc, questDesc):
@@ -247,12 +247,12 @@ class QuestManagerAI:
         if quest == None:
             return 0
         self.notify.debug("isQuestComplete: avId: %s, quest: %s" %
-                          (av.getDoId(), quest))
+                          (av.do_id, quest))
         return quest.getCompletionStatus(av, questDesc, npc)
 
     def completeQuest(self, av, npc, questId):
         self.notify.info("completeQuest: avId: %s, npcId: %s, questId: %s" %
-                          (av.getDoId(), npc.getNpcId(), questId))
+                          (av.do_id, npc.getNpcId(), questId))
 
         # If this is a track choice, we do not actually complete the quest,
         # We present the track choice gui. This can be cancelled which will
@@ -260,10 +260,10 @@ class QuestManagerAI:
         questClass = Quests.getQuestClass(questId)
         if questClass == Quests.TrackChoiceQuest:
             self.notify.debug("completeQuest: presentTrackChoice avId: %s, npcId: %s, questId: %s" %
-                              (av.getDoId(), npc.getNpcId(), questId))
+                              (av.do_id, npc.getNpcId(), questId))
             quest = Quests.getQuest(questId)
             tracks = quest.getChoices()
-            npc.presentTrackChoice(av.getDoId(), questId, tracks)
+            npc.presentTrackChoice(av.do_id, questId, tracks)
             # Do not increment reward until avatar has chosen track
             # This happens in avatarChoseTrack
             return
@@ -272,7 +272,7 @@ class QuestManagerAI:
         # gags delivered from the player's inventory
         if questClass == Quests.DeliverGagQuest:
             self.notify.debug("completeQuest: presentTrackChoice avId: %s, npcId: %s, questId: %s" %
-                              (av.getDoId(), npc.getNpcId(), questId))
+                              (av.do_id, npc.getNpcId(), questId))
             # Use the items from the inventory now
             quest = Quests.getQuest(questId)
             track, level = quest.getGagType()
@@ -296,8 +296,8 @@ class QuestManagerAI:
             # Just to make sure
             if (reward.getType() == Quests.ClothingTicketReward):
                 self.notify.warning("completeQuest: rogue ClothingTicketReward avId: %s, npcId: %s, questId: %s" %
-                                    (av.getDoId(), npc.getNpcId(), questId))
-                npc.freeAvatar(av.getDoId())
+                                    (av.do_id, npc.getNpcId(), questId))
+                npc.freeAvatar(av.do_id)
                 return
 
             # Nope, this is the end, dish out the reward
@@ -308,7 +308,7 @@ class QuestManagerAI:
             av.toonUp(av.maxHp)
             # Tell the npc to deliver the movie which will
             # complete the quest, display the reward, and do nothing else
-            npc.completeQuest(av.getDoId(), questId, rewardId)
+            npc.completeQuest(av.do_id, questId, rewardId)
             # Bump the reward
             self.incrementReward(av)
 
@@ -325,16 +325,16 @@ class QuestManagerAI:
                 fromNpcId = Quests.ToonHQ
             else:
                 fromNpcId = npc.getNpcId()
-            self.assignQuest(av.getDoId(), fromNpcId, nextQuestId, nextRewardId, nextToNpcId, startingQuest = 0)
-            npc.assignQuest(av.getDoId(), nextQuestId, nextRewardId, nextToNpcId)
+            self.assignQuest(av.do_id, fromNpcId, nextQuestId, nextRewardId, nextToNpcId, startingQuest = 0)
+            npc.assignQuest(av.do_id, nextQuestId, nextRewardId, nextToNpcId)
             eventLogMessage += "|next %s" % (nextQuestId)
 
-        self.air.writeServerEvent('questComplete', av.getDoId(), eventLogMessage)
+        self.air.writeServerEvent('questComplete', av.do_id, eventLogMessage)
 
     def incompleteQuest(self, av, npc, questId, completeStatus, toNpcId):
         self.notify.debug("incompleteQuest: avId: %s questId: %s" %
-                          (av.getDoId(), questId))
-        npc.incompleteQuest(av.getDoId(), questId, completeStatus, toNpcId)
+                          (av.do_id, questId))
+        npc.incompleteQuest(av.do_id, questId, completeStatus, toNpcId)
         return
 
     def needsQuest(self, av):
@@ -343,11 +343,11 @@ class QuestManagerAI:
         carryLimit = av.getQuestCarryLimit()
         if (len(quests) >= carryLimit):
             self.notify.debug("needsQuest: avId: %s is already full with %s/%s quest(s)" %
-                              (av.getDoId(), len(quests), carryLimit))
+                              (av.do_id, len(quests), carryLimit))
             return 0
         else:
             self.notify.debug("needsQuest: avId: %s only has %s/%s quest(s), needs another" %
-                              (av.getDoId(), len(quests), carryLimit))
+                              (av.do_id, len(quests), carryLimit))
             return 1
 
     def getNextQuestIds(self, npc, av):
@@ -384,12 +384,12 @@ class QuestManagerAI:
 
             if not Quests.rewardTierExists(rewardTier+1):
                 self.notify.info("incrementReward: avId %s, at end of rewards" %
-                                  (av.getDoId()))
+                                  (av.do_id))
                 return 0
 
             rewardTier += 1
             self.notify.info("incrementReward: avId %s, new rewardTier: %s" %
-                              (av.getDoId(), rewardTier))
+                              (av.do_id, rewardTier))
 
             # If we have just moved on to the next tier, blow away the
             # old history, which is no longer needed.
@@ -411,7 +411,7 @@ class QuestManagerAI:
             return 1
         else:
             self.notify.debug("incrementReward: avId %s, not ready for new tier" %
-                              (av.getDoId()))
+                              (av.do_id))
             return 0
 
 
@@ -436,7 +436,7 @@ class QuestManagerAI:
             reward.sendRewardAI(av)
             # Tell the npc to deliver the movie which will
             # complete the quest, display the reward, and do nothing else
-            npc.completeQuest(av.getDoId(), questId, rewardId)
+            npc.completeQuest(av.do_id, questId, rewardId)
             self.incrementReward(av)
         else:
             self.notify.warning("avatarChoseTrack: av is gone.")
@@ -515,7 +515,7 @@ class QuestManagerAI:
         # see if this toon has a quest on this factory. If so,
         # update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
 
         for questDesc in avQuests:
@@ -537,7 +537,7 @@ class QuestManagerAI:
 
     def toonRecoveredCogSuitPart(self, av, location, avList):
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
 
         for questDesc in avQuests:
@@ -559,7 +559,7 @@ class QuestManagerAI:
         # see if this toon has a quest on this mint. If so,
         # update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
 
         for questDesc in avQuests:
@@ -585,7 +585,7 @@ class QuestManagerAI:
         # building.  See if this toon has a quest on this building.
         # If so, update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
 
         #self.notify.debug("toonKilledBuilding: avId: %s, track: %s, diff: %s, numFloors: %s, zoneId: %s" %
@@ -620,7 +620,7 @@ class QuestManagerAI:
         # cogdo.  See if this toon has a quest on this cogdo.
         # If so, update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
 
         #self.notify.debug("toonKilledBuilding: avId: %s, track: %s, diff: %s, numFloors: %s, zoneId: %s" %
@@ -656,7 +656,7 @@ class QuestManagerAI:
         # This is the battle notifying us that a toon killed some cogs
         # See if this toon has a quest on these cogs. If so, update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
 
         self.notify.debug("toonKilledCogs: avId: %s, avQuests: %s, cogList: %s, zoneId: %s" %
@@ -689,7 +689,7 @@ class QuestManagerAI:
         # trolley for the first time. See if this toon has a
         # trolley quest. If so, update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
 
         for questDesc in avQuests:
@@ -716,7 +716,7 @@ class QuestManagerAI:
         # This is notifying us that a toon has entered a minigame.
         # See if this toon has a minigame quest.  If so, update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
 
         for questDesc in avQuests:
@@ -741,7 +741,7 @@ class QuestManagerAI:
         # This is notifying us that a toon has opened his mailbox
         # See if this toon has a mailbox quest.  If so, update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
         for questDesc in avQuests:
             questClass = Quests.getQuestClass(questDesc[0])
@@ -761,7 +761,7 @@ class QuestManagerAI:
         # This is notifying us that a toon used his phone
         # See if this toon has a phone quest.  If so, update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
         for questDesc in avQuests:
             questClass = Quests.getQuestClass(questDesc[0])
@@ -779,7 +779,7 @@ class QuestManagerAI:
 
     def recoverItems(self, av, cogList, zoneId):
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         itemsRecovered = []
         itemsNotRecovered = []
         changed = 0
@@ -854,7 +854,7 @@ class QuestManagerAI:
         # function either returns the item found, or None.
         # Note: this does not support two quests with same item
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
 
         for questDesc in avQuests:
             questClass = Quests.getQuestClass(questDesc[0])
@@ -903,7 +903,7 @@ class QuestManagerAI:
         # See if this toon has a friend quest.
         # If so, update the progress.
         avQuests = av.quests
-        avId = av.getDoId()
+        avId = av.do_id
         changed = 0
         for questDesc in avQuests:
             questClass = Quests.getQuestClass(questDesc[0])

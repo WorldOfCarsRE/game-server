@@ -57,6 +57,7 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.monthlyCatalog = CatalogItemList()
         self.weeklyCatalog = CatalogItemList()
         self.backCatalog = CatalogItemList()
+        self.quests = []
 
     def delete(self):
         self.sendUpdate('arrivedOnDistrict', [0])
@@ -529,8 +530,33 @@ class DistributedToonAI(DistributedPlayerAI):
     def getHouseId(self):
         return 0
 
+    def b_setQuests(self, questList):
+        flattenedQuests = []
+
+        for quest in questList:
+            flattenedQuests.extend(quest)
+
+        self.setQuests(flattenedQuests)
+        self.d_setQuests(flattenedQuests)
+
+    def d_setQuests(self, flattenedQuests):
+        self.sendUpdate('setQuests', [flattenedQuests])
+
+    def setQuests(self, flattenedQuests):
+        questList = []
+        questLen = 5
+
+        for i in range(0, len(flattenedQuests), questLen):
+            questList.append(flattenedQuests[i:i + questLen])
+
+        self.quests = questList
+
     def getQuests(self):
-        return []
+        flattenedQuests = []
+        for quest in self.quests:
+            flattenedQuests.extend(quest)
+
+        return flattenedQuests
 
     def getQuestHistory(self):
         return []

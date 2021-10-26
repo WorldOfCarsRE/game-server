@@ -1,5 +1,10 @@
 from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
 
+PHONE_MOVIE_CLEAR = 2
+PHONE_MOVIE_EMPTY = 3
+PHONE_MOVIE_PICKUP = 4
+PHONE_MOVIE_HANGUP = 5
+
 class DistributedPhoneAI(DistributedFurnitureItemAI):
 
     def __init__(self, air, furnitureMgr, item):
@@ -77,7 +82,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
             self.lookupHouse()
         else:
             # No catalog yet.
-            self.d_setMovie(PhoneGlobals.PHONE_MOVIE_EMPTY, avId)
+            self.d_setMovie(PHONE_MOVIE_EMPTY, avId)
             self.sendClearMovie()
 
     def lookupHouse(self):
@@ -107,7 +112,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
         self.sendUpdateToAvatarId(self.av.do_id, 'setLimits', [numHouseItems])
 
         # Now open the catalog up on the client.
-        self.d_setMovie(PhoneGlobals.PHONE_MOVIE_PICKUP, self.av.do_id)
+        self.d_setMovie(PHONE_MOVIE_PICKUP, self.av.do_id)
 
         # The avatar has seen his catalog now.
         if self.av.catalogNotify == ToontownGlobals.NewItems:
@@ -117,7 +122,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
         avId = self.air.currentAvatarSender
 
         if self.busy == avId:
-            self.d_setMovie(PhoneGlobals.PHONE_MOVIE_HANGUP, self.av.doId)
+            self.d_setMovie(PHONE_MOVIE_HANGUP, self.av.doId)
             self.sendClearMovie()
         else:
             self.freeAvatar(avId)
@@ -133,4 +138,8 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
         self.ignoreAll()
         self.busy = 0
         self.av = None
-        self.d_setMovie(PhoneGlobals.PHONE_MOVIE_CLEAR, 0)
+        self.d_setMovie(PHONE_MOVIE_CLEAR, 0)
+
+    def d_setMovie(self, mode, avId):
+        timestamp = globalClockDelta.getRealNetworkTime(bits = 32)
+        self.sendUpdate('setMovie', [mode, avId, timestamp])
