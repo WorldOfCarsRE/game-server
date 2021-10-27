@@ -139,7 +139,7 @@ class DistributedMailboxAI(DistributedObjectAI):
                 self.sendUpdate('setMovie', [MAILBOX_MOVIE_EMPTY, avId])
                 self.sendClearMovie()
         else:
-            # Wrong mailbox.  Go away.
+            # Wrong mailbox. Go away.
             # The client should filter this already.
             self.air.writeServerEvent('suspicious', avId, 'DistributedMailboxAI.avatarEnter not owner')
             self.sendUpdate('setMovie', [MAILBOX_MOVIE_NOT_OWNER, avId])

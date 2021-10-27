@@ -8,6 +8,8 @@ from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
 from ai.catalog import CatalogFurnitureItem
 from ai import ToontownGlobals
 
+from direct.task import Task
+
 class DistributedFurnitureManagerAI(DistributedObjectAI):
 
     def __init__(self, air, house, isInterior):
@@ -190,7 +192,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
     def moveItemToAtticMessage(self, doId, context):
         avId = self.air.currentAvatarSender
         retcode = self.__doMoveItemToAttic(avId, doId)
-        self.sendUpdateToAvatarId(avId, 'moveItemToAtticResponse', [retcode, context])
+        self.sendUpdateToAvatar(avId, 'moveItemToAtticResponse', [retcode, context])
 
     def isHouseFull(self):
         numAtticItems = len(self.house.atticItems) + len(self.house.atticWallpaper) + len(self.house.atticWindows)
@@ -204,6 +206,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
             return ToontownGlobals.FM_NotDirector
 
         dfitem = simbase.air.doTable.get(doId)
+
         if dfitem == None or dfitem not in self.dfitems:
             return ToontownGlobals.FM_InvalidIndex
 
@@ -223,8 +226,47 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
 
         self.house.d_setAtticItems(self.house.atticItems)
         self.house.d_setInteriorItems(self.house.interiorItems)
+
         dfitem.requestDelete()
 
         # Tell the client our new list of attic items.
         self.d_setAtticItems(self.house.atticItems)
         return ToontownGlobals.FM_MovedItem
+
+    def moveItemFromAtticMessage(self, index, x, y, z, h, p, r, context):
+        # A request by the client to move the indicated
+        # item out of the attic and to the given position.
+        avId = self.air.currentAvatarSender
+
+        retcode, objectId = self.__doMoveItemFromAttic(avId, index, (x, y, z, h, p, r))
+        taskMgr.doMethodLater(.5, self.__moveItemFromAtticResponse, f'moveItemFromAtticResponse-{objectId}', extraArgs = [avId, retcode, objectId, context], appendTask = False)
+
+    def __moveItemFromAtticResponse(self, avId, retcode, objectId, context):
+        if not self.deleted and objectId in self.air.doTable:
+            self.sendUpdateToAvatar(avId, 'moveItemFromAtticResponse', [retcode, objectId, context])
+
+        return Task.done
+
+    def __doMoveItemFromAttic(self, avId, index, posHpr):
+        if avId != self.director:
+            return (ToontownGlobals.FM_NotDirector, 0)
+
+        if index < 0 or index >= len(self.house.atticItems):
+            return (ToontownGlobals.FM_InvalidIndex, 0)
+
+        item = self.house.atticItems[index]
+        del self.house.atticItems[index]
+
+        item.posHpr = posHpr
+
+        self.house.interiorItems.append(item)
+        self.house.d_setInteriorItems(self.house.interiorItems)
+        self.house.d_setAtticItems(self.house.atticItems)
+
+        dfitem = self.manifestInteriorItem(item)
+
+        if not dfitem:
+            return (ToontownGlobals.FM_InvalidItem, 0)
+
+        self.d_setAtticItems(self.house.atticItems)
+        return (ToontownGlobals.FM_MovedItem, dfitem.do_id)

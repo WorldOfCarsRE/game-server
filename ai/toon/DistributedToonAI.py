@@ -636,7 +636,7 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def setBothSchedules(self, onOrder, onGiftOrder, doUpdateLater = True):
         if onOrder is not None:
-            self.onOrder = CatalogItemList(onOrder, store=CatalogItem . Customization | CatalogItem.DeliveryDate)
+            self.onOrder = CatalogItemList(onOrder, store = CatalogItem.Customization | CatalogItem.DeliveryDate)
         if onGiftOrder is not None:
             self.onGiftOrder = CatalogItemList(onGiftOrder, store = CatalogItem.Customization | CatalogItem.DeliveryDate)
         if not hasattr(self, 'air') or self.air is None:
@@ -722,6 +722,10 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getDeliverySchedule(self):
         return self.onOrder.getBlob(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+
+    def b_setBothSchedules(self, onOrder, onGiftOrder, doUpdateLater = True):
+        self.setBothSchedules(onOrder, onGiftOrder, doUpdateLater)
+        self.d_setDeliverySchedule(onOrder)
 
     def getGiftSchedule(self):
         return self.onGiftOrder.getBlob(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
