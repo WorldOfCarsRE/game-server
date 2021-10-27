@@ -109,7 +109,6 @@ class DistributedToonAI(DistributedPlayerAI):
     def __init__(self, air):
         DistributedPlayerAI.__init__(self, air)
 
-        self.dnaString = ''
         self.hp = 15
         self.maxHp = 15
         self.maxMoney = 40
@@ -152,15 +151,23 @@ class DistributedToonAI(DistributedPlayerAI):
         self.ghostMode = 0
         self.numMailItems = 0
         self.awardNotify = ToontownGlobals.NoItems
+        self.dna = ToonDNA()
 
     def setDNAString(self, dnaString):
-        self.dnaString = dnaString
+        self.dna.makeFromNetString(Datagram(dnaString).iterator())
+
+    def b_setDNAString(self, dnaString):
+        self.d_setDNAString(dnaString)
+        self.setDNAString(dnaString)
+
+    def d_setDNAString(self, dnaString):
+        self.sendUpdate('setDNAString', [dnaString])
 
     def getDNAString(self):
-        return self.dnaString
+        return self.dna.makeNetString()
 
     def getStyle(self):
-        return ToonDNA(Datagram(self.dnaString).iterator())
+        return self.dna
 
     def getGM(self):
         return False
@@ -1061,6 +1068,12 @@ class DistributedToonAI(DistributedPlayerAI):
     def getNumInvitesToShowInMailbox(self):
         # Didn't feel like fixing up Disney logic for this at the moment.
         return 0
+
+    def d_catalogGenClothes(self):
+        self.sendUpdate('catalogGenClothes', [self.do_id])
+
+    def d_catalogGenAccessories(self):
+        self.sendUpdate('catalogGenAccessories', [self.do_id])
 
     def getHoodId(self, zoneId):
         return zoneId - zoneId % 1000

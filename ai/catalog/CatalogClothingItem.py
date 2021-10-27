@@ -384,8 +384,6 @@ class CatalogClothingItem(CatalogItem.CatalogItem):
                  dna.topTexColor,
                  dna.sleeveTex,
                  dna.sleeveTexColor))
-            else:
-                self.notify.warning('Avatar %s %s lost current shirt; closet full.' % (avatar.do_id, dna.asTuple()))
             defn = ToonDNA.ShirtStyles[str]
             dna.topTex = defn[0]
             dna.topTexColor = defn[2][self.colorIndex][0]
@@ -396,8 +394,6 @@ class CatalogClothingItem(CatalogItem.CatalogItem):
             if added:
                 avatar.b_setClothesBottomsList(avatar.getClothesBottomsList())
                 self.notify.info('Avatar %s put bottoms %d,%d in closet.' % (avatar.do_id, dna.botTex, dna.botTexColor))
-            else:
-                self.notify.warning('Avatar %s %s lost current bottoms; closet full.' % (avatar.do_id, dna.asTuple()))
             defn = ToonDNA.BottomStyles[str]
             dna.botTex = defn[0]
             dna.botTexColor = defn[1][self.colorIndex]

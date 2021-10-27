@@ -81,7 +81,7 @@ class DistributedMailboxAI(DistributedObjectAI):
         # at the same time. The AI will accept the first, sending a setMovie,
         # and free the second
         DistributedMailboxAI.notify.debug('freeAvatar( avId=%d )' %avId)
-        self.sendUpdateToAvatarId(avId, 'freeAvatar', [])
+        self.sendUpdateToAvatar(avId, 'freeAvatar', [])
         return
 
     def avatarEnter(self):
@@ -239,7 +239,7 @@ class DistributedMailboxAI(DistributedObjectAI):
             self.air.writeServerEvent('suspicious', avId, 'DistributedMailboxAI.acceptItem busy with %s' % (self.busy))
             self.notify.warning('Got unexpected item request from %s while busy with %s.' % (avId, self.busy))
             retcode = ToontownGlobals.P_NotAtMailbox
-            self.sendUpdateToAvatarId(avId, 'acceptItemResponse', [context, retcode])
+            self.sendUpdateToAvatar(avId, 'acceptItemResponse', [context, retcode])
         elif itemIndex < 0 or itemIndex >= (len(self.av.mailboxContents) + len(self.av.awardMailboxContents)):
             self.air.writeServerEvent('suspicious', avId, 'DistributedMailboxAI.acceptItem invalid index %s' % (itemIndex))
             retcode = ToontownGlobals.P_InvalidIndex
@@ -262,7 +262,7 @@ class DistributedMailboxAI(DistributedObjectAI):
                 #del self.av.mailboxContents[itemIndex]
                 #self.av.b_setMailboxContents(self.av.mailboxContents)
         #import pdb; pdb.set_trace()
-        self.sendUpdateToAvatarId(avId, 'acceptItemResponse', [context, retcode])
+        self.sendUpdateToAvatar(avId, 'acceptItemResponse', [context, retcode])
 
     def discardItemMessage(self, context, blob, itemIndex, optional):
         DistributedMailboxAI.notify.debug('discardItemMessage')
@@ -299,7 +299,7 @@ class DistributedMailboxAI(DistributedObjectAI):
                 self.av.b_setMailboxContents(self.av.mailboxContents)
 
 
-        self.sendUpdateToAvatarId(avId, 'discardItemResponse', [context, retcode])
+        self.sendUpdateToAvatar(avId, 'discardItemResponse', [context, retcode])
 
     def acceptInviteMessage(self, context, inviteKey):
         DistributedMailboxAI.notify.debug('acceptInviteMessage')
@@ -329,7 +329,7 @@ class DistributedMailboxAI(DistributedObjectAI):
             self.air.partyManager.respondToInviteFromMailbox(context, inviteKey, InviteStatus.Accepted, self.do_id)
 
         if not (retcode == None):
-            self.sendUpdateToAvatarId(avId, 'acceptItemResponse', [context, retcode])
+            self.sendUpdateToAvatar(avId, 'acceptItemResponse', [context, retcode])
 
 
     def respondToAcceptInviteCallback(self, context, inviteKey, retcode):
