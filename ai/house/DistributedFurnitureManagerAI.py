@@ -106,3 +106,64 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
         # Send the initial position.
         dfitem.d_setPosHpr(*item.posHpr)
         return dfitem
+
+    def suggestDirector(self, avId):
+        # This method is sent by the client to request the right to
+        # manipulate the controls, for the requestor or for another.
+        # The AI decides whether to honor the request or ignore it.
+
+        if self.dfitems == None:
+            return
+
+        # validate the avId
+        avatar = self.air.doTable.get(avId)
+
+        if (avId != 0) and (not avatar):
+            # Note: avId == 0 OK since that signals end of furniture arranging
+            return
+
+        # current director
+        senderId = self.air.currentAvatarSender
+
+        if senderId == self.house.avId or senderId == self.director:
+            self.b_setDirector(avId)
+
+    def b_setDirector(self, avId):
+        self.setDirector(avId)
+        self.d_setDirector(avId)
+
+    def d_setDirector(self, avId):
+        self.sendUpdate('setDirector', [avId])
+
+        if self.director != avId:
+            # Go through the dfitems list and stop accepting
+            # messages from the current director, if any.
+            for dfitem in self.dfitems:
+                dfitem.removeDirector()
+
+            self.director = avId
+
+    def setDirector(self, avId):
+        if self.director != avId:
+            # Go through the dfitems list and stop accepting
+            # messages from the current director, if any.
+            for dfitem in self.dfitems:
+                dfitem.removeDirector()
+
+            self.director = avId
+
+    def avatarEnter(self):
+        # Sent from the client when he enters furniture moving mode.
+        avId = self.air.currentAvatarSender
+        avatar = self.air.doTable.get(avId)
+
+        if avatar:
+            avatar.b_setGhostMode(1)
+
+    def avatarExit(self):
+        # Sent from the client when he enters furniture moving mode.
+        avId = self.air.currentAvatarSender
+        avatar = self.air.doTable.get(avId)
+
+        if avatar:
+            avatar.b_setGhostMode(0)
