@@ -239,7 +239,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
         avId = self.air.currentAvatarSender
 
         retcode, objectId = self.__doMoveItemFromAttic(avId, index, (x, y, z, h, p, r))
-        taskMgr.doMethodLater(.5, self.__moveItemFromAtticResponse, 'moveItemFromAtticResponse-{objectId}', extraArgs = [avId, retcode, objectId, context], appendTask = False)
+        taskMgr.doMethodLater(.5, self.__moveItemFromAtticResponse, f'moveItemFromAtticResponse-{objectId}', extraArgs = [avId, retcode, objectId, context], appendTask = False)
 
     def __moveItemFromAtticResponse(self, avId, retcode, objectId, context):
         if not self.deleted and objectId in self.air.doTable:
