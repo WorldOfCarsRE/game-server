@@ -1308,10 +1308,13 @@ class ToonDNA:
 
     @staticmethod
     def makeFromNetString(dgi):
-        type = dgi.get_bytes(1)
+        if isinstance(dgi, bytes):
+            dgi = Datagram(dnaString).iterator()
 
-        if type != b't':
-            raise Exception(f'unknown avatar type {type}')
+        toonType = dgi.get_bytes(1)
+
+        if toonType != b't':
+            raise Exception(f'unknown avatar type {toonType}')
 
         head = toonHeadTypes[dgi.get_uint8()]
         torso = toonTorsoTypes[dgi.get_uint8()]

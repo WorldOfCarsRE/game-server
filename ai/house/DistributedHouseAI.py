@@ -342,3 +342,60 @@ class DistributedHouseAI(DistributedObjectAI):
 
         if self.interiorManager:
             self.interiorManager.d_setAtticWallpaper(items)
+
+    def addAtticItem(self, item):
+        # Called when a new attic item has been purchased, this
+        # appends the item to all the appropriate places.
+
+        # Make sure that we only have one of a couple of special
+        # items.
+        if item.getFlags() & CatalogFurnitureItem.FLBank:
+            self.removeOldItem(CatalogFurnitureItem.FLBank)
+        if item.getFlags() & CatalogFurnitureItem.FLCloset:
+            self.removeOldItem(CatalogFurnitureItem.FLCloset)
+
+        self.makeRoomFor(1)
+
+        self.atticItems.append(item)
+        self.d_setAtticItems(self.atticItems)
+
+        if self.interiorManager:
+            self.interiorManager.d_setAtticItems(self.atticItems)
+
+    def removeOldItem(self, flag):
+        # Called when we are about to add a new bank or closet to the
+        # attic, this searches for and removes the previous bank or
+        # closet.  It actually removes any items found whose
+        # item.getFlags() member matches the bits in flag.
+        newAtticItems = CatalogItemList.CatalogItemList([], store = CatalogItem.Customization)
+
+        for item in self.atticItems:
+            if (item.getFlags() & flag) == 0:
+                # This item doesn't match; preserve it.
+                newAtticItems.append(item)
+
+        newInteriorItems = CatalogItemList([], store = CatalogItem.Location | CatalogItem.Customization)
+
+        for item in self.interiorItems:
+            if (item.getFlags() & flag) == 0:
+                # This item doesn't match; preserve it.
+                newInteriorItems.append(item)
+
+        self.b_setAtticItems(newAtticItems)
+        self.b_setInteriorItems(newInteriorItems)
+
+        if self.interiorManager:
+            self.interiorManager.d_setAtticItems(self.atticItems)
+
+            # Also remove any corresponding dfitems from the interior.
+            newDfitems = []
+
+            for dfitem in self.interiorManager.dfitems:
+                if (dfitem.item.getFlags() & flag) == 0:
+                    # This item doesn't match; preserve it.
+                    newDfitems.append(dfitem)
+                else:
+                    # This item does match, remove it.
+                    dfitem.requestDelete()
+
+            self.interiorManager.dfitems = newDfitems

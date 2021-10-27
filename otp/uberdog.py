@@ -183,7 +183,7 @@ class DistributedDeliveryManagerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_TOONTOWN_DELIVERY_MANAGER
 
     def requestAck(self):
-        avId = self.getAvatarIDFromChannel(self.lastSender)
+        avId = getAvatarIDFromChannel(self.lastSender)
 
         if not avId:
             return

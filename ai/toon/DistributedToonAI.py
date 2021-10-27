@@ -154,7 +154,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.dna = ToonDNA()
 
     def setDNAString(self, dnaString):
-        self.dna.makeFromNetString(Datagram(dnaString).iterator())
+        self.dna.makeFromNetString(dnaString)
 
     def b_setDNAString(self, dnaString):
         self.d_setDNAString(dnaString)
