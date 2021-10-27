@@ -46,7 +46,7 @@ class DistributedFurnitureItemAI(DistributedHouseItemAI, DistributedSmoothNodeAI
         return (self.mode, self.directorAvId)
 
     def requestPosHpr(self, final, x, y, z, h, p, r, timestamp):
-        directorAvId = self.air.getAvatarIdFromSender()
+        directorAvId = self.air.currentAvatarSender
 
         # check to see if this avId has permission to change this furniture
         if self.furnitureMgr.requestControl(self, directorAvId):

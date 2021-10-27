@@ -147,6 +147,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.awardMailboxContents = CatalogItemList(store = CatalogItem.Customization)
         self.onAwardOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
         self.customMessages = []
+        self.ghostMode = 0
 
     def setDNAString(self, dnaString):
         self.dnaString = dnaString
@@ -921,6 +922,16 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getNametagStyle(self):
         return 0
+
+    def b_setGhostMode(self, flag):
+        self.setGhostMode(flag)
+        self.d_setGhostMode(flag)
+
+    def d_setGhostMode(self, flag):
+        self.sendUpdate('setGhostMode', [flag])
+
+    def setGhostMode(self, flag):
+        self.ghostMode = flag
 
     def getHoodId(self, zoneId):
         return zoneId - zoneId % 1000

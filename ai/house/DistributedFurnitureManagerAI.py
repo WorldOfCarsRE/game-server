@@ -169,3 +169,19 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
 
         if avatar:
             avatar.b_setGhostMode(0)
+
+    def requestControl(self, dfitem, directorAvId):
+        # Returns true if the indicated director is allowed to move
+        # the item, false otherwise.
+        if self.dfitems == None or dfitem not in self.dfitems:
+            return 0
+
+        return directorAvId == self.director
+
+    def saveItemPosition(self, dfitem):
+        # Saves the position of the DistributedFurnitureItem in the
+        # interior.
+        if dfitem in self.dfitems:
+            dfitem.item.posHpr = dfitem.posHpr
+            self.house.interiorItems.markDirty()
+            self.house.d_setInteriorItems(self.house.interiorItems)
