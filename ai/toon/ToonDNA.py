@@ -1309,7 +1309,7 @@ class ToonDNA:
     @staticmethod
     def makeFromNetString(dgi):
         if isinstance(dgi, bytes):
-            dgi = Datagram(dnaString).iterator()
+            dgi = Datagram(dgi).iterator()
 
         toonType = dgi.get_bytes(1)
 
