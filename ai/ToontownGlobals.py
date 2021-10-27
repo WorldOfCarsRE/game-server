@@ -418,3 +418,4 @@ MaxCustomMessages = 25
 P_ItemAvailable = 1
 
 MaxHouseItems = 45
+FM_MovedItem = 1
