@@ -654,17 +654,13 @@ class DistributedToonAI(DistributedPlayerAI):
             if self.onGiftOrder:
                 nextGiftTime = self.onGiftOrder.getNextDeliveryDate()
                 nextGiftItem = self.onGiftOrder.getNextDeliveryItem()
-            if nextItem:
-                pass
-            if nextGiftItem:
-                pass
-            if nextTime is None:
+            if not nextTime:
                 nextTime = nextGiftTime
-            if nextGiftTime is None:
+            if not nextGiftTime:
                 nextGiftTime = nextTime
             if nextGiftTime < nextTime:
                 nextTime = nextGiftTime
-            existingDuration = None
+            existingDuration = 0
             checkTaskList = taskMgr.getTasksNamed(taskName)
             if checkTaskList:
                 currentTime = globalClock.getFrameTime()
@@ -679,7 +675,6 @@ class DistributedToonAI(DistributedPlayerAI):
                     pass
                 else:
                     taskMgr.doMethodLater(newDuration, self.__deliverBothPurchases, taskName)
-        return
 
     def __deliverBothPurchases(self, task):
         now = int(time.time() / 60 + 0.5)
