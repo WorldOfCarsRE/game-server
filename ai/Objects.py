@@ -783,7 +783,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         return 'Healed avatar.'
 
-    def jeffBezos(self, av: DistributedToonAI) - > str:
+    def jeffBezos(self, av: DistributedToonAI) -> str:
         av.b_setMoney(av.getMaxMoney())
 
         return 'You are now Jeff Bezos.'
