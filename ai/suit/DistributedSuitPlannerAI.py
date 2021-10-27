@@ -61,7 +61,7 @@ PATH_COLLISION_BUFFER = 5
 
 MIN_PATH_LEN = 40
 MAX_PATH_LEN = 300
-MAX_SUIT_TYPES = 6
+MAX_SUIT_TIER = 5
 
 class DistributedSuitPlannerAI(DistributedObjectAI):
     def __init__(self, air, place, zoneId):
@@ -149,8 +149,16 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             return False
 
         level = random.choice(self.info.levels)
-        tiers = (max(level - 4, 0), min(level, MAX_SUIT_TYPES))
-        tier = random.choice(tiers)
+        if (level - 5) < 0:
+            tierMin = 0
+        else:
+            tierMin = level - 5
+        if (level - 1) < MAX_SUIT_TIER:
+            tierMax = level - 1
+        else:
+            tierMax = MAX_SUIT_TIER
+
+        tier = random.choice([tierMin, tierMax])
         department = pickFromFreqList(self.info.deptChances)
         head = SuitHeads.at(department * 8 + tier)
         suit.dna = SuitDNA(type='s', head=head, dept=SuitDept(department).char)

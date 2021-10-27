@@ -59,7 +59,7 @@ class DistributedSuitBaseAI(DistributedObjectAI):
 
     @actualLevel.setter
     def actualLevel(self, actualLevel):
-        relativeLevel = actualLevel - SuitAttributes[self.head].level
+        relativeLevel = (actualLevel - SuitAttributes[self.head].level) - 1
         self.level = relativeLevel
 
     @property
