@@ -159,7 +159,6 @@ class OncelyHoliday:
         yield (self.startMonth, self.startDay)
         yield (self.endMonth, self.endDay)
 
-
 @with_slots
 @dataclass
 class MultipleStartDate:
@@ -801,6 +800,15 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         return 'Postmaster Pete: Your next catalog has been delivered!'
 
+    def deliverCatalogItems(self, av: DistributedToonAI) -> str:
+        for item in av.onOrder:
+            item.deliveryDate = int(time.time() / 60)
+
+        av.onOrder.markDirty()
+        av.b_setDeliverySchedule(av.onOrder)
+
+        return f'Delivered {len(av.onOrder)} item(s).'
+
     def setMagicWord(self, magicWord: str, avId: int, zoneId: int, signature: str):
         avId = self.air.currentAvatarSender
         av = self.air.doTable.get(avId)
@@ -850,6 +858,8 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
             response = self.jeffBezos(av)
         elif magicWord == 'nextcatalog':
             response = self.nextCatalog(av)
+        elif magicWord == 'deliveritems':
+            response = self.deliverCatalogItems(av)
         else:
             response = f'{magicWord} is not a valid Magic Word.'
             print(f'Unknown Magic Word: {magicWord} from avId: {avId}.')
