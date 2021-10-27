@@ -148,6 +148,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.onAwardOrder = CatalogItemList(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
         self.customMessages = []
         self.ghostMode = 0
+        self.numMailItems = 0
 
     def setDNAString(self, dnaString):
         self.dnaString = dnaString
@@ -932,6 +933,13 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def setGhostMode(self, flag):
         self.ghostMode = flag
+
+    def setNumMailItems(self, numMailItems):
+        self.numMailItems = numMailItems
+
+    def getNumInvitesToShowInMailbox(self):
+        # Didn't feel like fixing up Disney logic for this at the moment.
+        return 0
 
     def getHoodId(self, zoneId):
         return zoneId - zoneId % 1000
