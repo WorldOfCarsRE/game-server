@@ -59,7 +59,7 @@ class QuestManagerAI:
 
     def requestInteract(self, avId, npc):
         self.notify.debug("requestInteract: avId: %s npcId: %s" % (avId, npc.getNpcId()))
-        av = self.air.doId2do.get(avId)
+        av = self.air.doTable.get(avId)
 
         # Sanity check
         if av is None:
@@ -174,7 +174,7 @@ class QuestManagerAI:
     def handleSpecialCases(self, avId, npc):
         """ handle unusual cases such as NPC specific quests"""
 
-        av = self.air.doId2do.get(avId)
+        av = self.air.doTable.get(avId)
 
         if npc.getNpcId() == 2018:
             # See if this npc has the TIP quest
@@ -426,7 +426,7 @@ class QuestManagerAI:
         # It is in response to the avatar picking from a multiple choice menu
         # of track options, along with a cancel option
         self.notify.info("avatarChoseTrack: avId: %s trackId: %s" % (avId, trackId))
-        av = self.air.doId2do.get(avId)
+        av = self.air.doTable.get(avId)
         if av:
             # Remove the track choice quest
             av.removeQuest(questId)
@@ -446,7 +446,7 @@ class QuestManagerAI:
         # It is in response to the avatar picking from a multiple choice menu
         # of quest options, along with a cancel option
         self.notify.debug("avatarChooseQuest: avId: %s questId: %s" % (avId, questId))
-        av = self.air.doId2do.get(avId)
+        av = self.air.doTable.get(avId)
         if av:
             if npc.getHq():
                 fromNpcId = Quests.ToonHQ
@@ -463,7 +463,7 @@ class QuestManagerAI:
                           (avId, npcId, questId, rewardId, toNpcId, startingQuest))
         # assign quest to avatar
         # A quest is a list with (questId, npcId, toNpcId, rewardId, progress)
-        av = self.air.doId2do.get(avId)
+        av = self.air.doTable.get(avId)
         if av:
             if startingQuest:
                 # Since the first parts or multipart quests have NA for their

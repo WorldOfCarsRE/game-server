@@ -1,5 +1,6 @@
 from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
 from ai import ToontownGlobals
+from ai.catalog import CatalogItem
 
 PHONE_MOVIE_CLEAR = 2
 PHONE_MOVIE_EMPTY = 3
@@ -79,7 +80,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
 
         # We don't care who the owner of the phone is--anyone can use
         # any phone.
-        if not any((av.weeklyCatalog, av.backCatalog, av.monthlyCatalog)):
+        if len(av.weeklyCatalog) + len(av.monthlyCatalog) + len(av.backCatalog) != 0:
             self.lookupHouse()
         else:
             # No catalog yet.
@@ -144,3 +145,17 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
     def d_setMovie(self, mode, avId):
         timestamp = globalClockDelta.getRealNetworkTime(bits = 32)
         self.sendUpdate('setMovie', [mode, avId, timestamp])
+
+    def requestPurchaseMessage(self, context, blob, optional):
+        # Sent from the client code to request a particular purchase item.
+        avId = self.air.currentAvatarSender
+
+        item = CatalogItem.getItem(blob, store = CatalogItem.Customization)
+
+        if self.busy != avId:
+            retcode = ToontownGlobals.P_NotShopping
+        else:
+            # The user is requesting purchase of one particular item.
+            retcode = self.air.catalogManager.purchaseItem(self.av, item, optional)
+
+        self.sendUpdateToAvatar(avId, 'requestPurchaseResponse', [context, retcode])

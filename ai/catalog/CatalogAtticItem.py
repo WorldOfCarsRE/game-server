@@ -1,6 +1,7 @@
 from . import CatalogItem
 from direct.showbase import PythonUtil
 from direct.gui.DirectGui import *
+from ai import ToontownGlobals
 
 class CatalogAtticItem(CatalogItem.CatalogItem):
 
@@ -15,7 +16,7 @@ class CatalogAtticItem(CatalogItem.CatalogItem):
         if not houseId:
             self.notify.warning('Avatar %s has no houseId associated.' % avatar.doId)
             return (None, ToontownGlobals.P_InvalidIndex)
-        house = simbase.air.doId2do.get(houseId)
+        house = simbase.air.doTable.get(houseId)
         if not house:
             self.notify.warning('House %s (for avatar %s) not instantiated.' % (houseId, avatar.doId))
             return (None, ToontownGlobals.P_InvalidIndex)

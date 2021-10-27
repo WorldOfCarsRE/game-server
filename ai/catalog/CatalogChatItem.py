@@ -1,4 +1,4 @@
-from pandac.PandaModules import *
+from panda3d.core import *
 from . import CatalogItem
 from ai import ToontownGlobals
 
@@ -47,7 +47,6 @@ class CatalogChatItem(CatalogItem.CatalogItem):
     def decodeDatagram(self, di, versionNumber, store):
         CatalogItem.CatalogItem.decodeDatagram(self, di, versionNumber, store)
         self.customIndex = di.getUint16()
-        text = OTPLocalizer.CustomSCStrings[self.customIndex]
 
     def encodeDatagram(self, dg, store):
         CatalogItem.CatalogItem.encodeDatagram(self, dg, store)

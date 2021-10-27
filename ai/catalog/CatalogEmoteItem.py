@@ -1,5 +1,7 @@
 from . import CatalogItem
 from direct.interval.IntervalGlobal import *
+from ai import ToontownGlobals
+
 LoyaltyEmoteItems = (20, 21, 22, 23, 24)
 
 class CatalogEmoteItem(CatalogItem.CatalogItem):
@@ -56,7 +58,7 @@ class CatalogEmoteItem(CatalogItem.CatalogItem):
             self.loyaltyDays = di.getUint16()
         else:
             self.loyaltyDays = 0
-        if self.emoteIndex > len(OTPLocalizer.EmoteList):
+        if self.emoteIndex > ToontownGlobals.MaxEmotes:
             raise ValueError
 
     def encodeDatagram(self, dg, store):

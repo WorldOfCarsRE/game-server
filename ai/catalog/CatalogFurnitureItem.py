@@ -1,6 +1,8 @@
 from . import CatalogAtticItem
 from . import CatalogItem
 import random
+from ai import ToontownGlobals
+
 FTModelName = 0
 FTColor = 1
 FTColorOptions = 2
@@ -1053,7 +1055,6 @@ class CatalogFurnitureItem(CatalogAtticItem.CatalogAtticItem):
         if retcode == ToontownGlobals.P_AlreadyOwnBiggerCloset:
             return TTLocalizer.CatalogAcceptClosetError
         return CatalogAtticItem.CatalogAtticItem.getAcceptItemErrorText(self, retcode)
-
 
 def nextAvailableCloset(avatar, duplicateItems):
     if avatar.getStyle().gender == 'm':

@@ -1,6 +1,7 @@
 from . import CatalogItem
 from ai.estate import GardenGlobals
-from pandac.PandaModules import NodePath
+from panda3d.core import NodePath
+from ai import ToontownGlobals
 
 class CatalogGardenItem(CatalogItem.CatalogItem):
     sequenceNumber = 0

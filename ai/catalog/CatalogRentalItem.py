@@ -1,5 +1,6 @@
 from . import CatalogItem
 import time
+from ai import ToontownGlobals
 
 class CatalogRentalItem(CatalogItem.CatalogItem):
 

@@ -3,7 +3,9 @@ from ai.toon import ToonDNA
 import random
 from direct.showbase import PythonUtil
 from direct.gui.DirectGui import *
-from pandac.PandaModules import *
+from panda3d.core import *
+from ai import ToontownGlobals
+
 CTArticle = 0
 CTString = 1
 CTBasePrice = 2

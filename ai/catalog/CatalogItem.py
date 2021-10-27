@@ -1,5 +1,6 @@
 from direct.directnotify import DirectNotifyGlobal
-from pandac.PandaModules import *
+from panda3d.core import *
+from panda3d.direct import STInt16
 from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
 import sys
@@ -313,7 +314,6 @@ def decodeCatalogItem(di, versionNumber, store):
     item.giftTag = gift
     item.giftCode = code
     return item
-
 
 def getItem(blob, store = 0):
     dg = PyDatagram(blob)

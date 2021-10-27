@@ -190,6 +190,9 @@ class DistributedToonAI(DistributedPlayerAI):
     def getMoney(self):
         return self.money
 
+    def getTotalMoney(self):
+        return self.money + self.bankMoney
+
     def d_setMoney(self, money):
         self.sendUpdate('setMoney', [money])
 
@@ -630,14 +633,74 @@ class DistributedToonAI(DistributedPlayerAI):
     def getCatalog(self):
         return (self.monthlyCatalog.getBlob(), self.weeklyCatalog.getBlob(), self.backCatalog.getBlob())
 
+    def setBothSchedules(self, onOrder, onGiftOrder, doUpdateLater = True):
+        if onOrder is not None:
+            self.onOrder = CatalogItemList(onOrder, store=CatalogItem . Customization | CatalogItem.DeliveryDate)
+        if onGiftOrder is not None:
+            self.onGiftOrder = CatalogItemList(onGiftOrder, store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+        if not hasattr(self, 'air') or self.air is None:
+            return
+        if doUpdateLater and self.air.doLiveUpdates and hasattr(self, 'name'):
+            taskName = f'next-bothDelivery-{self.do_id}'
+            now = int(time.time() / 60 + 0.5)
+            nextItem = None
+            nextGiftItem = None
+            nextTime = 0
+            nextGiftTime = 0
+            if self.onOrder:
+                nextTime = self.onOrder.getNextDeliveryDate()
+                nextItem = self.onOrder.getNextDeliveryItem()
+            if self.onGiftOrder:
+                nextGiftTime = self.onGiftOrder.getNextDeliveryDate()
+                nextGiftItem = self.onGiftOrder.getNextDeliveryItem()
+            if nextItem:
+                pass
+            if nextGiftItem:
+                pass
+            if nextTime is None:
+                nextTime = nextGiftTime
+            if nextGiftTime is None:
+                nextGiftTime = nextTime
+            if nextGiftTime < nextTime:
+                nextTime = nextGiftTime
+            existingDuration = None
+            checkTaskList = taskMgr.getTasksNamed(taskName)
+            if checkTaskList:
+                currentTime = globalClock.getFrameTime()
+                checkTask = checkTaskList[0]
+                existingDuration = checkTask.wakeTime - currentTime
+            if nextTime:
+                newDuration = max(10.0, nextTime * 60 - time.time())
+                if existingDuration and existingDuration >= newDuration:
+                    taskMgr.remove(taskName)
+                    taskMgr.doMethodLater(newDuration, self.__deliverBothPurchases, taskName)
+                elif existingDuration and existingDuration < newDuration:
+                    pass
+                else:
+                    taskMgr.doMethodLater(newDuration, self.__deliverBothPurchases, taskName)
+        return
+
+    def __deliverBothPurchases(self, task):
+        now = int(time.time() / 60 + 0.5)
+        delivered, remaining = self.onOrder.extractDeliveryItems(now)
+        deliveredGifts, remainingGifts = self.onGiftOrder.extractDeliveryItems(now)
+        simbase.air.deliveryManager.sendDeliverGifts(self.getDoId(), now)
+        giftItem = CatalogItemList.CatalogItemList(deliveredGifts, store=CatalogItem.Customization | CatalogItem.DeliveryDate)
+        if len(giftItem) > 0:
+            self.air.writeServerEvent('Getting Gift', self.doId, 'sender %s receiver %s gift %s' % (giftItem[0].giftTag, self.doId, giftItem[0].getName()))
+        self.b_setMailboxContents(self.mailboxContents + delivered + deliveredGifts)
+        self.b_setCatalogNotify(self.catalogNotify, ToontownGlobals.NewItems)
+        self.b_setBothSchedules(remaining, remainingGifts)
+        return Task.done
+
     def getMailboxContents(self):
-        return b''
+        return self.mailboxContents.getBlob(store = CatalogItem.Customization)
 
     def getDeliverySchedule(self):
-        return b''
+        return self.onOrder.getBlob(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
 
     def getGiftSchedule(self):
-        return b''
+        return self.onGiftOrder.getBlob(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
 
     def getAwardMailboxContents(self):
         return b''
@@ -673,6 +736,16 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getCatalogNotify(self):
         return (self.catalogNotify, self.mailboxNotify)
+
+    def b_setDeliverySchedule(self, onOrder, doUpdateLater = True):
+        self.setDeliverySchedule(onOrder, doUpdateLater)
+        self.d_setDeliverySchedule(onOrder)
+
+    def d_setDeliverySchedule(self, onOrder):
+        self.sendUpdate('setDeliverySchedule', [onOrder.getBlob(store = CatalogItem.Customization | CatalogItem.DeliveryDate)])
+
+    def setDeliverySchedule(self, onOrder, doUpdateLater = True):
+        self.setBothSchedules(onOrder, None)
 
     def getSpeedChatStyleIndex(self):
         return 1

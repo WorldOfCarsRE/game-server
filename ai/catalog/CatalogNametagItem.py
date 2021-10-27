@@ -1,4 +1,5 @@
 from . import CatalogItem
+from ai import ToontownGlobals
 
 class CatalogNametagItem(CatalogItem.CatalogItem):
     sequenceNumber = 0

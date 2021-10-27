@@ -3,7 +3,8 @@ from .CatalogAccessoryItemGlobals import *
 from ai.toon import ToonDNA
 import random
 from direct.showbase import PythonUtil
-from pandac.PandaModules import *
+from panda3d.core import *
+from ai import ToontownGlobals
 
 class CatalogAccessoryItem(CatalogItem.CatalogItem):
 

@@ -403,3 +403,12 @@ CatalogNumWeeksPerSeries = 13
 CatalogNumWeeks = 78
 
 MaxBackCatalog = 48
+
+P_NotShopping = -6
+P_NotInCatalog = -4
+
+MaxEmotes = 25
+
+MaxMailboxContents = 30
+
+P_ItemOnOrder = -16

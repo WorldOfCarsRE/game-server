@@ -1,6 +1,7 @@
 from . import CatalogItem
 from ai.fishing.FishingAI import FishGlobals
 from direct.actor import Actor
+from ai import ToontownGlobals
 
 class CatalogPoleItem(CatalogItem.CatalogItem):
     sequenceNumber = 0

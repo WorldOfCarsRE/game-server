@@ -1,12 +1,12 @@
 # This file will hold the object that handles setting up long-term
 # (multiple day) do-later tasks for announcing a new catalog to a
 # player and/or scheduling deliveries of recently-ordered catalog
-# items.  It also handles the actual purchase of items from the
+# items. It also handles the actual purchase of items from the
 # catalog.
 
-from ai import DistributedObjectAI
-from direct.directnotify import DirectNotifyGlobal
-from . import CatalogGenerator
+from ai.DistributedObjectAI import DistributedObjectAI
+from direct.directnotify.DirectNotifyGlobal import directNotify
+from ai.catalog.CatalogGenerator import CatalogGenerator
 from . import CatalogItem
 from ai import ToontownGlobals
 import time
@@ -18,8 +18,8 @@ from otp import config
 
 CatalogInterval = 7 * 24 * 60  # 1 week (in minutes)
 
-class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
-    notify = DirectNotifyGlobal.directNotify.newCategory("CatalogManagerAI")
+class CatalogManagerAI(DistributedObjectAI):
+    notify = directNotify.newCategory("CatalogManagerAI")
 
     timeScale = config['AI.CatalogTimeScale']
     catalogInterval = CatalogInterval / timeScale
@@ -32,20 +32,19 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
     skipWeeks = config['AI.CatalogSkipWeeks']
 
     def __init__(self, air):
-        DistributedObjectAI.DistributedObjectAI.__init__(self, air)
-        self.generator = CatalogGenerator.CatalogGenerator()
+        DistributedObjectAI.__init__(self, air)
+        self.generator = CatalogGenerator()
         self.uniqueIdToReturnCode = {} #cache for return phone calls
 
         self.notify.info("Catalog time scale %s." % (self.timeScale))
 
         #DATA holders for gifting an item. So item can be handled on response
 
-
     def generate(self):
-        DistributedObjectAI.DistributedObjectAI.generate(self)
+        DistributedObjectAI.generate(self)
 
     def delete(self):
-        DistributedObjectAI.DistributedObjectAI.delete(self)
+        DistributedObjectAI.delete(self)
 
     def forceCatalog(self, avatar, week, afterMinutes = 0):
         # Forces the catalog to the indicated week for the given
@@ -76,7 +75,6 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
 
         monthlyCatalog = self.generator.generateMonthlyCatalog(avatar, then / 60)
         avatar.b_setCatalog(monthlyCatalog, avatar.weeklyCatalog, avatar.backCatalog)
-
 
     def deliverCatalogFor(self, avatar):
         # Computes the next catalog time for and delivers the catalog
@@ -234,7 +232,6 @@ class CatalogManagerAI(DistributedObjectAI.DistributedObjectAI):
         return retcode
 
     def deductMoney(self, avatar, price, item):
-
             bankPrice = min(avatar.getBankMoney(), price)
             walletPrice = price - bankPrice
 
