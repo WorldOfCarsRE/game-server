@@ -23,7 +23,7 @@ class DistributedBankAI(DistributedFurnitureItemAI):
 
         self.occupied = avId
 
-        self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleExitedAvatar, extraArgs=[avId])
+        self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleExitedAvatar, extraArgs = [avId])
         # TODO: uhhhhhh can i get an order of booted avatar event please
 
         if self.ownerId:
@@ -37,7 +37,7 @@ class DistributedBankAI(DistributedFurnitureItemAI):
             self.d_sendClearMovie()
 
     def d_freeAvatar(self, avId):
-        self.sendUpdateToAvatarId(avId, 'freeAvatar', [])
+        self.sendUpdateToAvatar(avId, 'freeAvatar', [])
 
     def d_sendClearMovie(self):
         self.ignoreAll()

@@ -35,7 +35,7 @@ class TutorialBuildingAI:
 class TutorialInstance(FSM):
 
     def __init__(self, avId):
-        FSM.__init__(self, 'tutorial-object-%s' % avId)
+        FSM.__init__(self, f'tutorial-object-{avId}')
         self.avId = avId
         self.initializeTutorial()
 
@@ -55,7 +55,7 @@ class TutorialInstance(FSM):
 
         self.flippy = None
 
-        self.blackCatMgr = None        
+        self.blackCatMgr = None
 
     def getZones(self):
         return (
