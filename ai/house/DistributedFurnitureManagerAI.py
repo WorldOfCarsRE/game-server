@@ -6,6 +6,7 @@ from ai.house.DistributedClosetAI import DistributedClosetAI
 from ai.house.DistributedPhoneAI import DistributedPhoneAI
 from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
 from ai.catalog import CatalogFurnitureItem
+from ai import ToontownGlobals
 
 class DistributedFurnitureManagerAI(DistributedObjectAI):
 
@@ -185,3 +186,45 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
             dfitem.item.posHpr = dfitem.posHpr
             self.house.interiorItems.markDirty()
             self.house.d_setInteriorItems(self.house.interiorItems)
+
+    def moveItemToAtticMessage(self, doId, context):
+        avId = self.air.currentAvatarSender
+        retcode = self.__doMoveItemToAttic(avId, doId)
+        self.sendUpdateToAvatarId(avId, 'moveItemToAtticResponse', [retcode, context])
+
+    def isHouseFull(self):
+        numAtticItems = len(self.house.atticItems) + len(self.house.atticWallpaper) + len(self.house.atticWindows)
+        numHouseItems = numAtticItems + len(self.house.interiorItems)
+        return numHouseItems >= ToontownGlobals.MaxHouseItems
+
+    def __doMoveItemToAttic(self, avId, doId):
+        # A request by the client to move the indicated
+        # DistributedFurnitureItem into the attic.
+        if avId != self.director:
+            return ToontownGlobals.FM_NotDirector
+
+        dfitem = simbase.air.doTable.get(doId)
+        if dfitem == None or dfitem not in self.dfitems:
+            return ToontownGlobals.FM_InvalidIndex
+
+        item = dfitem.item
+        self.house.atticItems.append(item)
+
+        # Find the item in self.house.interiorItems. We have to check for
+        # exact equivalence.
+        for i in range(len(self.house.interiorItems)):
+            if self.house.interiorItems[i] is item:
+                del self.house.interiorItems[i]
+                break
+
+        # Also remove it from self.dfitems.
+        self.dfitems.remove(dfitem)
+        item.dfitem = None
+
+        self.house.d_setAtticItems(self.house.atticItems)
+        self.house.d_setInteriorItems(self.house.interiorItems)
+        dfitem.requestDelete()
+
+        # Tell the client our new list of attic items.
+        self.d_setAtticItems(self.house.atticItems)
+        return ToontownGlobals.FM_MovedItem
