@@ -122,6 +122,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
             # Note: avId == 0 OK since that signals end of furniture arranging
             return
 
+        # The request is honored if the sender is the owner or is the
         # current director
         senderId = self.air.currentAvatarSender
 
@@ -135,6 +136,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
     def d_setDirector(self, avId):
         self.sendUpdate('setDirector', [avId])
 
+    def setDirector(self, avId):
         if self.director != avId:
             # Go through the dfitems list and stop accepting
             # messages from the current director, if any.
