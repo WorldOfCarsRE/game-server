@@ -796,6 +796,11 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         return f'Holiday {holidayId} has started!'
 
+    def nextCatalog(self, av: DistributedToonAI) -> str:
+        self.air.catalogManager.deliverCatalogFor(av)
+
+        return 'Postmaster Pete: Your next catalog has been delivered!'
+
     def setMagicWord(self, magicWord: str, avId: int, zoneId: int, signature: str):
         avId = self.air.currentAvatarSender
         av = self.air.doTable.get(avId)
@@ -843,6 +848,8 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
             response = self.healUp(av)
         elif magicWord in ('rich', 'jeffbezos'):
             response = self.jeffBezos(av)
+        elif magicWord == 'nextcatalog':
+            response = self.nextCatalog(av)
         else:
             response = f'{magicWord} is not a valid Magic Word.'
             print(f'Unknown Magic Word: {magicWord} from avId: {avId}.')

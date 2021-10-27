@@ -189,7 +189,7 @@ class CatalogManagerAI(DistributedObjectAI):
                 avatar.b_setCatalogNotify(ToontownGlobals.NewItems, avatar.mailboxNotify)
 
     def purchaseItem(self, avatar, item, optional):
-        # Purchases the item for the given avatar.  Returns the
+        # Purchases the item for the given avatar. Returns the
         # appropriate status code from ToontownGlobals.py.  If the item
         # requires a delayed delivery, this will schedule the
         # delivery; otherwise, it will be purchased immediately.

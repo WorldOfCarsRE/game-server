@@ -412,3 +412,7 @@ MaxEmotes = 25
 MaxMailboxContents = 30
 
 P_ItemOnOrder = -16
+
+MaxCustomMessages = 25
+
+P_ItemAvailable = 1

@@ -149,6 +149,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.customMessages = []
         self.ghostMode = 0
         self.numMailItems = 0
+        self.awardNotify = ToontownGlobals.NoItems
 
     def setDNAString(self, dnaString):
         self.dnaString = dnaString
@@ -693,6 +694,29 @@ class DistributedToonAI(DistributedPlayerAI):
         self.b_setBothSchedules(remaining, remainingGifts)
         return Task.done
 
+    def b_setMailboxContents(self, mailboxContents):
+        self.setMailboxContents(mailboxContents)
+        self.d_setMailboxContents(mailboxContents)
+
+    def d_setMailboxContents(self, mailboxContents):
+        self.sendUpdate('setMailboxContents', [mailboxContents.getBlob(store = CatalogItem.Customization)])
+
+        if len(mailboxContents) == 0:
+            self.b_setCatalogNotify(self.catalogNotify, ToontownGlobals.NoItems)
+
+        self.checkMailboxFullIndicator()
+
+    def checkMailboxFullIndicator(self):
+        if self.houseId and hasattr(self, 'air'):
+            if self.air:
+                house = self.air.doTable.get(self.houseId)
+
+                if house and house.mailbox:
+                    house.mailbox.b_setFullIndicator(len(self.mailboxContents) != 0 or self.numMailItems or self.getNumInvitesToShowInMailbox() or len(self.awardMailboxContents) != 0)
+
+    def setMailboxContents(self, mailboxContents):
+        self.mailboxContents = CatalogItemList(mailboxContents, store = CatalogItem.Customization)
+
     def getMailboxContents(self):
         return self.mailboxContents.getBlob(store = CatalogItem.Customization)
 
@@ -702,14 +726,39 @@ class DistributedToonAI(DistributedPlayerAI):
     def getGiftSchedule(self):
         return self.onGiftOrder.getBlob(store = CatalogItem.Customization | CatalogItem.DeliveryDate)
 
+    def b_setAwardMailboxContents(self, awardMailboxContents):
+        self.setAwardMailboxContents(awardMailboxContents)
+        self.d_setAwardMailboxContents(awardMailboxContents)
+
+    def d_setAwardMailboxContents(self, awardMailboxContents):
+        self.sendUpdate('setAwardMailboxContents', [awardMailboxContents.getBlob(store=CatalogItem.Customization)])
+
+    def setAwardMailboxContents(self, awardMailboxContents):
+        self.awardMailboxContents = CatalogItemList(awardMailboxContents, store = CatalogItem.Customization)
+
+        if len(awardMailboxContents) == 0:
+            self.b_setAwardNotify(ToontownGlobals.NoItems)
+
+        self.checkMailboxFullIndicator()
+
     def getAwardMailboxContents(self):
-        return b''
+        return self.awardMailboxContents.getBlob(store = CatalogItem.Customization)
 
     def getAwardSchedule(self):
         return b''
 
+    def b_setAwardNotify(self, awardMailboxNotify):
+        self.setAwardNotify(awardMailboxNotify)
+        self.d_setAwardNotify(awardMailboxNotify)
+
+    def d_setAwardNotify(self, awardMailboxNotify):
+        self.sendUpdate('setAwardNotify', [awardMailboxNotify])
+
+    def setAwardNotify(self, awardNotify):
+        self.awardNotify = awardNotify
+
     def getAwardNotify(self):
-        return 0
+        return self.awardNotify
 
     def b_setCatalogNotify(self, catalogNotify, mailboxNotify):
         self.setCatalogNotify(catalogNotify, mailboxNotify)
