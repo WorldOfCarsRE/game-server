@@ -16,6 +16,8 @@ from ai.catalog.CatalogItemList import CatalogItemList
 from ai.catalog import CatalogItem
 import time
 
+from direct.task import Task
+
 class DistributedAvatarAI(DistributedSmoothNodeAI):
     def __init__(self, air):
         DistributedSmoothNodeAI.__init__(self, air)
@@ -680,10 +682,8 @@ class DistributedToonAI(DistributedPlayerAI):
         now = int(time.time() / 60 + 0.5)
         delivered, remaining = self.onOrder.extractDeliveryItems(now)
         deliveredGifts, remainingGifts = self.onGiftOrder.extractDeliveryItems(now)
-        simbase.air.deliveryManager.sendDeliverGifts(self.getDoId(), now)
-        giftItem = CatalogItemList.CatalogItemList(deliveredGifts, store=CatalogItem.Customization | CatalogItem.DeliveryDate)
-        if len(giftItem) > 0:
-            self.air.writeServerEvent('Getting Gift', self.doId, 'sender %s receiver %s gift %s' % (giftItem[0].giftTag, self.doId, giftItem[0].getName()))
+        simbase.air.deliveryManager.sendDeliverGifts(self.do_id, now)
+        giftItem = CatalogItemList(deliveredGifts, store = CatalogItem.Customization | CatalogItem.DeliveryDate)
         self.b_setMailboxContents(self.mailboxContents + delivered + deliveredGifts)
         self.b_setCatalogNotify(self.catalogNotify, ToontownGlobals.NewItems)
         self.b_setBothSchedules(remaining, remainingGifts)

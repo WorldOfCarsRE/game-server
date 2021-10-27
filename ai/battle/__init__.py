@@ -1851,7 +1851,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         #     if len(self.suits) > 0 and not self.streetBattle:
         #         self.notify.info('toon %d aborted non-street battle; clearing inventory and hp.' % toonId)
         #         toon = DistributedToonAI.DistributedToonAI(self.air)
-        #         toon.doId = toonId
+        #         toon.do_id = toonId
         #         empty = InventoryBase.InventoryBase(toon)
         #         toon.b_setInventory(empty.makeNetString())
         #         toon.b_setHp(0)

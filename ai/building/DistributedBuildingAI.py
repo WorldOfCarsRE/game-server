@@ -83,4 +83,4 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
         # self.becameSuitTime = 0
         # self.knockKnock = DistributedKnockKnockDoorAI.DistributedKnockKnockDoorAI(self.air, self.block)
         # self.knockKnock.generateWithRequired(exteriorZoneId)
-        # self.air.writeServerEvent('building-toon', self.doId, '%s|%s' % (self.zoneId, self.block))
+        # self.air.writeServerEvent('building-toon', self.do_id, '%s|%s' % (self.zoneId, self.block))

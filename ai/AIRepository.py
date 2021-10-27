@@ -344,6 +344,7 @@ class AIRepository:
         from .TimeManagerAI import TimeManagerAI
         from ai.quest.QuestManagerAI import QuestManagerAI
         from ai.catalog.CatalogManagerAI import CatalogManagerAI
+        from .Objects import DistributedDeliveryManagerAI
 
         self.district = ToontownDistrictAI(self)
         self.district.name = 'Sillyville'
@@ -401,6 +402,9 @@ class AIRepository:
 
         self.catalogManager = CatalogManagerAI(self)
         self.catalogManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
+
+        self.deliveryManager = DistributedDeliveryManagerAI(self)
+        self.deliveryManager.generateGlobalObject(OTP_ZONE_ID_MANAGEMENT)
 
         self.loadZones()
 

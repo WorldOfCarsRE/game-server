@@ -21,10 +21,10 @@ class CatalogGardenStarterItem(CatalogItem.CatalogItem):
         print('rental-- record purchase')
         if avatar:
             print('starter garden-- has avater')
-            estate = simbase.air.estateMgr.estate.get(avatar.doId)
+            estate = simbase.air.estateMgr.estate.get(avatar.do_id)
             if estate:
                 print('starter garden-- has estate')
-                estate.placeStarterGarden(avatar.doId)
+                estate.placeStarterGarden(avatar.do_id)
             else:
                 print('starter garden-- something not there')
         return ToontownGlobals.P_ItemAvailable

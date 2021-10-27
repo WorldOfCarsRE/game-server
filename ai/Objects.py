@@ -17,6 +17,8 @@ from dc.util import Datagram
 from otp.util import getPuppetChannel
 from otp.messagetypes import CLIENT_FRIEND_ONLINE
 
+from ai.catalog import CatalogItem
+
 class DistributedDistrictAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
@@ -901,3 +903,18 @@ class SafeZoneManagerAI(DistributedObjectAI):
 
         if sender:
             sender.stopToonUp()
+
+class DistributedDeliveryManagerAI(DistributedObjectGlobalAI):
+    do_id = OTP_DO_ID_TOONTOWN_DELIVERY_MANAGER
+
+    def sendDeliverGifts(self, avId, now):
+        if not avId:
+            return
+
+        av = self.air.doTable.get(avId)
+
+        if not av:
+            return
+
+        _, remainingGifts = av.onGiftOrder.extractDeliveryItems(now)
+        av.sendUpdate('setGiftSchedule', [remainingGifts.getBlob(store =CatalogItem.Customization | CatalogItem.DeliveryDate)])

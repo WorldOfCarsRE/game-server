@@ -21,10 +21,10 @@ class CatalogPoleItem(CatalogItem.CatalogItem):
 
     def recordPurchase(self, avatar, optional):
         if self.rodId < 0 or self.rodId > FishGlobals.MaxRodId:
-            self.notify.warning('Invalid fishing pole: %s for avatar %s' % (self.rodId, avatar.doId))
+            self.notify.warning('Invalid fishing pole: %s for avatar %s' % (self.rodId, avatar.do_id))
             return ToontownGlobals.P_InvalidIndex
         if self.rodId < avatar.getFishingRod():
-            self.notify.warning('Avatar already has pole: %s for avatar %s' % (self.rodId, avatar.doId))
+            self.notify.warning('Avatar already has pole: %s for avatar %s' % (self.rodId, avatar.do_id))
             return ToontownGlobals.P_ItemUnneeded
         avatar.b_setFishingRod(self.rodId)
         return ToontownGlobals.P_ItemAvailable

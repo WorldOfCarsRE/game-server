@@ -117,7 +117,7 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
         if self.isHat():
             defn = ToonDNA.HatStyles[str]
             if not avatar.checkAccessorySanity(ToonDNA.HAT, defn[0], defn[1], defn[2]):
-                self.notify.warning('Avatar %s lost hat %d %d %d; invalid item.' % (avatar.doId,
+                self.notify.warning('Avatar %s lost hat %d %d %d; invalid item.' % (avatar.do_id,
                  defn[0],
                  defn[1],
                  defn[2]))
@@ -126,12 +126,12 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
             added = avatar.addToAccessoriesList(ToonDNA.HAT, hat[0], hat[1], hat[2])
             if added:
                 avatar.b_setHatList(avatar.getHatList())
-                self.notify.info('Avatar %s put hat %d,%d,%d in trunk.' % (avatar.doId,
+                self.notify.info('Avatar %s put hat %d,%d,%d in trunk.' % (avatar.do_id,
                  hat[0],
                  hat[1],
                  hat[2]))
             else:
-                self.notify.warning('Avatar %s lost current hat %d %d %d; trunk full.' % (avatar.doId,
+                self.notify.warning('Avatar %s lost current hat %d %d %d; trunk full.' % (avatar.do_id,
                  hat[0],
                  hat[1],
                  hat[2]))
@@ -139,7 +139,7 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
         elif self.areGlasses():
             defn = ToonDNA.GlassesStyles[str]
             if not avatar.checkAccessorySanity(ToonDNA.GLASSES, defn[0], defn[1], defn[2]):
-                self.notify.warning('Avatar %s lost glasses %d %d %d; invalid item.' % (avatar.doId,
+                self.notify.warning('Avatar %s lost glasses %d %d %d; invalid item.' % (avatar.do_id,
                  defn[0],
                  defn[1],
                  defn[2]))
@@ -148,12 +148,12 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
             added = avatar.addToAccessoriesList(ToonDNA.GLASSES, glasses[0], glasses[1], glasses[2])
             if added:
                 avatar.b_setGlassesList(avatar.getGlassesList())
-                self.notify.info('Avatar %s put glasses %d,%d,%d in trunk.' % (avatar.doId,
+                self.notify.info('Avatar %s put glasses %d,%d,%d in trunk.' % (avatar.do_id,
                  glasses[0],
                  glasses[1],
                  glasses[2]))
             else:
-                self.notify.warning('Avatar %s lost current glasses %d %d %d; trunk full.' % (avatar.doId,
+                self.notify.warning('Avatar %s lost current glasses %d %d %d; trunk full.' % (avatar.do_id,
                  glasses[0],
                  glasses[1],
                  glasses[2]))
@@ -161,7 +161,7 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
         elif self.isBackpack():
             defn = ToonDNA.BackpackStyles[str]
             if not avatar.checkAccessorySanity(ToonDNA.BACKPACK, defn[0], defn[1], defn[2]):
-                self.notify.warning('Avatar %s lost backpack %d %d %d; invalid item.' % (avatar.doId,
+                self.notify.warning('Avatar %s lost backpack %d %d %d; invalid item.' % (avatar.do_id,
                  defn[0],
                  defn[1],
                  defn[2]))
@@ -170,12 +170,12 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
             added = avatar.addToAccessoriesList(ToonDNA.BACKPACK, backpack[0], backpack[1], backpack[2])
             if added:
                 avatar.b_setBackpackList(avatar.getBackpackList())
-                self.notify.info('Avatar %s put backpack %d,%d,%d in trunk.' % (avatar.doId,
+                self.notify.info('Avatar %s put backpack %d,%d,%d in trunk.' % (avatar.do_id,
                  backpack[0],
                  backpack[1],
                  backpack[2]))
             else:
-                self.notify.warning('Avatar %s lost current backpack %d %d %d; trunk full.' % (avatar.doId,
+                self.notify.warning('Avatar %s lost current backpack %d %d %d; trunk full.' % (avatar.do_id,
                  backpack[0],
                  backpack[1],
                  backpack[2]))
@@ -183,7 +183,7 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
         else:
             defn = ToonDNA.ShoesStyles[str]
             if not avatar.checkAccessorySanity(ToonDNA.SHOES, defn[0], defn[1], defn[2]):
-                self.notify.warning('Avatar %s lost shoes %d %d %d; invalid item.' % (avatar.doId,
+                self.notify.warning('Avatar %s lost shoes %d %d %d; invalid item.' % (avatar.do_id,
                  defn[0],
                  defn[1],
                  defn[2]))
@@ -192,12 +192,12 @@ class CatalogAccessoryItem(CatalogItem.CatalogItem):
             added = avatar.addToAccessoriesList(ToonDNA.SHOES, shoes[0], shoes[1], shoes[2])
             if added:
                 avatar.b_setShoesList(avatar.getShoesList())
-                self.notify.info('Avatar %s put shoes %d,%d,%d in trunk.' % (avatar.doId,
+                self.notify.info('Avatar %s put shoes %d,%d,%d in trunk.' % (avatar.do_id,
                  shoes[0],
                  shoes[1],
                  shoes[2]))
             else:
-                self.notify.warning('Avatar %s lost current shoes %d %d %d; trunk full.' % (avatar.doId,
+                self.notify.warning('Avatar %s lost current shoes %d %d %d; trunk full.' % (avatar.do_id,
                  shoes[0],
                  shoes[1],
                  shoes[2]))

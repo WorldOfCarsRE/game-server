@@ -117,6 +117,10 @@ class Uberdog(DownstreamMessageDirector):
 
         return parent_id, zone_id
 
+    def sendUpdateToChannel(self, channel, fieldName, args):
+        dg = self.dclass.ai_format_update(fieldName, self.GLOBAL_ID, channel, self.GLOBAL_ID, args)
+        self.send_datagram(dg)
+
 class CentralLoggerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_CENTRAL_LOGGER
 
@@ -175,6 +179,17 @@ class FriendManagerUD(Uberdog):
     def submitSecret(self, todo0):
         pass
 
+class DistributedDeliveryManagerUD(Uberdog):
+    GLOBAL_ID = OTP_DO_ID_TOONTOWN_DELIVERY_MANAGER
+
+    def requestAck(self):
+        avId = self.getAvatarIDFromChannel(self.lastSender)
+
+        if not avId:
+            return
+
+        self.sendUpdateToChannel(avId, 'returnAck', [])
+
 async def main():
     import builtins
     builtins.dc = parse_dc_file('etc/dclass/toon.dc')
@@ -182,10 +197,12 @@ async def main():
     loop = asyncio.get_running_loop()
     central_logger = CentralLoggerUD(loop)
     friend_manager = FriendManagerUD(loop)
+    deliveryManager = DistributedDeliveryManagerUD(loop)
 
     uberdog_tasks = [
         asyncio.create_task(central_logger.run()),
         asyncio.create_task(friend_manager.run()),
+        asyncio.create_task(deliveryManager.run())
     ]
 
     await asyncio.gather(*uberdog_tasks)
