@@ -24,7 +24,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         self.timedOut = 0
         self.occupied = 0
         self.customerDNA = None
-        self.customerId = None
+        self.customerId = 0
         self.deletedTops: List[int] = []
         self.deletedBottoms: List[int] = []
         self.dummyToonAI = None
@@ -54,12 +54,12 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
     def sendClearMovie(self):
         self.ignoreAll()
         self.customerDNA = None
-        self.customerId = None
+        self.customerId = 0
         self.occupied = 0
         self.timedOut = 0
 
         self.d_setMovie(CLOSET_MOVIE_CLEAR)
-        #self.d_setState()
+        self.sendUpdate('setState', [0, 0, 0, '', [], []])
         self.d_setCustomerDNA(0, '')
 
         if self.dummyToonAI:
