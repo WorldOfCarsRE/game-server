@@ -1335,7 +1335,7 @@ class ToonDNA:
         legColor = dgi.get_uint8()
         headColor = dgi.get_uint8()
 
-        return ToonDNA(type, head, torso, legs, gender, topTex, topTexColor, sleeveTex, sleeveTexColor, botTex, botTexColor,
+        return ToonDNA(toonType, head, torso, legs, gender, topTex, topTexColor, sleeveTex, sleeveTexColor, botTex, botTexColor,
                        armColor, gloveColor, legColor, headColor)
 
     @staticmethod

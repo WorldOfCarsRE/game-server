@@ -38,7 +38,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         del self.deletedBottoms
 
     def handleExitedAvatar(self, avId):
-        self.d_sendClearMovie()
+        self.sendClearMovie()
 
     def getOwnerId(self):
         return self.ownerId
@@ -48,12 +48,11 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
 
     def d_setMovie(self, mode):
         self.sendUpdate('setMovie', [mode, self.occupied, globalClockDelta.getRealNetworkTime()])
-        self.d_sendClearMovie(None)
 
     def d_setCustomerDNA(self, avId, dnaString):
         self.sendUpdate('setCustomerDNA', [avId, dnaString])
 
-    def d_sendClearMovie(self):
+    def sendClearMovie(self):
         self.ignoreAll()
         self.customerDNA = None
         self.customerId = None
@@ -70,14 +69,15 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
 
         self.ownerAv = None
 
-    def d_sendTimeoutMovie(self, task):
+    def sendTimeoutMovie(self, task):
         av = self.air.doTable.get(self.customerId)
+
         if av != None and self.customerDNA:
             av.b.setDNAString(self.customerDNA.makeNetString())
 
         self.timedOut = 1
         self.d_setMovie(CLOSET_MOVIE_TIMEOUT)
-        self.d_sendClearMovie()
+        self.endClearMovie()
 
         return task.done
 
@@ -124,13 +124,60 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
     def completePurchase(self, avId):
         self.busy = avId
         self.sendUpdate('setMovie', [CLOSET_MOVIE_COMPLETE, avId, globalClockDelta.getRealNetworkTime()])
-        self.sendClearMovie(None)
+        self.sendClearMovie()
 
     def removeItem(self, trashBlob, which):
         pass
 
     def setDNA(self, blob, finished, which):
-        pass
+        avId = self.air.currentAvatarSender
+
+        if avId != self.customerId:
+            return
+
+        if avId in self.air.doTable:
+            av = self.air.doTable[avId]
+
+            # TODO: Check DNA for security.
+
+            if (finished == 2):
+                newDNA = self.updateToonClothes(av, blob)
+
+                if which & ClosetGlobals.SHIRT:
+                    if av.replaceItemInClothesTopsList(newDNA.topTex,
+                                                       newDNA.topTexColor,
+                                                       newDNA.sleeveTex,
+                                                       newDNA.sleeveTexColor,
+                                                       self.customerDNA.topTex,
+                                                       self.customerDNA.topTexColor,
+                                                       self.customerDNA.sleeveTex,
+                                                       self.customerDNA.sleeveTexColor) == 1:
+                        av.b_setClothesTopsList(av.getClothesTopsList())
+
+                if which & ClosetGlobals.SHORTS:
+                    if av.replaceItemInClothesBottomsList(newDNA.botTex,
+                                                          newDNA.botTexColor,
+                                                          self.customerDNA.botTex,
+                                                          self.customerDNA.botTexColor) == 1:
+                        av.b_setClothesBottomsList(av.getClothesBottomsList())
+
+                self.__finalizeDelete(avId)
+
+            elif (finished == 1):
+                if self.customerDNA:
+                    av.b_setDNAString(self.customerDNA.makeNetString())
+
+                    self.deletedTops = []
+                    self.deletedBottoms = []
+            else:
+                self.sendUpdate('setCustomerDNA', [avId, blob])
+
+        if (self.timedOut == 1 or finished == 0 or finished == 4):
+            return
+
+        if (self.busy == avId):
+            taskMgr.remove(self.uniqueName('clearMovie'))
+            self.completePurchase(avId)
 
     def handleUnexpectedExit(self, avId):
         if (self.customerId == avId):
@@ -144,7 +191,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
                 toon.b_setDNAString(self.customerDNA.makeNetString())
 
         if (self.busy == avId):
-            self.sendClearMovie(None)
+            self.sendClearMovie()
 
     def handleBootMessage(self, avId):
         if (self.customerId == avId):
@@ -154,4 +201,4 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
                 if toon:
                     toon.b_setDNAString(self.customerDNA.makeNetString())
 
-        self.sendClearMovie(None)
+        self.sendClearMovie()

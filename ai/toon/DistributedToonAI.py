@@ -1134,10 +1134,8 @@ class FishCollection:
             self.fishList.append(FishBase(genus, species, weight))
 
     def getNetLists(self):
-        '''
-        Return lists formated for toon.dc style setting and getting
-        We store parallel lists of genus, species, and weight in the db
-        '''
+        # This function Return lists formated for toon.dc style setting and getting.
+        # We store parallel lists of genus, species, and weight in the database.
         genusList = []
         speciesList = []
         weightList = []
