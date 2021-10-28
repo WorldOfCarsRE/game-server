@@ -2,7 +2,7 @@ from ai.DistributedObjectAI import DistributedObjectAI
 from ai.catalog.CatalogItemList import CatalogItemList
 from ai.catalog import CatalogItem
 from ai.house.DistributedBankAI import DistributedBankAI
-from ai.house.DistributedClosetAI import DistributedClosetAI
+from ai.house.WearableStorageAI import DistributedClosetAI, DistributedTrunkAI
 from ai.house.DistributedPhoneAI import DistributedPhoneAI
 from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
 from ai.catalog import CatalogFurnitureItem
@@ -96,6 +96,8 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
             cl = DistributedBankAI
         elif item.getFlags() & CatalogFurnitureItem.FLCloset:
             cl = DistributedClosetAI
+        elif item.getFlags() % CatalogFurnitureItem.FLTrunk:
+            cl = DistributedTrunkAI
         elif item.getFlags() & CatalogFurnitureItem.FLPhone:
             cl = DistributedPhoneAI
         else:

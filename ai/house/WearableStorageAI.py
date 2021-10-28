@@ -201,3 +201,36 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
                     toon.b_setDNAString(self.customerDNA.makeNetString())
 
         self.sendClearMovie()
+
+class DistributedTrunkAI(DistributedClosetAI):
+
+    def __init__(self, air, furnitureMgr, item):
+        DistributedClosetAI.__init__(self, air, furnitureMgr, item)
+        self.emptyLists()
+        self.gender = ''
+
+    def emptyLists(self):
+        self.hatList: List[int] = []
+        self.glassesList: List[int] = []
+        self.backpackList: List[int] = []
+        self.shoesList: List[int] = []
+        self.removedItems: List[int] = []
+
+    def enterAvatar(self):
+        pass
+
+    def d_setState(self, mode):
+        self.sendUpdate('setState', [mode, self.occupied, self.ownerId,
+                                     self.gender, self.hatList, self.glassesList,
+                                     self.backpackList, self.shoesList])
+
+    def sendTimeoutMovie(self, task):
+        pass
+
+    def removeItem(self, id, tex, color, which):
+        pass
+
+    def setDNA(self, hatId, hatTex, hatColor, glassesId, glassesTex, glassesColor,
+               backpackId, backpackTex, backpackColor, shoesId, shoesTex, shoesColor,
+               finished, which):
+        pass
