@@ -434,7 +434,7 @@ class DBServer(DownstreamMessageDirector):
     async def queryObject(self, sender, doId):
         dcName = await self.backend.queryDC(doId)
 
-        if dcName in ['DistributedEstate', 'DistributedHouse']:
+        if dcName in ['DistributedEstate', 'DistributedHouse', 'DistributedToon']:
             # TODO
             return
 

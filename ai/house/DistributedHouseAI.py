@@ -7,8 +7,10 @@ from ai.house.DistributedFurnitureManagerAI import DistributedFurnitureManagerAI
 from ai.catalog.CatalogItemList import CatalogItemList
 from ai.catalog import CatalogItem
 from ai.catalog.CatalogFurnitureItem import CatalogFurnitureItem
+from ai.catalog.CatalogFurnitureItem import FLBank, FLCloset
 from ai.catalog import CatalogWallpaperItem, CatalogMouldingItem, CatalogFlooringItem, CatalogWainscotingItem
 from ai.catalog.CatalogWindowItem import CatalogWindowItem
+from ai import ToontownGlobals
 import time, random
 
 class DistributedHouseAI(DistributedObjectAI):
@@ -349,10 +351,10 @@ class DistributedHouseAI(DistributedObjectAI):
 
         # Make sure that we only have one of a couple of special
         # items.
-        if item.getFlags() & CatalogFurnitureItem.FLBank:
-            self.removeOldItem(CatalogFurnitureItem.FLBank)
-        if item.getFlags() & CatalogFurnitureItem.FLCloset:
-            self.removeOldItem(CatalogFurnitureItem.FLCloset)
+        if item.getFlags() & FLBank:
+            self.removeOldItem(FLBank)
+        if item.getFlags() & FLCloset:
+            self.removeOldItem(FLCloset)
 
         self.makeRoomFor(1)
 
@@ -399,3 +401,28 @@ class DistributedHouseAI(DistributedObjectAI):
                     dfitem.requestDelete()
 
             self.interiorManager.dfitems = newDfitems
+
+    def makeRoomFor(self, count):
+        # Ensures there is room for at least count items to be added
+        # to the house by eliminated old items from the deleted list.
+        # Returns the list of eliminated items, if any.  The deleted
+        # items list is automatically updated to the database if
+        # necessary.
+
+        numAtticItems = len(self.atticItems) + len(self.atticWallpaper) + len(self.atticWindows)
+        numHouseItems = numAtticItems + len(self.interiorItems)
+
+        needHouseItems = numHouseItems + len(self.deletedItems) + count
+        maxHouseItems = ToontownGlobals.MaxHouseItems + ToontownGlobals.ExtraDeletedItems
+        eliminateCount = max(needHouseItems - maxHouseItems, 0)
+
+        extracted, remaining = self.deletedItems.extractOldestItems(eliminateCount)
+
+        if extracted:
+            self.deletedItems = remaining
+            self.d_setDeletedItems(self.deletedItems)
+
+            if self.interiorManager:
+                self.interiorManager.d_setDeletedItems(self.deletedItems)
+
+        return extracted

@@ -152,6 +152,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.numMailItems = 0
         self.awardNotify = ToontownGlobals.NoItems
         self.dna = ToonDNA()
+        self.maxAccessories = 0
 
     def setDNAString(self, dnaString):
         self.dna.makeFromNetString(dnaString)
@@ -562,8 +563,18 @@ class DistributedToonAI(DistributedPlayerAI):
     def getClothesBottomsList(self):
         return self.clothesBottomsList
 
+    def d_setMaxAccessories(self, maxAccessories):
+        self.sendUpdate('setMaxAccessories', [self.maxAccessories])
+
+    def setMaxAccessories(self, maxAccessories):
+        self.maxAccessories = maxAccessories
+
+    def b_setMaxAccessories(self, maxAccessories):
+        self.setMaxAccessories(maxAccessories)
+        self.d_setMaxAccessories(maxAccessories)
+
     def getMaxAccessories(self):
-        return 0
+        return self.maxAccessories
 
     def getHatList(self):
         return []
