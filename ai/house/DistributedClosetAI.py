@@ -28,7 +28,6 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         self.deletedTops: List[int] = []
         self.deletedBottoms: List[int] = []
         self.dummyToonAI = None
-        self.busy = 0
 
     def delete(self):
         self.ignoreAll()
@@ -77,14 +76,14 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
 
         self.timedOut = 1
         self.d_setMovie(CLOSET_MOVIE_TIMEOUT)
-        self.endClearMovie()
+        self.sendClearMovie()
 
         return task.done
 
     def enterAvatar(self):
         avId = self.air.currentAvatarSender
 
-        if self.busy > 0:
+        if self.occupied > 0:
             self.freeAvatar(avId)
             return
 
@@ -97,7 +96,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         self.customerDNA.makeFromNetString(av.getDNAString())
 
         self.customerId = avId
-        self.busy = avId
+        self.occupied = avId
 
         self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleUnexpectedExit, extraArgs = [avId])
         self.acceptOnce(f'bootAvFromEstate-{str(avId)}', self.handleBootMessage, extraArgs = [avId])
@@ -122,7 +121,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         taskMgr.doMethodLater(TIMEOUT_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
 
     def completePurchase(self, avId):
-        self.busy = avId
+        self.occupied = avId
         self.sendUpdate('setMovie', [CLOSET_MOVIE_COMPLETE, avId, globalClockDelta.getRealNetworkTime()])
         self.sendClearMovie()
 
@@ -175,7 +174,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         if (self.timedOut == 1 or finished == 0 or finished == 4):
             return
 
-        if (self.busy == avId):
+        if (self.occupied == avId):
             taskMgr.remove(self.uniqueName('clearMovie'))
             self.completePurchase(avId)
 
@@ -190,7 +189,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
             if self.customerDNA:
                 toon.b_setDNAString(self.customerDNA.makeNetString())
 
-        if (self.busy == avId):
+        if (self.occupied == avId):
             self.sendClearMovie()
 
     def handleBootMessage(self, avId):
