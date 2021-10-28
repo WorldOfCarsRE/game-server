@@ -122,7 +122,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
 
     def completePurchase(self, avId):
         self.occupied = avId
-        self.sendUpdate('setMovie', [CLOSET_MOVIE_COMPLETE, avId, globalClockDelta.getRealNetworkTime()])
+        self.d_setMovie(CLOSET_MOVIE_COMPLETE)
         self.sendClearMovie()
 
     def removeItem(self, trashBlob, which):
