@@ -228,8 +228,8 @@ class DistributedTrunkAI(DistributedClosetAI):
         if not av:
             return
 
-        self.customerDNA = (avDNA.getHat(), avDNA.getGlasses(),
-                            avDNA.getBackpack(), avDNA.getShoes())
+        self.customerDNA = (av.getHat(), av.getGlasses(),
+                            av.getBackpack(), av.getShoes())
 
         self.customerId = avId
         self.occupied = avId
