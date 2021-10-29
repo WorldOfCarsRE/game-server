@@ -96,7 +96,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
             cl = DistributedBankAI
         elif item.getFlags() & CatalogFurnitureItem.FLCloset:
             cl = DistributedClosetAI
-        elif item.getFlags() % CatalogFurnitureItem.FLTrunk:
+        elif item.getFlags() & CatalogFurnitureItem.FLTrunk:
             cl = DistributedTrunkAI
         elif item.getFlags() & CatalogFurnitureItem.FLPhone:
             cl = DistributedPhoneAI
