@@ -42,7 +42,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
     def getOwnerId(self):
         return self.ownerId
 
-    def d_freeAvatar(self, avId):
+    def freeAvatar(self, avId):
         self.sendUpdateToAvatar(avId, 'freeAvatar', [])
 
     def d_setMovie(self, mode):
@@ -217,7 +217,42 @@ class DistributedTrunkAI(DistributedClosetAI):
         self.removedItems: List[int] = []
 
     def enterAvatar(self):
-        pass
+        avId = self.air.currentAvatarSender
+
+        if self.occupied > 0:
+            self.freeAvatar(avId)
+            return
+
+        av = self.air.doTable.get(avId)
+
+        if not av:
+            return
+
+        self.customerDNA = (avDNA.getHat(), avDNA.getGlasses(),
+                            avDNA.getBackpack(), avDNA.getShoes())
+
+        self.customerId = avId
+        self.occupied = avId
+
+        self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleUnexpectedExit, extraArgs = [avId])
+        self.acceptOnce(f'bootAvFromEstate-{str(avId)}', self.handleBootMessage, extraArgs = [avId])
+
+        if self.ownerId:
+            self.ownerAv = None
+            if self.ownerId in self.air.doTable:
+                self.ownerAv = self.air.doTable[self.ownerId]
+
+                self.hatList = self.ownerAv.getHatList()
+                self.glassesList = self.ownerAv.getGlassesList()
+                self.shoesList = self.ownerAv.getShoesList()
+                self.gender = self.ownerAv.dna.gender
+
+                self.__openTrunk()
+            else:
+                # TODO
+                pass
+        else:
+            self.completePurchase(avId)
 
     def d_setState(self, mode):
         self.sendUpdate('setState', [mode, self.occupied, self.ownerId,
@@ -230,7 +265,17 @@ class DistributedTrunkAI(DistributedClosetAI):
     def removeItem(self, id, tex, color, which):
         pass
 
+    def __openTrunk(self):
+        pass
+
     def setDNA(self, hatId, hatTex, hatColor, glassesId, glassesTex, glassesColor,
                backpackId, backpackTex, backpackColor, shoesId, shoesTex, shoesColor,
                finished, which):
+        pass
+
+    # i think we might need to override these from clothes, but idk
+    def handleUnexpectedExit(self):
+        pass
+
+    def handleBootMessage(self):
         pass
