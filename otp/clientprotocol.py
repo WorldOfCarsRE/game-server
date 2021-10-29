@@ -601,19 +601,25 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.add_uint16(CLIENT_DELETE_AVATAR_RESP)
         resp.add_uint8(0) # Return code
 
-        av_count = sum((1 if pot_av else 0 for pot_av in self.potential_avatars))
+        av_count = sum((1 if potAv else 0 for potAv in self.potential_avatars))
         resp.add_uint16(av_count)
 
-        for pot_av in self.potential_avatars:
-            if not pot_av:
+        for potAv in self.potential_avatars:
+            if not potAv:
                 continue
-            resp.add_uint32(pot_av.do_id)
-            resp.add_string16(pot_av.name.encode('utf-8'))
-            resp.add_string16(pot_av.wish_name.encode('utf-8'))
-            resp.add_string16(pot_av.approved_name.encode('utf-8'))
-            resp.add_string16(pot_av.rejected_name.encode('utf-8'))
-            resp.add_string16(pot_av.dna_string.encode('utf-8'))
-            resp.add_uint8(pot_av.index)
+            resp.add_uint32(potAv.do_id)
+            resp.add_string16(potAv.name.encode('utf-8'))
+            resp.add_string16(potAv.wish_name.encode('utf-8'))
+            resp.add_string16(potAv.approved_name.encode('utf-8'))
+            resp.add_string16(potAv.rejected_name.encode('utf-8'))
+
+            dnaString = potAv.dna_string
+
+            if not isinstance(dnaString, bytes):
+                dnaString = dnaString.encode()
+
+            resp.add_string16(dnaString)
+            resp.add_uint8(potAv.index)
 
         self.send_datagram(resp)
 
@@ -705,11 +711,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         avatar_info = [None] * 6
 
         for i in range(dgi.get_uint16()):
-            pot_av = PotentialAvatar(do_id = dgi.get_uint32(), name = dgi.get_string16(), wish_name = dgi.get_string16(),
+            potAv = PotentialAvatar(do_id = dgi.get_uint32(), name = dgi.get_string16(), wish_name = dgi.get_string16(),
                                      approved_name = dgi.get_string16(), rejected_name = dgi.get_string16(),
                                      dna_string = dgi.get_blob16(), index = dgi.get_uint8(), allowName = dgi.get_uint8())
 
-            avatar_info[pot_av.index] = pot_av
+            avatar_info[potAv.index] = potAv
 
         self.potential_avatars = avatar_info
 
