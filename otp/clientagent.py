@@ -57,6 +57,7 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
                 self.name_categories[index] = category
 
         self.listen_task = None
+        self.version = config['ClientAgent.Version']
 
     def _on_exception(self, loop, context):
         print('err', context)

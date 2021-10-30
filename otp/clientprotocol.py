@@ -55,12 +55,13 @@ class ClientDisconnect(IntEnum):
     RELOGGED = 100
     CHAT_ERROR = 120
     LOGIN_ERROR = 122
-    OUTDATED_CLIENT = 127
+    OUTDATED_CLIENT = 125
     ADMIN_KICK = 151
     ACCOUNT_SUSPENDED = 152
     SHARD_DISCONNECT = 153
     PERIOD_EXPIRED = 288
     PERIOD_EXPIRED2 = 349
+    SERVER_MAINTENANCE = 154
 
 @with_slots
 @dataclass
@@ -729,19 +730,23 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.send_datagram(resp)
 
     def receive_login(self, dgi):
-        play_token = dgi.get_string16()
-        server_version = dgi.get_string16()
-        hash_val = dgi.get_uint32()
-        want_magic_words = dgi.get_string16()
+        playToken = dgi.get_string16()
+        clientVersion = dgi.get_string16()
+        hashVal = dgi.get_uint32()
+        wantMagicWords = dgi.get_string16()
 
-        self.service.log.debug(f'play_token:{play_token}, server_version:{server_version}, hash_val:{hash_val}, '
-                               f'want_magic_words:{want_magic_words}')
+        if clientVersion != self.service.version:
+            self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
+            return
+
+        self.service.log.debug(f'playToken:{playToken}, clientVersion:{clientVersion}, hashVal:{hashVal}, '
+                               f'wantMagicWords:{wantMagicWords}')
 
         try:
-            play_token = bytes.fromhex(play_token)
-            nonce, tag, play_token = play_token[:16], play_token[16:32], play_token[32:]
+            playToken = bytes.fromhex(playToken)
+            nonce, tag, playToken = playToken[:16], playToken[16:32], playToken[32:]
             cipher = AES.new(CLIENTAGENT_SECRET, AES.MODE_EAX, nonce)
-            data = cipher.decrypt_and_verify(play_token, tag)
+            data = cipher.decrypt_and_verify(playToken, tag)
             self.service.log.debug(f'Login token data:{data}')
             data = json.loads(data)
             for key in list(data.keys()):

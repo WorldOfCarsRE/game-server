@@ -1,9 +1,15 @@
 from ai.DistributedNodeAI import DistributedNodeAI
 from ai.toon import NPCToons
 from ai.toon.Inventory import Inventory
+from ai.toon.ToonDNA import ToonDNA
+
+SHIRT = 0x1
+SHORTS = 0x2
+
+TAILOR_COUNTDOWN_TIME = 300
 
 class DistributedNPCToonBaseAI(DistributedNodeAI):
-    def __init__(self, air, npcId, name=None):
+    def __init__(self, air, npcId, name = None):
         DistributedNodeAI.__init__(self, air, name)
 
         self.npcId = npcId
@@ -42,6 +48,9 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
     def freeAvatar(self, avId):
         self.sendUpdateToAvatar(avId, 'freeAvatar', [])
 
+    def getGivesQuests(self):
+        return True
+
 class DistributedNPCToonAI(DistributedNPCToonBaseAI):
     def setMovieDone(self):
         pass
@@ -63,6 +72,9 @@ class DistributedNPCSpecialQuestGiverAI(DistributedNPCToonBaseAI):
         pass
 
 class DistributedNPCClerkAI(DistributedNPCToonBaseAI):
+    def getGivesQuests(self):
+        return False
+
     def d_setMovie(self, movie):
         self.sendUpdate('setMovie', [movie, self.npcId, self.occupier, globalClockDelta.getRealNetworkTime()])
 
@@ -136,10 +148,172 @@ class DistributedNPCClerkAI(DistributedNPCToonBaseAI):
         self.sendClearMovie()
 
 class DistributedNPCTailorAI(DistributedNPCToonBaseAI):
-    def setDNA(self, dna, finished, which):
+    freeClothes = True
+    housingEnabled = True
+
+    def __init__(self, air, npcId, name):
+        DistributedNPCToonBaseAI.__init__(self, air, npcId, name)
+
+        self.timedOut = 0
+
+        self.customerDNA = None
+        self.customerId = None
+
+    def getGivesQuests(self):
+        return False
+
+    def avatarEnter(self):
+        avId = self.air.currentAvatarSender
+
+        if not avId in self.air.doTable:
+            return
+
+        if self.isOccupied():
+            self.freeAvatar(avId)
+            return
+
+        av = self.air.doTable[avId]
+
+        self.customerDNA = ToonDNA()
+        self.customerDNA.makeFromNetString(av.getDNAString())
+
+        self.customerId = avId
+
+        av.b_setDNAString(self.customerDNA.makeNetString())
+
+        self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleUnexpectedExit, extraArgs = [avId])
+
+        flag = NPCToons.PURCHASE_MOVIE_START_BROWSE
+
+        if self.freeClothes:
+            flag = NPCToons.PURCHASE_MOVIE_START
+
+            if self.housingEnabled and self.isClosetAlmostFull(av):
+                flag = NPCToons.PURCHASE_MOVIE_START_NOROOM
+
+        elif self.air.questManager.hasTailorClothingTicket(av, self) == 1:
+            flag = NPCToons.PURCHASE_MOVIE_START
+
+            if self.housingEnabled and self.isClosetAlmostFull(av):
+                flag = NPCToons.PURCHASE_MOVIE_START_NOROOM
+
+        elif self.air.questManager.hasTailorClothingTicket(av, self) == 2:
+            flag = NPCToons.PURCHASE_MOVIE_START
+
+            if self.housingEnabled and self.isClosetAlmostFull(av):
+                flag = NPCToons.PURCHASE_MOVIE_START_NOROOM
+
+        self.sendShoppingMovie(avId, flag)
+
+    def isClosetAlmostFull(self, av):
+        numClothes = len(av.clothesTopsList) / 4 + len(av.clothesBottomsList) / 2
+
+        if numClothes >= av.maxClothes - 1:
+            return 1
+
+        return 0
+
+    def sendShoppingMovie(self, avId, flag):
+        self.occupier = avId
+        self.sendUpdate('setMovie', [flag, self.npcId, avId, globalClockDelta.getRealNetworkTime()])
+        taskMgr.doMethodLater(TAILOR_COUNTDOWN_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+
+    def rejectAvatar(self, avId):
         pass
 
+    def sendTimeoutMovie(self, task):
+        toon = self.air.doTable.get(self.customerId)
+
+        if toon != None and self.customerDNA:
+            toon.b_setDNAString(self.customerDNA.makeNetString())
+
+        self.timedOut = 1
+
+        self.sendUpdate('setMovie', [NPCToons.PURCHASE_MOVIE_TIMEOUT, self.npcId, self.occupier, globalClockDelta.getRealNetworkTime()])
+
+        self.sendClearMovie(None)
+
+        return Task.done
+
+    def sendClearMovie(self, task):
+        self.ignore(self.air.getDeleteDoIdEvent(self.occupier))
+
+        self.customerDNA = None
+        self.customerId = None
+        self.occupier = 0
+        self.timedOut = 0
+
+        self.sendUpdate('setMovie', [NPCToons.PURCHASE_MOVIE_CLEAR, self.npcId, 0, globalClockDelta.getRealNetworkTime()])
+        self.sendUpdate('setCustomerDNA', [0, ''])
+
+        return Task.done
+
+    def completePurchase(self, avId):
+        self.occupier = avId
+
+        self.sendUpdate('setMovie', [NPCToons.PURCHASE_MOVIE_COMPLETE, self.npcId, avId, globalClockDelta.getRealNetworkTime()])
+
+        self.sendClearMovie(None)
+
+    def setDNA(self, dna, finished, which):
+        avId = self.air.currentAvatarSender
+
+        if avId != self.customerId:
+            return
+
+        # TODO: DNA validation.
+
+        if avId in self.air.doTable:
+            av = self.air.doTable[avId]
+
+            if finished == 2 and which > 0:
+                if self.air.questManager.removeClothingTicket(av, self) == 1 or self.freeClothes:
+                    av.b_setDNAString(dna)
+
+                    if which & SHIRT:
+                        if av.addToClothesTopsList(self.customerDNA.topTex, self.customerDNA.topTexColor, self.customerDNA.sleeveTex, self.customerDNA.sleeveTexColor) == 1:
+                            av.b_setClothesTopsList(av.getClothesTopsList())
+
+                    if which & SHORTS:
+                        if av.addToClothesBottomsList(self.customerDNA.botTex, self.customerDNA.botTexColor) == 1:
+                            av.b_setClothesBottomsList(av.getClothesBottomsList())
+
+                    if self.customerDNA:
+                        av.b_setDNAString(self.customerDNA.makeNetString())
+
+            elif finished == 1:
+                if self.customerDNA:
+                    av.b_setDNAString(self.customerDNA.makeNetString())
+            else:
+                self.sendUpdate('setCustomerDNA', [avId, dna])
+
+        if self.timedOut == 1 or finished == 0:
+            return
+
+        if self.occupier == avId:
+            taskMgr.remove(self.uniqueName('clearMovie'))
+            self.completePurchase(avId)
+
+    def handleUnexpectedExit(self, avId):
+        if self.customerId == avId:
+            toon = self.air.doTable.get(avId)
+
+            if toon == None:
+                # TODO
+                return
+
+            if self.customerDNA:
+                toon.b_setDNAString(self.customerDNA.makeNetString())
+
+                # TODO
+
+        if self.occupier == avId:
+            self.sendClearMovie(None)
+
 class DistributedNPCFishermanAI(DistributedNPCToonBaseAI):
+    def getGivesQuests(self):
+        return False
+
     def sendClearMovie(self):
         self.ignore(self.air.getDeleteDoIdEvent(self.occupier))
         self.occupier = 0
@@ -230,6 +404,9 @@ class DistributedNPCPartyPersonAI(DistributedNPCToonBaseAI):
         pass
 
 class DistributedNPCPetclerkAI(DistributedNPCToonBaseAI):
+    def getGivesQuests(self):
+        return False
+
     def petAdopted(self, whichPet, nameIndex):
         pass
 

@@ -67,7 +67,7 @@ class SQLBackend(DatabaseBackend):
         conn.close()
         self.pool.release(conn)
 
-    async def _query_dclass(self, conn: aiomysql.Connection, do_id: int) -> str:
+    async def queryDC(self, conn: aiomysql.Connection, do_id: int) -> str:
         cursor = await conn.cursor()
         await cursor.execute(f'SELECT class_name FROM objects WHERE do_id={do_id}')
         await conn.commit()

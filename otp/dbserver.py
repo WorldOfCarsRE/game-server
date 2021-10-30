@@ -138,8 +138,9 @@ class DBServer(DownstreamMessageDirector):
         self.pool = None
 
         self.dc = parse_dc_file('etc/dclass/toon.dc')
+        self.wantSQL = config['DatabaseServer.SQL']
 
-        if config['DatabaseServer.SQL']:
+        if self.wantSQL:
             self.backend = SQLBackend(self)
         else:
             self.backend = MongoBackend(self)
@@ -328,23 +329,23 @@ class DBServer(DownstreamMessageDirector):
         dg.add_uint32(doId)
         self.send_datagram(dg)
 
-    async def get_stored_values(self, sender, context, do_id, fields):
+    async def get_stored_values(self, sender, context, doId, fields):
         try:
-            field_dict = await self.backend.query_object_fields(do_id, [field.name for field in fields])
+            field_dict = await self.backend.query_object_fields(doId, [field.name for field in fields])
         except OTPQueryNotFound:
             field_dict = None
 
-        self.log.debug(f'Received query request from {sender} with context {context} for do_id: {do_id}.')
+        self.log.debug(f'Received query request from {sender} with context {context} for doId: {doId}.')
 
         dg = Datagram()
         dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(do_id)
+        dg.add_uint32(doId)
         pos = dg.tell()
         dg.add_uint16(0)
 
         if field_dict is None:
-            print('object not found... %s' % do_id, sender, context)
+            print('object not found... %s' % doId, sender, context)
             self.send_datagram(dg)
             return
 
@@ -358,7 +359,10 @@ class DBServer(DownstreamMessageDirector):
 
             fieldValue = field_dict[field.name]
 
-            dcName = await self.backend.queryDC(do_id)
+            if self.wantSQL:
+               dcName = await self.backend.queryDC(await self.backend.pool.acquire(), doId)
+            else:
+                dcName = await self.backend.queryDC(doId)
 
             # Pack the field data.
             a = Datagram()
@@ -432,7 +436,10 @@ class DBServer(DownstreamMessageDirector):
         self.send_datagram(dg)
 
     async def queryObject(self, sender, doId):
-        dcName = await self.backend.queryDC(doId)
+        if self.wantSQL:
+            await self.backend.queryDC(await self.backend.pool.acquire(), doId)
+        else:
+            dcName = await self.backend.queryDC(doId)
 
         if dcName in ['DistributedEstate', 'DistributedHouse', 'DistributedToon']:
             # TODO
