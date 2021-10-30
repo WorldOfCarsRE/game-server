@@ -142,7 +142,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
             if (finished == 2):
                 newDNA = self.updateToonClothes(av, blob)
 
-                if which & ClosetGlobals.SHIRT:
+                if which & SHIRT:
                     if av.replaceItemInClothesTopsList(newDNA.topTex,
                                                        newDNA.topTexColor,
                                                        newDNA.sleeveTex,
@@ -153,14 +153,14 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
                                                        self.customerDNA.sleeveTexColor) == 1:
                         av.b_setClothesTopsList(av.getClothesTopsList())
 
-                if which & ClosetGlobals.SHORTS:
+                if which & SHORTS:
                     if av.replaceItemInClothesBottomsList(newDNA.botTex,
                                                           newDNA.botTexColor,
                                                           self.customerDNA.botTex,
                                                           self.customerDNA.botTexColor) == 1:
                         av.b_setClothesBottomsList(av.getClothesBottomsList())
 
-                self.__finalizeDelete(avId)
+                self.finalizeDelete(avId)
 
             elif (finished == 1):
                 if self.customerDNA:
@@ -201,6 +201,43 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
                     toon.b_setDNAString(self.customerDNA.makeNetString())
 
         self.sendClearMovie()
+
+    def updateToonClothes(self, av, blob):
+        # This is what the client has told us the new DNA should be
+        proposedDNA = ToonDNA()
+        proposedDNA.makeFromNetString(blob)
+
+        # Don't completely trust the client. Enforce that only the clothes
+        # change here. This eliminates the possibility of the gender, species, etc
+        # of the toon changing, or a bug being exploited.
+        updatedDNA = ToonDNA()
+        updatedDNA.makeFromNetString(self.customerDNA.makeNetString())
+        updatedDNA.topTex = proposedDNA.topTex
+        updatedDNA.topTexColor = proposedDNA.topTexColor
+        updatedDNA.sleeveTex = proposedDNA.sleeveTex
+        updatedDNA.sleeveTexColor = proposedDNA.sleeveTexColor
+        updatedDNA.botTex = proposedDNA.botTex
+        updatedDNA.botTexColor = proposedDNA.botTexColor
+        updatedDNA.torso = proposedDNA.torso
+
+        av.b_setDNAString(updatedDNA.makeNetString())
+        return updatedDNA
+
+    def finalizeDelete(self, avId):
+        av = self.air.doTable[avId]
+
+        for top in self.deletedTops:
+            av.removeItemInClothesTopsList(top[0], top[1], top[2], top[3])
+
+        for bot in self.deletedBottoms:
+            av.removeItemInClothesBottomsList(bot[0], bot[1])
+
+        # empty the delete lists
+        self.deletedTops = []
+        self.deletedBottoms = []
+
+        av.b_setClothesTopsList(av.getClothesTopsList())
+        av.b_setClothesBottomsList(av.getClothesBottomsList())
 
 class DistributedTrunkAI(DistributedClosetAI):
 
