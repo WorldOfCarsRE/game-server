@@ -1268,7 +1268,7 @@ class ToonDNA(object):
     def __init__(self, type = 't', head = 'dls', torso = 'ss', legs = 's', gender = 'm',
                  armColor = 0, gloveColor = 0, legColor = 0, headColor = 0, topTex = 0,
                  topTexColor = 0, sleeveTex = 0, sleeveTexColor = 0, botTex = 0, botTexColor = 0):
-        self.type = type
+        self.toonType = toonType
         self.head = head
         self.torso = torso
         self.legs = legs
@@ -1286,8 +1286,8 @@ class ToonDNA(object):
 
     def makeNetString(self):
         dg = Datagram()
-        dg.add_bytes(self.type.encode('ascii'))
-        if self.type == 't':
+        dg.add_bytes(self.toonType.encode('ascii'))
+        if self.toonType == 't':
             dg.add_uint8(toonHeadTypes.index(self.head))
             dg.add_uint8(toonTorsoTypes.index(self.torso))
             dg.add_uint8(toonLegTypes.index(self.legs))
@@ -1306,7 +1306,7 @@ class ToonDNA(object):
             dg.add_uint8(self.legColor)
             dg.add_uint8(self.headColor)
         else:
-            raise Exception(f'unknown avatar type: {self.type}')
+            raise Exception(f'unknown avatar type: {self.toonType}')
         return dg.bytes()
 
     def makeFromNetString(self, dgi):
@@ -1318,7 +1318,7 @@ class ToonDNA(object):
         if toonType != b't':
             raise Exception(f'unknown avatar type {toonType}')
 
-        self.type = toonType.decode('ascii') 
+        self.toonType = toonType.decode('ascii')
         self.head = toonHeadTypes[dgi.get_uint8()]
         self.torso = toonTorsoTypes[dgi.get_uint8()]
         self.legs = toonLegTypes[dgi.get_uint8()]
