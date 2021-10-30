@@ -1265,7 +1265,7 @@ ClothesColors = [VBase4(0.933594, 0.265625, 0.28125, 1.0),
 
 class ToonDNA(object):
 
-    def __init__(self, type = 't', head = 'dls', torso = 'ss', legs = 's', gender = 'm',
+    def __init__(self, toonType = 't', head = 'dls', torso = 'ss', legs = 's', gender = 'm',
                  armColor = 0, gloveColor = 0, legColor = 0, headColor = 0, topTex = 0,
                  topTexColor = 0, sleeveTex = 0, sleeveTexColor = 0, botTex = 0, botTexColor = 0):
         self.toonType = toonType
