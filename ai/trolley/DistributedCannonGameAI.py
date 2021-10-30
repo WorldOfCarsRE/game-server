@@ -84,5 +84,5 @@ class DistributedCannonGameAI(DistributedMinigameAI):
         taskMgr.remove(self.uniqueName('timer'))
         taskMgr.remove(self.uniqueName('game-over'))
 
-    def gamesOver(self, task=None):
+    def gamesOver(self, task = None):
         self.demand('Cleanup')
