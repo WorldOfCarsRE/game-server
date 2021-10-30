@@ -135,6 +135,12 @@ class DistributedMinigameAI(DistributedObjectAI, FSM):
     def onGameStart(self):
         raise NotImplementedError
 
+    def local2GameTime(self, timestamp):
+        return timestamp - self.gameStartTime
+
+    def getCurrentGameTime(self):
+        return self.local2GameTime(globalClock.getFrameTime())
+
     def enterWaitForExit(self):
         self.__barrier = ToonBarrier(self.uniqueName('wait-exit'), self.participants, JOIN_TIMEOUT, self.allExited, self.timeout)
         self.sendUpdate('setGameExit', [])

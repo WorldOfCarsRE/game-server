@@ -73,9 +73,14 @@ def createMinigame(air, players: List[int], newbies: List[int], trolleyZone: int
     # numPlayers = len(players)
     # mgId = random.choice(MinigamePlayerMatrix[numPlayers])
 
+    from . import DistributedCannonGameAI
     from . import DistributedTagGameAI
     from . import DistributedRingGameAI
-    if random.random() <= 0.5:
+    
+    tempChoice = random.choice([CannonGameId, TagGameId, RingGameId])
+    if tempChoice == CannonGameId:
+        mg = DistributedCannonGameAI.DistributedCannonGameAI(air, players, trolleyZone)
+    elif tempChoice == RingGameId:
         mg = DistributedRingGameAI.DistributedRingGameAI(air, players, trolleyZone)
     else:
         mg = DistributedTagGameAI.DistributedTagGameAI(air, players, trolleyZone)
