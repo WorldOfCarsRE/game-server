@@ -31,3 +31,4 @@ More database backends may be added in the future.
 * Make sure there are no trailing spaces in your code.
 * Do NOT use underscores for variables and argument names. (test_var = 1)
 * Do NOT do this with the equal sign. (testVar=1)
+* Please test code before pushing.
