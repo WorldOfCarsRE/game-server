@@ -556,7 +556,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         for pot_av in self.potential_avatars:
             if pot_av and pot_av.do_id == av_id:
-                pot_av.approved_name = name
+                pot_av.approved_name = name.strip()
                 break
 
         resp.add_uint8(0)
