@@ -603,7 +603,7 @@ class DistributedToonAI(DistributedPlayerAI):
         return self.hat
 
     def setGlasses(self, glassesId, tex, color):
-        self.glasses = (glassesId, text, color)
+        self.glasses = (glassesId, tex, color)
 
     def getGlasses(self):
         return self.glasses
