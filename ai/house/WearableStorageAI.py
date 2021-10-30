@@ -279,11 +279,6 @@ class DistributedTrunkAI(DistributedClosetAI):
             if self.ownerId in self.air.doTable:
                 self.ownerAv = self.air.doTable[self.ownerId]
 
-                self.hatList = self.ownerAv.getHatList()
-                self.glassesList = self.ownerAv.getGlassesList()
-                self.shoesList = self.ownerAv.getShoesList()
-                self.gender = self.ownerAv.dna.gender
-
                 self.__openTrunk()
             else:
                 # TODO
@@ -296,23 +291,52 @@ class DistributedTrunkAI(DistributedClosetAI):
                                      self.gender, self.hatList, self.glassesList,
                                      self.backpackList, self.shoesList])
 
+    def d_clearCustomerDNA(self):
+        self.sendUpdate('setCustomerDNA', [0 for x in range(14)])
+
     def sendTimeoutMovie(self, task):
-        pass
+        self.timedOut = 1
+        self.d_setMovie(CLOSET_MOVIE_TIMEOUT)
+        self.sendClearMovie()
+
+        return task.done
 
     def removeItem(self, id, tex, color, which):
         pass
 
     def __openTrunk(self):
-        pass
+        self.hatList = self.ownerAv.getHatList()
+        self.glassesList = self.ownerAv.getGlassesList()
+        self.shoesList = self.ownerAv.getShoesList()
+        self.gender = self.ownerAv.dna.gender
+
+        self.d_setState(OPEN)
+
+        taskMgr.doMethodLater(TIMEOUT_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
 
     def setDNA(self, hatId, hatTex, hatColor, glassesId, glassesTex, glassesColor,
                backpackId, backpackTex, backpackColor, shoesId, shoesTex, shoesColor,
                finished, which):
-        pass
 
-    # i think we might need to override these from clothes, but idk
-    def handleUnexpectedExit(self):
-        pass
+        avId = self.air.currentAvatarSender
+
+        if avId != self.customerId:
+            return
+
+        if avId in self.air.doTable:
+            av = self.air.doTable[avId]
+
+    def handleUnexpectedExit(self, avId):
+        if avId != self.customerId:
+            return
+
+        self.customerId = 0
+        self.customerDNA = None
+        self.gender = ''
+        self.emptyLists()
+        self.d_setMovie(CLOSET_MOVIE_CLEAR)
+        self.d_clearCustomerDNA()
+        self.d_setState(CLOSED)
 
     def handleBootMessage(self):
         pass
