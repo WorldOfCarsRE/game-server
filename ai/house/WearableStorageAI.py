@@ -1,6 +1,6 @@
 from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
 from ai.toon.DistributedToonAI import DistributedToonAI
-from ai.toon.ToonDNA import ToonDNA
+from ai.toon import ToonDNA
 from typing import List
 
 SHIRT = 0x1
@@ -22,9 +22,8 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         self.ownerId = self.furnitureMgr.house.avId
         self.ownerAv = None
         self.timedOut = 0
-        self.occupied = 0
         self.customerDNA = None
-        self.customerId = 0
+        self.occupied = 0
         self.deletedTops: List[int] = []
         self.deletedBottoms: List[int] = []
         self.dummyToonAI = None
@@ -32,7 +31,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
     def delete(self):
         self.ignoreAll()
         self.customerDNA = None
-        self.customerId = None
+        self.occupied = 0
         del self.deletedTops
         del self.deletedBottoms
 
@@ -54,7 +53,6 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
     def sendClearMovie(self):
         self.ignoreAll()
         self.customerDNA = None
-        self.customerId = 0
         self.occupied = 0
         self.timedOut = 0
 
@@ -69,7 +67,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         self.ownerAv = None
 
     def sendTimeoutMovie(self, task):
-        av = self.air.doTable.get(self.customerId)
+        av = self.air.doTable.get(self.occupied)
 
         if av != None and self.customerDNA:
             av.b.setDNAString(self.customerDNA.makeNetString())
@@ -92,10 +90,9 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         if not av:
             return
 
-        self.customerDNA = ToonDNA()
+        self.customerDNA = ToonDNA.ToonDNA()
         self.customerDNA.makeFromNetString(av.getDNAString())
 
-        self.customerId = avId
         self.occupied = avId
 
         self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleUnexpectedExit, extraArgs = [avId])
@@ -116,7 +113,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         topList = self.ownerAv.getClothesTopsList()
         botList = self.ownerAv.getClothesBottomsList()
 
-        self.sendUpdate('setState', [OPEN, self.customerId, self.ownerAv.do_id, self.ownerAv.dna.gender, topList, botList])
+        self.sendUpdate('setState', [OPEN, self.occupied, self.ownerAv.do_id, self.ownerAv.dna.gender, topList, botList])
 
         taskMgr.doMethodLater(TIMEOUT_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
 
@@ -131,7 +128,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
     def setDNA(self, blob, finished, which):
         avId = self.air.currentAvatarSender
 
-        if avId != self.customerId:
+        if avId != self.occupied:
             return
 
         if avId in self.air.doTable:
@@ -179,7 +176,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
             self.completePurchase(avId)
 
     def handleUnexpectedExit(self, avId):
-        if (self.customerId == avId):
+        if (self.occupied == avId):
             taskMgr.remove(self.uniqueName('clearMovie'))
             toon = self.air.doTable.get(avId)
 
@@ -193,7 +190,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
             self.sendClearMovie()
 
     def handleBootMessage(self, avId):
-        if (self.customerId == avId):
+        if (self.occupied == avId):
             if self.customerDNA:
                 toon = self.air.doTable.get(avId)
 
@@ -204,13 +201,13 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
 
     def updateToonClothes(self, av, blob):
         # This is what the client has told us the new DNA should be
-        proposedDNA = ToonDNA()
+        proposedDNA = ToonDNA.ToonDNA()
         proposedDNA.makeFromNetString(blob)
 
         # Don't completely trust the client. Enforce that only the clothes
         # change here. This eliminates the possibility of the gender, species, etc
         # of the toon changing, or a bug being exploited.
-        updatedDNA = ToonDNA()
+        updatedDNA = ToonDNA.ToonDNA()
         updatedDNA.makeFromNetString(self.customerDNA.makeNetString())
         updatedDNA.topTex = proposedDNA.topTex
         updatedDNA.topTexColor = proposedDNA.topTexColor
@@ -268,7 +265,6 @@ class DistributedTrunkAI(DistributedClosetAI):
         self.customerDNA = (av.getHat(), av.getGlasses(),
                             av.getBackpack(), av.getShoes())
 
-        self.customerId = avId
         self.occupied = avId
 
         self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.handleUnexpectedExit, extraArgs = [avId])
@@ -320,17 +316,86 @@ class DistributedTrunkAI(DistributedClosetAI):
 
         avId = self.air.currentAvatarSender
 
-        if avId != self.customerId:
+        if avId != self.occupied:
             return
 
         if avId in self.air.doTable:
             av = self.air.doTable[avId]
 
+            hat = (hatId, hatTex, hatColor)
+            glasses = (glassesId, glassesTex, glassesColor)
+            backpack = (backpackId, backpackTex, backpackColor)
+            shoes = (shoesId, shoesTex, shoesColor)
+
+            if not av.checkAccessorySanity(ToonDNA.HAT, hat[0], hat[1], hat[2]):
+                return
+            if not av.checkAccessorySanity(ToonDNA.GLASSES, glasses[0], glasses[1], glasses[2]):
+                return
+            if not av.checkAccessorySanity(ToonDNA.BACKPACK, backpack[0], backpack[1], backpack[2]):
+                return
+            if not av.checkAccessorySanity(ToonDNA.SHOES, shoes[0], shoes[1], shoes[2]):
+                return
+                
+            if not finished:
+                self.sendUpdate('setCustomerDNA',
+                                [avId, hatId, hatTex, hatColor, glassesId, glassesTex, glassesColor,
+                                 backpackId, backpackTex, backpackColor, shoesId, shoesTex, shoesColor, which])
+                return
+                
+            if finished == 1: # Cancel
+                self.handleCleanFinish()
+            else: # Finished
+                if avId != self.ownerId:
+                    return
+
+                if which & ToonDNA.HAT:
+                    avHat = av.getHat()
+                    if av.replaceItemInAccessoriesList(ToonDNA.HAT, avHat[0], avHat[1], avHat[2], hat[0], hat[1], hat[2]):
+                        av.b_setHat(*hat)
+
+                if which & ToonDNA.GLASSES:
+                    avGlasses = av.getGlasses()
+                    if av.replaceItemInAccessoriesList(ToonDNA.GLASSES, avGlasses[0], avGlasses[1], avGlasses[2], glasses[0], glasses[1], glasses[2]):
+                        av.b_setGlasses(*glasses)
+
+                if which & ToonDNA.BACKPACK:
+                    avBackpack = av.getBackpack()
+                    if av.replaceItemInAccessoriesList(ToonDNA.BACKPACK, avBackpack[0], avBackpack[1], avBackpack[2], backpack[0], backpack[1], backpack[2]):
+                        av.b_setBackpack(*backpack)
+
+                if which & ToonDNA.SHOES:
+                    avShoes = av.getShoes()
+                    if av.replaceItemInAccessoriesList(ToonDNA.SHOES, avShoes[0], avShoes[1], avShoes[2], shoes[0], shoes[1], shoes[2]):
+                        av.b_setShoes(*shoes)
+
+                for item in self.removedItems[:]:
+                    self.removedItems.remove(item)
+                    av.removeItemInAccessoriesList(*item)
+
+                av.b_setHatList(av.getHatList())
+                av.b_setGlassesList(av.getGlassesList())
+                av.b_setBackpackList(av.getBackpackList())
+                av.b_setShoesList(av.getShoesList())
+
+                self.handleCleanFinish()
+
+            self.ignoreAll()
+
+    def handleCleanFinish(self):
+        self.customerDNA = None
+        self.gender = ''
+        self.emptyLists()
+        self.d_setMovie(CLOSET_MOVIE_COMPLETE)
+        self.occupied = 0              
+        self.d_setMovie(CLOSET_MOVIE_CLEAR)
+        self.d_clearCustomerDNA()
+        self.d_setState(CLOSED)
+
     def handleUnexpectedExit(self, avId):
-        if avId != self.customerId:
+        if avId != self.occupied:
             return
 
-        self.customerId = 0
+        self.occupied = 0
         self.customerDNA = None
         self.gender = ''
         self.emptyLists()

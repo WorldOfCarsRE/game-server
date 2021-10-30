@@ -301,3 +301,6 @@ class CatalogManagerAI(DistributedObjectAI):
         if avatar and avatar.catalogScheduleNextTime == 0:
             print("starting catalog for %s" % (avatar.getName()))
             self.deliverCatalogFor(avatar)
+
+    def isItemReleased(self, item):
+        return 1 # TODO

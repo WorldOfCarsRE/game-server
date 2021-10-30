@@ -10,9 +10,10 @@ from ai.fishing.FishBase import FishBase
 from ai.fishing.FishCollectionEnum import *
 from ai.toon.Inventory import Inventory
 
-from ai.toon.ToonDNA import ToonDNA
+from ai.toon import ToonDNA
 from ai import ToontownGlobals
 from ai.catalog.CatalogItemList import CatalogItemList
+from ai.catalog import CatalogAccessoryItem
 from ai.catalog import CatalogItem
 import time
 
@@ -151,7 +152,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.ghostMode = 0
         self.numMailItems = 0
         self.awardNotify = ToontownGlobals.NoItems
-        self.dna = ToonDNA()
+        self.dna = ToonDNA.ToonDNA()
         self.maxAccessories = 0
         self.hatList = []
         self.glassesList = []
@@ -581,41 +582,263 @@ class DistributedToonAI(DistributedPlayerAI):
         self.setMaxAccessories(maxAccessories)
         self.d_setMaxAccessories(maxAccessories)
 
+    def checkAccessorySanity(self, accessoryType, idx, textureIdx, colorIdx):
+        if idx == 0 and textureIdx == 0 and colorIdx == 0:
+            return 1
+        if accessoryType == ToonDNA.HAT:
+            stylesDict = ToonDNA.HatStyles
+            accessoryTypeStr = 'Hat'
+        elif accessoryType == ToonDNA.GLASSES:
+            stylesDict = ToonDNA.GlassesStyles
+            accessoryTypeStr = 'Glasses'
+        elif accessoryType == ToonDNA.BACKPACK:
+            stylesDict = ToonDNA.BackpackStyles
+            accessoryTypeStr = 'Backpack'
+        elif accessoryType == ToonDNA.SHOES:
+            stylesDict = ToonDNA.ShoesStyles
+            accessoryTypeStr = 'Shoes'
+        else:
+            return 0
+        try:
+            styleStr = list(stylesDict.keys())[list(stylesDict.values()).index([idx, textureIdx, colorIdx])]
+            accessoryItemId = 0
+            for itemId in list(CatalogAccessoryItem.AccessoryTypes.keys()):
+                if styleStr == CatalogAccessoryItem.AccessoryTypes[itemId][CatalogAccessoryItem.ATString]:
+                    accessoryItemId = itemId
+                    break
+
+            if accessoryItemId == 0:
+                return 0
+            #if not simbase.config.GetBool('want-check-accessory-sanity', False):
+            return 1
+            #accessoryItem = CatalogAccessoryItem.CatalogAccessoryItem(accessoryItemId)
+            #result = self.air.catalogManager.isItemReleased(accessoryItem)
+            #return result
+        except:
+            return 0
+
+    def addToAccessoriesList(self, accessoryType, geomIdx, texIdx, colorIdx):
+        if self.isTrunkFull():
+            return 0
+        if accessoryType == ToonDNA.HAT:
+            itemList = self.hatList
+        elif accessoryType == ToonDNA.GLASSES:
+            itemList = self.glassesList
+        elif accessoryType == ToonDNA.BACKPACK:
+            itemList = self.backpackList
+        elif accessoryType == ToonDNA.SHOES:
+            itemList = self.shoesList
+        else:
+            return 0
+        index = 0
+        for i in range(0, len(itemList), 3):
+            if itemList[i] == geomIdx and itemList[i + 1] == texIdx and itemList[i + 2] == colorIdx:
+                return 0
+
+        if accessoryType == ToonDNA.HAT:
+            self.hatList.append(geomIdx)
+            self.hatList.append(texIdx)
+            self.hatList.append(colorIdx)
+        elif accessoryType == ToonDNA.GLASSES:
+            self.glassesList.append(geomIdx)
+            self.glassesList.append(texIdx)
+            self.glassesList.append(colorIdx)
+        elif accessoryType == ToonDNA.BACKPACK:
+            self.backpackList.append(geomIdx)
+            self.backpackList.append(texIdx)
+            self.backpackList.append(colorIdx)
+        elif accessoryType == ToonDNA.SHOES:
+            self.shoesList.append(geomIdx)
+            self.shoesList.append(texIdx)
+            self.shoesList.append(colorIdx)
+        return 1
+
+    def replaceItemInAccessoriesList(self, accessoryType, geomIdxA, texIdxA, colorIdxA, geomIdxB, texIdxB, colorIdxB):
+        if accessoryType == ToonDNA.HAT:
+            itemList = self.hatList
+        elif accessoryType == ToonDNA.GLASSES:
+            itemList = self.glassesList
+        elif accessoryType == ToonDNA.BACKPACK:
+            itemList = self.backpackList
+        elif accessoryType == ToonDNA.SHOES:
+            itemList = self.shoesList
+        else:
+            return 0
+        index = 0
+        for i in range(0, len(itemList), 3):
+            if itemList[i] == geomIdxA and itemList[i + 1] == texIdxA and itemList[i + 2] == colorIdxA:
+                if accessoryType == ToonDNA.HAT:
+                    self.hatList[i] = geomIdxB
+                    self.hatList[i + 1] = texIdxB
+                    self.hatList[i + 2] = colorIdxB
+                elif accessoryType == ToonDNA.GLASSES:
+                    self.glassesList[i] = geomIdxB
+                    self.glassesList[i + 1] = texIdxB
+                    self.glassesList[i + 2] = colorIdxB
+                elif accessoryType == ToonDNA.BACKPACK:
+                    self.backpackList[i] = geomIdxB
+                    self.backpackList[i + 1] = texIdxB
+                    self.backpackList[i + 2] = colorIdxB
+                else:
+                    self.shoesList[i] = geomIdxB
+                    self.shoesList[i + 1] = texIdxB
+                    self.shoesList[i + 2] = colorIdxB
+                return 1
+
+        return 0
+
+    def removeItemInAccessoriesList(self, accessoryType, geomIdx, texIdx, colorIdx):
+        if accessoryType == ToonDNA.HAT:
+            itemList = self.hatList
+        elif accessoryType == ToonDNA.GLASSES:
+            itemList = self.glassesList
+        elif accessoryType == ToonDNA.BACKPACK:
+            itemList = self.backpackList
+        elif accessoryType == ToonDNA.SHOES:
+            itemList = self.shoesList
+        else:
+            return 0
+        listLen = len(itemList)
+        if listLen < 3:
+            print('Accessory list is not long enough to delete anything')
+            return 0
+        index = 0
+        for i in range(0, len(itemList), 3):
+            if itemList[i] == geomIdx and itemList[i + 1] == texIdx and itemList[i + 2] == colorIdx:
+                itemList = itemList[0:i] + itemList[i + 3:listLen]
+                if accessoryType == ToonDNA.HAT:
+                    self.hatList = itemList[:]
+                    styles = ToonDNA.HatStyles
+                    descDict = TTLocalizer.HatStylesDescriptions
+                elif accessoryType == ToonDNA.GLASSES:
+                    self.glassesList = itemList[:]
+                    styles = ToonDNA.GlassesStyles
+                    descDict = TTLocalizer.GlassesStylesDescriptions
+                elif accessoryType == ToonDNA.BACKPACK:
+                    self.backpackList = itemList[:]
+                    styles = ToonDNA.BackpackStyles
+                    descDict = TTLocalizer.BackpackStylesDescriptions
+                elif accessoryType == ToonDNA.SHOES:
+                    self.shoesList = itemList[:]
+                    styles = ToonDNA.ShoesStyles
+                    descDict = TTLocalizer.ShoesStylesDescriptions
+                styleName = 'none'
+                for style in styles.items():
+                    if style[1] == [geomIdx, texIdx, colorIdx]:
+                        styleName = style[0]
+                        break
+
+                return 1
+
+        return 0
+
     def getMaxAccessories(self):
         return self.maxAccessories
+
+    def isTrunkFull(self, extraAccessories = 0):
+        numAccessories = (len(self.hatList) + len(self.glassesList) + len(self.backpackList) + len(self.shoesList)) / 3
+        return numAccessories + extraAccessories >= self.maxAccessories
+
+    def d_setHatList(self, hatList):
+        self.sendUpdate('setHatList', [hatList])
+
+    def setHatList(self, hatList):
+        self.hatList = hatList
+
+    def b_setHatList(self, hatList):
+        self.setHatList(hatList)
+        self.d_setHatList(hatList)
 
     def getHatList(self):
         return self.hatList
 
+    def d_setGlassesList(self, glassesList):
+        self.sendUpdate('setGlassesList', [glassesList])
+
+    def setGlassesList(self, glassesList):
+        self.glassesList = glassesList
+
+    def b_setGlassesList(self, glassesList):
+        self.setGlassesList(glassesList)
+        self.d_setGlassesList(glassesList)
+
     def getGlassesList(self):
         return self.glassesList
+
+    def d_setBackpackList(self, backpackList):
+        self.sendUpdate('setBackpackList', [backpackList])
+
+    def setBackpackList(self, backpackList):
+        self.backpackList = backpackList
+
+    def b_setBackpackList(self, backpackList):
+        self.setBackpackList(backpackList)
+        self.d_setBackpackList(backpackList)
 
     def getBackpackList(self):
         return self.backpackList
 
+    def d_setShoesList(self, shoesList):
+        self.sendUpdate('setShoesList', [shoesList])
+
+    def setShoesList(self, shoesList):
+        self.shoesList = shoesList
+
+    def b_setShoesList(self, shoesList):
+        self.setShoesList(shoesList)
+        self.d_setShoesList(shoesList)
+
     def getShoesList(self):
         return self.shoesList
+
+    def b_setHat(self, hatId, tex, color):
+        self.setHat(hatId, tex, color)
+        self.d_setHat(hatId, tex, color)
 
     def setHat(self, hatId, tex, color):
         self.hat = (hatId, tex, color)
 
+    def d_setHat(self, hatId, tex, color):
+        self.sendUpdate('setHat', [hatId, tex, color])
+
     def getHat(self):
         return self.hat
+
+    def b_setGlasses(self, glassesId, tex, color):
+        self.setGlasses(glassesId, tex, color)
+        self.d_setGlasses(glassesId, tex, color)
 
     def setGlasses(self, glassesId, tex, color):
         self.glasses = (glassesId, tex, color)
 
+    def d_setGlasses(self, shoesId, tex, color):
+        self.sendUpdate('setGlasses', [shoesId, tex, color])
+
     def getGlasses(self):
         return self.glasses
+
+    def b_setBackpack(self, backpackId, tex, color):
+        self.setBackpack(backpackId, tex, color)
+        self.d_setBackpack(backpackId, tex, color)
 
     def setBackpack(self, backpackId, tex, color):
         self.backpack = (backpackId, tex, color)
 
+    def d_setBackpack(self, backpackId, tex, color):
+        self.sendUpdate('setBackpack', [backpackId, tex, color])
+
     def getBackpack(self):
         return self.backpack
 
+    def b_setShoes(self, shoesId, tex, color):
+        self.setShoes(shoesId, tex, color)
+        self.d_setShoes(shoesId, tex, color)
+
     def setShoes(self, shoesId, tex, color):
         self.shoes = (shoesId, tex, color)
+
+    def d_setShoes(self, shoesId, tex, color):
+        self.sendUpdate('setShoes', [shoesId, tex, color])
 
     def getShoes(self):
         return self.shoes
