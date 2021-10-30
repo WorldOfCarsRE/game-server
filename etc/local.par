@@ -14,7 +14,7 @@ MIN_CHANNEL=2000000000
 MAX_CHANNEL=2000999999
 
 # The client/server version.
-# This is checked against the client to make sure they match.
+# This is checked against the client's version to make sure they match.
 Version=dev
 
 [StateServer]
