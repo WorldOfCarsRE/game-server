@@ -596,26 +596,26 @@ class DistributedToonAI(DistributedPlayerAI):
     def getShoesList(self):
         return self.shoesList
 
-    def setHat(self, id, tex, color):
-        self.hat = (id, tex, color)
+    def setHat(self, hatId, tex, color):
+        self.hat = (hatId, tex, color)
 
     def getHat(self):
         return self.hat
 
-    def setGlasses(self, id, tex, color):
-        self.glasses = (id, text, color)
+    def setGlasses(self, glassesId, tex, color):
+        self.glasses = (glassesId, text, color)
 
     def getGlasses(self):
         return self.glasses
 
-    def setBackpack(self, id, tex, color):
-        self.backpack = (id, tex, color)
+    def setBackpack(self, backpackId, tex, color):
+        self.backpack = (backpackId, tex, color)
 
     def getBackpack(self):
         return self.backpack
 
-    def setShoes(self, id, tex, color):
-        self.shoes = (id, tex, color)
+    def setShoes(self, shoesId, tex, color):
+        self.shoes = (shoesId, tex, color)
 
     def getShoes(self):
         return self.shoes
