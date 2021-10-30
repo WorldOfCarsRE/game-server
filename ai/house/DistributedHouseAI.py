@@ -205,6 +205,9 @@ class DistributedHouseAI(DistributedObjectAI):
     def getAvatarId(self) -> int:
         return self.avId
 
+    def setName(self, name):
+        self.name = name
+
     def getName(self) -> str:
         return self.name
 
