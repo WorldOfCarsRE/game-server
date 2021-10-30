@@ -2,6 +2,7 @@ from ai.DistributedNodeAI import DistributedNodeAI
 from ai.toon import NPCToons
 from ai.toon.Inventory import Inventory
 from ai.toon.ToonDNA import ToonDNA
+from direct.task.Task import Task
 
 SHIRT = 0x1
 SHORTS = 0x2
