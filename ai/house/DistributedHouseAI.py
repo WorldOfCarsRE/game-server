@@ -71,6 +71,43 @@ class DistributedHouseAI(DistributedObjectAI):
 
         self.resetFurniture()
 
+        owner = self.air.doTable.get(self.avId)
+
+        if owner and hasattr(owner, 'onOrder'):
+            # The avatar is in the live database.
+            hp = owner.getMaxHp()
+            self.__checkMailbox(owner.onOrder, owner.mailboxContents, 1, owner.awardMailboxContents, owner.numMailItems, owner.getNumInvitesToShowInMailbox())
+        else:
+            # TODO
+            pass
+
+    def __checkMailbox(self, onOrder, mailboxContents, liveDatabase, awardMailboxContents, numMailItems = 0, numPartyInvites = 0):
+        # We have gotten the above data for the owner of this house.
+        # Check whether we should raise the flag because he has
+        # something in his mailbox.
+
+        # Is the mailbox full?
+        if mailboxContents or (numMailItems > 0) or (numPartyInvites > 0) or awardMailboxContents:
+            self.mailbox.b_setFullIndicator(1)
+
+        elif onOrder:
+            # Maybe we have something coming soon.
+            nextTime = onOrder.getNextDeliveryDate()
+
+            if nextTime != None:
+                duration = nextTime * 60 - time.time()
+
+                if (duration > 0):
+                    if not liveDatabase:
+                        # If the toon is expecting a delivery later,
+                        # set a timer to raise the flag at that
+                        # time--but don't bother if the toon was found
+                        # in the live database (because in that case,
+                        # the DistributedToonAI will raise the flag).
+                        self.mailbox.raiseFlagLater(duration)
+                else:
+                    self.mailbox.b_setFullIndicator(1)
+
         # Now tell the client that the house is ready.
         self.d_setHouseReady()
 
