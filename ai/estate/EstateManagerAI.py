@@ -51,6 +51,7 @@ class EstateManagerAI(DistributedObjectAI):
         self.handleCleanup(avId)
 
     def exitEstate(self):
+        # TODO: This needs to remove visitors.
         avId = self.air.currentAvatarSender
 
         self.handleCleanup(avId)
