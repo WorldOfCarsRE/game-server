@@ -9,6 +9,7 @@ from ai.globals.HoodGlobals import ToonHall
 from direct.fsm.FSM import FSM
 
 from . import DoorTypes
+from ai.building.DistributedKnockKnockDoorAI import DistributedKnockKnockDoorAI
 
 class DistributedBuildingAI(DistributedObjectAI, FSM):
     defaultTransitions = {
@@ -81,6 +82,5 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
         self.npcs = NPCToons.createNpcsInZone(self.air, self.interiorZoneId)
 
         # self.becameSuitTime = 0
-        # self.knockKnock = DistributedKnockKnockDoorAI.DistributedKnockKnockDoorAI(self.air, self.block)
-        # self.knockKnock.generateWithRequired(exteriorZoneId)
-        # self.air.writeServerEvent('building-toon', self.do_id, '%s|%s' % (self.zoneId, self.block))
+        self.knockKnock = DistributedKnockKnockDoorAI(self.air, self.block)
+        self.knockKnock.generateWithRequired(self.exteriorZoneId)
