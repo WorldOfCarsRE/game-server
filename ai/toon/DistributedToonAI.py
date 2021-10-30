@@ -153,6 +153,14 @@ class DistributedToonAI(DistributedPlayerAI):
         self.awardNotify = ToontownGlobals.NoItems
         self.dna = ToonDNA()
         self.maxAccessories = 0
+        self.hatList = []
+        self.glassesList = []
+        self.backpackList = []
+        self.shoesList = []
+        self.hat = (0, 0, 0)
+        self.glasses = (0, 0, 0)
+        self.backpack = (0, 0, 0)
+        self.shoes = (0, 0, 0)
 
     def setDNAString(self, dnaString):
         self.dna.makeFromNetString(dnaString)
@@ -577,28 +585,40 @@ class DistributedToonAI(DistributedPlayerAI):
         return self.maxAccessories
 
     def getHatList(self):
-        return []
+        return self.hatList
 
     def getGlassesList(self):
-        return []
+        return self.glassesList
 
     def getBackpackList(self):
-        return []
+        return self.backpackList
 
     def getShoesList(self):
-        return []
+        return self.shoesList
+
+    def setHat(self, id, tex, color):
+        self.hat = (id, tex, color)
 
     def getHat(self):
-        return 0, 0, 0
+        return self.hat
+
+    def setGlasses(self, id, tex, color):
+        self.glasses = (id, text, color)
 
     def getGlasses(self):
-        return 0, 0, 0
+        return self.glasses
+
+    def setBackpack(self, id, tex, color):
+        self.backpack = (id, tex, color)
 
     def getBackpack(self):
-        return 0, 0, 0
+        return self.backpack
+
+    def setShoes(self, id, tex, color):
+        self.shoes = (id, tex, color)
 
     def getShoes(self):
-        return 0, 0, 0
+        return self.shoes
 
     def getGardenSpecials(self):
         return []
