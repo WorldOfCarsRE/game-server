@@ -184,21 +184,21 @@ class SafeZoneAI(PlaceAI):
         self.dna[self.zone_id], self.storage[self.zone_id] = load_dna_file('dna/files/' + DNA_MAP[self.zone_id])
 
         for block in self.storage[self.zone_id].blocks:
-            building_type = self.storage[self.zone_id].block_building_types[block]
+            buildingType = self.storage[self.zone_id].block_building_types[block]
             interiorZone = self.getInteriorZone(self.zone_id, block)
             exteriorZone = self.storage[self.zone_id].block_zones.get(block, self.zone_id)
 
-            if building_type == 'hq':
+            if buildingType == 'hq':
                 self.buildings[block] = HQBuildingAI(self.air, exteriorZone, interiorZone, block)
-            elif building_type == 'gagshop':
+            elif buildingType == 'gagshop':
                 self.buildings[block] = GagshopBuildingAI(self.air, exteriorZone, interiorZone, block)
-            elif building_type == 'petshop':
+            elif buildingType == 'petshop':
                 # TODO
                 pass
-            elif building_type == 'kartshop':
+            elif buildingType == 'kartshop':
                 # TODO
                 pass
-            elif building_type == 'animbldg':
+            elif buildingType == 'animbldg':
                 # TODO
                 pass
             else:
