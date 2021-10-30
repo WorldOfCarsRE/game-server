@@ -80,3 +80,17 @@ class EstateManagerAI(DistributedObjectAI):
 
     def handleGetEstate(self, avId: int):
         self.sendUpdateToAvatar(avId, 'setEstateZone', [avId, self.estateZones[avId]])
+
+    def removeFriend(self, ownerId, friendId):
+        sender = self.air.currentAvatarSender
+
+        if sender != ownerId:
+            return
+
+        if friendId == ownerId:
+            return
+
+        friend = self.air.doTable.get(friendId)
+
+        if friend:
+            self.sendUpdateToAvatar(friendId, 'sendAvToPlayground', [friendId, 1])
