@@ -163,6 +163,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.backpack = (0, 0, 0)
         self.shoes = (0, 0, 0)
         self.nametagStyle = 0
+        self.emoteAccess = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def setDNAString(self, dnaString):
         self.dna.makeFromNetString(dnaString)
@@ -847,8 +848,18 @@ class DistributedToonAI(DistributedPlayerAI):
     def getGardenSpecials(self):
         return []
 
+    def b_setEmoteAccess(self, bits):
+        self.setEmoteAccess(bits)
+        self.d_setEmoteAccess(bits)
+
+    def d_setEmoteAccess(self, bits):
+        self.sendUpdate('setEmoteAccess', [bits])
+
+    def setEmoteAccess(self, bits):
+        self.emoteAccess = bits
+
     def getEmoteAccess(self):
-        return [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        return self.emoteAccess
 
     def b_setCustomMessages(self, customMessages):
         self.d_setCustomMessages(customMessages)
