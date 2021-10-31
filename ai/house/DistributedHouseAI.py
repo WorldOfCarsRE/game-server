@@ -71,6 +71,11 @@ class DistributedHouseAI(DistributedObjectAI):
 
         self.resetFurniture()
 
+        if self.avId == 0:
+            # No owner. Duh.
+            self.d_setHouseReady()
+            return
+
         owner = self.air.doTable.get(self.avId)
 
         if owner and hasattr(owner, 'onOrder'):
