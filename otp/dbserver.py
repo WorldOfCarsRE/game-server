@@ -129,8 +129,8 @@ from dc.util import Datagram
 class DBServer(DownstreamMessageDirector):
     upstream_protocol = DBServerProtocol
 
-    min_channel = 100000000
-    max_channel = 200000000
+    minChannel = config['DatabaseServer.MinRange']
+    maxChannel = config['DatabaseServer.MaxRange']
 
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)

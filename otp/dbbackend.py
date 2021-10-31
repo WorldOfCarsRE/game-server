@@ -211,19 +211,57 @@ class SQLBackend(DatabaseBackend):
         conn.close()
         self.pool.release(conn)
 
+class GenerateRange:
+    def __init__(self, minimum, maximum):
+        self.minimum = minimum
+        self.maximum = maximum
+        self.current = None
+
+    def getMin(self):
+        return self.minimum
+
+    def getMax(self):
+        return self.maximum
+
+    def setCurrent(self, current):
+        self.current = current
+
+    def getCurrent(self):
+        return self.current
+
 class MongoBackend(DatabaseBackend):
     def __init__(self, service):
         DatabaseBackend.__init__(self, service)
         self.mongodb = None
 
+        # Create our generate range.
+        self.generateRange = GenerateRange(self.service.minChannel, self.service.maxChannel)
+
     async def setup(self):
         client = MongoClient(config['MongoDB.Host'])
         self.mongodb = client[config['MongoDB.Name']]
 
-    async def queryDC(self, do_id: int) -> str:
+        # Check if we need to create our initial entries in the database.
+        entry = self.mongodb.objects.find_one({'type': 'objectId'})
+
+        if entry is None:
+            # We need to create our initial entry.
+            self.mongodb.objects.insert_one({'type': 'objectId', 'nextId': self.generateRange.getMin()})
+            self.generateRange.setCurrent(self.generateRange.getMin())
+        else:
+            # Update our generate range current id.
+            self.generateRange.setCurrent(entry['nextId'])
+
+    async def generateObjectId(self):
+        currentId = self.generateRange.getCurrent()
+        self.generateRange.setCurrent(currentId + 1)
+        self.mongodb.objects.update({'type': 'objectId'}, {'$set': {'nextId': currentId + 1}})
+        return currentId
+
+    async def queryDC(self, doId: int) -> str:
         cursor = self.mongodb.objects
-        fields = cursor.find_one({'do_id': do_id})
-        return fields['class_name']
+        fields = cursor.find_one({'_id': doId})
+        return fields['className']
 
     async def create_object(self, dclass, fields: List[Tuple[str, bytes]]):
         columns = [field[0] for field in fields]
@@ -233,15 +271,15 @@ class MongoBackend(DatabaseBackend):
                 if field.name not in columns:
                     raise OTPCreateFailed(f'Missing required db field: {field.name}')
 
-        count = self.mongodb.objects.count()
+        objectId = await self.generateObjectId()
 
         data = {}
-        data['class_name'] = dclass.name
-        data['do_id'] = count + 1
+        data['_id'] = objectId
+        data['className'] = dclass.name
         self.mongodb.objects.insert_one(data)
 
         dcData = {}
-        dcData['do_id'] = count + 1
+        dcData['_id'] = objectId
         dcData['DcObjectType'] = dclass.name
 
         for field in fields:
@@ -251,26 +289,26 @@ class MongoBackend(DatabaseBackend):
         table = getattr(self.mongodb, dclass.name)
         table.insert_one(dcData)
 
-        return count + 1
+        return objectId
 
-    async def query_object_all(self, do_id, dclass_name=None):
+    async def query_object_all(self, doId, dclass_name=None):
         if dclass_name is None:
-            dclass_name = await self.queryDC(do_id)
+            dclass_name = await self.queryDC(doId)
 
         try:
             cursor = getattr(self.mongodb, dclass_name)
         except:
             raise OTPQueryFailed('Tried to query with invalid dclass name: %s' % dclass_name)
 
-        fields = cursor.find_one({'do_id': do_id})
+        fields = cursor.find_one({'_id': doId})
         return fields
 
-    async def query_object_fields(self, do_id, field_names, dclass_name=None):
+    async def query_object_fields(self, doId, field_names, dclass_name=None):
         if dclass_name is None:
-            dclass_name = await self.queryDC(do_id)
+            dclass_name = await self.queryDC(doId)
 
         cursor = getattr(self.mongodb, dclass_name)
-        fields = cursor.find_one({'do_id': do_id})
+        fields = cursor.find_one({'_id': doId})
 
         values = {}
 
@@ -280,21 +318,21 @@ class MongoBackend(DatabaseBackend):
 
         return values
 
-    async def set_field(self, do_id, field_name, value, dclass_name=None):
+    async def set_field(self, doId, field_name, value, dclass_name=None):
         if dclass_name is None:
-            dclass_name = await self.queryDC(do_id)
+            dclass_name = await self.queryDC(doId)
 
-        queryData = {'do_id': do_id}
+        queryData = {'_id': doId}
         updatedVal = {'$set': {field_name: value}}
 
         table = getattr(self.mongodb, dclass_name)
         table.update_one(queryData, updatedVal)
 
-    async def set_fields(self, do_id, fields, dclass_name=None):
+    async def set_fields(self, doId, fields, dclass_name=None):
         if dclass_name is None:
-            dclass_name = await self.queryDC(do_id)
+            dclass_name = await self.queryDC(doId)
 
-        queryData = {'do_id': do_id}
+        queryData = {'_id': doId}
         table = getattr(self.mongodb, dclass_name)
 
         for fieldName, value in fields:

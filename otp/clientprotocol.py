@@ -97,12 +97,12 @@ CLIENTAGENT_SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 @dataclass
 class DISLAccount:
     username: bytes
-    disl_id: int
+    dislId: int
     access: bytes
-    account_type: bytes
-    create_friends_with_chat: bytes
-    chat_code_creation_rule: bytes
-    whitelist_chat_enabled: bytes
+    accountType: bytes
+    createFriendsWithChat: bytes
+    chatCodeCreationRule: bytes
+    whitelistChatEnabled: bytes
 
 class ClientProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):
@@ -423,6 +423,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.add_uint16(0)
 
         default_toon = dict(DEFAULT_TOON)
+        print(default_toon)
         default_toon['setDNAString'] = (dna,)
         default_toon['setDISLid'] = (self.account.disl_id,)
         default_toon['WishName'] = ('',)
@@ -765,19 +766,19 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp = Datagram()
         resp.add_uint16(CLIENT_LOGIN_TOONTOWN_RESP)
 
-        return_code = 0  # -13 == period expired
-        resp.add_uint8(return_code)
+        returnCode = 0  # -13 == period expired
+        resp.add_uint8(returnCode)
 
-        error_string = b'' # 'Bad DC Version Compare'
-        resp.add_string16(error_string)
+        errorString = b'' # 'Bad DC Version Compare'
+        resp.add_string16(errorString)
 
-        resp.add_uint32(self.account.disl_id)
+        resp.add_uint32(self.account.dislId)
         resp.add_string16(self.account.username)
         account_name_approved = True
         resp.add_uint8(account_name_approved)
-        resp.add_string16(self.account.whitelist_chat_enabled)
-        resp.add_string16(self.account.create_friends_with_chat)
-        resp.add_string16(self.account.chat_code_creation_rule)
+        resp.add_string16(self.account.whitelistChatEnabled)
+        resp.add_string16(self.account.createFriendsWithChat)
+        resp.add_string16(self.account.chatCodeCreationRule)
 
         t = time.time() * 10e6
         usecs = int(t % 10e6)
@@ -786,14 +787,14 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.add_uint32(usecs)
 
         resp.add_string16(self.account.access)
-        resp.add_string16(self.account.whitelist_chat_enabled)
+        resp.add_string16(self.account.whitelistChatEnabled)
 
-        last_logged_in = time.strftime('%c')  # time.strftime('%c')
-        resp.add_string16(last_logged_in.encode('utf-8'))
+        lastLoggedIn = time.strftime('%c') # time.strftime('%c')
+        resp.add_string16(lastLoggedIn.encode('utf-8'))
 
         account_days = 0
         resp.add_int32(account_days)
-        resp.add_string16(self.account.account_type)
+        resp.add_string16(self.account.accountType)
         resp.add_string16(self.account.username)
 
         self.send_datagram(resp)

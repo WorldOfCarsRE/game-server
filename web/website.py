@@ -1,4 +1,5 @@
 from otp import config
+from otp.dbserver import GenerateRange
 
 from aiohttp import web
 from pymongo import MongoClient
@@ -118,7 +119,8 @@ async def handle_login(request):
 
     if not info:
         print(f'Creating new account for {username}...')
-        info = await create_new_account(username, password, pool)
+        genRange = request.app['generateRange']
+        info = await create_new_account(username, password, pool, genRange)
 
     cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'].encode(), 10000)
 
@@ -142,7 +144,7 @@ async def handle_login(request):
     action = 'LOGIN_ACTION=PLAY'
     token = f'{token.hex()}'
     username = f'{username}'
-    disl_id = f'GAME_DISL_ID={info["disl_id"]}'
+    dislid = f'GAME_DISL_ID={info["dislId"]}'
     download_url = f'PANDA_DOWNLOAD_URL=http://{HOST}:{PORT}/'
     account_url = f'ACCOUNT_SERVER=http://{HOST}:{PORT}/'
     is_test_svr = 'IS_TEST_SERVER=0'
@@ -159,18 +161,24 @@ async def handle_login(request):
 
     return web.json_response(response)
 
-async def create_new_account(username: str, password: str, cursor: MongoClient):
+async def generateObjectId(genRange: GenerateRange, cursor: MongoClient):
+    currentId = genRange.getCurrent()
+    genRange.setCurrent(currentId + 1)
+    cursor.objects.update_one({'type': 'objectId'}, {'$set': {'nextId': currentId + 1}})
+    return currentId
+
+async def create_new_account(username: str, password: str, cursor: MongoClient, genRange: GenerateRange):
     salt = binascii.b2a_base64(hashlib.sha256(os.urandom(60)).digest()).strip()
     accHash = binascii.b2a_base64(hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 10000)).strip().decode()
 
     try:
         data = {}
-        data['class_name'] = 'Account'
-        data['do_id'] = cursor.objects.count() + 1
+        data['className'] = 'Account'
+        data['_id'] = await generateObjectId(genRange, cursor)
         cursor.objects.insert_one(data)
         print('inserted')
 
-        print('CREATED NEW ACCOUNT WITH ID: %s' % data['do_id'])
+        print('CREATED NEW ACCOUNT WITH ID: %s' % data['_id'])
 
         array = (0).to_bytes(4, 'little') * 6
         av_set = len(array).to_bytes(2, 'little') + array
@@ -179,7 +187,7 @@ async def create_new_account(username: str, password: str, cursor: MongoClient):
 
         cmdData = {}
 
-        cmdData['do_id'] = data['do_id']
+        cmdData['_id'] = data['_id']
         cmdData['DcObjectType'] = 'Account'
 
         for field in fields:
@@ -192,12 +200,12 @@ async def create_new_account(username: str, password: str, cursor: MongoClient):
         acc['username'] = username
         acc['hash'] = accHash
         acc['salt'] = salt.decode()
-        acc['disl_id'] = data['do_id']
+        acc['dislId'] = data['_id']
         acc['access'] = 'FULL'
-        acc['account_type'] = 'NO_PARENT_ACCOUNT'
-        acc['create_friends_with_chat'] = 'YES'
-        acc['chat_code_creation_rule'] = 'YES'
-        acc['whitelist_chat_enabled'] = 'YES'
+        acc['accountType'] = 'NO_PARENT_ACCOUNT'
+        acc['createFriendsWithChat'] = 'YES'
+        acc['chatCodeCreationRule'] = 'YES'
+        acc['whitelistChatEnabled'] = 'YES'
 
         cursor.accounts.insert_one(acc)
         return acc
@@ -259,6 +267,20 @@ async def init_app():
 
     pool = MongoClient(config['MongoDB.Host'])[config['MongoDB.Name']]
     app['pool'] = pool
+
+    # Create our generate range.
+    app['generateRange'] = GenerateRange(config['DatabaseServer.MinRange'], config['DatabaseServer.MaxRange'])
+
+    # Check if we need to create our initial entries in the database.
+    entry = pool.objects.find_one({'type': 'objectId'})
+
+    if entry is None:
+        # We need to create our initial entry.
+        pool.objects.insert_one({'type': 'objectId', 'nextId': app['generateRange'].getMin()})
+        app['generateRange'].setCurrent(app['generateRange'].getMin())
+    else:
+        # Update our generate range current id.
+        app['generateRange'].setCurrent(entry['nextId'])
 
     print('init done')
 

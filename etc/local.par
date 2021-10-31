@@ -25,6 +25,8 @@ PORT=46669
 HOST=127.0.0.1
 PORT=46670
 SQL=0
+MinRange=100000000
+MaxRange=200000000
 
 [WebServer]
 CONTENT_DIR=web/content/

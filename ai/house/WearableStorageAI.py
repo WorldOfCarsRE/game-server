@@ -335,13 +335,13 @@ class DistributedTrunkAI(DistributedClosetAI):
                 return
             if not av.checkAccessorySanity(ToonDNA.SHOES, shoes[0], shoes[1], shoes[2]):
                 return
-                
+
             if not finished:
                 self.sendUpdate('setCustomerDNA',
                                 [avId, hatId, hatTex, hatColor, glassesId, glassesTex, glassesColor,
                                  backpackId, backpackTex, backpackColor, shoesId, shoesTex, shoesColor, which])
                 return
-                
+
             if finished == 1: # Cancel
                 self.handleCleanFinish()
             else: # Finished
@@ -386,7 +386,7 @@ class DistributedTrunkAI(DistributedClosetAI):
         self.gender = ''
         self.emptyLists()
         self.d_setMovie(CLOSET_MOVIE_COMPLETE)
-        self.occupied = 0              
+        self.occupied = 0
         self.d_setMovie(CLOSET_MOVIE_CLEAR)
         self.d_clearCustomerDNA()
         self.d_setState(CLOSED)
