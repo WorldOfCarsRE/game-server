@@ -8,6 +8,7 @@ PHONE_MOVIE_PICKUP = 4
 PHONE_MOVIE_HANGUP = 5
 
 class DistributedPhoneAI(DistributedFurnitureItemAI):
+    defaultScale = 0.75
 
     def __init__(self, air, furnitureMgr, item):
         DistributedFurnitureItemAI.__init__(self, air, furnitureMgr, item)
@@ -17,11 +18,18 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
 
         self.furnitureMgr = furnitureMgr
 
-        self.sx = 1
-        self.sy = 1
-        self.sz = 1
-        self.initialScale = (self.sx, self.sy, self.sz)
-        self.newScale = None
+        # Figure out the initial scale of the phone. If the owner is
+        # around, it will be scaled to match the owner; otherwise, it
+        # will just be a default scale.
+        scale = self.defaultScale
+        ownerId = self.furnitureMgr.house.avId
+        owner = self.air.doTable.get(ownerId)
+
+        if owner:
+            animalStyle = owner.dna.getAnimal()
+            scale = ToontownGlobals.toonBodyScales[animalStyle]
+
+        self.initialScale = (scale, scale, scale)
 
     def setInitialScale(self):
         pass
@@ -43,7 +51,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
                 self.sendUpdate('setInitialScale', [sx, sy, sz])
 
     def getNewScale(self):
-        return self.newScale
+        return self.initialScale
 
     def freeAvatar(self, avId):
         # Free this avatar, probably because he requested interaction while

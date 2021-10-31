@@ -1268,6 +1268,18 @@ ClothesColors = [VBase4(0.933594, 0.265625, 0.28125, 1.0),
  VBase4(0.972549, 0.094117, 0.094117, 1.0),
  VBase4(0.447058, 0.0, 0.90196, 1.0)]
 
+toonBodyScales = {
+    'mouse': 0.6,
+    'cat': 0.73,
+    'duck': 0.66,
+    'rabbit': 0.74,
+    'horse': 0.85,
+    'dog': 0.85,
+    'monkey': 0.68,
+    'bear': 0.85,
+    'pig': 0.77
+}
+
 class ToonDNA(object):
 
     def __init__(self, toonType = 't', head = 'dls', torso = 'ss', legs = 's', gender = 'm',
@@ -1391,3 +1403,23 @@ class ToonDNA(object):
 
         return ToonDNA('t', head, torso, legs, gender, color, gloveColor, color, color, top, topColor,
                        sleeve, sleeveColor, bottom, bottomColor)
+
+    def getAnimal(self):
+        if self.head[0] == 'd':
+            return 'dog'
+        elif self.head[0] == 'c':
+            return 'cat'
+        elif self.head[0] == 'm':
+            return 'mouse'
+        elif self.head[0] == 'h':
+            return 'horse'
+        elif self.head[0] == 'r':
+            return 'rabbit'
+        elif self.head[0] == 'f':
+            return 'duck'
+        elif self.head[0] == 'p':
+            return 'monkey'
+        elif self.head[0] == 'b':
+            return 'bear'
+        elif self.head[0] == 's':
+            return 'pig'
