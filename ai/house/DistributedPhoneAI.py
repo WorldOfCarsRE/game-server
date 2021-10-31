@@ -1,6 +1,7 @@
 from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
 from ai import ToontownGlobals
 from ai.catalog import CatalogItem
+from ai.toon import ToonDNA
 
 PHONE_MOVIE_CLEAR = 2
 PHONE_MOVIE_EMPTY = 3
@@ -27,7 +28,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
 
         if owner:
             animalStyle = owner.dna.getAnimal()
-            scale = ToontownGlobals.toonBodyScales[animalStyle]
+            scale = ToonDNA.toonBodyScales[animalStyle]
 
         self.initialScale = (scale, scale, scale)
 
