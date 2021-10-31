@@ -12,6 +12,7 @@ FACEOFF_LOOK_AT_PROP_T = 6
 CLIENT_INPUT_TIMEOUT = 20.0
 SERVER_BUFFER_TIME = 2.0
 SERVER_INPUT_TIMEOUT = CLIENT_INPUT_TIMEOUT + SERVER_BUFFER_TIME
+TOON_RUN_T = 3.3
 
 import random
 
@@ -1255,6 +1256,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.numSuitsEver = 0
 
         self.battleExperience: List[BattleExperience] = []
+        self.taskNames: List[str] = []
 
     def enterOff(self):
         pass
@@ -1867,7 +1869,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             self._requestAdjust()
 
     def _removeAvatarTasks(self, toonId):
-        taskName = self.uniqueName('to-pending-av-%d' % toonId)
+        taskName = self.uniqueName(f'to-pending-av-{toonId}')
         taskMgr.remove(taskName)
 
     def suitCanJoin(self):
@@ -1921,6 +1923,61 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
     def enterResume(self):
         pass
+
+    def toonRequestRun(self):
+        toonId = self.air.currentAvatarSender
+
+        if not self.runnable:
+            return
+
+        updateAttacks = 0
+
+        if self.activeToons.count(toonId) == 0:
+            return
+
+        for toon in self.activeToons:
+            if toon in self.toonAttacks:
+                ta = self.toonAttacks[toon]
+                track = ta[TOON_TRACK_COL]
+                level = ta[TOON_LVL_COL]
+
+                if ta[TOON_TGT_COL] == toonId or track == HEAL and attackAffectsGroup(track, level) and len(self.activeToons) <= 2:
+                    healerId = ta[TOON_ID_COL]
+                    self.toonAttacks[toon] = getToonAttack(toon, track = UN_ATTACK)
+                    updateAttacks = 1
+
+        self.__makeToonRun(toonId, updateAttacks)
+        self.d_setMembers()
+        self.needAdjust = 1
+        self._requestAdjust()
+
+    def __makeToonRun(self, toonId, updateAttacks):
+        self.activeToons.remove(toonId)
+        self.toonGone = 1
+        self.runningToons.append(toonId)
+        taskName = self.uniqueName(f'running-toon-{toonId}')
+        taskMgr.doMethodLater(TOON_RUN_T, self.__serverRunDone, taskName, extraArgs = (toonId, updateAttacks, taskName))
+        self.taskNames.append(taskName)
+
+    def __serverRunDone(self, toonId, updateAttacks, taskName):
+        self.__removeTaskName(taskName)
+        self._removeToon(toonId)
+        self.d_setMembers()
+
+        if len(self.toons) == 0:
+            self.demand('Resume')
+        else:
+            if updateAttacks == 1:
+                self.d_setChosenToonAttacks()
+            self.needAdjust = 1
+            self._requestAdjust()
+
+        return Task.done
+
+    def __removeTaskName(self, name):
+        if self.taskNames.count(name):
+            self.taskNames.remove(name)
+            taskMgr.remove(name)
 
 from direct.task import Task
 
