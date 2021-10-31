@@ -325,7 +325,7 @@ class DistributedFishingPondAI(DistributedObjectAI):
     def delete(self):
         for target in self.targets.values():
             target.requestDelete()
-        self.targets = Optional[Dict[DistributedFishingTargetAI]] = None
+        self.targets: Optional[Dict[DistributedFishingTargetAI]] = None
         DistributedObjectAI.DistributedObjectAI.delete(self)
 
     def getCatch(self, av):
