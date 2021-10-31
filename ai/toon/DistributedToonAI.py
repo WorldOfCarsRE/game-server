@@ -162,6 +162,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.glasses = (0, 0, 0)
         self.backpack = (0, 0, 0)
         self.shoes = (0, 0, 0)
+        self.nametagStyle = 0
 
     def setDNAString(self, dnaString):
         self.dna.makeFromNetString(dnaString)
@@ -1303,8 +1304,18 @@ class DistributedToonAI(DistributedPlayerAI):
     def d_setPinkSlips(self, pinkSlips):
         self.sendUpdate('setPinkSlips', [pinkSlips])
 
+    def b_setNametagStyle(self, nametagStyle):
+        self.d_setNametagStyle(nametagStyle)
+        self.setNametagStyle(nametagStyle)
+
+    def d_setNametagStyle(self, nametagStyle):
+        self.sendUpdate('setNametagStyle', [nametagStyle])
+
+    def setNametagStyle(self, nametagStyle):
+        self.nametagStyle = nametagStyle
+
     def getNametagStyle(self):
-        return 0
+        return self.nametagStyle
 
     def b_setGhostMode(self, flag):
         self.setGhostMode(flag)
