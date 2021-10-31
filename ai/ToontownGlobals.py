@@ -419,6 +419,7 @@ P_ItemAvailable = 1
 
 MaxHouseItems = 45
 FM_MovedItem = 1
+FM_SwappedItem = 2
 
 MaxAccessories = 50
 ExtraDeletedItems = 5

@@ -5,7 +5,7 @@ from ai.house.DistributedBankAI import DistributedBankAI
 from ai.house.WearableStorageAI import DistributedClosetAI, DistributedTrunkAI
 from ai.house.DistributedPhoneAI import DistributedPhoneAI
 from ai.house.DistributedFurnitureItemAI import DistributedFurnitureItemAI
-from ai.catalog import CatalogFurnitureItem
+from ai.catalog import CatalogFurnitureItem, CatalogSurfaceItem
 from ai import ToontownGlobals
 
 from direct.task import Task
@@ -272,3 +272,32 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
 
         self.d_setAtticItems(self.house.atticItems)
         return (ToontownGlobals.FM_MovedItem, dfitem.do_id)
+
+    def moveWallpaperFromAtticMessage(self, index, room, context):
+        # A request by the client to swap the given wallpaper from the
+        # attic with the interior wallpaper for the indicated room.
+        avId = self.air.currentAvatarSender
+        retcode = self.__doMoveWallpaperFromAttic(avId, index, room)
+        self.sendUpdateToAvatarId(avId, 'moveWallpaperFromAtticResponse', [retcode, context])
+
+    def __doMoveWallpaperFromAttic(self, avId, index, room):
+        if avId != self.director:
+            return ToontownGlobals.FM_NotDirector
+
+        if index < 0 or index >= len(self.house.atticWallpaper):
+            return ToontownGlobals.FM_InvalidIndex
+
+        item = self.house.atticWallpaper[index]
+        surface = item.getSurfaceType()
+        slot = room * CatalogSurfaceItem.NUM_ST_TYPES + surface
+
+        if slot < 0 or slot >= len(self.house.interiorWallpaper):
+            return ToontownGlobals.FM_InvalidIndex
+
+        repl = self.house.interiorWallpaper[slot]
+
+        self.house.interiorWallpaper[slot] = item
+        self.house.atticWallpaper[index] = repl
+        self.house.d_setAtticWallpaper(self.house.atticWallpaper)
+        self.house.d_setInteriorWallpaper(self.house.interiorWallpaper)
+        return ToontownGlobals.FM_SwappedItem

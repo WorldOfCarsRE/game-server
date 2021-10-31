@@ -471,3 +471,14 @@ class DistributedHouseAI(DistributedObjectAI):
                 self.interiorManager.d_setDeletedItems(self.deletedItems)
 
         return extracted
+
+    def addWallpaper(self, item):
+        # Called when a new wallpaper item has been purchased.
+
+        self.makeRoomFor(1)
+
+        # Just add the new wallpaper to the attic.
+        self.atticWallpaper.append(item)
+
+        # Update the database and the interior.
+        self.d_setAtticWallpaper(self.atticWallpaper)
