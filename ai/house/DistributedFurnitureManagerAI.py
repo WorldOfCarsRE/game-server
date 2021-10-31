@@ -278,7 +278,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
         # attic with the interior wallpaper for the indicated room.
         avId = self.air.currentAvatarSender
         retcode = self.__doMoveWallpaperFromAttic(avId, index, room)
-        self.sendUpdateToAvatarId(avId, 'moveWallpaperFromAtticResponse', [retcode, context])
+        self.sendUpdateToAvatar(avId, 'moveWallpaperFromAtticResponse', [retcode, context])
 
     def __doMoveWallpaperFromAttic(self, avId, index, room):
         if avId != self.director:
