@@ -1,5 +1,5 @@
 from otp import config
-from otp.dbserver import GenerateRange
+from otp.dbbackend import GenerateRange
 
 from aiohttp import web
 from pymongo import MongoClient

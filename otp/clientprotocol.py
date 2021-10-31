@@ -332,9 +332,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.owned_objects.clear()
                 self.visible_objects.clear()
 
-                self.unsubscribe_channel(getClientSenderChannel(self.account.disl_id, self.avatar_id))
+                self.unsubscribe_channel(getClientSenderChannel(self.account.dislId, self.avatar_id))
                 self.unsubscribe_channel(getPuppetChannel(self.avatar_id))
-                self.channel = getClientSenderChannel(self.account.disl_id, 0)
+                self.channel = getClientSenderChannel(self.account.dislId, 0)
                 self.subscribe_channel(self.channel)
 
                 self.state = ClientState.AUTHENTICATED
@@ -363,7 +363,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.state = ClientState.SETTING_AVATAR
 
-        self.channel = getClientSenderChannel(self.account.disl_id, self.avatar_id)
+        self.channel = getClientSenderChannel(self.account.dislId, self.avatar_id)
         self.subscribe_channel(self.channel)
         self.subscribe_channel(getPuppetChannel(self.avatar_id))
 
@@ -417,7 +417,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
         dg.add_uint32(0)
         dg.add_uint16(dclass.number)
-        dg.add_uint32(self.account.disl_id)
+        dg.add_uint32(self.account.dislId)
         dg.add_uint8(pos)
         pos = dg.tell()
         dg.add_uint16(0)
@@ -425,7 +425,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         default_toon = dict(DEFAULT_TOON)
         print(default_toon)
         default_toon['setDNAString'] = (dna,)
-        default_toon['setDISLid'] = (self.account.disl_id,)
+        default_toon['setDISLid'] = (self.account.dislId,)
         default_toon['WishName'] = ('',)
         default_toon['WishNameState'] = ('CLOSED',)
         default_toon['setAccountName'] = (self.account.username,)
@@ -591,7 +591,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         dg = Datagram()
         dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
-        dg.add_uint32(self.account.disl_id)
+        dg.add_uint32(self.account.dislId)
         dg.add_uint16(2)
         dg.add_uint16(field.number)
         field.pack_value(dg, avatars)
@@ -685,7 +685,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         query = Datagram()
         query.add_server_header([DBSERVERS_CHANNEL, ], self.channel, DBSERVER_ACCOUNT_QUERY)
 
-        disl_id = self.account.disl_id
+        disl_id = self.account.dislId
         query.add_uint32(disl_id)
         field_number = self.service.avatars_field.number
         query.add_uint16(field_number)
@@ -759,9 +759,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.disconnect(ClientDisconnect.LOGIN_ERROR, 'Invalid token')
             return
 
-        self.channel = getClientSenderChannel(self.account.disl_id, 0)
+        self.channel = getClientSenderChannel(self.account.dislId, 0)
         self.subscribe_channel(self.channel)
-        self.subscribe_channel(getAccountChannel(self.account.disl_id))
+        self.subscribe_channel(getAccountChannel(self.account.dislId))
 
         resp = Datagram()
         resp.add_uint16(CLIENT_LOGIN_TOONTOWN_RESP)
@@ -936,7 +936,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             do_id = dgi.get_uint32()
 
             if do_id == self.avatar_id:
-                if sender == self.account.disl_id << 32:
+                if sender == self.account.dislId << 32:
                     self.disconnect(ClientDisconnect.RELOGGED, 'redundant login')
                 else:
                     self.disconnect(ClientDisconnect.SHARD_DISCONNECT, 'district reset')
