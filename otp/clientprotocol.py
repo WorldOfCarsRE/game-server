@@ -423,7 +423,6 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.add_uint16(0)
 
         default_toon = dict(DEFAULT_TOON)
-        print(default_toon)
         default_toon['setDNAString'] = (dna,)
         default_toon['setDISLid'] = (self.account.dislId,)
         default_toon['WishName'] = ('',)
