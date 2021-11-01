@@ -1,3 +1,4 @@
+from direct.distributed.PyDatagram import PyDatagram
 from otp.messagetypes import CONTROL_MESSAGE
 
 DEFAULT_TOON = {
@@ -143,13 +144,16 @@ def getAvatarIDFromChannel(sender: int) -> int:
     """Returns the avatar id (if present) from a client agent sender channel."""
     return sender & 0xFFFFFFFF
 
-def addServerHeader(dg, channel, sender, code):
-    dg.addInt8(1)
-    dg.addUint64(channel)
+def addServerHeader(dg: PyDatagram, targets: list, sender: int, msgId: int):
+    dg.addUint8(len(targets))
+
+    for target in targets:
+        dg.addInt64(target)
+
     dg.addUint64(sender)
-    dg.addUint16(code)
+    dg.addUint16(msgId)
 
 def addServerControlHeader(dg, code):
-    dg.addInt8(1)
-    dg.addUint64(CONTROL_MESSAGE)
+    dg.addUint8(1)
+    dg.addInt64(CONTROL_MESSAGE)
     dg.addUint16(code)

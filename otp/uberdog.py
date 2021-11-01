@@ -81,7 +81,7 @@ class Uberdog(DownstreamMessageDirector):
 
         dg = PyDatagram()
         addServerControlHeader(dg, CONTROL_ADD_POST_REMOVE)
-        addServerHeader(dg, self.GLOBAL_ID, self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
+        addServerHeader(dg, [self.GLOBAL_ID], self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
         dg.addUint32(self.GLOBAL_ID)
         self.send_datagram(dg)
 

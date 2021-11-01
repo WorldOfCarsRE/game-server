@@ -189,7 +189,7 @@ class AIRepository:
 
     def sendLocation(self, doId, old_parent: int, old_zone: int, new_parent: int, new_zone: int):
         dg = Datagram()
-        addServerHeader(dg, doId, self.ourChannel, STATESERVER_OBJECT_SET_ZONE)
+        addServerHeader(dg, [doId], self.ourChannel, STATESERVER_OBJECT_SET_ZONE)
         dg.addUint32(new_parent)
         dg.addUint32(new_zone)
         dg.addUint32(old_parent)
@@ -353,12 +353,12 @@ class AIRepository:
 
         postRemove = Datagram()
         addServerControlHeader(postRemove, CONTROL_ADD_POST_REMOVE)
-        addServerHeader(postRemove, STATESERVERS_CHANNEL, self.ourChannel, STATESERVER_SHARD_REST)
+        addServerHeader(postRemove, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_SHARD_REST)
         postRemove.addUint64(self.ourChannel)
         self.send(postRemove)
 
         dg = Datagram()
-        addServerHeader(dg, STATESERVERS_CHANNEL, self.ourChannel, STATESERVER_ADD_AI_RECV)
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
         dg.addUint32(self.district.do_id)
         dg.addUint64(self.ourChannel)
         self.send(dg)
@@ -368,7 +368,7 @@ class AIRepository:
         self.generateWithRequired(self.stats, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS_STATS)
 
         dg = Datagram()
-        addServerHeader(dg, STATESERVERS_CHANNEL, self.ourChannel, STATESERVER_ADD_AI_RECV)
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
         dg.addUint32(self.stats.do_id)
         dg.addUint64(self.ourChannel)
         self.send(dg)

@@ -13,7 +13,7 @@ class MDProtocol(ToontownProtocol, MDParticipant):
         ToontownProtocol.__init__(self, service)
         MDParticipant.__init__(self, service)
 
-        self.post_removes: List[Datagram] = []
+        self.postRemoves: List[Datagram] = []
 
     def connection_made(self, transport):
         ToontownProtocol.connection_made(self, transport)
@@ -25,8 +25,8 @@ class MDProtocol(ToontownProtocol, MDParticipant):
 
     def post_remove(self):
         self.service.log.debug(f'Sending out post removes for participant.')
-        while self.post_removes:
-            dg = self.post_removes.pop(0)
+        while self.postRemoves:
+            dg = self.postRemoves.pop(0)
             self.service.q.put_nowait((None, dg))
 
     def receive_datagram(self, dg):
@@ -58,9 +58,9 @@ class MDProtocol(ToontownProtocol, MDParticipant):
                 postDg = Datagram()
                 postDg.appendData(dgi.getRemainingBytes())
                 self.service.log.debug(f'Received post remove:{postDg.getMessage()}')
-                self.post_removes.append(postDg)
+                self.postRemoves.append(postDg)
             elif msg_type == CONTROL_CLEAR_POST_REMOVE:
-                del self.post_removes[:]
+                del self.postRemoves[:]
         else:
             self.service.q.put_nowait((None, dg))
 
@@ -107,7 +107,7 @@ class MessageDirector(Service):
     def process_datagram(self, participant: MDParticipant, dg: Datagram):
         dgi = DatagramIterator(dg)
 
-        recipientCount = dgi.get_uint8()
+        recipientCount = dgi.getUint8()
         recipients = (dgi.getInt64() for _ in range(recipientCount))
 
         receivingParticipants = {p for c in recipients if c in self.channel_subscriptions for p in self.channel_subscriptions[c]}
