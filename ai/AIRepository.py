@@ -38,7 +38,7 @@ class AIProtocol(ToontownProtocol):
 
     def send_datagram(self, data: Datagram):
         loop = self.service.loop
-        loop.call_soon_threadsafe(self.outgoing_q.put_nowait, data.bytes())
+        loop.call_soon_threadsafe(self.outgoing_q.put_nowait, data.getMessage())
 
 class AIRepository:
     def __init__(self):
@@ -305,8 +305,8 @@ class AIRepository:
         self._registedChannels.add(channel)
 
         dg = Datagram()
-        dg.add_server_control_header(CONTROL_SET_CHANNEL)
-        dg.add_channel(channel)
+        addServerControlHeader(dg, CONTROL_SET_CHANNEL)
+        dg.addUint64(channel)
         self.send(dg)
 
     def unregisterForChannel(self, channel):
@@ -315,8 +315,8 @@ class AIRepository:
         self._registedChannels.remove(channel)
 
         dg = Datagram()
-        dg.add_server_control_header(CONTROL_REMOVE_CHANNEL)
-        dg.add_channel(channel)
+        addServerControlHeader(dg, CONTROL_REMOVE_CHANNEL)
+        dg.addUint64(channel)
         self.send(dg)
 
     def send(self, dg):
@@ -351,16 +351,16 @@ class AIRepository:
         self.district.name = 'Sillyville'
         self.generateWithRequired(self.district, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS)
 
-        post_remove = Datagram()
-        post_remove.add_server_control_header(CONTROL_ADD_POST_REMOVE)
-        post_remove.add_server_header([STATESERVERS_CHANNEL, ], self.ourChannel, STATESERVER_SHARD_REST)
-        post_remove.add_channel(self.ourChannel)
-        self.send(post_remove)
+        postRemove = Datagram()
+        addServerControlHeader(postRemove, CONTROL_ADD_POST_REMOVE)
+        addServerHeader(postRemove, STATESERVERS_CHANNEL, self.ourChannel, STATESERVER_SHARD_REST)
+        postRemove.addUint64(self.ourChannel)
+        self.send(postRemove)
 
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
-        dg.add_uint32(self.district.do_id)
-        dg.add_channel(self.ourChannel)
+        addServerHeader(dg, STATESERVERS_CHANNEL, self.ourChannel, STATESERVER_ADD_AI_RECV)
+        dg.addUint32(self.district.do_id)
+        dg.addUint64(self.ourChannel)
         self.send(dg)
 
         self.stats = ToontownDistrictStatsAI(self)
@@ -368,9 +368,9 @@ class AIRepository:
         self.generateWithRequired(self.stats, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS_STATS)
 
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
-        dg.add_uint32(self.stats.do_id)
-        dg.add_channel(self.ourChannel)
+        addServerHeader(dg, STATESERVERS_CHANNEL, self.ourChannel, STATESERVER_ADD_AI_RECV)
+        dg.addUint32(self.stats.do_id)
+        dg.addUint64(self.ourChannel)
         self.send(dg)
 
         self.timeManager = TimeManagerAI(self)

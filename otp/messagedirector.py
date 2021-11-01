@@ -32,8 +32,8 @@ class MDProtocol(ToontownProtocol, MDParticipant):
     def receive_datagram(self, dg):
         dgi = DatagramIterator(dg)
 
-        recipient_count = dgi.get_uint8()
-        if recipient_count == 1 and dgi.getInt64() == CONTROL_MESSAGE:
+        recipientCount = dgi.get_uint8()
+        if recipientCount == 1 and dgi.getInt64() == CONTROL_MESSAGE:
             # Control message.
             msg_type = dgi.get_uint16()
 
@@ -55,10 +55,10 @@ class MDProtocol(ToontownProtocol, MDParticipant):
                     if channel in self.channels:
                         self.channels.remove(channel)
             elif msg_type == CONTROL_ADD_POST_REMOVE:
-                post_dg = Datagram()
-                post_dg.add_bytes(dgi.get_bytes(dgi.remaining()))
-                self.service.log.debug(f'Received post remove:{post_dg.bytes()}')
-                self.post_removes.append(post_dg)
+                postDg = Datagram()
+                postDg.appendData(dgi.getRemainingBytes())
+                self.service.log.debug(f'Received post remove:{postDg.getMessage()}')
+                self.post_removes.append(postDg)
             elif msg_type == CONTROL_CLEAR_POST_REMOVE:
                 del self.post_removes[:]
         else:
@@ -108,18 +108,17 @@ class MessageDirector(Service):
         dgi = DatagramIterator(dg)
 
         recipientCount = dgi.get_uint8()
-        print(recipientCount)
         recipients = (dgi.getInt64() for _ in range(recipientCount))
 
-        receiving_participants = {p for c in recipients if c in self.channel_subscriptions for p in self.channel_subscriptions[c]}
+        receivingParticipants = {p for c in recipients if c in self.channel_subscriptions for p in self.channel_subscriptions[c]}
 
-        if participant is not None and participant in receiving_participants:
-            receiving_participants.remove(participant)
+        if participant is not None and participant in receivingParticipants:
+            receivingParticipants.remove(participant)
 
-        pos = dgi.tell()
+        pos = dgi.getCurrentIndex()
 
         try:
-            for participant in receiving_participants:
+            for participant in receivingParticipants:
                 _dgi = DatagramIterator(dg)
                 _dgi.seek(pos)
                 participant.handle_datagram(dg, _dgi)
@@ -130,7 +129,6 @@ class MessageDirector(Service):
         while True:
             participant, dg = await self.q.get()
             self.process_datagram(participant, dg)
-
 
 class MasterMessageDirector(MessageDirector, UpstreamServer):
     downstream_protocol = MDProtocol
@@ -146,7 +144,6 @@ class MasterMessageDirector(MessageDirector, UpstreamServer):
     async def run(self):
         self.loop.create_task(self.route())
         await self.listen(config['MessageDirector.HOST'], config['MessageDirector.PORT'])
-
 
 class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):
@@ -215,7 +212,6 @@ class DownstreamMessageDirector(MessageDirector, DownstreamClient):
 
     def send_datagram(self, dg: Datagram):
         self._client.send_datagram(dg)
-
 
 async def main():
     loop = asyncio.get_running_loop()

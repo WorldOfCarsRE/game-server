@@ -6,7 +6,7 @@ from typing import List, Union, Dict, Tuple
 
 from Crypto.Cipher import AES
 from dataslots import with_slots
-from dc.objects import MolecularField
+from panda3d.direct import DCMolecularField
 from panda3d.core import Datagram
 
 from otp import config

@@ -24,31 +24,31 @@ class DistributedObjectAI(DirectObject):
         self.queueUpdates = True
         self.updateQueue = deque()
 
-    def generateWithRequired(self, zone_id):
-        self.zoneId = zone_id
-        self.air.generateWithRequired(self, self.air.district.do_id, zone_id)
+    def generateWithRequired(self, zoneId):
+        self.zoneId = zoneId
+        self.air.generateWithRequired(self, self.air.district.do_id, zoneId)
 
-    def sendUpdateToChannel(self, channel, field_name, args):
-        dg = self.dclass.ai_format_update(field_name, self.do_id, channel, self.air.ourChannel, args)
+    def sendUpdateToChannel(self, channel, fieldName, args):
+        dg = self.dclass.aiFormatUpdate(fieldName, self.do_id, channel, self.air.ourChannel, args)
         if self.queueUpdates:
             # Avoid race conditions where stateserver has not subscribed to the doId channel on the message director
             # so it misses the field update.
-            # print(self.do_id, self.__class__.__name__, 'queueing field update', field_name)
+            # print(self.do_id, self.__class__.__name__, 'queueing field update', fieldName)
             self.updateQueue.append(dg)
         else:
             self.air.send(dg)
 
-    def sendUpdate(self, field_name, args):
-        self.sendUpdateToChannel(self.do_id, field_name, args)
+    def sendUpdate(self, fieldName, args):
+        self.sendUpdateToChannel(self.do_id, fieldName, args)
 
-    def sendUpdateToSender(self, field_name, args):
-        self.sendUpdateToChannel(self.air.currentSender, field_name, args)
+    def sendUpdateToSender(self, fieldName, args):
+        self.sendUpdateToChannel(self.air.currentSender, fieldName, args)
 
-    def sendUpdateToAvatar(self, av_id, field_name, args):
-        self.sendUpdateToChannel(getPuppetChannel(av_id), field_name, args)
+    def sendUpdateToAvatar(self, av_id, fieldName, args):
+        self.sendUpdateToChannel(getPuppetChannel(av_id), fieldName, args)
 
-    def sendUpdateToAccount(self, disl_id, field_name, args):
-        self.sendUpdateToChannel(getAccountChannel(disl_id), field_name, args)
+    def sendUpdateToAccount(self, disl_id, fieldName, args):
+        self.sendUpdateToChannel(getAccountChannel(disl_id), fieldName, args)
 
     @property
     def location(self):

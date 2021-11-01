@@ -1,3 +1,5 @@
+from otp.messagetypes import CONTROL_MESSAGE
+
 DEFAULT_TOON = {
     # From DistAvatarAI
     "setName": ('Toon',),
@@ -140,3 +142,14 @@ def getAccountIDFromChannel(sender: int) -> int:
 def getAvatarIDFromChannel(sender: int) -> int:
     """Returns the avatar id (if present) from a client agent sender channel."""
     return sender & 0xFFFFFFFF
+
+def addServerHeader(dg, channel, sender, code):
+    dg.addInt8(1)
+    dg.addUint64(channel)
+    dg.addUint64(sender)
+    dg.addUint16(code)
+
+def addServerControlHeader(dg, code):
+    dg.addInt8(1)
+    dg.addUint64(CONTROL_MESSAGE)
+    dg.addUint16(code)

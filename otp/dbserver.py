@@ -10,7 +10,7 @@ from otp.messagetypes import *
 from otp.constants import *
 from .exceptions import *
 
-from dc.objects import MolecularField
+from panda3d.direct import DCMolecularField
 
 class EstateInfo:
     estateId: int

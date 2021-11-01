@@ -62,7 +62,7 @@ class ToontownDistrictAI(DistributedDistrictAI):
         self.allowAHNNLog(ahnnLog)
         self.d_allowAHNNLog(ahnnLog)
 
-    def allowAHNNLog(self):
+    def getAllowAHNNLog(self):
         return self.ahnnLog
 
     def handleChildArrive(self, obj, zoneId):

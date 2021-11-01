@@ -9,7 +9,7 @@ from otp.messagetypes import *
 from otp.messagedirector import MDParticipant
 from otp.networking import ChannelAllocator
 from otp.constants import *
-from dc.objects import MolecularField, AtomicField
+from panda3d.direct import DCMolecularField, DCAtomicField
 from direct.distributed.PyDatagram import PyDatagram
 
 from typing import Dict, Set
@@ -52,10 +52,10 @@ class DistributedObject(MDParticipant):
 
         dg.add_uint16(self.dclass.number)
         for field in self.dclass.inherited_fields:
-            if isinstance(field, MolecularField):
+            if field.asMolecularField():
                 continue
 
-            if not field.is_required:
+            if not field.isRequired:
                 continue
 
             if not client_only or field.is_broadcast or field.is_clrecv or (also_owner and field.is_ownrecv):
@@ -251,14 +251,14 @@ class DistributedObject(MDParticipant):
             dg.add_bytes(data)
             self.service.send_datagram(dg)
 
-    def save_molecular(self, field: MolecularField, dgi):
+    def save_molecular(self, field: DCMolecularField, dgi):
         for subfield in field.subfields:
             if isinstance(subfield, MolecularField):
                 self.save_molecular(subfield, dgi)
             else:
                 self.save_field(subfield, subfield.unpack_bytes(dgi))
 
-    def save_field(self, field: AtomicField, data):
+    def save_field(self, field: DCMolecularField, data):
         if field.is_required:
             self.required[field.name] = data
         elif field.is_ram:

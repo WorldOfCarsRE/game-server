@@ -133,7 +133,7 @@ class ToontownProtocol(asyncio.Protocol):
                 else:
                     try:
                         dg = Datagram()
-                        dg.addBlob(bytes(self.buf[:expected]))
+                        dg.appendData(bytes(self.buf[:expected]))
                         self.receive_datagram(dg)
                         del self.buf[:expected]
                         expected = 0

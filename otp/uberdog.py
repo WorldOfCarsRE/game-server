@@ -75,26 +75,15 @@ class Uberdog(DownstreamMessageDirector):
         self.subscribe_channel(self._client, self.GLOBAL_ID)
         self.log.debug('Uberdog online')
 
-        dg = self.dclass.ai_format_generate(self, self.GLOBAL_ID, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_MANAGEMENT,
+        dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_MANAGEMENT,
                                             STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields=None)
         self.send_datagram(dg)
 
         dg = PyDatagram()
-        self.addServerControlHeader(dg, CONTROL_ADD_POST_REMOVE)
-        dg.addServerHeader(dg, self.GLOBAL_ID, self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
+        addServerControlHeader(dg, CONTROL_ADD_POST_REMOVE)
+        addServerHeader(dg, self.GLOBAL_ID, self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
         dg.addUint32(self.GLOBAL_ID)
         self.send_datagram(dg)
-
-    def addServerHeader(self, dg, channel, sender, code):
-        dg.addInt8(1)
-        dg.addChannel(channel)
-        dg.addChannel(sender)
-        dg.addUint16(code)
-
-    def addServerControlHeader(self, dg, code):
-        dg.addInt8(1)
-        dg.addChannel(CONTROL_MESSAGE)
-        dg.addUint16(code)
 
     def receive_update(self, sender, dgi):
         self.lastSender = sender
