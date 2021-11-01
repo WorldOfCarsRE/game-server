@@ -32,7 +32,7 @@ class MDProtocol(ToontownProtocol, MDParticipant):
     def receive_datagram(self, dg):
         dgi = DatagramIterator(dg)
 
-        recipientCount = dgi.get_uint8()
+        recipientCount = dgi.getUint8()
         if recipientCount == 1 and dgi.getInt64() == CONTROL_MESSAGE:
             # Control message.
             msg_type = dgi.get_uint16()

@@ -7,7 +7,7 @@ from typing import List, Union, Dict, Tuple
 from Crypto.Cipher import AES
 from dataslots import with_slots
 from panda3d.direct import DCMolecularField
-from panda3d.core import Datagram
+from panda3d.core import Datagram, DatagramIterator
 
 from otp import config
 from otp.messagedirector import MDParticipant
@@ -96,13 +96,13 @@ CLIENTAGENT_SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 @with_slots
 @dataclass
 class DISLAccount:
-    username: bytes
+    username: str
     dislId: int
-    access: bytes
-    accountType: bytes
-    createFriendsWithChat: bytes
-    chatCodeCreationRule: bytes
-    whitelistChatEnabled: bytes
+    access: str
+    accountType: str
+    createFriendsWithChat: str
+    chatCodeCreationRule: str
+    whitelistChatEnabled: str
 
 class ClientProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):
@@ -472,8 +472,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.log.debug(f'New avatar {av_id} created for client {self.channel}.')
 
     def receive_set_wishname(self, dgi):
-        av_id = dgi.get_uint32()
-        name = dgi.get_string16()
+        av_id = dgi.getUint32()
+        name = dgi.getString()
 
         av = self.get_potential_avatar(av_id)
 
@@ -712,9 +712,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         avatar_info = [None] * 6
 
         for i in range(dgi.get_uint16()):
-            potAv = PotentialAvatar(do_id = dgi.get_uint32(), name = dgi.get_string16(), wish_name = dgi.get_string16(),
-                                     approved_name = dgi.get_string16(), rejected_name = dgi.get_string16(),
-                                     dna_string = dgi.get_blob16(), index = dgi.get_uint8(), allowName = dgi.get_uint8())
+            potAv = PotentialAvatar(do_id = dgi.getUint32(), name = dgi.getString(), wish_name = dgi.getString(),
+                                     approved_name = dgi.getString(), rejected_name = dgi.getString(),
+                                     dna_string = dgi.getBlob(), index = dgi.getUint8(), allowName = dgi.getUint8())
 
             avatar_info[potAv.index] = potAv
 
@@ -730,10 +730,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.send_datagram(resp)
 
     def receive_login(self, dgi):
-        playToken = dgi.get_string16()
-        clientVersion = dgi.get_string16()
-        hashVal = dgi.get_uint32()
-        wantMagicWords = dgi.get_string16()
+        playToken = dgi.getString()
+        clientVersion = dgi.getString()
+        hashVal = dgi.getUint32()
+        wantMagicWords = dgi.getString()
 
         if clientVersion != self.service.version:
             self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
@@ -752,7 +752,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             for key in list(data.keys()):
                 value = data[key]
                 if type(value) == str:
-                    data[key] = value.encode('utf-8')
+                    data[key] = value
             self.account = DISLAccount(**data)
         except ValueError as e:
             self.disconnect(ClientDisconnect.LOGIN_ERROR, 'Invalid token')
@@ -768,61 +768,64 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         returnCode = 0  # -13 == period expired
         resp.add_uint8(returnCode)
 
-        errorString = b'' # 'Bad DC Version Compare'
-        resp.add_string16(errorString)
+        errorString = '' # 'Bad DC Version Compare'
+        resp.addString(errorString)
 
-        resp.add_uint32(self.account.dislId)
-        resp.add_string16(self.account.username)
-        account_name_approved = True
-        resp.add_uint8(account_name_approved)
-        resp.add_string16(self.account.whitelistChatEnabled)
-        resp.add_string16(self.account.createFriendsWithChat)
-        resp.add_string16(self.account.chatCodeCreationRule)
+        resp.addUint32(self.account.dislId)
+        resp.addString(self.account.username)
+
+        accountNameApproved = True
+        resp.addUint8(accountNameApproved)
+
+        resp.addString(self.account.whitelistChatEnabled)
+        resp.addString(self.account.createFriendsWithChat)
+        resp.addString(self.account.chatCodeCreationRule)
 
         t = time.time() * 10e6
         usecs = int(t % 10e6)
         secs = int(t / 10e6)
-        resp.add_uint32(secs)
-        resp.add_uint32(usecs)
+        resp.addUint32(secs)
+        resp.addUint32(usecs)
 
-        resp.add_string16(self.account.access)
-        resp.add_string16(self.account.whitelistChatEnabled)
+        resp.addString(self.account.access)
+        resp.addString(self.account.whitelistChatEnabled)
 
         lastLoggedIn = time.strftime('%c') # time.strftime('%c')
-        resp.add_string16(lastLoggedIn.encode('utf-8'))
+        resp.addString(lastLoggedIn)
 
-        account_days = 0
-        resp.add_int32(account_days)
-        resp.add_string16(self.account.accountType)
-        resp.add_string16(self.account.username)
+        accountDays = 0
+        resp.add_int32(accountDays)
+
+        resp.addString(self.account.accountType)
+        resp.addString(self.account.username)
 
         self.send_datagram(resp)
 
-    def receive_add_interest(self, dgi, ai=False):
-        handle = dgi.get_uint16()
-        context_id = dgi.get_uint32()
-        parent_id = dgi.get_uint32()
+    def receive_add_interest(self, dgi, ai = False):
+        handle = dgi.getUint16()
+        contextId = dgi.getUint32()
+        parentId = dgi.getUint32()
 
-        num_zones = dgi.remaining() // 4
+        numZones = dgi.getRemainingSize() // 4
 
         zones = []
 
-        for i in range(num_zones):
-            zoneId = dgi.get_uint32()
+        for i in range(numZones):
+            zoneId = dgi.getUint32()
             if zoneId == 1:
                 continue
             zones.append(zoneId)
-            if num_zones == 1:
+            if numZones == 1:
                 canonicalZoneId = getCanonicalZoneId(zoneId)
                 if canonicalZoneId in VIS_ZONES:
                     for visZoneId in VIS_ZONES[canonicalZoneId]:
                         trueZoneId = getTrueZoneId(visZoneId, zoneId)
                         zones.append(trueZoneId)
 
-        self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {context_id} '
-                               f'for location {parent_id} {zones}')
+        self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {contextId} '
+                               f'for location {parentId} {zones}')
 
-        if self.state <= ClientState.AUTHENTICATED and parent_id != OTP_DO_ID_TOONTOWN:
+        if self.state <= ClientState.AUTHENTICATED and parentId != OTP_DO_ID_TOONTOWN:
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 
@@ -834,13 +837,13 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 break
 
         if previous_interest is None:
-            interest = Interest(self.channel, handle, context_id, parent_id, zones)
+            interest = Interest(self.channel, handle, contextId, parentId, zones)
             self.interests.append(interest)
         else:
             self.service.log.debug(f'Altering interest {handle} (done: {previous_interest.done}): {previous_interest.zones} -> {zones}')
             self.interests.remove(previous_interest)
 
-            if previous_interest.parent_id != parent_id:
+            if previous_interest.parentId != parentId:
                 killed_zones = previous_interest.zones
             else:
                 killed_zones = set(previous_interest.zones).difference(set(zones))
@@ -853,22 +856,22 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.log.debug(f'Zones killed by altering interest: {killed_zones}')
 
             if killed_zones:
-                for do_id in list(self.visible_objects.keys()):
-                    obj = self.visible_objects[do_id]
-                    if obj.parent_id == parent_id and obj.zone_id in killed_zones:
-                        self.service.log.debug(f'Object {obj.do_id}, location ({obj.parent_id}, {obj.zone_id}), killed by altered interest: {zones}')
-                        self.send_remove_object(obj.do_id)
-                        del self.visible_objects[do_id]
+                for doId in list(self.visibleObjects.keys()):
+                    obj = self.visibleObjects[doId]
+                    if obj.parentId == parentId and obj.zoneId in killed_zones:
+                        self.service.log.debug(f'Object {obj.doId}, location ({obj.parentId}, {obj.zoneId}), killed by altered interest: {zones}')
+                        self.send_remove_object(obj.doId)
+                        del self.visible_objects[doId]
 
             for zone in killed_zones:
-                self.unsubscribe_channel(location_as_channel(previous_interest.parent_id, zone))
+                self.unsubscribe_channel(location_as_channel(previous_interest.parentId, zone))
 
-            interest = Interest(self.channel, handle, context_id, parent_id, zones)
+            interest = Interest(self.channel, handle, contextId, parentId, zones)
             self.interests.append(interest)
 
-            for do_id in list(self.pending_objects.keys()):
-                if not self.pending_object_needed(do_id):
-                    del self.pending_objects[do_id]
+            for doId in list(self.pendingObjects.keys()):
+                if not self.pendingObjectNeeded(doId):
+                    del self.pendingObjects[doId]
 
         interest.ai = ai
 
@@ -878,21 +881,21 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 resp = Datagram()
                 resp.add_uint16(CLIENT_DONE_INTEREST_RESP)
                 resp.add_uint16(handle)
-                resp.add_uint32(context_id)
+                resp.add_uint32(contexId)
                 self.send_datagram(resp)
                 return
 
-        query_request = Datagram()
-        query_request.add_server_header([parent_id], self.channel, STATESERVER_QUERY_ZONE_OBJECT_ALL)
-        query_request.add_uint16(handle)
-        query_request.add_uint32(context_id)
-        query_request.add_uint32(parent_id)
+        queryReq = Datagram()
+        addServerHeader(queryReq, parentId, self.channel, STATESERVER_QUERY_ZONE_OBJECT_ALL)
+        queryReq.addUint16(handle)
+        queryReq.addUint32(contextId)
+        queryReq.addUint32(parentId)
 
         for zone in zones:
-            query_request.add_uint32(zone)
-            self.subscribe_channel(location_as_channel(parent_id, zone))
+            queryReq.addUint32(zone)
+            self.subscribe_channel(location_as_channel(parentId, zone))
 
-        self.service.send_datagram(query_request)
+        self.service.send_datagram(queryReq)
 
     def handle_datagram(self, dg, dgi):
         pos = dgi.tell()

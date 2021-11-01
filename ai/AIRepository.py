@@ -187,34 +187,34 @@ class AIRepository:
         if newZone != oldZone and newParentObj:
             newParentObj.handleChildArriveZone(obj, newZone)
 
-    def sendLocation(self, do_id, old_parent: int, old_zone: int, new_parent: int, new_zone: int):
+    def sendLocation(self, doId, old_parent: int, old_zone: int, new_parent: int, new_zone: int):
         dg = Datagram()
-        dg.add_server_header([do_id], self.ourChannel, STATESERVER_OBJECT_SET_ZONE)
-        dg.add_uint32(new_parent)
-        dg.add_uint32(new_zone)
-        dg.add_uint32(old_parent)
-        dg.add_uint32(old_zone)
+        addServerHeader(dg, doId, self.ourChannel, STATESERVER_OBJECT_SET_ZONE)
+        dg.addUint32(new_parent)
+        dg.addUint32(new_zone)
+        dg.addUint32(old_parent)
+        dg.addUint32(old_zone)
         self.send(dg)
 
     @staticmethod
     def isClientChannel(channel):
         return config['ClientAgent.MIN_CHANNEL'] <= channel <= config['ClientAgent.MAX_CHANNEL']
 
-    def setInterest(self, client_channel, handle, context, parent_id, zones):
+    def setInterest(self, clientChannel, handle, context, parentId, zones):
         dg = Datagram()
-        dg.add_server_header([client_channel], self.ourChannel, CLIENT_AGENT_SET_INTEREST)
-        dg.add_uint16(handle)
-        dg.add_uint32(context)
-        dg.add_uint32(parent_id)
+        addServerHeader(dg, clientChannel, self.ourChannel, CLIENT_AGENT_SET_INTEREST)
+        dg.addUint16(handle)
+        dg.addUint32(context)
+        dg.addUint32(parent_id)
         for zone in zones:
-            dg.add_uint32(zone)
+            dg.addUint32(zone)
         self.send(dg)
 
-    def removeInterest(self, client_channel, handle, context):
+    def removeInterest(self, clientChannel, handle, context):
         dg = Datagram()
-        dg.add_server_header([client_channel], self.ourChannel, CLIENT_AGENT_REMOVE_INTEREST)
-        dg.add_uint16(handle)
-        dg.add_uint32(context)
+        addServerHeader(dg, clientChannel, self.ourChannel, CLIENT_AGENT_REMOVE_INTEREST)
+        dg.addUint16(handle)
+        dg.addUint32(context)
         self.send(dg)
 
     def handleUpdateField(self, dgi):
@@ -228,13 +228,13 @@ class AIRepository:
         self.currentSender = self.currentSender
         do = self.doTable[doId]
         try:
-            field.receive_update(do, dgi)
+            field.receiveUpdate(do, dgi)
         except Exception as e:
             print(f'failed to handle field update: <{field}> from {self.currentAvatarSender}')
             import traceback
             traceback.print_exc()
             dgi.seek(0)
-            print('datagram:', dgi.remaining_bytes())
+            print('datagram:', dgi.getRemainingBytes())
 
     @property
     def currentAvatarSender(self):
@@ -322,17 +322,17 @@ class AIRepository:
     def send(self, dg):
         self.connection.send_datagram(dg)
 
-    def generateWithRequired(self, do, parent_id, zone_id, optional=()):
-        do_id = self.allocateChannel()
-        self.generateWithRequiredAndId(do, do_id, parent_id, zone_id, optional)
+    def generateWithRequired(self, do, parentId, zoneId, optional = ()):
+        doId = self.allocateChannel()
+        self.generateWithRequiredAndId(do, doId, parentId, zoneId, optional)
 
-    def generateWithRequiredAndId(self, do, do_id, parent_id, zone_id, optional=()):
-        do.do_id = do_id
-        self.doTable[do_id] = do
-        dg = do.dclass.ai_format_generate(do, do_id, parent_id, zone_id, STATESERVERS_CHANNEL, self.ourChannel, optional)
+    def generateWithRequiredAndId(self, do, doId, parentId, zoneId, optional = ()):
+        do.do_id = doId
+        self.doTable[doId] = do
+        dg = do.dclass.aiFormatGenerate(do, doId, parentId, zoneId, STATESERVERS_CHANNEL, self.ourChannel, optional)
         self.send(dg)
 
-        do.location = (parent_id, zone_id)
+        do.location = (parentId, zoneId)
         do.generate()
         do.announceGenerate()
 
@@ -435,8 +435,8 @@ class AIRepository:
 
     def requestDelete(self, do):
         dg = Datagram()
-        dg.add_server_header([do.do_id], self.ourChannel, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(do.do_id)
+        addServerHeader(dg, do.do_id, self.ourChannel, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(do.do_id)
         self.send(dg)
 
     @staticmethod
