@@ -4,6 +4,8 @@ import copy
 import random
 import string
 
+from datetime import datetime
+
 from .DistributedObjectAI import DistributedObjectAI
 from ai.toon.DistributedToonAI import DistributedToonAI
 from ai.toon.DistributedToonAI import DistributedPlayerAI
@@ -891,6 +893,7 @@ class TTCodeRedemptionMgrAI(DistributedObjectAI):
             return
 
         code = code.lower()
+        code = ''.join(code.split())
 
         items = self.air.mongoInterface.findCodeMatch(code)
 
@@ -899,10 +902,30 @@ class TTCodeRedemptionMgrAI(DistributedObjectAI):
             self.d_redeemCodeResult(avId, context, status)
             return
 
-        if items['Expired']:
-            status = self.ExpiredCode
-            self.d_redeemCodeResult(avId, context, status)
-            return
+        # If our year is greater than 1, then we must have a month and day too.
+        if items['ExpirationYear']:
+            try:
+                expYear = items['ExpirationYear']
+                expMonth = items['ExpirationMonth']
+                expDay = items['ExpirationDay']
+            except:
+                print(f'Code {code} does not have a proper expiration date.')
+                status = self.InvalidCode
+                self.d_redeemCodeResult(avId, context, status)
+                return
+
+            # TODO: should this go off Toontown Time instead of local time?
+            today = datetime.today()
+            todayYear = dt.year
+            todayMonth = dt.month
+            todayDay = dt.month
+
+            datetimeCode = datetime(expYear, expMonth, expDay)
+            datetimeToday = datetime(todayYear, todayMonth, todayDay)
+            if datetimeToday > datetimeCode:
+                status = self.ExpiredCode
+                self.d_redeemCodeResult(avId, context, status)
+                return
 
         if avId in items['UsedBy']:
             status = self.Ineligible
