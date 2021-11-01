@@ -7,7 +7,7 @@ from typing import List, Union, Dict, Tuple
 from Crypto.Cipher import AES
 from dataslots import with_slots
 from dc.objects import MolecularField
-from dc.util import Datagram
+from panda3d.core import Datagram
 
 from otp import config
 from otp.messagedirector import MDParticipant
@@ -163,7 +163,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.send_datagram(dg)
 
     def receive_datagram(self, dg):
-        dgi = dg.iterator()
+        dgi = DatagramIterator(dg)
         msgtype = dgi.get_uint16()
 
         if msgtype != CLIENT_OBJECT_UPDATE_FIELD:
@@ -253,7 +253,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         field_number = dgi.get_uint16()
 
-        field = self.service.dc_file.fields[field_number]()
+        field = self.service.dcFile.fields[field_number]()
 
         sendable = False
 
@@ -367,7 +367,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.subscribe_channel(self.channel)
         self.subscribe_channel(getPuppetChannel(self.avatar_id))
 
-        dclass = self.service.dc_file.namespace['DistributedToon']
+        dclass = self.service.dcFile.getClassByName('DistributedToon')
 
         access = 2 if self.account.access == b'FULL' else 1
 
@@ -411,7 +411,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.potential_avatar = PotentialAvatar(do_id = 0, name = 'Toon', wish_name = '', approved_name = '',
                                                       rejected_name = '', dna_string = dna, index = pos, allowName = 1)
 
-        dclass = self.service.dc_file.namespace['DistributedToon']
+        dclass = self.service.dcFile.namespace['DistributedToon']
 
         dg = Datagram()
         dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
@@ -496,7 +496,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.send_datagram(resp)
 
         if av_id and av:
-            dclass = self.service.dc_file.namespace['DistributedToon']
+            dclass = self.service.dcFile.namespace['DistributedToon']
             wishname_field = dclass['WishName']
             wishname_state_field = dclass['WishNameState']
 
@@ -585,8 +585,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         avatars = [pot_av.do_id if pot_av else 0 for pot_av in self.potential_avatars]
         self.avs_deleted.append((av_id, int(time.time())))
 
-        field = self.service.dc_file.namespace['Account']['ACCOUNT_AV_SET']
-        del_field = self.service.dc_file.namespace['Account']['ACCOUNT_AV_SET_DEL']
+        field = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET']
+        del_field = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET_DEL']
 
         dg = Datagram()
         dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
@@ -697,7 +697,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.futures.append(f)
         sender, dgi = await f
 
-        av_del_field = self.service.dc_file.namespace['Account']['ACCOUNT_AV_SET_DEL']
+        av_del_field = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET_DEL']
         self.service.log.debug('Begin unpack of deleted avatars.')
         try:
             self.avs_deleted = av_del_field.unpack_value(dgi)
@@ -968,7 +968,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         pos = dgi.tell()
 
         field_number = dgi.get_uint16()
-        field = self.service.dc_file.fields[field_number]()
+        field = self.service.dcFile.fields[field_number]()
 
         resp = Datagram()
         resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
@@ -1078,7 +1078,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         for pending_object in pending:
             for datagram in pending_object.datagrams:
-                self.handle_datagram(datagram, datagram.iterator())
+                self.handle_datagram(datagram, DatagramIterator(datagram))
 
         if not interest.ai:
             resp = Datagram()

@@ -14,7 +14,7 @@ class DistributedObjectAI(DirectObject):
     def __init__(self, air: AIRepository.AIRepository):
         DirectObject.__init__(self)
         self.air = air
-        self.dclass = air.dcFile.namespace[self.__class__.__name__[:-2]]
+        self.dclass = air.dcFile.getClassByName(self.__class__.__name__[:-2])
         self.zoneId = 0
         self.parentId = 0
 

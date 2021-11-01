@@ -13,7 +13,7 @@ from typing import List, Optional, Dict, NamedTuple
 from dataslots import with_slots
 from dataclasses import dataclass
 
-from dc.util import Datagram
+from panda3d.core import Datagram
 from otp.util import getPuppetChannel
 from otp.messagetypes import CLIENT_FRIEND_ONLINE
 

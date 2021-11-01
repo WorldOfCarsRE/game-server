@@ -121,10 +121,10 @@ class DBServerProtocol(MDUpstreamProtocol):
         dcName = dgi.get_string16()
         self.service.loop.create_task(self.service.queryObjectDetails(avatarId, doId, access, dcName))
 
-from dc.parser import parse_dc_file
+from panda3d.direct import DCFile
 from otp.dbbackend import SQLBackend, MongoBackend, OTPCreateFailed
 from otp.util import getPuppetChannel
-from dc.util import Datagram
+from panda3d.core import Datagram
 
 class DBServer(DownstreamMessageDirector):
     upstream_protocol = DBServerProtocol
@@ -137,7 +137,9 @@ class DBServer(DownstreamMessageDirector):
 
         self.pool = None
 
-        self.dc = parse_dc_file('etc/dclass/toon.dc')
+        self.dc = DCFile()
+        self.dc.read('etc/dclass/toon.dc')
+
         self.wantSQL = config['DatabaseServer.SQL']
 
         if self.wantSQL:
@@ -191,8 +193,8 @@ class DBServer(DownstreamMessageDirector):
         avatars = account['ACCOUNT_AV_SET']
         estateId = account['ESTATE_ID']
 
-        estateClass = self.dc.namespace['DistributedEstate']
-        houseClass = self.dc.namespace['DistributedHouse']
+        estateClass = self.dc.getClassByName('DistributedEstate')
+        houseClass = self.dc.getClassByName('DistributedHouse')
 
         # These Fields are REQUIRED but not stored in db.
         estateOther = [

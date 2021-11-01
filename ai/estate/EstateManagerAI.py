@@ -3,7 +3,7 @@ from otp.constants import DBSERVERS_CHANNEL
 from otp.messagetypes import DBSERVER_GET_ESTATE, DBSERVER_UNLOAD_ESTATE
 from ai.estate.DistributedEstateAI import DistributedEstateAI
 from direct.showbase.PythonUtil import Functor
-from dc.util import Datagram
+from panda3d.core import Datagram
 
 class EstateManagerAI(DistributedObjectAI):
 

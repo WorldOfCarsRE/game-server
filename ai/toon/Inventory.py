@@ -1,4 +1,4 @@
-from dc.util import Datagram
+from panda3d.core import Datagram
 from ai.battle.BattleGlobals import *
 from typing import Union
 

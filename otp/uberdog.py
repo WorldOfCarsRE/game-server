@@ -1,12 +1,13 @@
 from otp import config
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol
-from dc.parser import parse_dc_file
+from panda3d.direct import DCFile
 from otp.constants import *
 from otp.messagetypes import *
 from otp.util import *
 from otp.networking import DatagramFuture
+from direct.distributed.PyDatagram import PyDatagram
 
-from dc.util import Datagram
+from panda3d.core import Datagram
 
 import asyncio
 
@@ -62,7 +63,7 @@ class Uberdog(DownstreamMessageDirector):
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)
 
-        self.dclass = dc.namespace[self.__class__.__name__[:-2]]
+        self.dclass = dc.getClassByName(self.__class__.__name__[:-2])
 
         self.lastSender = None
 
@@ -78,11 +79,22 @@ class Uberdog(DownstreamMessageDirector):
                                             STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields=None)
         self.send_datagram(dg)
 
-        dg = Datagram()
-        dg.add_server_control_header(CONTROL_ADD_POST_REMOVE)
-        dg.add_server_header([self.GLOBAL_ID], self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(self.GLOBAL_ID)
+        dg = PyDatagram()
+        self.addServerControlHeader(dg, CONTROL_ADD_POST_REMOVE)
+        dg.addServerHeader(dg, self.GLOBAL_ID, self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(self.GLOBAL_ID)
         self.send_datagram(dg)
+
+    def addServerHeader(self, dg, channel, sender, code):
+        dg.addInt8(1)
+        dg.addChannel(channel)
+        dg.addChannel(sender)
+        dg.addUint16(code)
+
+    def addServerControlHeader(self, dg, code):
+        dg.addInt8(1)
+        dg.addChannel(CONTROL_MESSAGE)
+        dg.addUint16(code)
 
     def receive_update(self, sender, dgi):
         self.lastSender = sender
@@ -98,7 +110,7 @@ class Uberdog(DownstreamMessageDirector):
 
     async def query_location(self, avId, context):
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], self.GLOBAL_ID, STATESERVER_OBJECT_LOCATE)
+        dg.addServerHeader([STATESERVERS_CHANNEL], self.GLOBAL_ID, STATESERVER_OBJECT_LOCATE)
         dg.add_uint32(context)
         dg.add_uint32(avId)
         self.send_datagram(dg)
@@ -192,7 +204,9 @@ class DistributedDeliveryManagerUD(Uberdog):
 
 async def main():
     import builtins
-    builtins.dc = parse_dc_file('etc/dclass/toon.dc')
+
+    builtins.dc = DCFile()
+    dc.read('etc/dclass/toon.dc')
 
     loop = asyncio.get_running_loop()
     central_logger = CentralLoggerUD(loop)

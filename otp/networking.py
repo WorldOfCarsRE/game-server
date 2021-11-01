@@ -1,5 +1,5 @@
 from asyncio import Queue
-from dc.util import Datagram
+from panda3d.core import Datagram
 
 from asyncio import Future
 from typing import List
@@ -113,7 +113,7 @@ class ToontownProtocol(asyncio.Protocol):
         self.buf.extend(data)
 
     def send_datagram(self, data: Datagram):
-        self.outgoing_q.put_nowait(data.bytes())
+        self.outgoing_q.put_nowait(data.getMessage())
 
     async def transport_datagrams(self):
         while True:
@@ -133,7 +133,7 @@ class ToontownProtocol(asyncio.Protocol):
                 else:
                     try:
                         dg = Datagram()
-                        dg.add_bytes(self.buf[:expected])
+                        dg.addBlob(bytes(self.buf[:expected]))
                         self.receive_datagram(dg)
                         del self.buf[:expected]
                         expected = 0

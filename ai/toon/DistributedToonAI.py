@@ -1,7 +1,7 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 from ai.DistributedSmoothNodeAI import DistributedSmoothNodeAI
 from otp.util import getPuppetChannel
-from dc.util import Datagram
+from panda3d.core import Datagram
 
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *

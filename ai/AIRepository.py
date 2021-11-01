@@ -1,12 +1,12 @@
 from otp.messagetypes import *
-from dc.util import Datagram
+from panda3d.core import Datagram
 from otp.constants import *
 from otp.zone import *
 from otp.util import *
 
 from panda3d.core import UniqueIdAllocator
 from direct.showbase.MessengerGlobal import *
-from dc.parser import parse_dc_file
+from panda3d.direct import DCFile
 import queue
 
 from typing import Dict, Tuple
@@ -64,7 +64,8 @@ class AIRepository:
         self.zoneTable: Dict[int, set] = {}
         self.parentTable: Dict[int, set] = {}
 
-        self.dcFile = parse_dc_file('etc/dclass/toon.dc')
+        self.dcFile = DCFile()
+        self.dcFile.read('etc/dclass/toon.dc')
 
         self.currentSender = None
         self.loop = None
@@ -114,7 +115,7 @@ class AIRepository:
         return task.cont
 
     def handleDatagram(self, dg):
-        dgi = dg.iterator()
+        dgi = DatagramIterator(dg)
 
         recipient_count = dgi.get_uint8()
         recipients = [dgi.get_channel() for _ in range(recipient_count)]
@@ -217,15 +218,15 @@ class AIRepository:
         self.send(dg)
 
     def handleUpdateField(self, dgi):
-        do_id = dgi.get_uint32()
-        field_number = dgi.get_uint16()
+        doId = dgi.get_uint32()
+        fieldNumber = dgi.get_uint16()
 
         # TODO: security check here for client senders.
 
-        field = self.dcFile.fields[field_number]()
+        field = self.dcFile.getFieldByIndex(field_number)()
 
         self.currentSender = self.currentSender
-        do = self.doTable[do_id]
+        do = self.doTable[doId]
         try:
             field.receive_update(do, dgi)
         except Exception as e:

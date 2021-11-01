@@ -1,5 +1,5 @@
 from panda3d.core import VBase4
-from dc.util import Datagram
+from panda3d.core import Datagram
 import random
 
 from dataclasses import dataclass

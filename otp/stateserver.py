@@ -3,13 +3,14 @@ from otp import config
 import asyncio
 
 from otp.messagedirector import MDUpstreamProtocol, DownstreamMessageDirector
-from dc.util import Datagram
+from panda3d.core import Datagram
 from otp.constants import STATESERVERS_CHANNEL
 from otp.messagetypes import *
 from otp.messagedirector import MDParticipant
 from otp.networking import ChannelAllocator
 from otp.constants import *
 from dc.objects import MolecularField, AtomicField
+from direct.distributed.PyDatagram import PyDatagram
 
 from typing import Dict, Set
 
@@ -36,7 +37,7 @@ class DistributedObject(MDParticipant):
         self.zone_objects: Dict[int, Set[int]] = {}
 
         if self.dclass:
-            self.service.log.debug(f'Generating new object {do_id} with dclass {self.dclass.name} in location {parent_id} {zone_id}')
+            self.service.log.debug(f'Generating new object {do_id} with dclass {self.dclass.getName()} in location {parent_id} {zone_id}')
 
         self.handle_location_change(parent_id, zone_id, sender)
         self.subscribe_channel(do_id)
@@ -87,8 +88,8 @@ class DistributedObject(MDParticipant):
         pass
 
     def send_location_entry(self, location):
-        dg = Datagram()
-        dg.add_server_header([location], self.do_id, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg = PyDatagram()
+        dg.addServerHeader(location, self.do_id, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
         dg.add_uint8(bool(self.ram))
         self.append_required_data(dg, True, False)
         if self.ram:
@@ -96,8 +97,8 @@ class DistributedObject(MDParticipant):
         self.service.send_datagram(dg)
 
     def send_ai_entry(self, location):
-        dg = Datagram()
-        dg.add_server_header([location], self.do_id, STATESERVER_OBJECT_ENTER_AI_RECV)
+        dg = PyDatagram()
+        dg.addServerHeader(location, self.do_id, STATESERVER_OBJECT_ENTER_AI_RECV)
         self.append_required_data(dg, False, False)
 
         if self.ram:
@@ -106,8 +107,8 @@ class DistributedObject(MDParticipant):
         self.service.send_datagram(dg)
 
     def send_owner_entry(self, location):
-        dg = Datagram()
-        dg.add_server_header([location], self.do_id, STATESERVER_OBJECT_ENTER_OWNER_RECV)
+        dg = PyDatagram()
+        dg.addServerHeader(location, self.do_id, STATESERVER_OBJECT_ENTER_OWNER_RECV)
         self.append_required_data(dg, False, True)
 
         if self.ram:
@@ -159,13 +160,17 @@ class DistributedObject(MDParticipant):
             # Not changing zones.
             return
 
-        dg = Datagram()
-        dg.add_server_header(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE)
-        dg.add_uint32(self.do_id)
-        dg.add_uint32(new_parent)
-        dg.add_uint32(new_zone)
-        dg.add_uint32(old_parent)
-        dg.add_uint32(old_zone)
+        dg = PyDatagram()
+        dg.addServerHeader(len(targets), sender, STATESERVER_OBJECT_CHANGE_ZONE)
+
+        for target in targets:
+            dg.addUint64(target)
+
+        dg.addUint32(self.do_id)
+        dg.addUint32(new_parent)
+        dg.addUint32(new_zone)
+        dg.addUint32(old_parent)
+        dg.addUint32(old_zone)
 
         self.service.send_datagram(dg)
 
@@ -457,11 +462,11 @@ class StateServerProtocol(MDUpstreamProtocol):
 
             for i in range(field_count):
                 field_number = dgi.get_uint16()
-                field = state_server.dc_file.fields[field_number]()
+                field = state_server.dcFile.fields[field_number]()
                 data = field.unpack_bytes(dgi)
                 other_data.append((field_number, data))
 
-        dclass = state_server.dc_file.classes[number]
+        dclass = state_server.dcFile.getClass(number)
 
         query = Datagram()
         query.add_server_header([DBSERVERS_CHANNEL], STATESERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES)
@@ -492,7 +497,7 @@ class StateServerProtocol(MDUpstreamProtocol):
         state_server = self.service
 
         parent_id, zone_id, owner_channel, number, other_data = state_server.queries[do_id]
-        dclass = state_server.dc_file.classes[number]
+        dclass = state_server.dcFile.classes[number]
 
         del state_server.queries[do_id]
 
@@ -503,7 +508,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         for i in range(count):
             field_number = dgi.get_uint16()
-            field = state_server.dc_file.fields[field_number]()
+            field = state_server.dcFile.fields[field_number]()
 
             if field.is_required:
                 required[field.name] = field.unpack_bytes(dgi)
@@ -511,7 +516,7 @@ class StateServerProtocol(MDUpstreamProtocol):
                 ram[field.name] = field.unpack_bytes(dgi)
 
         for field_number, data in other_data:
-            field = state_server.dc_file.fields[field_number]()
+            field = state_server.dcFile.fields[field_number]()
             if field.is_required:
                 required[field.name] = data
             else:
@@ -564,11 +569,11 @@ class StateServerProtocol(MDUpstreamProtocol):
             self.service.log.debug(f'Received duplicate generate for object {do_id}')
             return
 
-        if number > len(state_server.dc_file.classes):
+        if number > len(state_server.dcFile.classes):
             self.service.log.debug(f'Received create for unknown dclass with class id {number}')
             return
 
-        dclass = state_server.dc_file.classes[number]
+        dclass = state_server.dcFile.classes[number]
 
         required = {}
         ram = {}
@@ -603,7 +608,7 @@ class StateServerProtocol(MDUpstreamProtocol):
             if obj.ai_channel == ai_channel:
                 obj.annihilate(ai_channel)
 
-from dc.parser import parse_dc_file
+from panda3d.direct import DCFile
 
 class StateServer(DownstreamMessageDirector, ChannelAllocator):
     upstream_protocol = StateServerProtocol
@@ -617,7 +622,8 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
         DownstreamMessageDirector.__init__(self, loop)
         ChannelAllocator.__init__(self)
 
-        self.dc_file = parse_dc_file('etc/dclass/toon.dc')
+        self.dcFile = DCFile()
+        self.dcFile.read('etc/dclass/toon.dc')
 
         self.loop.set_exception_handler(self._on_exception)
 
@@ -635,7 +641,7 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
     def on_upstream_connect(self):
         self.subscribe_channel(self._client, STATESERVERS_CHANNEL)
         self.objects[self.root_object_id] = DistributedObject(self, STATESERVERS_CHANNEL, self.root_object_id,
-                                                              0, 2, self.dc_file.namespace['DistributedDirectory'],
+                                                              0, 2, self.dcFile.getClassByName('DistributedDirectory'),
                                                               None, None)
 
     def resolve_ai_channel(self, parent_id):
