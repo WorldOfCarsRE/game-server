@@ -916,9 +916,9 @@ class TTCodeRedemptionMgrAI(DistributedObjectAI):
 
             # TODO: should this go off Toontown Time instead of local time?
             today = datetime.today()
-            todayYear = dt.year
-            todayMonth = dt.month
-            todayDay = dt.month
+            todayYear = today.year
+            todayMonth = today.month
+            todayDay = today.month
 
             datetimeCode = datetime(expYear, expMonth, expDay)
             datetimeToday = datetime(todayYear, todayMonth, todayDay)
