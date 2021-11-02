@@ -50,8 +50,10 @@ class DistributedObject(MDParticipant):
             print('dclass is none for object id', self.do_id)
             return
 
-        dg.add_uint16(self.dclass.number)
-        for field in self.dclass.inherited_fields:
+        dg.add_uint16(self.dclass.getNumber())
+        for fieldIndex in range(self.dclass.getNumInheritedFields()):
+            field = self.dclass.getInheritedField(fieldIndex)
+
             if field.asMolecularField():
                 continue
 
@@ -59,7 +61,7 @@ class DistributedObject(MDParticipant):
                 continue
 
             if not client_only or field.is_broadcast or field.is_clrecv or (also_owner and field.is_ownrecv):
-                dg.add_bytes(self.required[field.name])
+                dg.appendData(self.required[field.getName()])
 
     def append_other_data(self, dg, client_only, also_owner):
         if client_only:
@@ -69,20 +71,20 @@ class DistributedObject(MDParticipant):
             for field_name, raw_data in self.ram.items():
                 field = self.dclass.fields_by_name[field_name]
                 if field.is_broadcast or field.is_clrecv or (also_owner and field.is_ownrecv):
-                    fields_dg.add_uint16(field.number)
-                    fields_dg.add_bytes(raw_data)
+                    fields_dg.add_uint16(field.getNumber())
+                    fields_dg.appendData(raw_data)
                     count += 1
 
             dg.add_uint16(count)
             if count:
-                dg.add_bytes(fields_dg.bytes())
+                dg.appendData(fields_dg.bytes())
 
         else:
             dg.add_uint16(len(self.ram))
-            for field_name, raw_data in self.ram.items():
-                field = self.dclass.fields_by_name[field_name]
+            for fieldName, rawData in self.ram.items():
+                field = self.dclass.getFieldByName[fieldName]
                 dg.add_uint16(field.number)
-                dg.add_bytes(raw_data)
+                dg.appendData(rawData)
 
     def send_interest_entry(self, location, context):
         pass
@@ -225,7 +227,7 @@ class DistributedObject(MDParticipant):
     def handle_one_update(self, dgi, sender):
         field_id = dgi.get_uint16()
         field = self.dclass.dcfile().fields[field_id]()
-        pos = dgi.tell()
+        pos = dgi.getCurrentIndex()
         data = field.unpack_bytes(dgi)
 
         if isinstance(field, MolecularField):
@@ -260,9 +262,9 @@ class DistributedObject(MDParticipant):
 
     def save_field(self, field: DCMolecularField, data):
         if field.is_required:
-            self.required[field.name] = data
+            self.required[field.getName()] = data
         elif field.is_ram:
-            self.ram[field.name] = data
+            self.ram[field.getName()] = data
 
         if self.db and field.is_db:
             dg = Datagram()
@@ -272,7 +274,7 @@ class DistributedObject(MDParticipant):
             dg.add_uint16(field.number)
             dg.add_bytes(data)
             self.service.send_datagram(dg)
-            self.service.log.debug(f'Object {self.do_id} saved value {data} for field {field.name} to database.')
+            self.service.log.debug(f'Object {self.do_id} saved value {data} for field {field.getName()} to database.')
 
     def handle_one_get(self, dg, field_id, subfield=False):
         field = self.dclass.dcfile().fields[field_id]()
@@ -283,10 +285,10 @@ class DistributedObject(MDParticipant):
             for field in field.subfields:
                 self.handle_one_get(dg, field.number, subfield)
 
-        if field.name in self.required:
-            dg.append_data(self.required[field.name])
-        elif field.name in self.ram:
-            dg.append_data(self.ram[field.name])
+        if field.getName() in self.required:
+            dg.append_data(self.required[field.getName()])
+        elif field.getName() in self.ram:
+            dg.append_data(self.ram[field.getName()])
 
     def handle_datagram(self, dg, dgi):
         sender = dgi.get_channel()
@@ -398,8 +400,8 @@ class DistributedObject(MDParticipant):
 
 class StateServerProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msgtype = dgi.get_uint16()
+        sender = dgi.getInt64()
+        msgtype = dgi.getUint16()
         self.service.log.debug(f'State server directly received msgtype {MSG_TO_NAME_DICT[msgtype]} from {sender}.')
 
         if msgtype == STATESERVER_OBJECT_GENERATE_WITH_REQUIRED:
@@ -455,32 +457,32 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         other_data = []
 
-        state_server = self.service
+        stateServer = self.service
 
         if other:
             field_count = dgi.get_uint16()
 
             for i in range(field_count):
                 field_number = dgi.get_uint16()
-                field = state_server.dcFile.fields[field_number]()
+                field = stateServer.dcFile.fields[field_number]()
                 data = field.unpack_bytes(dgi)
                 other_data.append((field_number, data))
 
-        dclass = state_server.dcFile.getClass(number)
+        dclass = stateServer.dcFile.getClass(number)
 
         query = Datagram()
         query.add_server_header([DBSERVERS_CHANNEL], STATESERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES)
         query.add_uint32(1)
         query.add_uint32(do_id)
 
-        pos = query.tell()
+        pos = query.getCurrentIndex()
         query.add_uint16(0)
         count = 0
         for field in dclass:
             if not isinstance(field, MolecularField) and field.is_db:
-                if field.name == 'DcObjectType':
+                if field.getName() == 'DcObjectType':
                     continue
-                query.add_uint16(field.number)
+                query.add_uint16(field.getNumber())
                 count += 1
         query.seek(pos)
         query.add_uint16(count)
@@ -494,12 +496,12 @@ class StateServerProtocol(MDUpstreamProtocol):
         context = dgi.get_uint32()
         do_id = dgi.get_uint32()
 
-        state_server = self.service
+        stateServer = self.service
 
-        parent_id, zone_id, owner_channel, number, other_data = state_server.queries[do_id]
-        dclass = state_server.dcFile.classes[number]
+        parent_id, zone_id, owner_channel, number, other_data = stateServer.queries[do_id]
+        dclass = stateServer.dcFile.getClass(number)
 
-        del state_server.queries[do_id]
+        del stateServer.queries[do_id]
 
         required = {}
         ram = {}
@@ -508,42 +510,42 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         for i in range(count):
             field_number = dgi.get_uint16()
-            field = state_server.dcFile.fields[field_number]()
+            field = stateServer.dcFile.fields[field_number]()
 
             if field.is_required:
-                required[field.name] = field.unpack_bytes(dgi)
+                required[field.getName()] = field.unpack_bytes(dgi)
             else:
-                ram[field.name] = field.unpack_bytes(dgi)
+                ram[field.getName()] = field.unpack_bytes(dgi)
 
         for field_number, data in other_data:
-            field = state_server.dcFile.fields[field_number]()
+            field = stateServer.dcFile.fields[field_number]()
             if field.is_required:
-                required[field.name] = data
+                required[field.getName()] = data
             else:
-                ram[field.name] = data
+                ram[field.getName()] = data
 
             if field.is_db:
                 dg = Datagram()
                 dg.add_server_header([DBSERVERS_CHANNEL], do_id, DBSERVER_SET_STORED_VALUES)
                 dg.add_uint32(do_id)
                 dg.add_uint16(1)
-                dg.add_uint16(field.number)
+                dg.add_uint16(field.getNumber())
                 dg.add_bytes(data)
                 self.service.send_datagram(dg)
 
         self.service.log.debug(f'Activating {do_id} with required:{required}\nram:{ram}\n')
 
-        obj = DistributedObject(state_server, STATESERVERS_CHANNEL, do_id, parent_id, zone_id, dclass, required, ram,
+        obj = DistributedObject(stateServer, STATESERVERS_CHANNEL, do_id, parent_id, zone_id, dclass, required, ram,
                                 owner_channel=owner_channel, db=True)
-        state_server.database_objects.add(do_id)
-        state_server.objects[do_id] = obj
+        stateServer.database_objects.add(do_id)
+        stateServer.objects[do_id] = obj
         obj.send_owner_entry(owner_channel)
 
     def handle_add_ai(self, dgi, sender):
         object_id = dgi.get_uint32()
         ai_channel = dgi.get_channel()
-        state_server = self.service
-        obj = state_server.objects[object_id]
+        stateServer = self.service
+        obj = stateServer.objects[object_id]
         obj.ai_channel = ai_channel
         obj.ai_explicitly_set = True
         print('AI SET FOR', object_id, 'TO', ai_channel)
@@ -552,53 +554,57 @@ class StateServerProtocol(MDUpstreamProtocol):
     def handle_set_owner(self, dgi, sender):
         object_id = dgi.get_uint32()
         owner_channel = dgi.get_channel()
-        state_server = self.service
-        obj = state_server.objects[object_id]
+        stateServer = self.service
+        obj = stateServer.objects[object_id]
         obj.owner_channel = owner_channel
         obj.send_owner_entry(owner_channel)
 
-    def handle_generate(self, dgi, sender, other=False):
+    def handle_generate(self, dgi, sender, other = False):
         parent_id = dgi.get_uint32()
         zone_id = dgi.get_uint32()
         number = dgi.get_uint16()
         do_id = dgi.get_uint32()
 
-        state_server = self.service
+        stateServer = self.service
 
-        if do_id in state_server.objects:
+        if do_id in stateServer.objects:
             self.service.log.debug(f'Received duplicate generate for object {do_id}')
             return
 
-        if number > len(state_server.dcFile.classes):
+        if number > stateServer.dcFile.getNumClasses():
             self.service.log.debug(f'Received create for unknown dclass with class id {number}')
             return
 
-        dclass = state_server.dcFile.classes[number]
+        dclass = stateServer.dcFile.getClass(number)
 
         required = {}
         ram = {}
 
-        for field in dclass.inherited_fields:
-            if not isinstance(field, MolecularField) and field.is_required:
-                required[field.name] = field.unpack_bytes(dgi)
+        for fieldIndex in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(fieldIndex)
+
+            if not field.asMolecularField() and field.isRequired():
+                continue
+
+            required[field.getName()] = field.unpackArgs(dgi)
 
         if other:
             num_optional_fields = dgi.get_uint16()
 
             for i in range(num_optional_fields):
-                field_number = dgi.get_uint16()
+                fieldNumber = dgi.getUint16()
 
-                field = dclass.fields[field_number]
+                field = dclass.getFieldByIndex(fieldNumber)
 
                 if not field.is_ram:
-                    self.service.log.debug(f'Received non-RAM field {field.name} within an OTHER section.\n')
+                    self.service.log.debug(f'Received non-RAM field {field.getName()} within an OTHER section.\n')
                     field.unpack_bytes(dgi)
                     continue
                 else:
-                    ram[field.name] = field.unpack_bytes(dgi)
+                    ram[field.getName()] = field.unpack_bytes(dgi)
 
-        obj = DistributedObject(state_server, sender, do_id, parent_id, zone_id, dclass, required, ram)
-        state_server.objects[do_id] = obj
+        obj = DistributedObject(stateServer, sender, do_id, parent_id, zone_id, dclass, required, ram)
+        stateServer.objects[do_id] = obj
 
     def handle_shard_rest(self, dgi):
         ai_channel = dgi.get_channel()

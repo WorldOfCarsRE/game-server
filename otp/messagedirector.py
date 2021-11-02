@@ -35,7 +35,7 @@ class MDProtocol(ToontownProtocol, MDParticipant):
         recipientCount = dgi.getUint8()
         if recipientCount == 1 and dgi.getInt64() == CONTROL_MESSAGE:
             # Control message.
-            msg_type = dgi.get_uint16()
+            msg_type = dgi.getUint16()
 
             if msg_type == CONTROL_SET_CHANNEL:
                 channel = dgi.getInt64()
@@ -119,8 +119,7 @@ class MessageDirector(Service):
 
         try:
             for participant in receivingParticipants:
-                _dgi = DatagramIterator(dg)
-                _dgi.seek(pos)
+                _dgi = DatagramIterator(dg, pos)
                 participant.handle_datagram(dg, _dgi)
         except Exception as e:
             self.log.debug(f'Exception while handling datagram: {e.__class__}: {repr(e)}')
