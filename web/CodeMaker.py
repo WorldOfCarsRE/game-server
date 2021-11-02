@@ -5,7 +5,9 @@ client = MongoClient(config['MongoDB.Host'])[config['MongoDB.Name']]
 
 code = {}
 code['_id'] = 'sweet'
-code['Expired'] = False
+code['ExpirationYear'] = 0
+code['ExpirationMonth'] = 0
+code['ExpirationDay'] = 0
 code['UsedBy'] = []
 code['Items'] = [
     ['CatalogBeanItem', 12000]
