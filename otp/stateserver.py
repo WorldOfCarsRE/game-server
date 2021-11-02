@@ -11,18 +11,19 @@ from otp.networking import ChannelAllocator
 from otp.constants import *
 from panda3d.direct import DCPacker
 from direct.distributed.PyDatagram import PyDatagram
+from otp.util import addServerHeader
 
 from typing import Dict, Set
 
 from otp.zone import *
 
 class DistributedObject(MDParticipant):
-    def __init__(self, state_server, sender, doId, parent_id, zone_id, dclass, required, ram, owner_channel=None, db=False):
+    def __init__(self, state_server, sender, doId, parentId, zoneId, dclass, required, ram, owner_channel=None, db=False):
         MDParticipant.__init__(self, state_server)
         self.sender = sender
         self.doId = doId
-        self.parent_id = 0
-        self.zone_id = 0
+        self.parentId = 0
+        self.zoneId = 0
         self.dclass = dclass
         self.required = required
         self.ram = ram
@@ -37,31 +38,37 @@ class DistributedObject(MDParticipant):
         self.zone_objects: Dict[int, Set[int]] = {}
 
         if self.dclass:
-            self.service.log.debug(f'Generating new object {doId} with dclass {self.dclass.getName()} in location {parent_id} {zone_id}')
+            self.service.log.debug(f'Generating new object {doId} with dclass {self.dclass.getName()} in location {parentId} {zoneId}')
 
-        self.handle_location_change(parent_id, zone_id, sender)
+        self.handle_location_change(parentId, zoneId, sender)
         self.subscribe_channel(doId)
 
-    def append_required_data(self, dg, client_only, also_owner):
+    def appendRequiredData(self, dg, clientOnly, alsoOwner):
         dg.add_uint32(self.doId)
-        dg.add_uint32(self.parent_id)
-        dg.add_uint32(self.zone_id)
+        dg.add_uint32(self.parentId)
+        dg.add_uint32(self.zoneId)
         if not self.dclass:
             print('dclass is none for object id', self.doId)
             return
 
         dg.add_uint16(self.dclass.getNumber())
+
+        fieldPacker = DCPacker()
+
         for fieldIndex in range(self.dclass.getNumInheritedFields()):
             field = self.dclass.getInheritedField(fieldIndex)
 
-            if field.asMolecularField():
-                continue
+            if field.isRequired() and not field.asMolecularField() and not clientOnly or field.isBroadcast() or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
+                fieldPacker.beginPack(field)
 
-            if not field.isRequired():
-                continue
+                if self.required and field.getName() in self.required:
+                    field.packArgs(fieldPacker, self.required[field.getName()])
+                else:
+                    fieldPacker.packDefaultValue()
 
-            if not client_only or field.is_broadcast or field.is_clrecv or (also_owner and field.is_ownrecv):
-                dg.appendData(self.required[field.getName()])
+                fieldPacker.endPack()
+
+                dg.appendData(fieldPacker.getBytes())
 
     def append_other_data(self, dg, client_only, also_owner):
         if client_only:
@@ -93,7 +100,7 @@ class DistributedObject(MDParticipant):
         dg = PyDatagram()
         dg.addServerHeader(location, self.doId, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
         dg.add_uint8(bool(self.ram))
-        self.append_required_data(dg, True, False)
+        self.appendRequiredData(dg, True, False)
         if self.ram:
             self.append_other_data(dg, True, False)
         self.service.send_datagram(dg)
@@ -101,7 +108,7 @@ class DistributedObject(MDParticipant):
     def send_ai_entry(self, location):
         dg = PyDatagram()
         dg.addServerHeader(location, self.doId, STATESERVER_OBJECT_ENTER_AI_RECV)
-        self.append_required_data(dg, False, False)
+        self.appendRequiredData(dg, False, False)
 
         if self.ram:
             self.append_other_data(dg, False, False)
@@ -111,7 +118,7 @@ class DistributedObject(MDParticipant):
     def send_owner_entry(self, location):
         dg = PyDatagram()
         dg.addServerHeader(location, self.doId, STATESERVER_OBJECT_ENTER_OWNER_RECV)
-        self.append_required_data(dg, False, True)
+        self.appendRequiredData(dg, False, True)
 
         if self.ram:
             self.append_other_data(dg, True, True)
@@ -119,8 +126,8 @@ class DistributedObject(MDParticipant):
         self.service.send_datagram(dg)
 
     def handle_location_change(self, new_parent, new_zone, sender):
-        old_parent = self.parent_id
-        old_zone = self.zone_id
+        old_parent = self.parentId
+        old_zone = self.zoneId
 
         targets = list()
 
@@ -139,8 +146,8 @@ class DistributedObject(MDParticipant):
                 targets.append(old_parent)
                 targets.append(location_as_channel(old_parent, old_zone))
 
-            self.parent_id = new_parent
-            self.zone_id = new_zone
+            self.parentId = new_parent
+            self.zoneId = new_zone
 
             if new_parent:
                 self.subscribe_channel(parent_to_children(new_parent))
@@ -154,19 +161,16 @@ class DistributedObject(MDParticipant):
                 targets.append(new_parent)
 
         elif new_zone != old_zone:
-            self.zone_id = new_zone
+            self.zoneId = new_zone
 
-            targets.append(self.parent_id)
-            targets.append(location_as_channel(self.parent_id, old_zone))
+            targets.append(self.parentId)
+            targets.append(location_as_channel(self.parentId, old_zone))
         else:
             # Not changing zones.
             return
 
         dg = PyDatagram()
-        dg.addServerHeader(len(targets), sender, STATESERVER_OBJECT_CHANGE_ZONE)
-
-        for target in targets:
-            dg.addUint64(target)
+        addServerHeader(dg, targets, sender, STATESERVER_OBJECT_CHANGE_ZONE)
 
         dg.addUint32(self.doId)
         dg.addUint32(new_parent)
@@ -187,17 +191,17 @@ class DistributedObject(MDParticipant):
     def annihilate(self, sender, notify_parent=True):
         targets = list()
 
-        if self.parent_id:
-            targets.append(location_as_channel(self.parent_id, self.zone_id))
+        if self.parentId:
+            targets.append(location_as_channel(self.parentId, self.zoneId))
 
             if notify_parent:
                 dg = Datagram()
-                dg.add_server_header([self.parent_id], sender, STATESERVER_OBJECT_CHANGE_ZONE)
+                dg.add_server_header([self.parentId], sender, STATESERVER_OBJECT_CHANGE_ZONE)
                 dg.add_uint32(self.doId)
                 dg.add_uint32(0)  # New parent
                 dg.add_uint32(0)  # new zone
-                dg.add_uint32(self.parent_id)   # old parent
-                dg.add_uint32(self.zone_id)  # old zone
+                dg.add_uint32(self.parentId)   # old parent
+                dg.add_uint32(self.zoneId)  # old zone
                 self.service.send_datagram(dg)
 
         if self.owner_channel:
@@ -226,12 +230,12 @@ class DistributedObject(MDParticipant):
 
     def handle_one_update(self, dgi, sender):
         field_id = dgi.get_uint16()
-        field = self.dclass.dcfile().fields[field_id]()
+        field = self.dclass.dcfile().getFieldByIndex[fieldId]
         pos = dgi.getCurrentIndex()
-        data = field.unpack_bytes(dgi)
+        data = field.unpackBytes(dgi)
 
         if isinstance(field, MolecularField):
-            dgi.seek(pos)
+            dgi = DatagramIterator(dgi.getRemainingBytes(), pos)
             self.saveMolecular(field, dgi)
         else:
             self.saveField(field, data)
@@ -239,7 +243,7 @@ class DistributedObject(MDParticipant):
         targets = []
 
         if field.is_broadcast:
-            targets.append(location_as_channel(self.parent_id, self.zone_id))
+            targets.append(location_as_channel(self.parentId, self.zoneId))
         if field.is_airecv and self.ai_channel and self.ai_channel != sender:
             targets.append(self.ai_channel)
         if field.is_ownrecv and self.owner_channel and self.owner_channel != sender:
@@ -268,13 +272,13 @@ class DistributedObject(MDParticipant):
 
         if self.db and field.isDb():
             dg = Datagram()
-            dg.add_server_header([DBSERVERS_CHANNEL], self.do_id, DBSERVER_SET_STORED_VALUES)
-            dg.addUint32(self.do_id)
+            dg.add_server_header([DBSERVERS_CHANNEL], self.doId, DBSERVER_SET_STORED_VALUES)
+            dg.addUint32(self.doId)
             dg.addUint16(1)
             dg.addUint16(field.number)
             dg.appendData(data)
             self.service.send_datagram(dg)
-            self.service.log.debug(f'Object {self.do_id} saved value {data} for field {field.getName()} to database.')
+            self.service.log.debug(f'Object {self.doId} saved value {data} for field {field.getName()} to database.')
 
     def handle_one_get(self, dg, field_id, subfield=False):
         field = self.dclass.dcfile().fields[field_id]()
@@ -291,20 +295,20 @@ class DistributedObject(MDParticipant):
             dg.append_data(self.ram[field.getName()])
 
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msgtype = dgi.get_uint16()
+        sender = dgi.getInt64()
+        msgtype = dgi.getUint16()
 
         if msgtype == STATESERVER_OBJECT_DELETE_RAM:
-            do_id = dgi.get_uint32()
-            if do_id == self.do_id or do_id == self.parent_id:
+            doId = dgi.get_uint32()
+            if do_id == self.doId or doId == self.parentId:
                 self.annihilate(sender)
                 return
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
-            if self.do_id != dgi.get_uint32():
+            if self.doId != dgi.get_uint32():
                 return
             self.handle_one_update(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE:
-            if self.do_id != dgi.get_uint32():
+            if self.doId != dgi.get_uint32():
                 return
 
             field_count = dgi.get_uint16()
@@ -321,8 +325,8 @@ class DistributedObject(MDParticipant):
             old_parent = dgi.get_uint32()
             old_zone = dgi.get_uint32()
 
-            if new_parent == self.do_id:
-                if old_parent == self.do_id:
+            if new_parent == self.doId:
+                if old_parent == self.doId:
                     if new_zone == old_zone:
                         return
 
@@ -336,7 +340,7 @@ class DistributedObject(MDParticipant):
                     self.zone_objects[new_zone] = set()
 
                 self.zone_objects[new_zone].add(child_id)
-            elif old_parent == self.do_id:
+            elif old_parent == self.doId:
                 children = self.zone_objects[old_zone]
                 children.remove(child_id)
 
@@ -352,49 +356,49 @@ class DistributedObject(MDParticipant):
         context = dgi.get_uint32()
 
         resp = Datagram()
-        resp.add_server_header([sender], self.do_id, STATESERVER_QUERY_OBJECT_ALL_RESP)
-        resp.add_uint32(self.do_id)
+        resp.add_server_header([sender], self.doId, STATESERVER_QUERY_OBJECT_ALL_RESP)
+        resp.add_uint32(self.doId)
         resp.add_uint16(context)
-        self.append_required_data(resp, False, True)
+        self.appendRequiredData(resp, False, True)
         self.service.send_datagram(resp)
 
     def handle_query_zone(self, dgi, sender):
         # STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE
         handle = dgi.get_uint16()
-        context_id = dgi.get_uint32()
-        parent_id = dgi.get_uint32()
+        contextId = dgi.get_uint32()
+        parentId = dgi.get_uint32()
 
-        if parent_id != self.do_id:
+        if parentId != self.doId:
             return
 
-        num_zones = dgi.remaining() // 4
+        numZones = dgi.getRemainingSize() // 4
 
         zones = []
 
-        for i in range(num_zones):
-            zones.append(dgi.get_uint32())
+        for i in range(numZones):
+            zones.append(dgi.getUint32())
 
-        object_ids = []
+        objectIds = []
 
         for zone in zones:
             if zone not in self.zone_objects:
                 continue
 
-            object_ids.extend(self.zone_objects[zone])
+            objectIds.extend(self.zone_objects[zone])
 
         resp = Datagram()
-        resp.add_server_header([sender], self.do_id, STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE)
+        addServerHeader(resp, [sender], self.doId, STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE)
         resp.add_uint16(handle)
-        resp.add_uint32(context_id)
+        resp.add_uint32(contextId)
 
-        if not len(object_ids):
+        if not len(objectIds):
             self.service.send_datagram(resp)
             return
 
         self.sendLocationEntry(sender)
 
-        for do_id in object_ids:
-            self.service.objects[do_id].sendLocationEntry(sender)
+        for doId in objectIds:
+            self.service.objects[doId].sendLocationEntry(sender)
 
         self.service.send_datagram(resp)
 
@@ -436,9 +440,9 @@ class StateServerProtocol(MDUpstreamProtocol):
                 self.service.send_datagram(resp)
             else:
                 resp.add_uint8(True)
-                parent_id, zone_id = do.parent_id, do.zone_id
-                resp.add_uint32(parent_id)
-                resp.add_uint32(zone_id)
+                parentId, zoneId = do.parentId, do.zoneId
+                resp.add_uint32(parentId)
+                resp.add_uint32(zoneId)
                 ai_channel = do.ai_channel if do.ai_channel else 0
                 resp.add_uint32(ai_channel)
                 self.service.send_datagram(resp)
@@ -450,8 +454,8 @@ class StateServerProtocol(MDUpstreamProtocol):
             self.service.log.debug(f'Got duplicate activate request for object {do_id} from {sender}')
             return
 
-        parent_id = dgi.get_uint32()
-        zone_id = dgi.get_uint32()
+        parentId = dgi.get_uint32()
+        zoneId = dgi.get_uint32()
         owner_channel = dgi.get_channel()
         number = dgi.get_uint16()
 
@@ -489,7 +493,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         self.service.log.debug(f'Querying {count} fields for {dclass.name} {do_id}. Other data: {other_data}')
 
-        self.service.queries[do_id] = (parent_id, zone_id, owner_channel, number, other_data)
+        self.service.queries[do_id] = (parentId, zoneId, owner_channel, number, other_data)
         self.service.send_datagram(query)
 
     def activate_callback(self, dgi):
@@ -498,7 +502,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         stateServer = self.service
 
-        parent_id, zone_id, owner_channel, number, other_data = stateServer.queries[do_id]
+        parentId, zoneId, owner_channel, number, other_data = stateServer.queries[do_id]
         dclass = stateServer.dcFile.getClass(number)
 
         del stateServer.queries[do_id]
@@ -535,7 +539,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         self.service.log.debug(f'Activating {do_id} with required:{required}\nram:{ram}\n')
 
-        obj = DistributedObject(stateServer, STATESERVERS_CHANNEL, do_id, parent_id, zone_id, dclass, required, ram,
+        obj = DistributedObject(stateServer, STATESERVERS_CHANNEL, do_id, parentId, zoneId, dclass, required, ram,
                                 owner_channel=owner_channel, db=True)
         stateServer.database_objects.add(do_id)
         stateServer.objects[do_id] = obj
@@ -560,8 +564,8 @@ class StateServerProtocol(MDUpstreamProtocol):
         obj.send_owner_entry(owner_channel)
 
     def handle_generate(self, dgi, sender, other = False):
-        parent_id = dgi.get_uint32()
-        zone_id = dgi.get_uint32()
+        parentId = dgi.get_uint32()
+        zoneId = dgi.get_uint32()
         number = dgi.get_uint16()
         doId = dgi.get_uint32()
 
@@ -599,9 +603,9 @@ class StateServerProtocol(MDUpstreamProtocol):
             required[field.getName()] = fieldArgs
 
         if other:
-            num_optional_fields = dgi.get_uint16()
+            numOptionalFields = dgi.get_uint16()
 
-            for i in range(num_optional_fields):
+            for i in range(numOptionalFields):
                 fieldNumber = dgi.getUint16()
 
                 field = dclass.getFieldByIndex(fieldNumber)
@@ -611,9 +615,9 @@ class StateServerProtocol(MDUpstreamProtocol):
                     field.unpack_bytes(dgi)
                     continue
                 else:
-                    ram[field.getName()] = field.unpack_bytes(dgi)
+                    ram[field.getName()] = field.unpackBytes(dgi)
 
-        obj = DistributedObject(stateServer, sender, doId, parent_id, zone_id, dclass, required, ram)
+        obj = DistributedObject(stateServer, sender, doId, parentId, zoneId, dclass, required, ram)
         stateServer.objects[doId] = obj
 
     def handle_shard_rest(self, dgi):
@@ -660,13 +664,13 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
                                                               0, 2, self.dcFile.getClassByName('DistributedDirectory'),
                                                               None, None)
 
-    def resolve_ai_channel(self, parent_id):
+    def resolve_ai_channel(self, parentId):
         ai_channel = None
 
         while ai_channel is None:
             try:
-                obj = self.objects[parent_id]
-                parent_id = obj.parent_id
+                obj = self.objects[parentId]
+                parentId = obj.parentId
                 ai_channel = obj.ai_channel
             except KeyError:
                 return None

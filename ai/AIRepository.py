@@ -435,7 +435,7 @@ class AIRepository:
 
     def requestDelete(self, do):
         dg = Datagram()
-        addServerHeader(dg, do.do_id, self.ourChannel, STATESERVER_OBJECT_DELETE_RAM)
+        addServerHeader(dg, [do.do_id], self.ourChannel, STATESERVER_OBJECT_DELETE_RAM)
         dg.addUint32(do.do_id)
         self.send(dg)
 
