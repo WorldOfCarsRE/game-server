@@ -300,7 +300,7 @@ class DistributedObject(MDParticipant):
 
         if msgtype == STATESERVER_OBJECT_DELETE_RAM:
             doId = dgi.get_uint32()
-            if do_id == self.doId or doId == self.parentId:
+            if doId == self.doId or doId == self.parentId:
                 self.annihilate(sender)
                 return
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
