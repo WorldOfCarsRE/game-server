@@ -3,7 +3,7 @@ from otp import config
 import asyncio
 
 from otp.messagedirector import MDUpstreamProtocol, DownstreamMessageDirector
-from panda3d.core import Datagram
+from panda3d.core import Datagram, DatagramIterator
 from otp.constants import STATESERVERS_CHANNEL
 from otp.messagetypes import *
 from otp.messagedirector import MDParticipant
@@ -18,7 +18,7 @@ from typing import Dict, Set
 from otp.zone import *
 
 class DistributedObject(MDParticipant):
-    def __init__(self, stateServer, sender, doId, parentId, zoneId, dclass, required, ram, owner_channel=None, db=False):
+    def __init__(self, stateServer, sender, doId, parentId, zoneId, dclass, required, ram, ownerChannel = None, db = False):
         MDParticipant.__init__(self, stateServer)
         self.sender = sender
         self.doId = doId
@@ -29,8 +29,8 @@ class DistributedObject(MDParticipant):
         self.ram = ram
         self.db = db
 
-        self.ai_channel = None
-        self.owner_channel = owner_channel
+        self.aiChannel = None
+        self.ownerChannel = ownerChannel
 
         self.ai_explicitly_set = False
         self.parent_synced = False
@@ -131,11 +131,11 @@ class DistributedObject(MDParticipant):
 
         targets = list()
 
-        if self.ai_channel is not None:
-            targets.append(self.ai_channel)
+        if self.aiChannel is not None:
+            targets.append(self.aiChannel)
 
-        if self.owner_channel is not None:
-            targets.append(self.owner_channel)
+        if self.ownerChannel is not None:
+            targets.append(self.ownerChannel)
 
         if new_parent == self.doId:
             raise Exception('Object cannot be parented to itself.\n')
@@ -153,10 +153,10 @@ class DistributedObject(MDParticipant):
                 self.subscribe_channel(parent_to_children(new_parent))
 
                 if not self.ai_explicitly_set:
-                    new_ai_channel = self.service.resolve_ai_channel(new_parent)
-                    if new_ai_channel != self.ai_channel:
-                        self.ai_channel = new_ai_channel
-                        self.send_ai_entry(new_ai_channel)
+                    newAIChannel = self.service.resolveAIChannel(new_parent)
+                    if newAIChannel != self.aiChannel:
+                        self.aiChannel = newAIChannel
+                        self.send_ai_entry(newAIChannel)
 
                 targets.append(new_parent)
 
@@ -204,10 +204,10 @@ class DistributedObject(MDParticipant):
                 dg.add_uint32(self.zoneId) # old zone
                 self.service.send_datagram(dg)
 
-        if self.owner_channel:
-            targets.append(self.owner_channel)
-        if self.ai_channel:
-            targets.append(self.ai_channel)
+        if self.ownerChannel:
+            targets.append(self.ownerChannel)
+        if self.aiChannel:
+            targets.append(self.aiChannel)
 
         dg = Datagram()
         addServerHeader(dg, targets, sender, STATESERVER_OBJECT_DELETE_RAM)
@@ -229,43 +229,56 @@ class DistributedObject(MDParticipant):
         pass
 
     def handleOneUpdate(self, dgi, sender):
-        field_id = dgi.get_uint16()
-        field = self.dclass.dcfile().getFieldByIndex[fieldId]
+        fieldId = dgi.get_uint16()
+        field = self.dclass.getFieldByIndex(fieldId)
         pos = dgi.getCurrentIndex()
-        data = field.unpackBytes(dgi)
 
-        if isinstance(field, MolecularField):
-            dgi = DatagramIterator(dgi.getRemainingBytes(), pos)
+        fieldPacker = DCPacker()
+        fieldPacker.setUnpackData(dgi.getDatagram().getMessage()[pos:])
+
+        fieldPacker.beginUnpack(field)
+        data = field.unpackArgs(fieldPacker)
+        fieldPacker.endUnpack()
+
+        if field.asMolecularField():
+            print(field.getName())
+            dgi = DatagramIterator(Datagram(dgi.getDatagram().getMessage()[pos:]))
             self.saveMolecular(field, dgi)
         else:
             self.saveField(field, data)
 
         targets = []
 
-        if field.is_broadcast:
+        if field.isBroadcast():
             targets.append(location_as_channel(self.parentId, self.zoneId))
-        if field.is_airecv and self.ai_channel and self.ai_channel != sender:
-            targets.append(self.ai_channel)
-        if field.is_ownrecv and self.owner_channel and self.owner_channel != sender:
-            targets.append(self.owner_channel)
+        if field.isAirecv() and self.aiChannel and self.aiChannel != sender:
+            targets.append(self.aiChannel)
+        if field.isOwnrecv() and self.ownerChannel and self.ownerChannel != sender:
+            targets.append(self.ownerChannel)
 
         if targets:
             dg = Datagram()
-            dg.add_server_header(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD)
+            addServerHeader(dg, targets, sender, STATESERVER_OBJECT_UPDATE_FIELD)
             dg.addUint32(self.doId)
-            dg.addUint16(field_id)
-            dg.appendData(data)
+            dg.addUint16(fieldId)
+            dg.appendData(fieldPacker.getBytes())
             self.service.send_datagram(dg)
 
     def saveMolecular(self, field, dgi):
-        for subfield in field.subfields:
-            if isinstance(subfield, MolecularField):
-                self.saveMolecular(subfield, dgi)
+        molecular = field.asMolecularField()
+        fieldPacker = DCPacker()
+
+        for i in range(molecular.getNumAtomics()):
+            atomic = molecular.getAtomic(i)
+
+            if atomic.asMolecularField():
+                self.saveMolecular(atomic, dgi)
             else:
-                self.saveField(subfield, subfield.unpack_bytes(dgi))
+                # TODO: Not sure how to convert this.
+                pass
 
     def saveField(self, field, data):
-        if field.is_required:
+        if field.isRequired():
             self.required[field.getName()] = data
         elif field.isRam():
             self.ram[field.getName()] = data
@@ -275,7 +288,7 @@ class DistributedObject(MDParticipant):
             dg.add_server_header([DBSERVERS_CHANNEL], self.doId, DBSERVER_SET_STORED_VALUES)
             dg.addUint32(self.doId)
             dg.addUint16(1)
-            dg.addUint16(field.number)
+            dg.addUint16(field.getNumber())
             dg.appendData(data)
             self.service.send_datagram(dg)
             self.service.log.debug(f'Object {self.doId} saved value {data} for field {field.getName()} to database.')
@@ -443,8 +456,8 @@ class StateServerProtocol(MDUpstreamProtocol):
                 parentId, zoneId = do.parentId, do.zoneId
                 resp.add_uint32(parentId)
                 resp.add_uint32(zoneId)
-                ai_channel = do.ai_channel if do.ai_channel else 0
-                resp.add_uint32(ai_channel)
+                aiChannel = do.aiChannel if do.aiChannel else 0
+                resp.add_uint32(aiChannel)
                 self.service.send_datagram(resp)
 
     def handle_db_generate(self, dgi, sender, other=False):
@@ -456,7 +469,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         parentId = dgi.get_uint32()
         zoneId = dgi.get_uint32()
-        owner_channel = dgi.get_channel()
+        ownerChannel = dgi.get_channel()
         number = dgi.get_uint16()
 
         other_data = []
@@ -493,7 +506,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         self.service.log.debug(f'Querying {count} fields for {dclass.name} {do_id}. Other data: {other_data}')
 
-        self.service.queries[do_id] = (parentId, zoneId, owner_channel, number, other_data)
+        self.service.queries[do_id] = (parentId, zoneId, ownerChannel, number, other_data)
         self.service.send_datagram(query)
 
     def activate_callback(self, dgi):
@@ -502,7 +515,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         stateServer = self.service
 
-        parentId, zoneId, owner_channel, number, other_data = stateServer.queries[do_id]
+        parentId, zoneId, ownerChannel, number, other_data = stateServer.queries[do_id]
         dclass = stateServer.dcFile.getClass(number)
 
         del stateServer.queries[do_id]
@@ -540,28 +553,28 @@ class StateServerProtocol(MDUpstreamProtocol):
         self.service.log.debug(f'Activating {do_id} with required:{required}\nram:{ram}\n')
 
         obj = DistributedObject(stateServer, STATESERVERS_CHANNEL, do_id, parentId, zoneId, dclass, required, ram,
-                                owner_channel=owner_channel, db=True)
+                                ownerChannel = ownerChannel, db = True)
         stateServer.database_objects.add(do_id)
         stateServer.objects[do_id] = obj
-        obj.send_owner_entry(owner_channel)
+        obj.send_owner_entry(ownerChannel)
 
     def handle_add_ai(self, dgi, sender):
-        object_id = dgi.get_uint32()
-        ai_channel = dgi.get_channel()
+        objectId = dgi.getUint32()
+        aiChannel = dgi.getInt64()
         stateServer = self.service
-        obj = stateServer.objects[object_id]
-        obj.ai_channel = ai_channel
+        obj = stateServer.objects[objectId]
+        obj.aiChannel = aiChannel
         obj.ai_explicitly_set = True
-        print('AI SET FOR', object_id, 'TO', ai_channel)
-        obj.send_ai_entry(ai_channel)
+        print('AI SET FOR', objectId, 'TO', aiChannel)
+        obj.send_ai_entry(aiChannel)
 
     def handle_set_owner(self, dgi, sender):
-        object_id = dgi.get_uint32()
-        owner_channel = dgi.get_channel()
+        objectId = dgi.getUint32()
+        ownerChannel = dgi.getInt64()
         stateServer = self.service
-        obj = stateServer.objects[object_id]
-        obj.owner_channel = owner_channel
-        obj.send_owner_entry(owner_channel)
+        obj = stateServer.objects[objectId]
+        obj.ownerChannel = ownerChannel
+        obj.send_fentry(ownerChannel)
 
     def handle_generate(self, dgi, sender, other = False):
         parentId = dgi.get_uint32()
@@ -596,9 +609,9 @@ class StateServerProtocol(MDUpstreamProtocol):
             if not field.isRequired():
                 continue
 
-            fieldPacker.begin_unpack(field)
+            fieldPacker.beginUnpack(field)
             fieldArgs = field.unpackArgs(fieldPacker)
-            fieldPacker.end_unpack()
+            fieldPacker.endUnpack()
 
             required[field.getName()] = fieldArgs
 
@@ -621,7 +634,7 @@ class StateServerProtocol(MDUpstreamProtocol):
         stateServer.objects[doId] = obj
 
     def handle_shard_rest(self, dgi):
-        ai_channel = dgi.getInt64()
+        aiChannel = dgi.getInt64()
 
         for objectId in list(self.service.objects.keys()):
             obj = self.service.objects[objectId]
@@ -632,8 +645,8 @@ from panda3d.direct import DCFile
 
 class StateServer(DownstreamMessageDirector, ChannelAllocator):
     upstream_protocol = StateServerProtocol
-    service_channels = []
-    root_object_id = OTP_DO_ID_TOONTOWN
+    serviceChannels = []
+    rootObjectId = OTP_DO_ID_TOONTOWN
 
     min_channel = 100000000
     max_channel = 399999999
@@ -648,7 +661,7 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
         self.loop.set_exception_handler(self._on_exception)
 
         self.objects: Dict[int, DistributedObject] = {}
-        self.database_objects = set()
+        self.databaseObjects = set()
         self.queries = {}
 
     def _on_exception(self, loop, context):
@@ -660,18 +673,18 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
 
     def on_upstream_connect(self):
         self.subscribe_channel(self._client, STATESERVERS_CHANNEL)
-        self.objects[self.root_object_id] = DistributedObject(self, STATESERVERS_CHANNEL, self.root_object_id,
+        self.objects[self.rootObjectId] = DistributedObject(self, STATESERVERS_CHANNEL, self.rootObjectId,
                                                               0, 2, self.dcFile.getClassByName('DistributedDirectory'),
                                                               None, None)
 
-    def resolve_ai_channel(self, parentId):
+    def resolveAIChannel(self, parentId):
         aiChannel = None
 
         while aiChannel is None:
             try:
                 obj = self.objects[parentId]
                 parentId = obj.parentId
-                aiChannel = obj.ai_channel
+                aiChannel = obj.aiChannel
             except KeyError:
                 return None
 
