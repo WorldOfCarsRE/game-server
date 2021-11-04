@@ -6,7 +6,7 @@ from typing import List, Union, Dict, Tuple
 
 from Crypto.Cipher import AES
 from dataslots import with_slots
-from panda3d.direct import DCMolecularField
+from panda3d.direct import DCPacker
 from panda3d.core import Datagram, DatagramIterator
 
 from otp import config
@@ -34,10 +34,10 @@ class NamePart(IntEnum):
 class PotentialAvatar:
     doId: int
     name: str
-    wish_name: str
-    approved_name: str
-    rejected_name: str
-    dna_string: str
+    wishName: str
+    approvedName: str
+    rejectedName: str
+    dnaString: str
     index: int
     allowName: int
 
@@ -122,11 +122,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.uberdogs: List[int] = [OTP_DO_ID_FRIEND_MANAGER]
 
         self.account: Union[DISLAccount, None] = None
-        self.avatar_id: int = 0
+        self.avatarId: int = 0
         self.createdAvId: int = 0
         self.wanted_name: str = ''
-        self.potential_avatar = None
-        self.potential_avatars: List[PotentialAvatar] = []
+        self.potentialAvatar = None
+        self.potentialAvatars: List[PotentialAvatar] = []
         self.avsDeleted: List[Tuple[int, int]] = []
         self.pendingObjects: Dict[int, PendingObject] = {}
 
@@ -147,7 +147,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.log.debug(f'Connection lost to client {self.channel}')
         ToontownProtocol.connection_lost(self, exc)
 
-        if self.avatar_id:
+        if self.avatarId:
             self.delete_avatar_ram()
 
         self.service.remove_participant(self)
@@ -158,8 +158,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def delete_avatar_ram(self):
         dg = Datagram()
-        dg.add_server_header([self.avatar_id], self.channel, STATESERVER_OBJECT_DELETE_RAM)
-        dg.addUint32(self.avatar_id)
+        dg.add_server_header([self.avatarId], self.channel, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(self.avatarId)
         self.service.send_datagram(dg)
 
     def receive_datagram(self, dg):
@@ -253,7 +253,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         fieldNumber = dgi.get_uint16()
 
-        field = self.service.dcFile.getFieldByIndex[fieldNumber]()
+        field = self.service.dcFile.getFieldByIndex[fieldNumber]
 
         sendable = False
 
@@ -317,40 +317,40 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         query = Datagram()
         addServerHeader(query, [DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_FRIENDS)
-        query.addUint32(self.avatar_id)
+        query.addUint32(self.avatarId)
         self.service.send_datagram(query)
 
     def receive_set_avatar(self, dgi):
-        av_id = dgi.get_uint32()
+        avId = dgi.get_uint32()
 
-        self.service.log.debug(f'client {self.channel} is setting their avatar to {av_id}')
+        self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
 
-        if not av_id:
-            if self.avatar_id:
+        if not avId:
+            if self.avatarId:
                 # Client is logging out of their avatar.
                 self.delete_avatar_ram()
                 self.ownedObjects.clear()
                 self.visibleObjects.clear()
 
-                self.unsubscribe_channel(getClientSenderChannel(self.account.dislId, self.avatar_id))
-                self.unsubscribe_channel(getPuppetChannel(self.avatar_id))
+                self.unsubscribe_channel(getClientSenderChannel(self.account.dislId, self.avatarId))
+                self.unsubscribe_channel(getPuppetChannel(self.avatarId))
                 self.channel = getClientSenderChannel(self.account.dislId, 0)
                 self.subscribe_channel(self.channel)
 
                 self.state = ClientState.AUTHENTICATED
-                self.avatar_id = 0
+                self.avatarId = 0
                 return
             else:
                 # Do nothing.
                 return
         elif self.state == ClientState.PLAY_GAME:
-            self.service.log.debug(f'Client {self.channel} tried to set their avatar {av_id} while avatar is already set to {self.avatar_id}.')
+            self.service.log.debug(f'Client {self.channel} tried to set their avatar {avId} while avatar is already set to {self.avatarId}.')
             return
 
         pot_av = None
 
-        for pa in self.potential_avatars:
-            if pa and pa.doId == av_id:
+        for pa in self.potentialAvatars:
+            if pa and pa.doId == avId:
                 pot_av = pa
                 break
 
@@ -358,42 +358,42 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.disconnect(ClientDisconnect.INTERNAL_ERROR, 'Could not find avatar on account.')
             return
 
-        self.avatar_id = av_id
+        self.avatarId = avId
         self.createdAvId = 0
 
         self.state = ClientState.SETTING_AVATAR
 
-        self.channel = getClientSenderChannel(self.account.dislId, self.avatar_id)
+        self.channel = getClientSenderChannel(self.account.dislId, self.avatarId)
         self.subscribe_channel(self.channel)
-        self.subscribe_channel(getPuppetChannel(self.avatar_id))
+        self.subscribe_channel(getPuppetChannel(self.avatarId))
 
         dclass = self.service.dcFile.getClassByName('DistributedToon')
 
         access = 2 if self.account.access == b'FULL' else 1
 
         # These Fields are REQUIRED but not stored in db.
-        other_fields = [
-            (dclass['setAccess'], (access,)),
-            (dclass['setPreviousAccess'], (access,)),
-            (dclass['setAsGM'], (False,)),
-            (dclass['setBattleId'], (0,))
+        otherFields = [
+            (dclass.getFieldByName('setAccess'), (access,)),
+            (dclass.getFieldByName('setPreviousAccess'), (access,)),
+            (dclass.getFieldByName('setAsGM'), (False,)),
+            (dclass.getFieldByName('setBattleId'), (0,))
         ]
 
-        if pot_av.approved_name:
-            other_fields.append((dclass['setName'], (pot_av.approved_name,)))
-            pot_av.approved_name = ''
+        if pot_av.approvedName:
+            other_fields.append((dclass['setName'], (pot_av.approvedName,)))
+            pot_av.approvedName = ''
 
         dg = Datagram()
         addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
-        dg.addUint32(av_id)
+        dg.addUint32(avId)
         dg.addUint32(0)
         dg.addUint32(0)
         dg.addUint64(self.channel)
-        dg.addUint16(dclass.number)
-        dg.addUint16(len(other_fields))
+        dg.addUint16(dclass.getNumber())
+        dg.addUint16(len(otherFields))
 
-        for f, arg in other_fields:
-            dg.addUint16(f.number)
+        for f, arg in otherFields:
+            dg.addUint16(f.getNumber())
             f.pack_value(dg, arg)
 
         self.service.send_datagram(dg)
@@ -408,10 +408,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.log.debug(f'Client {self.channel} tried creating avatar in invalid position.')
             return
 
-        self.potential_avatar = PotentialAvatar(doId = 0, name = 'Toon', wish_name = '', approved_name = '',
-                                                      rejected_name = '', dnaString = dna, index = pos, allowName = 1)
+        self.potentialAvatar = PotentialAvatar(doId = 0, name = 'Toon', wishName = '', approvedName = '',
+                                                      rejectedName = '', dnaString = dna, index = pos, allowName = 1)
 
-        dclass = self.service.dcFile.namespace['DistributedToon']
+        dclass = self.service.dcFile.getClassByName['DistributedToon']
 
         dg = Datagram()
         dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
@@ -430,8 +430,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         default_toon['setAccountName'] = (self.account.username,)
 
         count = 0
-        for field in dclass.inherited_fields:
-            if not isinstance(field, MolecularField) and field.is_db:
+        for fieldId in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(fieldId)
+
+            if not field.asMolecularField() and field.isDb():
                 if field.name == 'DcObjectType':
                     continue
                 dg.addUint16(field.number)
@@ -445,9 +447,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.service.send_datagram(dg)
 
-        self.tasks.append(self.service.loop.create_task(self.created_avatar()))
+        self.tasks.append(self.service.loop.create_task(self.createdAvatar()))
 
-    async def created_avatar(self):
+    async def createdAvatar(self):
         f = DatagramFuture(self.service.loop, DBSERVER_CREATE_STORED_OBJECT_RESP)
         self.futures.append(f)
         sender, dgi = await f
@@ -556,7 +558,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         for pot_av in self.potential_avatars:
             if pot_av and pot_av.doId == av_id:
-                pot_av.approved_name = name.strip()
+                pot_av.approvedName = name.strip()
                 break
 
         resp.add_uint8(0)
@@ -610,9 +612,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 continue
             resp.addUint32(potAv.doId)
             resp.add_string16(potAv.name.encode('utf-8'))
-            resp.add_string16(potAv.wish_name.encode('utf-8'))
-            resp.add_string16(potAv.approved_name.encode('utf-8'))
-            resp.add_string16(potAv.rejected_name.encode('utf-8'))
+            resp.add_string16(potAv.wishName.encode('utf-8'))
+            resp.add_string16(potAv.approvedName.encode('utf-8'))
+            resp.add_string16(potAv.rejectedName.encode('utf-8'))
 
             dnaString = potAv.dnaString
 
@@ -697,10 +699,17 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.futures.append(f)
         sender, dgi = await f
 
-        av_del_field = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET_DEL']
+        avDelField = self.service.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET_DEL')
         self.service.log.debug('Begin unpack of deleted avatars.')
         try:
-            self.avsDeleted = av_del_field.unpack_value(dgi)
+            unpacker = DCPacker()
+            unpacker.setUnpackData(dgi.getBlob())
+
+            unpacker.beginUnpack(avDelField)
+
+            self.avsDeleted = avDelField.unpackArgs(unpacker)
+
+            unpacker.endUnpack()
         except Exception:
             import traceback
             traceback.print_exc()
@@ -709,24 +718,23 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         pos = dgi.getCurrentIndex()
 
-        avatar_info = [None] * 6
+        avatarInfo = [None] * 6
 
-        for i in range(dgi.get_uint16()):
-            potAv = PotentialAvatar(doId = dgi.getUint32(), name = dgi.getString(), wish_name = dgi.getString(),
-                                     approved_name = dgi.getString(), rejected_name = dgi.getString(),
-                                     dna_string = dgi.getBlob(), index = dgi.getUint8(), allowName = dgi.getUint8())
+        for i in range(dgi.getUint16()):
+            potAv = PotentialAvatar(doId = dgi.getUint32(), name = dgi.getString(), wishName = dgi.getString(),
+                                     approvedName = dgi.getString(), rejectedName = dgi.getString(),
+                                     dnaString = dgi.getBlob(), index = dgi.getUint8(), allowName = dgi.getUint8())
 
-            avatar_info[potAv.index] = potAv
+            avatarInfo[potAv.index] = potAv
 
-        self.potential_avatars = avatar_info
+        self.potentialAvatars = avatarInfo
 
         self.state = ClientState.AVATAR_CHOOSER
 
         resp = Datagram()
         resp.addUint16(CLIENT_GET_AVATARS_RESP)
-        dgi.seek(pos)
-        resp.add_uint8(0) # Return code
-        resp.add_bytes(dgi.remaining_bytes())
+        resp.addUint8(0) # Return code
+        resp.appendData(dgi.getDatagram().getMessage()[pos:])
         self.send_datagram(resp)
 
     def receive_login(self, dgi):
@@ -937,7 +945,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         elif msgtype == STATESERVER_OBJECT_DELETE_RAM:
             doId = dgi.get_uint32()
 
-            if doId == self.avatar_id:
+            if doId == self.avatarId:
                 if sender == self.account.dislId << 32:
                     self.disconnect(ClientDisconnect.RELOGGED, 'redundant login')
                 else:
@@ -991,7 +999,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         resp = Datagram()
         resp.addUint16(CLIENT_GET_AVATAR_DETAILS_RESP)
-        resp.addUint32(self.avatar_id)
+        resp.addUint32(self.avatarId)
         resp.add_uint8(0) # Return code
         resp.add_bytes(dgi.remaining_bytes())
         self.send_datagram(resp)
@@ -1158,15 +1166,15 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.send_datagram(resp)
 
     def get_potential_avatar(self, avId):
-        for potAv in self.potential_avatars:
+        for potAv in self.potentialAvatars:
             if potAv and potAv.doId == avId:
                 return potAv
 
-    def send_go_get_lost(self, booted_index, booted_text):
+    def send_go_get_lost(self, bootedIndex, bootedText):
         resp = Datagram()
         resp.addUint16(CLIENT_GO_GET_LOST)
-        resp.addUint16(booted_index)
-        resp.add_string16(booted_text.encode('utf-8'))
+        resp.addUint16(bootedIndex)
+        resp.addString(bootedText)
         self.send_datagram(resp)
 
     def annihilate(self):
@@ -1191,7 +1199,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         # Send this to the Database server.
         resp = Datagram()
         resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_AVATAR_DETAILS)
-        resp.addUint32(self.avatar_id)
+        resp.addUint32(self.avatarId)
         resp.addUint32(doId)
         resp.add_uint8(access)
         resp.add_string16(dclass)

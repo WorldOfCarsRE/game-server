@@ -8,9 +8,10 @@ from otp.networking import ChannelAllocator
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol
 from otp.messagetypes import *
 from otp.constants import *
+from otp.util import addServerHeader
 from .exceptions import *
 
-from panda3d.direct import DCMolecularField
+from panda3d.direct import DCPacker
 
 class EstateInfo:
     estateId: int
@@ -59,10 +60,10 @@ class DBServerProtocol(MDUpstreamProtocol):
         self.service.loop.create_task(self.service.unloadEstate(avId, parentId))
 
     def handle_create_object(self, sender, dgi):
-        context = dgi.get_uint32()
+        context = dgi.getUint32()
 
-        dclass_id = dgi.get_uint16()
-        dclass = self.service.dc.classes[dclass_id]
+        dclassId = dgi.getUint16()
+        dclass = self.service.dc.getClass[dclassId]
 
         coro = None
 
@@ -73,10 +74,10 @@ class DBServerProtocol(MDUpstreamProtocol):
 
             fields = []
             for i in range(field_count):
-                f = self.service.dc.fields[dgi.get_uint16()]()
+                f = self.service.dc.getFieldByIndex[dgi.getUint16()]
                 fields.append((f.name, f.unpack_value(dgi)))
 
-            coro = self.service.create_toon(sender, context, dclass, disl_id, pos, fields)
+            coro = self.service.createToon(sender, context, dclass, disl_id, pos, fields)
         else:
             print('Unhandled creation for dclass %s' % dclass.name)
             return
@@ -157,7 +158,7 @@ class DBServer(DownstreamMessageDirector):
         await self.connect(config['MessageDirector.HOST'], config['MessageDirector.PORT'])
         await self.route()
 
-    async def create_object(self, sender, context, dclass, fields):
+    async def createObject(self, sender, context, dclass, fields):
         try:
             doId = await self.backend.create_object(dclass, fields)
         except OTPCreateFailed as e:
@@ -165,7 +166,7 @@ class DBServer(DownstreamMessageDirector):
             doId = 0
 
         dg = Datagram()
-        dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
+        addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
         dg.add_uint32(context)
         dg.add_uint8(doId == 0)
         dg.add_uint32(doId)
@@ -313,7 +314,7 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(doId)
         self.send_datagram(dg)
 
-    async def create_toon(self, sender, context, dclass, disl_id, pos, fields):
+    async def createToon(self, sender, context, dclass, disl_id, pos, fields):
         try:
             doId = await self.backend.create_object(dclass, fields)
             account = await self.backend.query_object_fields(disl_id, ['ACCOUNT_AV_SET'], 'Account')
@@ -325,41 +326,41 @@ class DBServer(DownstreamMessageDirector):
             doId = 0
 
         dg = Datagram()
-        dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
-        dg.add_uint32(context)
+        addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
+        dg.addUint32(context)
         dg.add_uint8(doId == 0)
         dg.add_uint32(doId)
         self.send_datagram(dg)
 
     async def get_stored_values(self, sender, context, doId, fields):
         try:
-            field_dict = await self.backend.query_object_fields(doId, [field.name for field in fields])
+            fieldDict = await self.backend.query_object_fields(doId, [field.name for field in fields])
         except OTPQueryNotFound:
-            field_dict = None
+            fieldDict = None
 
         self.log.debug(f'Received query request from {sender} with context {context} for doId: {doId}.')
 
         dg = Datagram()
-        dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES_RESP)
+        addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES_RESP)
         dg.add_uint32(context)
         dg.add_uint32(doId)
         pos = dg.tell()
         dg.add_uint16(0)
 
-        if field_dict is None:
+        if fieldDict is None:
             print('object not found... %s' % doId, sender, context)
             self.send_datagram(dg)
             return
 
         counter = 0
         for field in fields:
-            if field.name not in field_dict:
+            if field.name not in fieldDict:
                 continue
-            if field_dict[field.name] is None:
+            if fieldDict[field.name] is None:
                 continue
             dg.add_uint16(field.number)
 
-            fieldValue = field_dict[field.name]
+            fieldValue = fieldDict[field.name]
 
             if self.wantSQL:
                dcName = await self.backend.queryDC(await self.backend.pool.acquire(), doId)
@@ -411,8 +412,8 @@ class DBServer(DownstreamMessageDirector):
         friendsList = fields['setFriendsList'][0]
 
         dg = Datagram()
-        dg.add_server_header([getPuppetChannel(avatarId)], DBSERVERS_CHANNEL, CLIENT_GET_FRIEND_LIST_RESP)
-        dg.add_uint8(0) # errorCode
+        addServerHeader(dg, [getPuppetChannel(avatarId)], DBSERVERS_CHANNEL, CLIENT_GET_FRIEND_LIST_RESP)
+        dg.addUint8(0) # errorCode
 
         count = 0
         friendData = {}
@@ -424,7 +425,7 @@ class DBServer(DownstreamMessageDirector):
             friendData[count] = [friendId, friend['setName'][0], friend['setDNAString'][0], friend['setPetId'][0]]
             count += 1
 
-        dg.add_uint16(count)
+        dg.addUint16(count)
 
         for i in friendData:
             friend = friendData[i]
@@ -453,15 +454,19 @@ class DBServer(DownstreamMessageDirector):
 
         avIds = fieldDict['ACCOUNT_AV_SET']
 
-        temp = Datagram()
-        dclass['ACCOUNT_AV_SET_DEL'].pack_value(temp, fieldDict['ACCOUNT_AV_SET_DEL'])
+        field = dclass.getFieldByName('ACCOUNT_AV_SET_DEL')
+
+        packer = DCPacker()
+        packer.beginPack(field)
+        field.packArgs(packer, fieldDict['ACCOUNT_AV_SET_DEL'])
+        packer.endPack()
 
         dg = Datagram()
-        dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_ACCOUNT_QUERY_RESP)
-        dg.add_bytes(temp.bytes())
+        addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_ACCOUNT_QUERY_RESP)
+        dg.addBlob(packer.getBytes())
         avCount = sum((1 if avId else 0 for avId in avIds))
         self.log.debug(f'Account query for {doId} from {sender}: {fieldDict}')
-        dg.add_uint16(avCount) # Av count
+        dg.addUint16(avCount) # Av count
         for avId in avIds:
             if not avId:
                 continue
@@ -470,16 +475,16 @@ class DBServer(DownstreamMessageDirector):
             wishName = toonFields['WishName']
 
             if wishName:
-                wishName = wishName[0].encode()
+                wishName = wishName[0]
 
             nameState = toonFields['WishNameState'][0]
 
-            dg.add_uint32(avId)
-            dg.add_string16(toonFields['setName'][0].encode())
+            dg.addUint32(avId)
+            dg.addString(toonFields['setName'][0])
 
-            pendingName = b''
-            approvedName = b''
-            rejectedName = b''
+            pendingName = ''
+            approvedName = ''
+            rejectedName = ''
 
             if nameState == 'APPROVED':
                 approvedName = wishName
@@ -488,18 +493,18 @@ class DBServer(DownstreamMessageDirector):
             else:
                 pendingName = wishName
 
-            dg.add_string16(pendingName)
-            dg.add_string16(approvedName)
-            dg.add_string16(rejectedName)
-            dg.add_string16(toonFields['setDNAString'][0])
-            dg.add_uint8(avIds.index(avId))
-            dg.add_uint8(1 if nameState == 'OPEN' else 0)
+            dg.addString(pendingName)
+            dg.addString(approvedName)
+            dg.addString(rejectedName)
+            dg.addBlob(toonFields['setDNAString'][0])
+            dg.addUint8(avIds.index(avId))
+            dg.addUint8(1 if nameState == 'OPEN' else 0)
 
         self.send_datagram(dg)
 
     async def queryObjectDetails(self, avatarId: int, doId: int, access: int, dcName: str):
         fieldDict = await self.backend.query_object_all(doId, dcName)
-        dclass = self.dc.namespace[dcName]
+        dclass = self.dc.getClassByName(dcName)
 
         if dcName == 'DistributedToon':
             # These are necessary too.
@@ -515,7 +520,7 @@ class DBServer(DownstreamMessageDirector):
 
         # Pack our field data to go to the client.
         for field in dclass.inherited_fields:
-            if not field.is_required or isinstance(field, MolecularField):
+            if not field.isRequired() or field.asMolecularField():
                 continue
 
             field.pack_value(dg, fieldDict[field.name])

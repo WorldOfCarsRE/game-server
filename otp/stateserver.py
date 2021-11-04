@@ -417,9 +417,9 @@ class StateServerProtocol(MDUpstreamProtocol):
         elif msgtype == STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
             self.handle_generate(dgi, sender, True)
         elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT: # DBSS msg
-            self.handle_db_generate(dgi, sender, False)
+            self.handleDBGenerate(dgi, sender, False)
         elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT: # DBSS msg
-            self.handle_db_generate(dgi, sender, True)
+            self.handleDBGenerate(dgi, sender, True)
         elif msgtype == STATESERVER_ADD_AI_RECV:
             self.handle_add_ai(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_SET_OWNER_RECV:
@@ -451,7 +451,7 @@ class StateServerProtocol(MDUpstreamProtocol):
                 resp.addUint32(aiChannel)
                 self.service.send_datagram(resp)
 
-    def handle_db_generate(self, dgi, sender, other=False):
+    def handleDBGenerate(self, dgi, sender, other = False):
         doId = dgi.getUint32()
 
         if doId in self.service.queries or doId in self.service.databaseObjects:
@@ -460,7 +460,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         parentId = dgi.getUint32()
         zoneId = dgi.getUint32()
-        ownerChannel = dgi.get_channel()
+        ownerChannel = dgi.getInt64()
         number = dgi.getUint16()
 
         other_data = []
@@ -468,18 +468,18 @@ class StateServerProtocol(MDUpstreamProtocol):
         stateServer = self.service
 
         if other:
-            field_count = dgi.get_uint16()
+            fieldCount = dgi.getUint16()
 
-            for i in range(field_count):
-                field_number = dgi.get_uint16()
-                field = stateServer.dcFile.fields[field_number]()
+            for i in range(fieldCount):
+                fieldNumber = dgi.getUint16()
+                field = stateServer.dcFile.getFieldByIndex(fieldNumber)
                 data = field.unpack_bytes(dgi)
-                other_data.append((field_number, data))
+                other_data.append((fieldNumber, data))
 
         dclass = stateServer.dcFile.getClass(number)
 
         query = Datagram()
-        query.add_server_header([DBSERVERS_CHANNEL], STATESERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES)
+        addServerHeader(query, [DBSERVERS_CHANNEL], STATESERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES)
         query.add_uint32(1)
         query.add_uint32(doId)
 
@@ -687,4 +687,4 @@ async def main():
     await service.run()
 
 if __name__ == '__main__':
-    asyncio.run(main(), debug=True)
+    asyncio.run(main(), debug = True)
