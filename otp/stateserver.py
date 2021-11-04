@@ -196,7 +196,7 @@ class DistributedObject(MDParticipant):
 
             if notify_parent:
                 dg = Datagram()
-                dg.add_server_header([self.parentId], sender, STATESERVER_OBJECT_CHANGE_ZONE)
+                addServerHeader(dg, [self.parentId], sender, STATESERVER_OBJECT_CHANGE_ZONE)
                 dg.add_uint32(self.doId)
                 dg.add_uint32(0)  # New parent
                 dg.add_uint32(0)  # new zone
@@ -210,7 +210,7 @@ class DistributedObject(MDParticipant):
             targets.append(self.ai_channel)
 
         dg = Datagram()
-        dg.add_server_header(targets, sender, STATESERVER_OBJECT_DELETE_RAM)
+        addServerHeader(dg, targets, sender, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(self.doId)
         self.service.send_datagram(dg)
 
