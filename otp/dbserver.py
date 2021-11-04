@@ -287,30 +287,30 @@ class DBServer(DownstreamMessageDirector):
 
         # Let the AI know that we are done.
         dg = Datagram()
-        dg.add_server_header([sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
-        dg.add_uint32(context)
+        addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
+        dg.addUint32(context)
         self.send_datagram(dg)
 
     async def activateObjectWithOther(self, doId: int, parentId: int, zoneId: int, dclass, other: list):
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], DBSERVERS_CHANNEL, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
-        dg.add_uint32(doId)
-        dg.add_uint32(parentId)
-        dg.add_uint32(zoneId)
-        dg.add_channel(DBSERVERS_CHANNEL)
-        dg.add_uint16(dclass.number)
-        dg.add_uint16(len(other))
+        addServerHeader(dg, [STATESERVERS_CHANNEL], DBSERVERS_CHANNEL, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
+        dg.addUint32(doId)
+        dg.addUint32(parentId)
+        dg.addUint32(zoneId)
+        dg.addUint64(DBSERVERS_CHANNEL)
+        dg.addUint16(dclass.number)
+        dg.addUint16(len(other))
 
         for f, arg in other:
-            dg.add_uint16(f.number)
+            dg.addUint16(f.number)
             f.pack_value(dg, arg)
 
         self.send_datagram(dg)
 
     async def deleteDO(self, doId: int):
         dg = Datagram()
-        dg.add_server_header([doId], DBSERVERS_CHANNEL, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doId)
+        addServerHeader(dg, [doId], DBSERVERS_CHANNEL, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(doId)
         self.send_datagram(dg)
 
     async def create_toon(self, sender, context, dclass, disl_id, pos, fields):

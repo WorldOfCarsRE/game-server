@@ -170,10 +170,10 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
 
     def unsubscribe_channel(self, channel):
         dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_channel(CONTROL_MESSAGE)
-        dg.add_uint16(CONTROL_REMOVE_CHANNEL)
-        dg.add_channel(channel)
+        dg.addUint8(1)
+        dg.addUint64(CONTROL_MESSAGE)
+        dg.addUint16(CONTROL_REMOVE_CHANNEL)
+        dg.addUint64(channel)
         self.send_datagram(dg)
 
     def receive_datagram(self, dg):

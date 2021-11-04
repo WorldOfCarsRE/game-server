@@ -384,11 +384,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             pot_av.approved_name = ''
 
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
-        dg.add_uint32(av_id)
-        dg.add_uint32(0)
-        dg.add_uint32(0)
-        dg.add_channel(self.channel)
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
+        dg.addUint32(av_id)
+        dg.addUint32(0)
+        dg.addUint32(0)
+        dg.addUint64(self.channel)
         dg.addUint16(dclass.number)
         dg.addUint16(len(other_fields))
 
@@ -1097,7 +1097,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         # Before msgtype and sender
         pos = dgi.getCurrentIndex() - 10
         hasOther = dgi.getUint8()
-        doId = dgi.get_uint32()
+        doId = dgi.getUint32()
         parentId = dgi.getUint32()
         zoneId = dgi.getUint32()
         dcId = dgi.getUint16()
@@ -1107,11 +1107,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         if len(pendingInterests):
             self.service.log.debug(f'Queueing object generate for {doId} in ({parentId} {zoneId}) {doId in self.visibleObjects}')
             pendingObject = PendingObject(doId, dcId, parentId, zoneId, datagrams = [])
+            
+            dg = Datagram(dgi.getDatagram().getMessage()[pos:])
 
-            dg = Datagram(dgi.getRemainingBytes())
-            _dgi = DatagramIterator(dg, pos)
-
-            pendingObject.datagrams.append(_dgi)
+            pendingObject.datagrams.append(dg)
             self.pendingObjects[doId] = pendingObject
 
             for interest in pendingInterests:
