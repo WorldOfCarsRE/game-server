@@ -18,8 +18,8 @@ from typing import Dict, Set
 from otp.zone import *
 
 class DistributedObject(MDParticipant):
-    def __init__(self, state_server, sender, doId, parentId, zoneId, dclass, required, ram, owner_channel=None, db=False):
-        MDParticipant.__init__(self, state_server)
+    def __init__(self, stateServer, sender, doId, parentId, zoneId, dclass, required, ram, owner_channel=None, db=False):
+        MDParticipant.__init__(self, stateServer)
         self.sender = sender
         self.doId = doId
         self.parentId = 0
@@ -35,7 +35,7 @@ class DistributedObject(MDParticipant):
         self.ai_explicitly_set = False
         self.parent_synced = False
         self.next_context = 0
-        self.zone_objects: Dict[int, Set[int]] = {}
+        self.zoneObjects: Dict[int, Set[int]] = {}
 
         if self.dclass:
             self.service.log.debug(f'Generating new object {doId} with dclass {self.dclass.getName()} in location {parentId} {zoneId}')
@@ -188,20 +188,20 @@ class DistributedObject(MDParticipant):
     def handle_ai_change(self, new_ai, sender, channel_is_explicit):
         pass
 
-    def annihilate(self, sender, notify_parent=True):
+    def annihilate(self, sender, notifyParent = True):
         targets = list()
 
         if self.parentId:
             targets.append(location_as_channel(self.parentId, self.zoneId))
 
-            if notify_parent:
+            if notifyParent:
                 dg = Datagram()
                 addServerHeader(dg, [self.parentId], sender, STATESERVER_OBJECT_CHANGE_ZONE)
                 dg.add_uint32(self.doId)
-                dg.add_uint32(0)  # New parent
-                dg.add_uint32(0)  # new zone
-                dg.add_uint32(self.parentId)   # old parent
-                dg.add_uint32(self.zoneId)  # old zone
+                dg.add_uint32(0) # New parent
+                dg.add_uint32(0) # new zone
+                dg.add_uint32(self.parentId) # old parent
+                dg.add_uint32(self.zoneId) # old zone
                 self.service.send_datagram(dg)
 
         if self.owner_channel:
@@ -228,7 +228,7 @@ class DistributedObject(MDParticipant):
     def delete_children(self, sender):
         pass
 
-    def handle_one_update(self, dgi, sender):
+    def handleOneUpdate(self, dgi, sender):
         field_id = dgi.get_uint16()
         field = self.dclass.dcfile().getFieldByIndex[fieldId]
         pos = dgi.getCurrentIndex()
@@ -304,16 +304,16 @@ class DistributedObject(MDParticipant):
                 self.annihilate(sender)
                 return
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
-            if self.doId != dgi.get_uint32():
+            if self.doId != dgi.getUint32():
                 return
-            self.handle_one_update(dgi, sender)
+            self.handleOneUpdate(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE:
             if self.doId != dgi.get_uint32():
                 return
 
             field_count = dgi.get_uint16()
             for i in range(field_count):
-                self.handle_one_update(dgi, sender)
+                self.handleOneUpdate(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_SET_ZONE:
             new_parent = dgi.get_uint32()
             new_zone = dgi.get_uint32()
@@ -330,22 +330,22 @@ class DistributedObject(MDParticipant):
                     if new_zone == old_zone:
                         return
 
-                    children = self.zone_objects[old_zone]
+                    children = self.zoneObjects[old_zone]
                     children.remove(child_id)
 
                     if not len(children):
-                        del self.zone_objects[old_zone]
+                        del self.zoneObjects[old_zone]
 
-                if new_zone not in self.zone_objects:
-                    self.zone_objects[new_zone] = set()
+                if new_zone not in self.zoneObjects:
+                    self.zoneObjects[new_zone] = set()
 
-                self.zone_objects[new_zone].add(child_id)
+                self.zoneObjects[new_zone].add(child_id)
             elif old_parent == self.doId:
-                children = self.zone_objects[old_zone]
+                children = self.zoneObjects[old_zone]
                 children.remove(child_id)
 
                 if not len(children):
-                    del self.zone_objects[old_zone]
+                    del self.zoneObjects[old_zone]
         elif msgtype == STATESERVER_QUERY_ZONE_OBJECT_ALL:
             self.handle_query_zone(dgi, sender)
         elif msgtype == STATESERVER_QUERY_OBJECT_ALL:
@@ -381,10 +381,10 @@ class DistributedObject(MDParticipant):
         objectIds = []
 
         for zone in zones:
-            if zone not in self.zone_objects:
+            if zone not in self.zoneObjects:
                 continue
 
-            objectIds.extend(self.zone_objects[zone])
+            objectIds.extend(self.zoneObjects[zone])
 
         resp = Datagram()
         addServerHeader(resp, [sender], self.doId, STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE)
@@ -621,12 +621,12 @@ class StateServerProtocol(MDUpstreamProtocol):
         stateServer.objects[doId] = obj
 
     def handle_shard_rest(self, dgi):
-        ai_channel = dgi.get_channel()
+        ai_channel = dgi.getInt64()
 
-        for object_id in list(self.service.objects.keys()):
-            obj = self.service.objects[object_id]
-            if obj.ai_channel == ai_channel:
-                obj.annihilate(ai_channel)
+        for objectId in list(self.service.objects.keys()):
+            obj = self.service.objects[objectId]
+            if obj.aiChannel == aiChannel:
+                obj.annihilate(aiChannel)
 
 from panda3d.direct import DCFile
 
@@ -665,17 +665,17 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
                                                               None, None)
 
     def resolve_ai_channel(self, parentId):
-        ai_channel = None
+        aiChannel = None
 
-        while ai_channel is None:
+        while aiChannel is None:
             try:
                 obj = self.objects[parentId]
                 parentId = obj.parentId
-                ai_channel = obj.ai_channel
+                aiChannel = obj.ai_channel
             except KeyError:
                 return None
 
-        return ai_channel
+        return aiChannel
 
 async def main():
     loop = asyncio.get_running_loop()

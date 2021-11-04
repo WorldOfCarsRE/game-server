@@ -35,31 +35,31 @@ class MDProtocol(ToontownProtocol, MDParticipant):
         recipientCount = dgi.getUint8()
         if recipientCount == 1 and dgi.getInt64() == CONTROL_MESSAGE:
             # Control message.
-            msg_type = dgi.getUint16()
+            msgType = dgi.getUint16()
 
-            if msg_type == CONTROL_SET_CHANNEL:
+            if msgType == CONTROL_SET_CHANNEL:
                 channel = dgi.getInt64()
                 self.subscribe_channel(channel)
-            elif msg_type == CONTROL_REMOVE_CHANNEL:
+            elif msgType == CONTROL_REMOVE_CHANNEL:
                 channel = dgi.getInt64()
                 self.unsubscribe_channel(channel)
-            elif msg_type == CONTROL_ADD_RANGE:
+            elif msgType == CONTROL_ADD_RANGE:
                 low = dgi.getInt64()
                 high = dgi.getInt64()
                 for channel in range(low, high, 1):
                     self.channels.add(channel)
-            elif msg_type == CONTROL_REMOVE_RANGE:
+            elif msgType == CONTROL_REMOVE_RANGE:
                 low = dgi.getInt64()
                 high = dgi.getInt64()
                 for channel in range(low, high, 1):
                     if channel in self.channels:
                         self.channels.remove(channel)
-            elif msg_type == CONTROL_ADD_POST_REMOVE:
+            elif msgType == CONTROL_ADD_POST_REMOVE:
                 postDg = Datagram()
                 postDg.appendData(dgi.getRemainingBytes())
                 self.service.log.debug(f'Received post remove:{postDg.getMessage()}')
                 self.postRemoves.append(postDg)
-            elif msg_type == CONTROL_CLEAR_POST_REMOVE:
+            elif msgType == CONTROL_CLEAR_POST_REMOVE:
                 del self.postRemoves[:]
         else:
             self.service.q.put_nowait((None, dg))
