@@ -219,11 +219,11 @@ class AIRepository:
 
     def handleUpdateField(self, dgi):
         doId = dgi.getUint32()
-        fieldNumber = dgi.get_uint16()
+        fieldNumber = dgi.getUint16()
 
         # TODO: security check here for client senders.
 
-        field = self.dcFile.getFieldByIndex(field_number)()
+        field = self.dcFile.getFieldByIndex(fieldNumber)()
 
         self.currentSender = self.currentSender
         do = self.doTable[doId]

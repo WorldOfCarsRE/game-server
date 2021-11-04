@@ -20,26 +20,26 @@ class EstateInfo:
 
 class DBServerProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msg_id = dgi.get_uint16()
+        sender = dgi.getInt64()
+        msgId = dgi.getUint16()
 
-        if msg_id == DBSERVER_CREATE_STORED_OBJECT:
+        if msgId == DBSERVER_CREATE_STORED_OBJECT:
             self.handle_create_object(sender, dgi)
-        elif msg_id == DBSERVER_DELETE_STORED_OBJECT:
+        elif msgId == DBSERVER_DELETE_STORED_OBJECT:
             pass
-        elif msg_id == DBSERVER_GET_STORED_VALUES:
+        elif msgId == DBSERVER_GET_STORED_VALUES:
             self.handle_get_stored_values(sender, dgi)
-        elif msg_id == DBSERVER_SET_STORED_VALUES:
+        elif msgId == DBSERVER_SET_STORED_VALUES:
             self.handle_set_stored_values(sender, dgi)
-        elif msg_id == DBSERVER_WISHNAME_CLEAR:
+        elif msgId == DBSERVER_WISHNAME_CLEAR:
             self.handleClearWishName(dgi)
-        elif msg_id == DBSERVER_GET_FRIENDS:
+        elif msgId == DBSERVER_GET_FRIENDS:
             self.handleGetFriends(dgi)
-        elif msg_id == DBSERVER_GET_ESTATE:
+        elif msgId == DBSERVER_GET_ESTATE:
             self.handleGetEstate(sender, dgi)
-        elif msg_id == DBSERVER_UNLOAD_ESTATE:
+        elif msgId == DBSERVER_UNLOAD_ESTATE:
             self.handleUnloadEstate(dgi)
-        elif msg_id in (DBSERVER_GET_AVATAR_DETAILS, DBSERVER_GET_PET_DETAILS):
+        elif msgId in (DBSERVER_GET_AVATAR_DETAILS, DBSERVER_GET_PET_DETAILS):
             self.handleGetObjectDetails(dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
@@ -447,9 +447,9 @@ class DBServer(DownstreamMessageDirector):
             # TODO
             return
 
-        dclass = self.dc.namespace['Account']
-        toon_dclass = self.dc.namespace['DistributedToon']
-        fieldDict = await self.backend.query_object_all(doId, dclass.name)
+        dclass = self.dc.getClassByName('Account')
+        toonDC = self.dc.getClassByName('DistributedToon')
+        fieldDict = await self.backend.query_object_all(doId, dclass.getName())
 
         avIds = fieldDict['ACCOUNT_AV_SET']
 
@@ -509,7 +509,7 @@ class DBServer(DownstreamMessageDirector):
 
         # Prepare our response.
         dg = Datagram()
-        dg.add_server_header([getPuppetChannel(avatarId)], DBSERVERS_CHANNEL, CLIENT_GET_AVATAR_DETAILS_RESP)
+        addServerHeader(dg, [getPuppetChannel(avatarId)], DBSERVERS_CHANNEL, CLIENT_GET_AVATAR_DETAILS_RESP)
         dg.add_uint32(doId)
         dg.add_uint8(0)
 

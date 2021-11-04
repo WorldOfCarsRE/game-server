@@ -32,7 +32,7 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
 
         self.dcHash = self.dcFile.getHash()
 
-        self.avatars_field = self.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
+        self.avatarsField = self.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
 
         self.loop.set_exception_handler(self._on_exception)
 

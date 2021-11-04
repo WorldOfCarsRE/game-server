@@ -80,10 +80,10 @@ class DownstreamClient:
         return self._client
 
 class DatagramFuture(Future):
-    def __init__(self, loop, msg_id, sender=None, context=None):
-        Future.__init__(self, loop=loop)
+    def __init__(self, loop, msgId, sender = None, context = None):
+        Future.__init__(self, loop = loop)
 
-        self.future_msg_id = msg_id
+        self.future_msg_id = msgId
         self.future_sender = sender
         self.context = context
 
