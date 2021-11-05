@@ -52,12 +52,11 @@ class DistributedObject(MDParticipant):
 
         dg.addUint16(self.dclass.getNumber())
 
-        fieldPacker = DCPacker()
-
         for fieldIndex in range(self.dclass.getNumInheritedFields()):
             field = self.dclass.getInheritedField(fieldIndex)
 
             if field.isRequired() and not field.asMolecularField() and not clientOnly or field.isBroadcast() or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
+                fieldPacker = DCPacker()
                 fieldPacker.beginPack(field)
 
                 if self.required and field.getName() in self.required:
@@ -75,7 +74,7 @@ class DistributedObject(MDParticipant):
             count = 0
             for fieldName, rawData in self.ram.items():
                 field = self.dclass.getFieldByName(fieldName)
-                if field.is_broadcast or field.isClrecv() or (alsoOwneeer and field.isOwnrecv()):
+                if field.is_broadcast or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
                     fieldsData.addUint16(field.getNumber())
 
                     fieldPacker.beginPack(field)
