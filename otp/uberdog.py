@@ -99,7 +99,7 @@ class Uberdog(DownstreamMessageDirector):
 
     async def query_location(self, avId, context):
         dg = Datagram()
-        dg.addServerHeader([STATESERVERS_CHANNEL], self.GLOBAL_ID, STATESERVER_OBJECT_LOCATE)
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.GLOBAL_ID, STATESERVER_OBJECT_LOCATE)
         dg.add_uint32(context)
         dg.add_uint32(avId)
         self.send_datagram(dg)

@@ -137,7 +137,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp = Datagram()
         resp.addUint16(CLIENT_GO_GET_LOST)
         resp.addUint16(booted_index)
-        resp.add_string16(booted_text.encode('utf-8'))
+        resp.addString(booted_text.encode('utf-8'))
         self.transport.write(len(resp).to_bytes(2, byteorder='little'))
         self.transport.write(resp.bytes())
         self.transport.close()
@@ -418,7 +418,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.addUint32(0)
         dg.addUint16(dclass.number)
         dg.addUint32(self.account.dislId)
-        dg.add_uint8(pos)
+        dg.addUint8(pos)
         pos = dg.getCurrentIndex()
         dg.addUint16(0)
 
@@ -465,7 +465,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp = Datagram()
         resp.addUint16(CLIENT_CREATE_AVATAR_RESP)
         resp.addUint16(0) # Context
-        resp.add_uint8(return_code)  # Return Code
+        resp.addUint8(return_code)  # Return Code
         resp.addUint32(avId) # avId
         self.send_datagram(resp)
 
@@ -491,9 +491,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(CLIENT_SET_WISHNAME_RESP)
         resp.addUint32(av_id)
         resp.addUint16(failed)
-        resp.add_string16(pending)
-        resp.add_string16(approved)
-        resp.add_string16(rejected)
+        resp.addString(pending)
+        resp.addString(approved)
+        resp.addString(rejected)
 
         self.send_datagram(resp)
 
@@ -527,19 +527,19 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint32(av_id)
 
         if av_id != self.created_av_id:
-            resp.add_uint8(1)
+            resp.addUint8(1)
             self.send_datagram(resp)
             return
 
         if first_index <= 0 and last_prefix_index <= 0 and last_suffix_index <= 0:
             self.service.log.debug(f'Received request for empty name for {av_id}.')
-            resp.add_uint8(2)
+            resp.addUint8(2)
             self.send_datagram(resp)
             return
 
         if (last_prefix_index <= 0 <= last_suffix_index) or (last_suffix_index <= 0 <= last_prefix_index):
             self.service.log.debug(f'Received request for invalid last name for {av_id}.')
-            resp.add_uint8(3)
+            resp.addUint8(3)
             self.send_datagram(resp)
             return
 
@@ -549,7 +549,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             last_prefix = self.get_name_part(last_prefix_index, last_prefix_flag, {NamePart.CAP_PREFIX, NamePart.LAST_PREFIX})
             last_suffix = self.get_name_part(last_suffix_index, last_suffix_flag, {NamePart.LAST_SUFFIX})
         except KeyError as e:
-            resp.add_uint8(4)
+            resp.addUint8(4)
             self.send_datagram(resp)
             self.service.log.debug(f'Received invalid index for name part. {e.args}')
             return
@@ -561,7 +561,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 pot_av.approvedName = name.strip()
                 break
 
-        resp.add_uint8(0)
+        resp.addUint8(0)
         self.send_datagram(resp)
 
     def get_name_part(self, index, flag, categories):
@@ -602,7 +602,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         resp = Datagram()
         resp.addUint16(CLIENT_DELETE_AVATAR_RESP)
-        resp.add_uint8(0) # Return code
+        resp.addUint8(0) # Return code
 
         av_count = sum((1 if potAv else 0 for potAv in self.potential_avatars))
         resp.addUint16(av_count)
@@ -611,18 +611,18 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             if not potAv:
                 continue
             resp.addUint32(potAv.doId)
-            resp.add_string16(potAv.name.encode('utf-8'))
-            resp.add_string16(potAv.wishName.encode('utf-8'))
-            resp.add_string16(potAv.approvedName.encode('utf-8'))
-            resp.add_string16(potAv.rejectedName.encode('utf-8'))
+            resp.addString(potAv.name.encode('utf-8'))
+            resp.addString(potAv.wishName.encode('utf-8'))
+            resp.addString(potAv.approvedName.encode('utf-8'))
+            resp.addString(potAv.rejectedName.encode('utf-8'))
 
             dnaString = potAv.dnaString
 
             if not isinstance(dnaString, bytes):
                 dnaString = dnaString.encode()
 
-            resp.add_string16(dnaString)
-            resp.add_uint8(potAv.index)
+            resp.addString(dnaString)
+            resp.addUint8(potAv.index)
 
         self.send_datagram(resp)
 
@@ -774,7 +774,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(CLIENT_LOGIN_TOONTOWN_RESP)
 
         returnCode = 0  # -13 == period expired
-        resp.add_uint8(returnCode)
+        resp.addUint8(returnCode)
 
         errorString = '' # 'Bad DC Version Compare'
         resp.addString(errorString)
@@ -919,7 +919,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         if msgtype == STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER:
             self.handleObjectEntrance(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_ENTER_OWNER_RECV:
-            self.handle_owned_object_entrance(dgi, sender)
+            self.handleOwnedObjectEntry(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_CHANGE_ZONE:
             doId = dgi.get_uint32()
 
@@ -929,7 +929,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
             self.handle_location_change(dgi, sender, doId)
         elif msgtype == STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE:
-            self.handle_interest_done(dgi)
+            self.handleInterestDone(dgi)
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
             doId = dgi.get_uint32()
 
@@ -989,32 +989,32 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.send_datagram(resp)
 
-    def handle_owned_object_entrance(self, dgi, sender):
-        doId = dgi.get_uint32()
-        parentId = dgi.get_uint32()
-        zoneId = dgi.get_uint32()
-        dcId = dgi.get_uint16()
+    def handleOwnedObjectEntry(self, dgi, sender):
+        doId = dgi.getUint32()
+        parentId = dgi.getUint32()
+        zoneId = dgi.getUint32()
+        dcId = dgi.getUint16()
 
         self.ownedObjects[doId] = ObjectInfo(doId, dcId, parentId, zoneId)
 
         resp = Datagram()
         resp.addUint16(CLIENT_GET_AVATAR_DETAILS_RESP)
         resp.addUint32(self.avatarId)
-        resp.add_uint8(0) # Return code
-        resp.add_bytes(dgi.remaining_bytes())
+        resp.addUint8(0) # Return code
+        resp.add_bytes(dgi.getRemainingBytes())
         self.send_datagram(resp)
 
     def handle_location_change(self, dgi, sender, doId):
-        new_parent = dgi.get_uint32()
-        new_zone = dgi.get_uint32()
-        old_parent = dgi.get_uint32()
-        old_zone = dgi.get_uint32()
-        self.service.log.debug(f'Handle location change for {doId}: ({old_parent} {old_zone}) -> ({new_parent} {new_zone})')
+        newParent = dgi.get_uint32()
+        newZone = dgi.get_uint32()
+        oldParent = dgi.get_uint32()
+        oldZone = dgi.get_uint32()
+        self.service.log.debug(f'Handle location change for {doId}: ({oldParent} {oldZone}) -> ({newParent} {newZone})')
 
         disable = True
 
         for interest in self.interests:
-            if interest.parentId == new_parent and new_zone in interest.zones:
+            if interest.parentId == newParent and newZone in interest.zones:
                 disable = False
                 break
 
@@ -1026,22 +1026,22 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             return
 
         if visible:
-            self.visibleObjects[doId].parentId = new_parent
-            self.visibleObjects[doId].zoneId = new_zone
+            self.visibleObjects[doId].parentId = newParent
+            self.visibleObjects[doId].zoneId = newZone
 
         if owned:
-            self.ownedObjects[doId].parentId = new_parent
-            self.ownedObjects[doId].zoneId = new_zone
+            self.ownedObjects[doId].parentId = newParent
+            self.ownedObjects[doId].zoneId = newZone
 
         if disable and visible:
             if owned:
-                self.send_object_location(doId, new_parent, new_zone)
+                self.sendObjectLocation(doId, newParent, newZone)
                 return
             self.service.log.debug(f'Got location change and object is no longer visible. Disabling {doId}')
             self.sendRemoveObject(doId)
             del self.visibleObjects[doId]
         else:
-            self.send_object_location(doId, new_parent, new_zone)
+            self.sendObjectLocation(doId, newParent, newZone)
 
     def sendRemoveObject(self, doId):
         self.service.log.debug(f'Sending removal of {doId}.')
@@ -1050,15 +1050,15 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint32(doId)
         self.send_datagram(resp)
 
-    def send_object_location(self, doId, new_parent, new_zone):
+    def sendObjectLocation(self, doId, newParent, newZone):
         resp = Datagram()
         resp.addUint16(CLIENT_OBJECT_LOCATION)
         resp.addUint32(doId)
-        resp.addUint32(new_parent)
-        resp.addUint32(new_zone)
+        resp.addUint32(newParent)
+        resp.addUint32(newZone)
         self.send_datagram(resp)
 
-    def handle_interest_done(self, dgi):
+    def handleInterestDone(self, dgi):
         handle = dgi.getUint16()
         context = dgi.getUint32()
         self.service.log.debug(f'sending interest done for handle {handle} context {context}')
@@ -1181,14 +1181,14 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.upstream.unsubscribe_all(self)
 
     def receiveSetWishNameClear(self, dgi):
-        avatarId = dgi.get_uint32()
-        actionFlag = dgi.get_uint8()
+        avatarId = dgi.getUint32()
+        actionFlag = dgi.getUint8()
 
         # Send this to the Database server.
         resp = Datagram()
-        resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
+        addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
         resp.addUint32(avatarId)
-        resp.add_uint8(actionFlag)
+        resp.addUint8(actionFlag)
         self.service.send_datagram(resp)
 
     def receiveGetObjectDetails(self, dgi, msgType: int):
@@ -1198,9 +1198,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         # Send this to the Database server.
         resp = Datagram()
-        resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_AVATAR_DETAILS)
+        addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_AVATAR_DETAILS)
         resp.addUint32(self.avatarId)
         resp.addUint32(doId)
-        resp.add_uint8(access)
-        resp.add_string16(dclass)
+        resp.addUint8(access)
+        resp.addString(dclass)
         self.service.send_datagram(resp)

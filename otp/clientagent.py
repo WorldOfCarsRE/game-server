@@ -10,8 +10,8 @@ from .clientprotocol import ClientProtocol
 
 class ClientAgentProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msgtype = dgi.get_uint16()
+        sender = dgi.getUint64()
+        msgtype = dgi.getUint16()
 
         print('unhandled', msgtype)
 
