@@ -139,15 +139,15 @@ class DistributedObject(MDParticipant):
 
         if newParent != oldParent:
             if oldParent:
-                self.unsubscribe_channel(parent_to_children(oldParent))
+                self.unsubscribe_channel(parentToChildren(oldParent))
                 targets.append(oldParent)
-                targets.append(location_as_channel(oldParent, oldZone))
+                targets.append(locationAsChannel(oldParent, oldZone))
 
             self.parentId = newParent
             self.zoneId = newZone
 
             if newParent:
-                self.subscribe_channel(parent_to_children(newParent))
+                self.subscribe_channel(parentToChildren(newParent))
 
                 if not self.aiExplicitlySet:
                     newAIChannel = self.service.resolveAIChannel(newParent)
@@ -161,7 +161,7 @@ class DistributedObject(MDParticipant):
             self.zoneId = newZone
 
             targets.append(self.parentId)
-            targets.append(location_as_channel(self.parentId, oldZone))
+            targets.append(locationAsChannel(self.parentId, oldZone))
         else:
             # Not changing zones.
             return
@@ -180,7 +180,7 @@ class DistributedObject(MDParticipant):
         self.parentSynced = False
 
         if newParent:
-            self.sendLocationEntry(location_as_channel(newParent, newZone))
+            self.sendLocationEntry(locationAsChannel(newParent, newZone))
 
     def handleAIChange(self, new_ai, sender, channel_is_explicit):
         pass
@@ -189,7 +189,7 @@ class DistributedObject(MDParticipant):
         targets = list()
 
         if self.parentId:
-            targets.append(location_as_channel(self.parentId, self.zoneId))
+            targets.append(locationAsChannel(self.parentId, self.zoneId))
 
             if notifyParent:
                 dg = Datagram()
@@ -254,7 +254,7 @@ class DistributedObject(MDParticipant):
         targets = []
 
         if field.isBroadcast():
-            targets.append(location_as_channel(self.parentId, self.zoneId))
+            targets.append(locationAsChannel(self.parentId, self.zoneId))
         if field.isAirecv() and self.aiChannel and self.aiChannel != sender:
             targets.append(self.aiChannel)
         if field.isOwnrecv() and self.ownerChannel and self.ownerChannel != sender:

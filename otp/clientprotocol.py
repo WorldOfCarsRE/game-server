@@ -249,11 +249,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def receive_update_field(self, dgi, doId = None):
         if doId is None:
-            doId = dgi.get_uint32()
+            doId = dgi.getUint32()
 
-        fieldNumber = dgi.get_uint16()
+        fieldNumber = dgi.getUint16()
 
-        field = self.service.dcFile.getFieldByIndex[fieldNumber]
+        field = self.service.dcFile.getFieldByIndex(fieldNumber)
 
         sendable = False
 
@@ -276,7 +276,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         addServerHeader(resp, [doId], self.channel, STATESERVER_OBJECT_UPDATE_FIELD)
         resp.addUint32(doId)
         resp.addUint16(fieldNumber)
-        resp.add_bytes(dgi.getRemainingBytes())
+        resp.appendData(dgi.getRemainingBytes())
         self.service.send_datagram(resp)
 
         if field.name == 'setTalk':
@@ -285,7 +285,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             resp.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
             resp.addUint32(doId)
             resp.addUint16(fieldNumber)
-            resp.add_bytes(dgi.getRemainingBytes())
+            resp.appendData(dgi.getRemainingBytes())
             self.send_datagram(resp)
 
     def receive_client_location(self, dgi):
@@ -678,7 +678,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             del self.visibleObjects[doId]
 
         for zone in uninterested_zones:
-            self.unsubscribe_channel(location_as_channel(parentId, zone))
+            self.unsubscribe_channel(locationAsChannel(parentId, zone))
 
         self.interests.remove(interest)
 
@@ -879,7 +879,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                         del self.visibleObjects[doId]
 
             for zone in killed_zones:
-                self.unsubscribe_channel(location_as_channel(previous_interest.parentId, zone))
+                self.unsubscribe_channel(locationAsChannel(previous_interest.parentId, zone))
 
             interest = Interest(self.channel, handle, contextId, parentId, zones)
             self.interests.append(interest)
@@ -908,7 +908,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         for zone in zones:
             queryReq.addUint32(zone)
-            self.subscribe_channel(location_as_channel(parentId, zone))
+            self.subscribe_channel(locationAsChannel(parentId, zone))
 
         self.service.send_datagram(queryReq)
 
