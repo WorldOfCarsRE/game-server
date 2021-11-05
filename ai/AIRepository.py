@@ -223,7 +223,7 @@ class AIRepository:
 
         # TODO: security check here for client senders.
 
-        field = self.dcFile.getFieldByIndex(fieldNumber)()
+        field = self.dcFile.getFieldByIndex(fieldNumber)
 
         self.currentSender = self.currentSender
         do = self.doTable[doId]
@@ -233,7 +233,6 @@ class AIRepository:
             print(f'failed to handle field update: <{field}> from {self.currentAvatarSender}')
             import traceback
             traceback.print_exc()
-            dgi.seek(0)
             print('datagram:', dgi.getRemainingBytes())
 
     @property

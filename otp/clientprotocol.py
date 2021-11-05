@@ -124,7 +124,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.account: Union[DISLAccount, None] = None
         self.avatarId: int = 0
         self.createdAvId: int = 0
-        self.wanted_name: str = ''
+        self.wantedName: str = ''
         self.potentialAvatar = None
         self.potentialAvatars: List[PotentialAvatar] = []
         self.avsDeleted: List[Tuple[int, int]] = []
@@ -190,7 +190,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                self.receive_update_field(dgi)
+                self.receiveUpdateField(dgi)
             else:
                 self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
         elif self.state == ClientState.AVATAR_CHOOSER:
@@ -205,7 +205,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 doId = dgi.get_uint32()
                 if doId == OTP_DO_ID_CENTRAL_LOGGER:
-                    self.receive_update_field(dgi, doId)
+                    self.receiveUpdateField(dgi, doId)
                 else:
                     self.service.log.debug(f'Unexpected field update for doId {doId} during avatar chooser.')
             elif msgtype == CLIENT_DELETE_AVATAR:
@@ -224,7 +224,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 doId = dgi.get_uint32()
                 if doId == OTP_DO_ID_CENTRAL_LOGGER:
-                    self.receive_update_field(dgi, doId)
+                    self.receiveUpdateField(dgi, doId)
                 else:
                     self.service.log.debug(f'Unexpected field update for doId {doId} during avatar creation.')
             else:
@@ -239,7 +239,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_OBJECT_LOCATION:
                 self.receive_client_location(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                self.receive_update_field(dgi)
+                self.receiveUpdateField(dgi)
             elif msgtype == CLIENT_SET_AVATAR:
                 self.receive_set_avatar(dgi)
             elif msgtype in (CLIENT_GET_AVATAR_DETAILS, CLIENT_GET_PET_DETAILS):
@@ -247,7 +247,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             else:
                 self.service.log.debug(f'Unhandled msg type {msgtype} in state {self.state}')
 
-    def receive_update_field(self, dgi, doId = None):
+    def receiveUpdateField(self, dgi, doId = None):
         if doId is None:
             doId = dgi.getUint32()
 
@@ -268,10 +268,6 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                                   f'DCField keywords: {field.keywords}')
             return
 
-        pos = dgi.getCurrentIndex()
-        field.unpack_bytes(dgi)
-        dgi.seek(pos)
-
         resp = Datagram()
         addServerHeader(resp, [doId], self.channel, STATESERVER_OBJECT_UPDATE_FIELD)
         resp.addUint32(doId)
@@ -279,7 +275,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.appendData(dgi.getRemainingBytes())
         self.service.send_datagram(resp)
 
-        if field.name == 'setTalk':
+        if field.getName() == 'setTalk':
             # TODO: filtering
             resp = Datagram()
             resp.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
@@ -896,7 +892,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 resp = Datagram()
                 resp.addUint16(CLIENT_DONE_INTEREST_RESP)
                 resp.addUint16(handle)
-                resp.addUint32(contexId)
+                resp.addUint32(contextId)
                 self.send_datagram(resp)
                 return
 

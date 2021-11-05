@@ -74,7 +74,7 @@ class DistributedObject(MDParticipant):
             count = 0
             for fieldName, rawData in self.ram.items():
                 field = self.dclass.getFieldByName(fieldName)
-                if field.is_broadcast or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
+                if field.isBroadcast() or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
                     fieldsData.addUint16(field.getNumber())
 
                     fieldPacker.beginPack(field)
@@ -90,10 +90,19 @@ class DistributedObject(MDParticipant):
 
         else:
             dg.addUint16(len(self.ram))
+
+            otherPacker = DCPacker()
+
             for fieldName, rawData in self.ram.items():
                 field = self.dclass.getFieldByName(fieldName)
+
                 dg.addUint16(field.getNumber())
-                dg.appendData(rawData)
+
+                otherPacker.beginPack(field)
+                field.packArgs(otherPacker, rawData)
+                otherPacker.endPack()
+
+                dg.appendData(otherPacker.getBytes())
 
     def sendInterestEntry(self, location, context):
         pass
@@ -537,7 +546,7 @@ class StateServerProtocol(MDUpstreamProtocol):
             unpacker.setUnpackData(dgi.getBlob())
 
             unpacker.beginUnpack(field)
-            
+
             data = field.unpackArgs(unpacker)
 
             if field.isRequired():
