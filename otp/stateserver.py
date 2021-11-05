@@ -360,7 +360,7 @@ class DistributedObject(MDParticipant):
         context = dgi.getUint32()
 
         resp = Datagram()
-        resp.add_server_header([sender], self.doId, STATESERVER_QUERY_OBJECT_ALL_RESP)
+        addServerHeader(resp, [sender], self.doId, STATESERVER_QUERY_OBJECT_ALL_RESP)
         resp.addUint32(self.doId)
         resp.addUint16(context)
         self.appendRequiredData(resp, False, True)
@@ -481,8 +481,8 @@ class StateServerProtocol(MDUpstreamProtocol):
 
                 data = field.unpackArgs(unpacker)
 
-                unpacker.endUnpack()                
-                
+                unpacker.endUnpack()
+
                 otherData.append((fieldNumber, data))
 
         dclass = stateServer.dcFile.getClass(number)
@@ -492,19 +492,23 @@ class StateServerProtocol(MDUpstreamProtocol):
         query.addUint32(1)
         query.addUint32(doId)
 
-        pos = query.getCurrentIndex()
+        pos = dgi.getCurrentIndex()
         query.addUint16(0)
+
         count = 0
-        for field in dclass:
-            if not field.asMolecularField() and field.isDb:
+
+        for fieldId in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(fieldId)
+
+            if not field.asMolecularField() and field.isDb():
                 if field.getName() == 'DcObjectType':
                     continue
                 query.addUint16(field.getNumber())
                 count += 1
-        query.seek(pos)
+
         query.addUint16(count)
 
-        self.service.log.debug(f'Querying {count} fields for {dclass.name} {doId}. Other data: {otherData}')
+        self.service.log.debug(f'Querying {count} fields for {dclass.getName()} {doId}. Other data: {otherData}')
 
         self.service.queries[doId] = (parentId, zoneId, ownerChannel, number, otherData)
         self.service.send_datagram(query)
@@ -543,10 +547,17 @@ class StateServerProtocol(MDUpstreamProtocol):
 
         for fieldNumber, data in otherData:
             field = stateServer.dcFile.getFieldByIndex(fieldNumber)
+
             if field.isRequired():
                 required[field.getName()] = data
             else:
                 ram[field.getName()] = data
+
+            # Pack the data back up.
+            packer = DCPacker()
+            packer.beginPack(field)
+            field.packArgs(packer, data)
+            packer.endPack()
 
             if field.isDb():
                 dg = Datagram()
@@ -554,7 +565,7 @@ class StateServerProtocol(MDUpstreamProtocol):
                 dg.addUint32(doId)
                 dg.addUint16(1)
                 dg.addUint16(field.getNumber())
-                dg.appendData(data)
+                dg.appendData(packer.getBytes())
                 self.service.send_datagram(dg)
 
         self.service.log.debug(f'Activating {doId} with required:{required}\nram:{ram}\n')
@@ -604,8 +615,8 @@ class StateServerProtocol(MDUpstreamProtocol):
         required = {}
         ram = {}
 
-        fieldPacker = DCPacker()
-        fieldPacker.setUnpackData(dgi.getRemainingBytes())
+        unpacker = DCPacker()
+        unpacker.setUnpackData(dgi.getRemainingBytes())
 
         for fieldIndex in range(dclass.getNumInheritedFields()):
             field = dclass.getInheritedField(fieldIndex)
@@ -616,9 +627,9 @@ class StateServerProtocol(MDUpstreamProtocol):
             if not field.isRequired():
                 continue
 
-            fieldPacker.beginUnpack(field)
-            fieldArgs = field.unpackArgs(fieldPacker)
-            fieldPacker.endUnpack()
+            unpacker.beginUnpack(field)
+            fieldArgs = field.unpackArgs(unpacker)
+            unpacker.endUnpack()
 
             required[field.getName()] = fieldArgs
 

@@ -31,7 +31,7 @@ class DBServerProtocol(MDUpstreamProtocol):
         elif msgId == DBSERVER_GET_STORED_VALUES:
             self.handle_get_stored_values(sender, dgi)
         elif msgId == DBSERVER_SET_STORED_VALUES:
-            self.handle_set_stored_values(sender, dgi)
+            self.handleSetStoredValues(sender, dgi)
         elif msgId == DBSERVER_WISHNAME_CLEAR:
             self.handleClearWishName(dgi)
         elif msgId == DBSERVER_GET_FRIENDS:
@@ -92,15 +92,27 @@ class DBServerProtocol(MDUpstreamProtocol):
 
         self.service.loop.create_task(self.service.get_stored_values(sender, context, do_id, field_names))
 
-    def handle_set_stored_values(self, sender, dgi):
-        do_id = dgi.get_uint32()
-        field_count = dgi.get_uint16()
+    def handleSetStoredValues(self, sender, dgi):
+        doId = dgi.get_uint32()
+        fieldCount = dgi.get_uint16()
         fields = []
-        for i in range(field_count):
-            f = self.service.dc.fields[dgi.get_uint16()]()
-            fields.append((f.name, f.unpack_value(dgi)))
 
-        self.service.loop.create_task(self.service.set_stored_values(do_id, fields))
+        unpacker = DCPacker()
+
+        for i in range(fieldCount):
+            f = self.service.dc.getFieldByIndex(dgi.getUint16())
+
+            unpacker.setUnpackData(dgi.getRemainingBytes())
+
+            unpacker.beginUnpack(f)
+            fieldArgs = f.unpackArgs(unpacker)
+            unpacker.endUnpack()
+
+            print(f.getName(), fieldArgs)
+
+            fields.append((f.getName(), fieldArgs))
+
+        self.service.loop.create_task(self.service.set_stored_values(doId, fields))
 
     def handle_account_query(self, sender, dgi):
         do_id = dgi.get_uint32()
@@ -167,9 +179,9 @@ class DBServer(DownstreamMessageDirector):
 
         dg = Datagram()
         addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
-        dg.add_uint32(context)
-        dg.add_uint8(doId == 0)
-        dg.add_uint32(doId)
+        dg.addUint32(context)
+        dg.addUint8(doId == 0)
+        dg.addUint32(doId)
         self.send_datagram(dg)
 
     async def unloadEstate(self, avId, parentId):
@@ -334,7 +346,7 @@ class DBServer(DownstreamMessageDirector):
 
     async def get_stored_values(self, sender, context, doId, fields):
         try:
-            fieldDict = await self.backend.query_object_fields(doId, [field.name for field in fields])
+            fieldDict = await self.backend.query_object_fields(doId, [field.getName() for field in fields])
         except OTPQueryNotFound:
             fieldDict = None
 
@@ -342,10 +354,10 @@ class DBServer(DownstreamMessageDirector):
 
         dg = Datagram()
         addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES_RESP)
-        dg.add_uint32(context)
-        dg.add_uint32(doId)
-        pos = dg.tell()
-        dg.add_uint16(0)
+        dg.addUint32(context)
+        dg.addUint32(doId)
+        pos = dg.getLength()
+        dg.addUint16(0)
 
         if fieldDict is None:
             print('object not found... %s' % doId, sender, context)
@@ -353,14 +365,16 @@ class DBServer(DownstreamMessageDirector):
             return
 
         counter = 0
-        for field in fields:
-            if field.name not in fieldDict:
-                continue
-            if fieldDict[field.name] is None:
-                continue
-            dg.add_uint16(field.number)
+        packer = DCPacker()
 
-            fieldValue = fieldDict[field.name]
+        for field in fields:
+            if field.getName() not in fieldDict:
+                continue
+            if fieldDict[field.getName()] is None:
+                continue
+            dg.addUint16(field.getNumber())
+
+            fieldValue = fieldDict[field.getName()]
 
             if self.wantSQL:
                dcName = await self.backend.queryDC(await self.backend.pool.acquire(), doId)
@@ -368,13 +382,17 @@ class DBServer(DownstreamMessageDirector):
                 dcName = await self.backend.queryDC(doId)
 
             # Pack the field data.
-            a = Datagram()
-            self.dc.namespace[dcName][field.name].pack_value(a, fieldValue)
-            dg.add_bytes(a.bytes())
+            field = self.dc.getClassByName(dcName).getFieldByName(field.getName())
+
+            packer.beginPack(field)
+            field.packArgs(packer, fieldValue)
+            packer.endPack()
+
             counter += 1
 
-        dg.seek(pos)
-        dg.add_uint16(counter)
+        dg.appendData(packer.getBytes())
+
+        dg.addUint16(counter)
         self.send_datagram(dg)
 
     async def set_stored_values(self, do_id, fields):

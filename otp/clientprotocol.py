@@ -158,7 +158,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def delete_avatar_ram(self):
         dg = Datagram()
-        dg.add_server_header([self.avatarId], self.channel, STATESERVER_OBJECT_DELETE_RAM)
+        addServerHeader(dg, [self.avatarId], self.channel, STATESERVER_OBJECT_DELETE_RAM)
         dg.addUint32(self.avatarId)
         self.service.send_datagram(dg)
 
@@ -392,9 +392,16 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.addUint16(dclass.getNumber())
         dg.addUint16(len(otherFields))
 
+        otherPacker = DCPacker()
+
         for f, arg in otherFields:
             dg.addUint16(f.getNumber())
-            f.pack_value(dg, arg)
+
+            otherPacker.beginPack(f)
+            f.packArgs(otherPacker, arg)
+            otherPacker.endPack()
+
+        dg.appendData(otherPacker.getBytes())
 
         self.service.send_datagram(dg)
 
@@ -411,12 +418,12 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.potentialAvatar = PotentialAvatar(doId = 0, name = 'Toon', wishName = '', approvedName = '',
                                                       rejectedName = '', dnaString = dna, index = pos, allowName = 1)
 
-        dclass = self.service.dcFile.getClassByName['DistributedToon']
+        dclass = self.service.dcFile.getClassByName('DistributedToon')
 
         dg = Datagram()
-        dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
+        addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
         dg.addUint32(0)
-        dg.addUint16(dclass.number)
+        dg.addUint16(dclass.getNumber())
         dg.addUint32(self.account.dislId)
         dg.addUint8(pos)
         pos = dg.getCurrentIndex()
@@ -498,17 +505,17 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.send_datagram(resp)
 
         if av_id and av:
-            dclass = self.service.dcFile.namespace['DistributedToon']
-            wishname_field = dclass['WishName']
+            dclass = self.service.dcFile.getClassByName('DistributedToon')
+            wishname_field = dclass.getFieldByName('WishName')
             wishname_state_field = dclass['WishNameState']
 
             resp = Datagram()
-            resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
+            addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
             resp.addUint32(av_id)
             resp.addUint16(2)
-            resp.addUint16(wishname_state_field.number)
+            resp.addUint16(wishname_state_field.getNumber())
             wishname_state_field.pack_value(resp, ('PENDING',))
-            resp.addUint16(wishname_field.number)
+            resp.addUint16(wishname_field.getNumber())
             wishname_field.pack_value(resp, (name,))
             self.service.send_datagram(resp)
 
@@ -964,7 +971,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         elif msgtype in {CLIENT_FRIEND_ONLINE, CLIENT_FRIEND_OFFLINE, CLIENT_GET_FRIEND_LIST_RESP, CLIENT_GET_AVATAR_DETAILS_RESP}:
             dg = Datagram()
             dg.addUint16(msgtype)
-            dg.add_bytes(dgi.getRemainingBytes())
+            dg.appendData(dgi.getRemainingBytes())
             self.send_datagram(dg)
         else:
            self.service.log.debug(f'Client {self.channel} received unhandled upstream msg {msgtype}.')
@@ -1001,7 +1008,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(CLIENT_GET_AVATAR_DETAILS_RESP)
         resp.addUint32(self.avatarId)
         resp.addUint8(0) # Return code
-        resp.add_bytes(dgi.getRemainingBytes())
+        resp.appendData(dgi.getRemainingBytes())
         self.send_datagram(resp)
 
     def handle_location_change(self, dgi, sender, doId):
