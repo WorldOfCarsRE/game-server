@@ -29,7 +29,7 @@ class DBServerProtocol(MDUpstreamProtocol):
         elif msgId == DBSERVER_DELETE_STORED_OBJECT:
             pass
         elif msgId == DBSERVER_GET_STORED_VALUES:
-            self.handle_get_stored_values(sender, dgi)
+            self.handleGetStoredValues(sender, dgi)
         elif msgId == DBSERVER_SET_STORED_VALUES:
             self.handleSetStoredValues(sender, dgi)
         elif msgId == DBSERVER_WISHNAME_CLEAR:
@@ -84,13 +84,18 @@ class DBServerProtocol(MDUpstreamProtocol):
 
         self.service.loop.create_task(coro)
 
-    def handle_get_stored_values(self, sender, dgi):
-        context = dgi.get_uint32()
-        do_id = dgi.get_uint32()
-        field_count = dgi.get_uint16()
-        field_names = [self.service.dc.fields[dgi.get_uint16()]() for _ in range(field_count)]
+    def handleGetStoredValues(self, sender, dgi):
+        context = dgi.getUint32()
+        doId = dgi.getUint32()
+        
+        fields = []
 
-        self.service.loop.create_task(self.service.get_stored_values(sender, context, do_id, field_names))
+        while dgi.getRemainingBytes():
+            fieldNum = dgi.getUint16()        
+            field = self.service.dc.getFieldByIndex(fieldNum)
+            fields.append(field)
+
+        self.service.loop.create_task(self.service.get_stored_values(sender, context, doId, fields))
 
     def handleSetStoredValues(self, sender, dgi):
         doId = dgi.get_uint32()
@@ -119,25 +124,25 @@ class DBServerProtocol(MDUpstreamProtocol):
         self.service.loop.create_task(self.service.queryObject(sender, do_id))
 
     def handleClearWishName(self, dgi):
-        avatarId = dgi.get_uint32()
-        actionFlag = dgi.get_uint8()
+        avatarId = dgi.getUint32()
+        actionFlag = dgi.getUint8()
         self.service.loop.create_task(self.service.handleClearWishName(avatarId, actionFlag))
 
     def handleGetFriends(self, dgi):
-        avatarId = dgi.get_uint32()
+        avatarId = dgi.getUint32()
         self.service.loop.create_task(self.service.queryFriends(avatarId))
 
     def handleGetObjectDetails(self, dgi):
-        avatarId = dgi.get_uint32()
-        doId = dgi.get_uint32()
-        access = dgi.get_uint8()
-        dcName = dgi.get_string16()
+        avatarId = dgi.getUint32()
+        doId = dgi.getUint32()
+        access = dgi.getUint8()
+        dcName = dgi.getString()
         self.service.loop.create_task(self.service.queryObjectDetails(avatarId, doId, access, dcName))
 
 from panda3d.direct import DCFile
 from otp.dbbackend import SQLBackend, MongoBackend, OTPCreateFailed
 from otp.util import getPuppetChannel
-from panda3d.core import Datagram
+from panda3d.core import Datagram, DatagramIterator
 
 class DBServer(DownstreamMessageDirector):
     upstream_protocol = DBServerProtocol
@@ -352,12 +357,12 @@ class DBServer(DownstreamMessageDirector):
 
         self.log.debug(f'Received query request from {sender} with context {context} for doId: {doId}.')
 
+        fieldDg = Datagram()
+
         dg = Datagram()
         addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES_RESP)
         dg.addUint32(context)
         dg.addUint32(doId)
-        pos = dg.getLength()
-        dg.addUint16(0)
 
         if fieldDict is None:
             print('object not found... %s' % doId, sender, context)
@@ -372,27 +377,32 @@ class DBServer(DownstreamMessageDirector):
                 continue
             if fieldDict[field.getName()] is None:
                 continue
-            dg.addUint16(field.getNumber())
+            fieldDg.addUint16(field.getNumber())
 
             fieldValue = fieldDict[field.getName()]
 
             if self.wantSQL:
                dcName = await self.backend.queryDC(await self.backend.pool.acquire(), doId)
             else:
-                dcName = await self.backend.queryDC(doId)
+               dcName = await self.backend.queryDC(doId)
 
             # Pack the field data.
             field = self.dc.getClassByName(dcName).getFieldByName(field.getName())
 
+            packer = DCPacker()
             packer.beginPack(field)
             field.packArgs(packer, fieldValue)
             packer.endPack()
+            
+            fieldDg.addBlob(packer.getBytes())
 
             counter += 1
-
-        dg.appendData(packer.getBytes())
-
+            
         dg.addUint16(counter)
+        
+        fieldDi = DatagramIterator(fieldDg)
+        dg.appendData(fieldDi.getRemainingBytes())
+
         self.send_datagram(dg)
 
     async def set_stored_values(self, do_id, fields):
@@ -537,11 +547,19 @@ class DBServer(DownstreamMessageDirector):
         dg.add_uint8(0)
 
         # Pack our field data to go to the client.
-        for field in dclass.inherited_fields:
+        for fieldIndex in range(self.dclass.getNumInheritedFields()):
+            field = self.dclass.getInheritedField(fieldIndex)
             if not field.isRequired() or field.asMolecularField():
                 continue
 
-            field.pack_value(dg, fieldDict[field.name])
+            packer = DCPacker()
+            packer.setUnpackData(dg)
+            
+            packer.beginPack(field)
+            field.packArgs(packer, fieldDict[field.getName()])
+            
+            packer.endPack()
+
 
         # Send the response to the client.
         self.send_datagram(dg)

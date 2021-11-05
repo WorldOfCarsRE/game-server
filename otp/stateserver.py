@@ -70,13 +70,19 @@ class DistributedObject(MDParticipant):
     def appendOtherData(self, dg, clientOnly, alsoOwner):
         if clientOnly:
             fieldsData = Datagram()
+            fieldPacker = DCPacker()
 
             count = 0
             for fieldName, rawData in self.ram.items():
-                field = self.dclass.getFieldByName[fieldName]
+                field = self.dclass.getFieldByName(fieldName)
                 if field.is_broadcast or field.isClrecv() or (alsoOwneeer and field.isOwnrecv()):
                     fieldsData.addUint16(field.getNumber())
-                    fieldsData.appendData(rawData)
+
+                    fieldPacker.beginPack(field)
+                    field.packArgs(fieldPacker, rawData)
+                    fieldPacker.endPack()
+                    fieldsData.appendData(fieldPacker.getBytes())
+
                     count += 1
 
             dg.addUint16(count)
@@ -492,9 +498,6 @@ class StateServerProtocol(MDUpstreamProtocol):
         query.addUint32(1)
         query.addUint32(doId)
 
-        pos = dgi.getCurrentIndex()
-        query.addUint16(0)
-
         count = 0
 
         for fieldId in range(dclass.getNumInheritedFields()):
@@ -505,8 +508,6 @@ class StateServerProtocol(MDUpstreamProtocol):
                     continue
                 query.addUint16(field.getNumber())
                 count += 1
-
-        query.addUint16(count)
 
         self.service.log.debug(f'Querying {count} fields for {dclass.getName()} {doId}. Other data: {otherData}')
 
@@ -537,11 +538,13 @@ class StateServerProtocol(MDUpstreamProtocol):
             unpacker.setUnpackData(dgi.getBlob())
 
             unpacker.beginUnpack(field)
+            
+            data = field.unpackArgs(unpacker)
 
             if field.isRequired():
-                required[field.getName()] = field.unpackArgs(unpacker)
+                required[field.getName()] = data
             else:
-                ram[field.getName()] = field.unpackArgs(unpacker)
+                ram[field.getName()] = data
 
             unpacker.endUnpack()
 
