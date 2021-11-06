@@ -231,7 +231,7 @@ class AIRepository:
         try:
             do.dclass.receiveUpdate(do, dgi)
         except Exception as e:
-            print(f'failed to handle field update: <{field}> from {self.currentAvatarSender}')
+            print(f'failed to handle field update: <{field.getName()}> from {self.currentAvatarSender}')
             import traceback
             traceback.print_exc()
             print('datagram:', dgi.getRemainingBytes())

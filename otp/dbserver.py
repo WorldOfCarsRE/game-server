@@ -87,11 +87,11 @@ class DBServerProtocol(MDUpstreamProtocol):
     def handleGetStoredValues(self, sender, dgi):
         context = dgi.getUint32()
         doId = dgi.getUint32()
-        
+
         fields = []
 
         while dgi.getRemainingBytes():
-            fieldNum = dgi.getUint16()        
+            fieldNum = dgi.getUint16()
             field = self.service.dc.getFieldByIndex(fieldNum)
             fields.append(field)
 
@@ -393,13 +393,13 @@ class DBServer(DownstreamMessageDirector):
             packer.beginPack(field)
             field.packArgs(packer, fieldValue)
             packer.endPack()
-            
+
             fieldDg.addBlob(packer.getBytes())
 
             counter += 1
-            
+
         dg.addUint16(counter)
-        
+
         fieldDi = DatagramIterator(fieldDg)
         dg.appendData(fieldDi.getRemainingBytes())
 
@@ -554,12 +554,11 @@ class DBServer(DownstreamMessageDirector):
 
             packer = DCPacker()
             packer.setUnpackData(dg)
-            
+
             packer.beginPack(field)
             field.packArgs(packer, fieldDict[field.getName()])
-            
-            packer.endPack()
 
+            packer.endPack()
 
         # Send the response to the client.
         self.send_datagram(dg)

@@ -130,18 +130,18 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.avsDeleted: List[Tuple[int, int]] = []
         self.pendingObjects: Dict[int, PendingObject] = {}
 
-    def disconnect(self, booted_index, booted_text):
+    def disconnect(self, bootedIndex, bootedText):
         for task in self.tasks:
             task.cancel()
         del self.tasks[:]
         resp = Datagram()
         resp.addUint16(CLIENT_GO_GET_LOST)
-        resp.addUint16(booted_index)
-        resp.addString(booted_text.encode('utf-8'))
-        self.transport.write(len(resp).to_bytes(2, byteorder='little'))
-        self.transport.write(resp.bytes())
+        resp.addUint16(bootedIndex)
+        resp.addString(bootedText)
+        self.transport.write(resp.getLength().to_bytes(2, byteorder='little'))
+        self.transport.write(resp.getMessage())
         self.transport.close()
-        self.service.log.debug(f'Booted client {self.channel} with index {booted_index} and text: "{booted_text}"')
+        self.service.log.debug(f'Booted client {self.channel} with index {bootedIndex} and text: "{bootedText}"')
 
     def connection_lost(self, exc):
         self.service.log.debug(f'Connection lost to client {self.channel}')
@@ -178,7 +178,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         if self.state == ClientState.NEW:
             if msgtype == CLIENT_LOGIN_TOONTOWN:
-                self.receive_login(dgi)
+                self.receiveLogin(dgi)
                 self.state = ClientState.AUTHENTICATED
             else:
                 self.service.log.debug(f'Unexpected message type during handshake {msgtype}.')
@@ -740,7 +740,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.appendData(dgi.getDatagram().getMessage()[pos:])
         self.send_datagram(resp)
 
-    def receive_login(self, dgi):
+    def receiveLogin(self, dgi):
         playToken = dgi.getString()
         clientVersion = dgi.getString()
         hashVal = dgi.getUint32()
