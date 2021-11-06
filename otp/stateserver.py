@@ -69,12 +69,12 @@ class DistributedObject(MDParticipant):
     def appendOtherData(self, dg, clientOnly, alsoOwner):
         if clientOnly:
             fieldsData = Datagram()
-            fieldPacker = DCPacker()
 
             count = 0
             for fieldName, rawData in self.ram.items():
                 field = self.dclass.getFieldByName(fieldName)
                 if field.isBroadcast() or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
+                    fieldPacker = DCPacker()
                     fieldsData.addUint16(field.getNumber())
 
                     fieldPacker.beginPack(field)
@@ -91,10 +91,9 @@ class DistributedObject(MDParticipant):
         else:
             dg.addUint16(len(self.ram))
 
-            otherPacker = DCPacker()
-
             for fieldName, rawData in self.ram.items():
                 field = self.dclass.getFieldByName(fieldName)
+                otherPacker = DCPacker()
 
                 dg.addUint16(field.getNumber())
 
