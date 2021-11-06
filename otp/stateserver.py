@@ -446,10 +446,10 @@ class StateServerProtocol(MDUpstreamProtocol):
             context = dgi.getUint32()
             doId = dgi.getUint32()
 
-            do = self.service.objects.get(do_id)
+            do = self.service.objects.get(doId)
 
             resp = Datagram()
-            addServerHeader(resp, [sender], do_id, STATESERVER_OBJECT_LOCATE_RESP)
+            addServerHeader(resp, [sender], doId, STATESERVER_OBJECT_LOCATE_RESP)
             resp.addUint32(context)
             resp.addUint32(doId)
 

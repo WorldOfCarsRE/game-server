@@ -1,5 +1,5 @@
 from panda3d.core import VBase4
-from panda3d.core import Datagram
+from panda3d.core import Datagram, DatagramIterator
 import random
 
 from dataclasses import dataclass
@@ -1326,9 +1326,9 @@ class ToonDNA(object):
             raise Exception(f'unknown avatar type: {self.toonType}')
         return dg.getMessage()
 
-    def makeFromNetString(self, dgi):
-        if isinstance(dgi, bytes):
-            dgi = Datagram(dgi).iterator()
+    def makeFromNetString(self, dnaString):
+        if isinstance(dnaString, bytes):
+            dgi = DatagramIterator(Datagram(dnaString))
 
         self.toonType = dgi.getFixedString(1)
 
