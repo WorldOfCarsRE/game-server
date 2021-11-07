@@ -244,25 +244,32 @@ class DistributedObject(MDParticipant):
         fieldId = dgi.getUint16()
         field = self.dclass.getFieldByIndex(fieldId)
         pos = dgi.getCurrentIndex()
+        data = dgi.getDatagram().getMessage()[pos:]
 
-        fieldPacker = DCPacker()
-        fieldPacker.setUnpackData(dgi.getDatagram().getMessage()[pos:])
+        unpacker = DCPacker()
+        unpacker.setUnpackData(data)
 
         molecular = field.asMolecularField()
+
+        packer = DCPacker()
+        packer.setUnpackData(data)
+        packer.beginPack(field)
 
         if molecular:
             for i in range(molecular.getNumAtomics()):
                 atomic = molecular.getAtomic(i)
 
-                fieldPacker.beginUnpack(atomic)
-                data = atomic.unpackArgs(fieldPacker)
-                fieldPacker.endUnpack()
+                unpacker.beginUnpack(atomic)
+                data = atomic.unpackArgs(unpacker)
+                unpacker.endUnpack()
 
                 self.saveField(atomic, data)
         else:
-            fieldPacker.beginUnpack(field)
-            data = field.unpackArgs(fieldPacker)
-            fieldPacker.endUnpack()
+            unpacker.beginUnpack(field)
+            data = field.unpackArgs(unpacker)
+            unpacker.endUnpack()
+
+            field.packArgs(packer, data)
 
             self.saveField(field, data)
 
@@ -280,7 +287,7 @@ class DistributedObject(MDParticipant):
             addServerHeader(dg, targets, sender, STATESERVER_OBJECT_UPDATE_FIELD)
             dg.addUint32(self.doId)
             dg.addUint16(fieldId)
-            dg.appendData(fieldPacker.getBytes())
+            dg.appendData(packer.getBytes())
             self.service.send_datagram(dg)
 
     def saveField(self, field, data):

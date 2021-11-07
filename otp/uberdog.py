@@ -35,7 +35,7 @@ class UberdogProtocol(MDUpstreamProtocol):
             if do_id != self.service.GLOBAL_ID:
                 self.service.log.debug(f'Got field update for unknown object {do_id}.')
                 return
-            self.service.receive_update(sender, dgi)
+            self.service.receiveUpdate(sender, dgi)
 
     def check_futures(self, dgi, msg_id, sender):
         pos = dgi.tell()
@@ -85,12 +85,12 @@ class Uberdog(DownstreamMessageDirector):
         dg.addUint32(self.GLOBAL_ID)
         self.send_datagram(dg)
 
-    def receive_update(self, sender, dgi):
+    def receiveUpdate(self, sender, dgi):
         self.lastSender = sender
-        field_number = dgi.get_uint16()
-        field = dc.fields[field_number]()
-        self.log.debug(f'Receiving field update for field {field.name} from {sender}.')
-        field.receive_update(self, dgi)
+        fieldNumber = dgi.getUint16()
+        field = dc.getFieldByIndex(fieldNumber)
+        self.log.debug(f'Receiving field update for field {field.getName()} from {sender}.')
+        field.receiveUpdate(self, dgi)
 
     def register_future(self, msg_type, sender, context):
         f = DatagramFuture(self.loop, msg_type, sender, context)
