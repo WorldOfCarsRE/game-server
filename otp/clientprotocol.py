@@ -376,7 +376,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         ]
 
         if pot_av.approvedName:
-            other_fields.append((dclass['setName'], (pot_av.approvedName,)))
+            otherFields.append((dclass.getFieldByName['setName'], (pot_av.approvedName,)))
             pot_av.approvedName = ''
 
         dg = Datagram()
@@ -407,7 +407,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         pos = dgi.getUint8()
         self.service.log.debug(f'Client {self.channel} requesting avatar creation with dna {dna} and pos {pos}.')
 
-        if not 0 <= pos < 6 or self.potential_avatars[pos] is not None:
+        if not 0 <= pos < 6 or self.potentialAvatars[pos] is not None:
             self.service.log.debug(f'Client {self.channel} tried creating avatar in invalid position.')
             return
 
@@ -422,29 +422,33 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.addUint16(dclass.getNumber())
         dg.addUint32(self.account.dislId)
         dg.addUint8(pos)
-        pos = dg.getCurrentIndex()
-        dg.addUint16(0)
+        pos = dgi.getCurrentIndex()
 
-        default_toon = dict(DEFAULT_TOON)
-        default_toon['setDNAString'] = (dna,)
-        default_toon['setDISLid'] = (self.account.dislId,)
-        default_toon['WishName'] = ('',)
-        default_toon['WishNameState'] = ('CLOSED',)
-        default_toon['setAccountName'] = (self.account.username,)
+        defaultToon = dict(DEFAULT_TOON)
+        defaultToon['setDNAString'] = (dna,)
+        defaultToon['setDISLid'] = (self.account.dislId,)
+        defaultToon['WishName'] = ('',)
+        defaultToon['WishNameState'] = ('CLOSED',)
+        defaultToon['setAccountName'] = (self.account.username,)
 
         count = 0
+        packer = DCPacker()
+
         for fieldId in range(dclass.getNumInheritedFields()):
             field = dclass.getInheritedField(fieldId)
 
             if not field.asMolecularField() and field.isDb():
-                if field.name == 'DcObjectType':
+                if field.getName() == 'DcObjectType':
                     continue
-                dg.addUint16(field.number)
-                field.pack_value(dg, default_toon[field.name])
-                count += 1
 
-        dg.seek(pos)
+                dg.addUint16(field.getNumber())
+                packer.beginPack(field)
+                field.packArgs(packer, defaultToon[field.getName()])
+                count += 1
+                packer.endPack()
+
         dg.addUint16(count)
+        dg.appendData(packer.getBytes())
 
         self.state = ClientState.CREATING_AVATAR
 
@@ -456,33 +460,33 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         f = DatagramFuture(self.service.loop, DBSERVER_CREATE_STORED_OBJECT_RESP)
         self.futures.append(f)
         sender, dgi = await f
-        context = dgi.get_uint32()
-        return_code = dgi.get_uint8()
-        av_id = dgi.get_uint32()
+        context = dgi.getUint32()
+        returnCode = dgi.getUint8()
+        avId = dgi.getUint32()
 
-        av = self.potential_avatar
-        av.doId = av_id
-        self.potential_avatars[av.index] = av
-        self.potential_avatar = None
+        av = self.potentialAvatar
+        av.doId = avId
+        self.potentialAvatars[av.index] = av
+        self.potentialAvatar = None
 
         resp = Datagram()
         resp.addUint16(CLIENT_CREATE_AVATAR_RESP)
         resp.addUint16(0) # Context
-        resp.addUint8(return_code)  # Return Code
+        resp.addUint8(returnCode) # Return Code
         resp.addUint32(avId) # avId
         self.send_datagram(resp)
 
-        self.createdAvId = av_id
+        self.createdAvId = avId
 
-        self.service.log.debug(f'New avatar {av_id} created for client {self.channel}.')
+        self.service.log.debug(f'New avatar {avId} created for client {self.channel}.')
 
     def receive_set_wishname(self, dgi):
-        av_id = dgi.getUint32()
+        avId = dgi.getUint32()
         name = dgi.getString()
 
-        av = self.get_potential_avatar(av_id)
+        av = self.getPotentialAvatar(avId)
 
-        self.service.log.debug(f'Received wishname request from {self.channel} for avatar {av_id} for name "{name}".')
+        self.service.log.debug(f'Received wishname request from {self.channel} for avatar {avId} for name "{name}".')
 
         pending = name.encode('utf-8')
         approved = b''
@@ -492,7 +496,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         resp = Datagram()
         resp.addUint16(CLIENT_SET_WISHNAME_RESP)
-        resp.addUint32(av_id)
+        resp.addUint32(avId)
         resp.addUint16(failed)
         resp.addString(pending)
         resp.addString(approved)
@@ -500,14 +504,14 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.send_datagram(resp)
 
-        if av_id and av:
+        if avId and av:
             dclass = self.service.dcFile.getClassByName('DistributedToon')
             wishname_field = dclass.getFieldByName('WishName')
             wishname_state_field = dclass['WishNameState']
 
             resp = Datagram()
             addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
-            resp.addUint32(av_id)
+            resp.addUint32(avId)
             resp.addUint16(2)
             resp.addUint16(wishname_state_field.getNumber())
             wishname_state_field.pack_value(resp, ('PENDING',))
@@ -579,9 +583,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             return ''
 
     def receive_delete_avatar(self, dgi):
-        av_id = dgi.get_uint32()
+        avId = dgi.get_uint32()
 
-        av = self.get_potential_avatar(av_id)
+        av = self.getPotentialAvatar(avId)
 
         if not av:
             return
@@ -1168,7 +1172,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.appendData(dgi.getRemainingBytes())
         self.send_datagram(resp)
 
-    def get_potential_avatar(self, avId):
+    def getPotentialAvatar(self, avId):
         for potAv in self.potentialAvatars:
             if potAv and potAv.doId == avId:
                 return potAv

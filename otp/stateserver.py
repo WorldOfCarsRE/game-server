@@ -62,7 +62,7 @@ class DistributedObject(MDParticipant):
             if not clientOnly or field.isBroadcast() or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
                 fieldPacker = DCPacker()
                 fieldPacker.beginPack(field)
- 
+
                 field.packArgs(fieldPacker, self.required[field.getName()])
                 fieldPacker.endPack()
 

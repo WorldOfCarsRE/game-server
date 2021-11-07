@@ -25,7 +25,7 @@ class DBServerProtocol(MDUpstreamProtocol):
         msgId = dgi.getUint16()
 
         if msgId == DBSERVER_CREATE_STORED_OBJECT:
-            self.handle_create_object(sender, dgi)
+            self.handleCreateObject(sender, dgi)
         elif msgId == DBSERVER_DELETE_STORED_OBJECT:
             pass
         elif msgId == DBSERVER_GET_STORED_VALUES:
@@ -59,25 +59,35 @@ class DBServerProtocol(MDUpstreamProtocol):
 
         self.service.loop.create_task(self.service.unloadEstate(avId, parentId))
 
-    def handle_create_object(self, sender, dgi):
+    def handleCreateObject(self, sender, dgi):
         context = dgi.getUint32()
 
         dclassId = dgi.getUint16()
-        dclass = self.service.dc.getClass[dclassId]
+        dclass = self.service.dc.getClass(dclassId)
 
         coro = None
 
-        if dclass.name == 'DistributedToon':
-            disl_id = dgi.get_uint32()
-            pos = dgi.get_uint8()
-            field_count = dgi.get_uint16()
+        if dclass.getName() == 'DistributedToon':
+            dislId = dgi.getUint32()
+            pos = dgi.getUint8()
+            fieldCount = dgi.getUint16()
 
             fields = []
-            for i in range(field_count):
-                f = self.service.dc.getFieldByIndex[dgi.getUint16()]
-                fields.append((f.name, f.unpack_value(dgi)))
 
-            coro = self.service.createToon(sender, context, dclass, disl_id, pos, fields)
+            unpacker = DCPacker()
+            unpacker.setUnpackData(dgi.getRemainingBytes())
+
+            for i in range(fieldCount):
+                f = self.service.dc.getFieldByIndex(dgi.getUint16())
+
+                unpacker.beginUnpack(f)
+
+                fieldArgs = f.unpackArgs(unpacker)
+                unpacker.endUnpack()
+
+                fields.append((f.getName(), fieldArgs))
+
+            coro = self.service.createToon(sender, context, dclass, dislId, pos, fields)
         else:
             print('Unhandled creation for dclass %s' % dclass.name)
             return
@@ -112,8 +122,6 @@ class DBServerProtocol(MDUpstreamProtocol):
             unpacker.beginUnpack(f)
             fieldArgs = f.unpackArgs(unpacker)
             unpacker.endUnpack()
-
-            print(f.getName(), fieldArgs)
 
             fields.append((f.getName(), fieldArgs))
 
@@ -177,7 +185,7 @@ class DBServer(DownstreamMessageDirector):
 
     async def createObject(self, sender, context, dclass, fields):
         try:
-            doId = await self.backend.create_object(dclass, fields)
+            doId = await self.backend.createObject(dclass, fields)
         except OTPCreateFailed as e:
             print('creation failed', e)
             doId = 0
@@ -241,7 +249,7 @@ class DBServer(DownstreamMessageDirector):
                 ('setSlot5ToonId', [avatars[5]])
             ]
 
-            estateId = await self.backend.create_object(estateClass, defaultFields)
+            estateId = await self.backend.createObject(estateClass, defaultFields)
             await self.backend.set_field(accountId, 'ESTATE_ID', estateId, 'Account')
 
         # Generate the estate.
@@ -273,7 +281,7 @@ class DBServer(DownstreamMessageDirector):
 
             if houseId == 0:
                 # Create a house.
-                houseId = await self.backend.create_object(houseClass, houseDefaults)
+                houseId = await self.backend.createObject(houseClass, houseDefaults)
                 houseIds[index] = houseId
 
             if avatarId != 0:
@@ -331,13 +339,13 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(doId)
         self.send_datagram(dg)
 
-    async def createToon(self, sender, context, dclass, disl_id, pos, fields):
+    async def createToon(self, sender, context, dclass, dislId, pos, fields):
         try:
-            doId = await self.backend.create_object(dclass, fields)
-            account = await self.backend.query_object_fields(disl_id, ['ACCOUNT_AV_SET'], 'Account')
+            doId = await self.backend.createObject(dclass, fields)
+            account = await self.backend.query_object_fields(dislId, ['ACCOUNT_AV_SET'], 'Account')
             avSet = account['ACCOUNT_AV_SET']
             avSet[pos] = doId
-            await self.backend.set_field(disl_id, 'ACCOUNT_AV_SET', avSet, 'Account')
+            await self.backend.set_field(dislId, 'ACCOUNT_AV_SET', avSet, 'Account')
         except OTPCreateFailed as e:
             print('creation failed', e)
             doId = 0
@@ -345,8 +353,8 @@ class DBServer(DownstreamMessageDirector):
         dg = Datagram()
         addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
         dg.addUint32(context)
-        dg.add_uint8(doId == 0)
-        dg.add_uint32(doId)
+        dg.addUint8(doId == 0)
+        dg.addUint32(doId)
         self.send_datagram(dg)
 
     async def get_stored_values(self, sender, context, doId, fields):

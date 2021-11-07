@@ -51,7 +51,7 @@ class UberdogProtocol(MDUpstreamProtocol):
                     context = dgi.getUint32()
 
                     _dg = Datagram(dgi.getRemainingBytes())
-                    _dgi = DatagramIterator(_dg)
+                    _dgi = DatagramIterator(_dg, pos)
 
                     if future.context == context:
                         self.futures.remove(future)
