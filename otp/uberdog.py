@@ -1,13 +1,13 @@
 from otp import config
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol
-from panda3d.direct import DCFile
+from panda3d.direct import DCFile, DCPacker
 from otp.constants import *
 from otp.messagetypes import *
 from otp.util import *
 from otp.networking import DatagramFuture
 from direct.distributed.PyDatagram import PyDatagram
 
-from panda3d.core import Datagram
+from panda3d.core import Datagram, DatagramIterator
 
 import asyncio
 
@@ -22,8 +22,8 @@ class UberdogProtocol(MDUpstreamProtocol):
         MDUpstreamProtocol.receive_datagram(self, dg)
 
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msgtype = dgi.get_uint16()
+        sender = dgi.getInt64()
+        msgtype = dgi.getUint16()
         self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from {sender}.')
 
         if self.check_futures(dgi, msgtype, sender):
@@ -31,14 +31,15 @@ class UberdogProtocol(MDUpstreamProtocol):
             return
 
         if msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
-            do_id = dgi.get_uint32()
-            if do_id != self.service.GLOBAL_ID:
-                self.service.log.debug(f'Got field update for unknown object {do_id}.')
+            doId = dgi.getUint32()
+            if doId != self.service.GLOBAL_ID:
+                self.service.log.debug(f'Got field update for unknown object {doId}.')
                 return
             self.service.receiveUpdate(sender, dgi)
 
     def check_futures(self, dgi, msg_id, sender):
-        pos = dgi.tell()
+        pos = dgi.getCurrentIndex()
+
         for i in range(len(self.futures)):
             future = self.futures[i]
             if future.future_msg_id == msg_id and future.future_sender == sender:
@@ -47,11 +48,14 @@ class UberdogProtocol(MDUpstreamProtocol):
                     future.set_result((sender, dgi))
                     return True
                 else:
-                    context = dgi.get_uint32()
-                    dgi.seek(pos)
+                    context = dgi.getUint32()
+
+                    _dg = Datagram(dgi.getRemainingBytes())
+                    _dgi = DatagramIterator(_dg)
+
                     if future.context == context:
                         self.futures.remove(future)
-                        future.set_result((sender, dgi))
+                        future.set_result((sender, _dgi))
                         return True
         else:
             return False
@@ -90,7 +94,15 @@ class Uberdog(DownstreamMessageDirector):
         fieldNumber = dgi.getUint16()
         field = dc.getFieldByIndex(fieldNumber)
         self.log.debug(f'Receiving field update for field {field.getName()} from {sender}.')
-        field.receiveUpdate(self, dgi)
+
+        unpacker = DCPacker()
+        unpacker.setUnpackData(dgi.getRemainingBytes())
+
+        unpacker.beginUnpack(field)
+
+        field.receiveUpdate(unpacker, self)
+
+        unpacker.endUnpack()
 
     def register_future(self, msg_type, sender, context):
         f = DatagramFuture(self.loop, msg_type, sender, context)

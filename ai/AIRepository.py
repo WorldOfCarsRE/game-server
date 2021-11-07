@@ -228,8 +228,14 @@ class AIRepository:
         self.currentSender = self.currentSender
         do = self.doTable[doId]
 
+        unpacker = DCPacker()
+        unpacker.setUnpackData(dgi.getRemainingBytes())
+
+        unpacker.beginUnpack(field)
+
         try:
-            do.dclass.receiveUpdate(do, dgi)
+            field.receiveUpdate(unpacker, self)
+            unpacker.endUnpack()
         except Exception as e:
             print(f'failed to handle field update: <{field.getName()}> from {self.currentAvatarSender}')
             import traceback

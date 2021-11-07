@@ -403,8 +403,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def receive_create_avatar(self, dgi):
         _ = dgi.get_uint16()
-        dna = dgi.get_blob16()
-        pos = dgi.get_uint8()
+        dna = dgi.getBlob()
+        pos = dgi.getUint8()
         self.service.log.debug(f'Client {self.channel} requesting avatar creation with dna {dna} and pos {pos}.')
 
         if not 0 <= pos < 6 or self.potential_avatars[pos] is not None:
@@ -660,7 +660,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             if len(self.lookupInterest(parentId, zone)) == 1:
                 uninterested_zones.append(zone)
 
-        to_remove = []
+        toRemove = []
 
         for doId in self.visibleObjects:
             do = self.visibleObjects[doId]
@@ -668,9 +668,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.service.log.debug(f'Object {doId} killed by interest remove.')
                 self.sendRemoveObject(doId)
 
-                to_remove.append(doId)
+                toRemove.append(doId)
 
-        for doId in to_remove:
+        for doId in toRemove:
             del self.visibleObjects[doId]
 
         for zone in uninterested_zones:
