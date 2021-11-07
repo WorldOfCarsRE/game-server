@@ -269,7 +269,7 @@ class AIRepository:
             obj.do_id = doId
             obj.parentId = parentId
             obj.zoneId = zoneId
-            dclass.receive_update_all_required(obj, dgi)
+            dclass.receiveUpdateAllRequired(obj, dgi)
             self.doTable[obj.do_id] = obj
             self.storeLocation(doId, 0, 0, parentId, zoneId)
             obj.announceGenerate()
