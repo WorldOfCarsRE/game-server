@@ -55,6 +55,20 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.stopToonUp()
         self.sendUpdate('arrivedOnDistrict', [0])
         self.air.decrementPopulation()
+
+        # Stop our tasks too.
+        taskName = self.uniqueName('next-catalog')
+        taskMgr.remove(taskName)
+
+        taskName = self.uniqueName('next-delivery')
+        taskMgr.remove(taskName)
+
+        taskName = self.uniqueName('next-award-delivery')
+        taskMgr.remove(taskName)
+
+        taskName = f'next-bothDelivery-{self.doId}'
+        taskMgr.remove(taskName)
+
         DistributedAvatarAI.delete(self)
 
     def setAccountName(self, name):
