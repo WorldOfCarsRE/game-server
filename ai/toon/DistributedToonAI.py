@@ -1,7 +1,7 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 from ai.DistributedSmoothNodeAI import DistributedSmoothNodeAI
 from otp.util import getPuppetChannel
-from panda3d.core import Datagram
+from panda3d.core import Datagram, DatagramIterator
 
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
@@ -1530,11 +1530,12 @@ class Experience:
 
     @staticmethod
     def fromBytes(data):
-        return Experience.fromNetString(Datagram(data).iterator())
+        dg = Datagram(data)
+        return Experience.fromNetString(DatagramIterator(dg))
 
     @staticmethod
     def fromNetString(dgi):
-        return Experience([dgi.get_uint16() for _ in range(NUM_TRACKS)])
+        return Experience([dgi.getUint16() for _ in range(NUM_TRACKS)])
 
     def makeNetString(self):
         return b''.join((trackExp.to_bytes(2, 'little') for trackExp in self.experience))

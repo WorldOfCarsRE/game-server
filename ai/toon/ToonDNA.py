@@ -1327,8 +1327,8 @@ class ToonDNA(object):
         return dg.getMessage()
 
     def makeFromNetString(self, dnaString):
-        if isinstance(dnaString, bytes):
-            dgi = DatagramIterator(Datagram(dnaString))
+        dg = Datagram(dnaString)
+        dgi = DatagramIterator(dg)
 
         self.toonType = dgi.getFixedString(1)
 

@@ -376,7 +376,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         ]
 
         if pot_av.approvedName:
-            otherFields.append((dclass.getFieldByName['setName'], (pot_av.approvedName,)))
+            otherFields.append((dclass.getFieldByName('setName'), (pot_av.approvedName,)))
             pot_av.approvedName = ''
 
         dg = Datagram()
@@ -519,9 +519,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.send_datagram(resp)
 
     def receive_set_name_pattern(self, dgi):
-        av_id = dgi.get_uint32()
+        avId = dgi.get_uint32()
 
-        self.service.log.debug(f'Got name pattern request for av_id {av_id}.')
+        self.service.log.debug(f'Got name pattern request for avId {avId}.')
 
         title_index, title_flag = dgi.get_int16(), dgi.get_int16()
         first_index, first_flag = dgi.get_int16(), dgi.get_int16()
@@ -530,21 +530,21 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         resp = Datagram()
         resp.addUint16(CLIENT_SET_NAME_PATTERN_ANSWER)
-        resp.addUint32(av_id)
+        resp.addUint32(avId)
 
-        if av_id != self.created_av_id:
+        if avId != self.createdAvId:
             resp.addUint8(1)
             self.send_datagram(resp)
             return
 
         if first_index <= 0 and last_prefix_index <= 0 and last_suffix_index <= 0:
-            self.service.log.debug(f'Received request for empty name for {av_id}.')
+            self.service.log.debug(f'Received request for empty name for {avId}.')
             resp.addUint8(2)
             self.send_datagram(resp)
             return
 
         if (last_prefix_index <= 0 <= last_suffix_index) or (last_suffix_index <= 0 <= last_prefix_index):
-            self.service.log.debug(f'Received request for invalid last name for {av_id}.')
+            self.service.log.debug(f'Received request for invalid last name for {avId}.')
             resp.addUint8(3)
             self.send_datagram(resp)
             return
@@ -562,9 +562,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         name = f'{title}{" " if title else ""}{first}{" " if first else ""}{last_prefix}{last_suffix}'
 
-        for pot_av in self.potential_avatars:
-            if pot_av and pot_av.doId == av_id:
-                pot_av.approvedName = name.strip()
+        for potAv in self.potentialAvatars:
+            if potAv and potAv.doId == avId:
+                potAv.approvedName = name.strip()
                 break
 
         resp.addUint8(0)
@@ -590,20 +590,20 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             return
 
         self.potential_avatars[av.index] = None
-        avatars = [pot_av.doId if pot_av else 0 for pot_av in self.potential_avatars]
+        avatars = [potAv.doId if potAv else 0 for potAv in self.potentialAvatars]
         self.avsDeleted.append((av_id, int(time.time())))
 
         field = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET']
-        del_field = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET_DEL']
+        delField = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET_DEL']
 
         dg = Datagram()
         dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
         dg.addUint32(self.account.dislId)
         dg.addUint16(2)
-        dg.addUint16(field.number)
+        dg.addUint16(field.getNumber())
         field.pack_value(dg, avatars)
-        dg.addUint16(del_field.number)
-        del_field.pack_value(dg, self.avsDeleted)
+        dg.addUint16(delField.getNumber())
+        delField.pack_value(dg, self.avsDeleted)
         self.service.send_datagram(dg)
 
         resp = Datagram()
@@ -613,7 +613,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         av_count = sum((1 if potAv else 0 for potAv in self.potential_avatars))
         resp.addUint16(av_count)
 
-        for potAv in self.potential_avatars:
+        for potAv in self.potentialAvatars:
             if not potAv:
                 continue
             resp.addUint32(potAv.doId)
@@ -657,17 +657,17 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         parentId = interest.parentId
 
-        uninterested_zones = []
+        uninterestedZones = []
 
         for zone in interest.zones:
             if len(self.lookupInterest(parentId, zone)) == 1:
-                uninterested_zones.append(zone)
+                uninterestedZones.append(zone)
 
         toRemove = []
 
         for doId in self.visibleObjects:
             do = self.visibleObjects[doId]
-            if do.parentId == parentId and do.zoneId in uninterested_zones:
+            if do.parentId == parentId and do.zoneId in uninterestedZones:
                 self.service.log.debug(f'Object {doId} killed by interest remove.')
                 self.sendRemoveObject(doId)
 
@@ -676,7 +676,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         for doId in toRemove:
             del self.visibleObjects[doId]
 
-        for zone in uninterested_zones:
+        for zone in uninterestedZones:
             self.unsubscribe_channel(locationAsChannel(parentId, zone))
 
         self.interests.remove(interest)
