@@ -3,17 +3,17 @@ from .DistributedObjectAI import DistributedObjectAI
 class DistributedObjectGlobalAI(DistributedObjectAI):
     def announceGenerate(self):
         DistributedObjectAI.announceGenerate(self)
-        self.air.registerForChannel(self.do_id)
+        self.air.registerForChannel(self.doId)
 
-    def generateGlobalObject(self, zone_id=2):
-        if not self.do_id:
-            raise Exception('do_id not set for global object')
-        self.air.doTable[self.do_id] = self
-        self.location = (self.parentId, zone_id)
+    def generateGlobalObject(self, zoneId = 2):
+        if not self.doId:
+            raise Exception('doId not set for global object')
+        self.air.doTable[self.doId] = self
+        self.location = (self.parentId, zoneId)
         self.queueUpdates = False
         self.generate()
         self.announceGenerate()
 
     def delete(self):
-        self.air.unregisterForChannel(self.do_id)
+        self.air.unregisterForChannel(self.doId)
         DistributedObjectAI.delete(self)

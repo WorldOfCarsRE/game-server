@@ -48,10 +48,10 @@ class DistributedHouseAI(DistributedObjectAI):
             self.mailbox.generateWithRequired(self.zoneId)
 
         # Outside door:
-        self.door = DistributedHouseDoorAI(self.air, self.do_id, DoorTypes.EXT_STANDARD)
+        self.door = DistributedHouseDoorAI(self.air, self.doId, DoorTypes.EXT_STANDARD)
 
         # Inside door of the same door (different zone, and different distributed object):
-        self.insideDoor = DistributedHouseDoorAI(self.air, self.do_id, DoorTypes.INT_STANDARD)
+        self.insideDoor = DistributedHouseDoorAI(self.air, self.doId, DoorTypes.INT_STANDARD)
 
         # Tell them about each other:
         self.door.setOtherDoor(self.insideDoor)
@@ -66,7 +66,7 @@ class DistributedHouseAI(DistributedObjectAI):
         # Setup interior:
         self.interior = DistributedHouseInteriorAI(self.air, self)
         self.interior.setHouseIndex(self.housePos)
-        self.interior.setHouseId(self.do_id)
+        self.interior.setHouseId(self.doId)
         self.interior.generateWithRequired(self.interiorZoneId)
 
         self.resetFurniture()

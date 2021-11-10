@@ -148,7 +148,7 @@ class DistributedMailboxAI(DistributedObjectAI):
     def sendCatalog(self):
         DistributedMailboxAI.notify.debug('sendCatalog')
         # Now open the catalog up on the client.
-        self.sendUpdate('setMovie', [MAILBOX_MOVIE_READY, self.av.do_id])
+        self.sendUpdate('setMovie', [MAILBOX_MOVIE_READY, self.av.doId])
         # The avatar has seen his items now.
         if self.av.mailboxNotify == ToontownGlobals.NewItems:
             self.av.b_setCatalogNotify(self.av.catalogNotify, ToontownGlobals.OldItems)
@@ -156,7 +156,7 @@ class DistributedMailboxAI(DistributedObjectAI):
     def sendAwardCatalog(self):
         DistributedMailboxAI.notify.debug('sendCatalog')
         # Now open the catalog up on the client.
-        self.sendUpdate('setMovie', [MAILBOX_MOVIE_READY, self.av.do_id])
+        self.sendUpdate('setMovie', [MAILBOX_MOVIE_READY, self.av.doId])
         # The avatar has seen his items now.
         # The avatar has seen his items now.
         if self.av.awardNotify == ToontownGlobals.NewItems:
@@ -165,7 +165,7 @@ class DistributedMailboxAI(DistributedObjectAI):
     def sendMail(self):
         DistributedMailboxAI.notify.debug('sendMail')
         # Now open the catalog up on the client.
-        self.sendUpdate('setMovie', [MAILBOX_MOVIE_READY, self.av.do_id])
+        self.sendUpdate('setMovie', [MAILBOX_MOVIE_READY, self.av.doId])
 
     def avatarExit(self):
         DistributedMailboxAI.notify.debug('avatarExit')
@@ -326,7 +326,7 @@ class DistributedMailboxAI(DistributedObjectAI):
         else:
             # hand it off to party manager
             # it's possible the party was cancelled right before he accepted
-            self.air.partyManager.respondToInviteFromMailbox(context, inviteKey, InviteStatus.Accepted, self.do_id)
+            self.air.partyManager.respondToInviteFromMailbox(context, inviteKey, InviteStatus.Accepted, self.doId)
 
         if not (retcode == None):
             self.sendUpdateToAvatar(avId, 'acceptItemResponse', [context, retcode])
@@ -336,7 +336,7 @@ class DistributedMailboxAI(DistributedObjectAI):
         '''Tell the client the result of accepting/rejecting the invite.'''
         DistributedMailboxAI.notify.debug('respondToAcceptInviteCallback')
         if self.av:
-            self.sendUpdateToAvatar(self.av.do_id, 'acceptItemResponse', [context, retcode])
+            self.sendUpdateToAvatar(self.av.doId, 'acceptItemResponse', [context, retcode])
         pass
 
     def markInviteReadButNotReplied(self, inviteKey):
@@ -377,7 +377,7 @@ class DistributedMailboxAI(DistributedObjectAI):
         else:
             # hand it off to party manager
             # it's possible the party was cancelled right before he rejected
-            self.air.partyManager.respondToInviteFromMailbox(context, inviteKey, InviteStatus.Rejected, self.do_id)
+            self.air.partyManager.respondToInviteFromMailbox(context, inviteKey, InviteStatus.Rejected, self.doId)
 
         if not (retcode == None):
             self.sendUpdateToAvatar(avId, 'discardItemResponse', [context, retcode])
@@ -386,5 +386,5 @@ class DistributedMailboxAI(DistributedObjectAI):
         DistributedMailboxAI.notify.debug('respondToRejectInviteCallback')
         '''Tell the client the result of accepting/rejecting the invite.'''
         if self.av:
-            self.sendUpdateToAvatar(self.av.do_id, 'discardItemResponse', [context, retcode])
+            self.sendUpdateToAvatar(self.av.doId, 'discardItemResponse', [context, retcode])
         pass

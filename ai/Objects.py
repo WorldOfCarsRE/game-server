@@ -69,7 +69,7 @@ class ToontownDistrictAI(DistributedDistrictAI):
 
     def handleChildArrive(self, obj, zoneId):
         if isinstance(obj, DistributedToonAI):
-            obj.sendUpdate('arrivedOnDistrict', [self.do_id])
+            obj.sendUpdate('arrivedOnDistrict', [self.doId])
             self.air.incrementPopulation()
 
 class ToontownDistrictStatsAI(DistributedObjectAI):
@@ -326,7 +326,7 @@ MAX_FRIENDS = 50
 MAX_PLAYER_FRIENDS = 300
 
 class FriendManagerAI(DistributedObjectGlobalAI):
-    do_id = OTP_DO_ID_FRIEND_MANAGER
+    doId = OTP_DO_ID_FRIEND_MANAGER
 
     def __init__(self, air):
         DistributedObjectGlobalAI.__init__(self, air)
@@ -981,7 +981,7 @@ class SafeZoneManagerAI(DistributedObjectAI):
             sender.stopToonUp()
 
 class DistributedDeliveryManagerAI(DistributedObjectGlobalAI):
-    do_id = OTP_DO_ID_TOONTOWN_DELIVERY_MANAGER
+    doId = OTP_DO_ID_TOONTOWN_DELIVERY_MANAGER
 
     def sendDeliverGifts(self, avId, now):
         if not avId:

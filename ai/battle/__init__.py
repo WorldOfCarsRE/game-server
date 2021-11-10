@@ -341,7 +341,7 @@ class BattleCalculator:
                 break
 
             suit = self.battle.activeSuits[i]
-            suitId = suit.do_id
+            suitId = suit.doId
             attack = self.battle.suitAttacks[i]
             attack.suitId = suitId
             if not self._suitCanAttack(suit):
@@ -440,7 +440,7 @@ class BattleCalculator:
             return self.battle.activeToons.index(random.choice(liveToons))
 
     def _suitCanAttack(self, suit):
-        if suit.getHP() <= 0 or self._isSuitLured(suit.do_id) or suit.reviveCheckAndClear():
+        if suit.getHP() <= 0 or self._isSuitLured(suit.doId) or suit.reviveCheckAndClear():
             return False
         else:
             return True
@@ -592,7 +592,7 @@ class BattleCalculator:
 
         if self.trainTrapTriggered:
             for suit in self.battle.activeSuits:
-                suitId = suit.do_id
+                suitId = suit.doId
                 if suitId in self.traps:
                     del self.traps[suitId]
 
@@ -1288,7 +1288,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
     def getSuitTrap(self, suit: DistributedSuitBaseAI) -> int:
         # Gets suit trap for movie
-        trap = self.battleCalc.traps.get(suit.do_id, None)
+        trap = self.battleCalc.traps.get(suit.doId, None)
         if trap is None:
             return 9
 
@@ -1298,11 +1298,11 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             return trap.level
 
     def getMembers(self):
-        suitIds = [suit.do_id for suit in self.suits]
-        joiningSuits = ''.join(map(str, [suitIds.index(suit.do_id) for suit in self.joiningSuits]))
-        pendingSuits = ''.join(map(str, [suitIds.index(suit.do_id) for suit in self.pendingSuits]))
-        activeSuits = ''.join(map(str, [suitIds.index(suit.do_id) for suit in self.activeSuits]))
-        luredSuits = ''.join(map(str, [suitIds.index(suit.do_id) for suit in self.luredSuits]))
+        suitIds = [suit.doId for suit in self.suits]
+        joiningSuits = ''.join(map(str, [suitIds.index(suit.doId) for suit in self.joiningSuits]))
+        pendingSuits = ''.join(map(str, [suitIds.index(suit.doId) for suit in self.pendingSuits]))
+        activeSuits = ''.join(map(str, [suitIds.index(suit.doId) for suit in self.activeSuits]))
+        luredSuits = ''.join(map(str, [suitIds.index(suit.doId) for suit in self.luredSuits]))
         suitTraps = ''.join(map(str, [self.getSuitTrap(suit) for suit in self.suits]))
 
         toonIds = self.toons
@@ -1323,11 +1323,11 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
     @property
     def activeSuitIds(self) -> List[int]:
-        return [suit.do_id for suit in self.activeSuits]
+        return [suit.doId for suit in self.activeSuits]
 
     def suitIndex(self, suitId: int) -> int:
         for i, suit in enumerate(self.activeSuits):
-            if suit.do_id == suitId:
+            if suit.doId == suitId:
                 return i
         else:
             raise IndexError
@@ -1725,7 +1725,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
     def getSuit(self, suitId: int) -> Optional[DistributedSuitBaseAI]:
         for suit in self.suits:
-            if suit.do_id == suitId:
+            if suit.doId == suitId:
                 return suit
         return None
 
@@ -1750,8 +1750,8 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         event = self.air.getDeleteDoIdEvent(toonId)
         self.avatarExitEvents.append(event)
         self.accept(event, self.__handleUnexpectedExit, extraArgs=[toonId])
-        if self.do_id is not None:
-            toon.b_setBattleId(self.do_id)
+        if self.doId is not None:
+            toon.b_setBattleId(self.doId)
 
         self.toons.append(toonId)
         if joining:
@@ -1899,7 +1899,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         if joining:
             self.joiningSuits.append(suit)
             toPendingTime = MAX_JOIN_T + SERVER_BUFFER_TIME
-            suitId = suit.do_id
+            suitId = suit.doId
             self.joinBarriers[suitId] = ToonBarrier('to-pending-av-%d' % suitId, self.toons, toPendingTime, self._serverSuitJoinDone,
                                                     extraArgs=[suitId, ])
 
@@ -2007,7 +2007,7 @@ class DistributedBattleAI(DistributedBattleBaseAI):
 
         toon = self.air.doTable.get(self.initialAvId)
         if toon:
-            toon.b_setBattleId(self.do_id)
+            toon.b_setBattleId(self.doId)
 
     def enterFaceOff(self):
         self.joinable = True

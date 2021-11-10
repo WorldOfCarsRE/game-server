@@ -321,7 +321,7 @@ class DistributedToonAI(DistributedPlayerAI):
         return f'goneSad-{avId}'
 
     def getGoneSadMessage(self):
-        return self.getGoneSadMessageForAvId(self.do_id)
+        return self.getGoneSadMessageForAvId(self.doId)
 
     def getBattleId(self):
         return self.battleId
@@ -933,7 +933,7 @@ class DistributedToonAI(DistributedPlayerAI):
         if not hasattr(self, 'air') or self.air is None:
             return
         if doUpdateLater and self.air.doLiveUpdates and hasattr(self, 'name'):
-            taskName = f'next-bothDelivery-{self.do_id}'
+            taskName = f'next-bothDelivery-{self.doId}'
             now = int(time.time() / 60 + 0.5)
             nextItem = None
             nextGiftItem = None
@@ -971,7 +971,7 @@ class DistributedToonAI(DistributedPlayerAI):
         now = int(time.time() / 60 + 0.5)
         delivered, remaining = self.onOrder.extractDeliveryItems(now)
         deliveredGifts, remainingGifts = self.onGiftOrder.extractDeliveryItems(now)
-        simbase.air.deliveryManager.sendDeliverGifts(self.do_id, now)
+        simbase.air.deliveryManager.sendDeliverGifts(self.doId, now)
         giftItem = CatalogItemList(deliveredGifts, store = CatalogItem.Customization | CatalogItem.DeliveryDate)
         self.b_setMailboxContents(self.mailboxContents + delivered + deliveredGifts)
         self.b_setCatalogNotify(self.catalogNotify, ToontownGlobals.NewItems)
@@ -1362,16 +1362,16 @@ class DistributedToonAI(DistributedPlayerAI):
         return 0
 
     def d_catalogGenClothes(self):
-        self.sendUpdate('catalogGenClothes', [self.do_id])
+        self.sendUpdate('catalogGenClothes', [self.doId])
 
     def d_catalogGenAccessories(self):
-        self.sendUpdate('catalogGenAccessories', [self.do_id])
+        self.sendUpdate('catalogGenAccessories', [self.doId])
 
     def getHoodId(self, zoneId):
         return zoneId - zoneId % 1000
 
     def handleZoneChange(self, oldZone: int, newZone: int):
-        channel = getPuppetChannel(self.do_id)
+        channel = getPuppetChannel(self.doId)
 
         if oldZone in self.air.vismap and newZone not in self.air.vismap:
             self.air.removeInterest(channel, DistributedToonAI.STREET_INTEREST_HANDLE, 0)
