@@ -597,7 +597,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         delField = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET_DEL']
 
         dg = Datagram()
-        dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
+        addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
         dg.addUint32(self.account.dislId)
         dg.addUint16(2)
         dg.addUint16(field.getNumber())
