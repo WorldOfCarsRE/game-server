@@ -302,7 +302,14 @@ class DistributedObject(MDParticipant):
             dg.addUint32(self.doId)
             dg.addUint16(1)
             dg.addUint16(field.getNumber())
-            dg.appendData(data)
+
+            packer = DCPacker()
+            packer.beginPack(field)
+            field.packArgs(packer, data)
+            packer.endPack()
+
+            dg.appendData(packer.getBytes())
+
             self.service.send_datagram(dg)
             self.service.log.debug(f'Object {self.doId} saved value {data} for field {field.getName()} to database.')
 
