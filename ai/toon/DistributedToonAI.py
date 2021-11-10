@@ -55,20 +55,6 @@ class DistributedPlayerAI(DistributedAvatarAI):
         self.stopToonUp()
         self.sendUpdate('arrivedOnDistrict', [0])
         self.air.decrementPopulation()
-
-        # Stop our tasks too.
-        taskName = self.uniqueName('next-catalog')
-        taskMgr.remove(taskName)
-
-        taskName = self.uniqueName('next-delivery')
-        taskMgr.remove(taskName)
-
-        taskName = self.uniqueName('next-award-delivery')
-        taskMgr.remove(taskName)
-
-        taskName = f'next-bothDelivery-{self.doId}'
-        taskMgr.remove(taskName)
-
         DistributedAvatarAI.delete(self)
 
     def setAccountName(self, name):
@@ -178,6 +164,22 @@ class DistributedToonAI(DistributedPlayerAI):
         self.shoes = (0, 0, 0)
         self.nametagStyle = 0
         self.emoteAccess = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    def delete(self):
+        # Stop our tasks too.
+        taskName = self.uniqueName('next-catalog')
+        taskMgr.remove(taskName)
+
+        taskName = self.uniqueName('next-delivery')
+        taskMgr.remove(taskName)
+
+        taskName = self.uniqueName('next-award-delivery')
+        taskMgr.remove(taskName)
+
+        taskName = f'next-bothDelivery-{self.doId}'
+        taskMgr.remove(taskName)
+
+        DistributedPlayerAI.delete(self)
 
     def setDNAString(self, dnaString):
         self.dna.makeFromNetString(dnaString)
