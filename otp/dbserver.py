@@ -78,7 +78,9 @@ class DBServerProtocol(MDUpstreamProtocol):
             unpacker.setUnpackData(dgi.getRemainingBytes())
 
             for i in range(fieldCount):
-                f = self.service.dc.getFieldByIndex(dgi.getUint16())
+                fieldNum = unpacker.rawUnpackUint16()
+
+                f = self.service.dc.getFieldByIndex(fieldNum)
 
                 unpacker.beginUnpack(f)
 

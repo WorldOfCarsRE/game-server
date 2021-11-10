@@ -422,7 +422,6 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.addUint16(dclass.getNumber())
         dg.addUint32(self.account.dislId)
         dg.addUint8(pos)
-        pos = dgi.getCurrentIndex()
 
         defaultToon = dict(DEFAULT_TOON)
         defaultToon['setDNAString'] = (dna,)
@@ -441,11 +440,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 if field.getName() == 'DcObjectType':
                     continue
 
-                dg.addUint16(field.getNumber())
+                packer.rawPackUint16(field.getNumber())
                 packer.beginPack(field)
                 field.packArgs(packer, defaultToon[field.getName()])
-                count += 1
                 packer.endPack()
+                count += 1
 
         dg.addUint16(count)
         dg.appendData(packer.getBytes())
