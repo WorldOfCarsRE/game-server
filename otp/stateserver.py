@@ -70,25 +70,21 @@ class DistributedObject(MDParticipant):
 
     def appendOtherData(self, dg, clientOnly, alsoOwner):
         if clientOnly:
-            fieldsData = Datagram()
+            packer = DCPacker()
 
             count = 0
             for fieldName, rawData in self.ram.items():
                 field = self.dclass.getFieldByName(fieldName)
                 if field.isBroadcast() or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
-                    fieldPacker = DCPacker()
-                    fieldsData.addUint16(field.getNumber())
-
-                    fieldPacker.beginPack(field)
-                    field.packArgs(fieldPacker, rawData)
-                    fieldPacker.endPack()
-                    fieldsData.appendData(fieldPacker.getBytes())
-
+                    packer.rawPackUint16(field.getNumber())
+                    packer.beginPack(field)
+                    field.packArgs(packer, rawData)
+                    packer.endPack()
                     count += 1
 
             dg.addUint16(count)
             if count:
-                dg.appendData(fieldsData.getMessage())
+                dg.appendData(packer.getBytes())
 
         else:
             dg.addUint16(len(self.ram))
@@ -244,16 +240,12 @@ class DistributedObject(MDParticipant):
         fieldId = dgi.getUint16()
         field = self.dclass.getFieldByIndex(fieldId)
         pos = dgi.getCurrentIndex()
-        data = dgi.getDatagram().getMessage()[pos:]
+        _data = dgi.getDatagram().getMessage()[pos:]
 
         unpacker = DCPacker()
-        unpacker.setUnpackData(data)
+        unpacker.setUnpackData(_data)
 
         molecular = field.asMolecularField()
-
-        packer = DCPacker()
-        packer.setUnpackData(data)
-        packer.beginPack(field)
 
         if molecular:
             for i in range(molecular.getNumAtomics()):
@@ -268,8 +260,6 @@ class DistributedObject(MDParticipant):
             unpacker.beginUnpack(field)
             data = field.unpackArgs(unpacker)
             unpacker.endUnpack()
-
-            field.packArgs(packer, data)
 
             self.saveField(field, data)
 
@@ -287,7 +277,7 @@ class DistributedObject(MDParticipant):
             addServerHeader(dg, targets, sender, STATESERVER_OBJECT_UPDATE_FIELD)
             dg.addUint32(self.doId)
             dg.addUint16(fieldId)
-            dg.appendData(packer.getBytes())
+            dg.appendData(_data)
             self.service.send_datagram(dg)
 
     def saveField(self, field, data):
