@@ -379,7 +379,7 @@ class CatalogClothingItem(CatalogItem.CatalogItem):
             added = avatar.addToClothesTopsList(dna.topTex, dna.topTexColor, dna.sleeveTex, dna.sleeveTexColor)
             if added:
                 avatar.b_setClothesTopsList(avatar.getClothesTopsList())
-                self.notify.info('Avatar %s put shirt %d,%d,%d,%d in closet.' % (avatar.do_id,
+                self.notify.info('Avatar %s put shirt %d,%d,%d,%d in closet.' % (avatar.doId,
                  dna.topTex,
                  dna.topTexColor,
                  dna.sleeveTex,
@@ -393,7 +393,7 @@ class CatalogClothingItem(CatalogItem.CatalogItem):
             added = avatar.addToClothesBottomsList(dna.botTex, dna.botTexColor)
             if added:
                 avatar.b_setClothesBottomsList(avatar.getClothesBottomsList())
-                self.notify.info('Avatar %s put bottoms %d,%d in closet.' % (avatar.do_id, dna.botTex, dna.botTexColor))
+                self.notify.info('Avatar %s put bottoms %d,%d in closet.' % (avatar.doId, dna.botTex, dna.botTexColor))
             defn = ToonDNA.BottomStyles[str]
             dna.botTex = defn[0]
             dna.botTexColor = defn[1][self.colorIndex]

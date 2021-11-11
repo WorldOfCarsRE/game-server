@@ -33,7 +33,7 @@ class CatalogEmoteItem(CatalogItem.CatalogItem):
 
     def recordPurchase(self, avatar, optional):
         if self.emoteIndex < 0 or self.emoteIndex > len(avatar.emoteAccess):
-            self.notify.warning('Invalid emote access: %s for avatar %s' % (self.emoteIndex, avatar.do_id))
+            self.notify.warning('Invalid emote access: %s for avatar %s' % (self.emoteIndex, avatar.doId))
             return ToontownGlobals.P_InvalidIndex
         avatar.emoteAccess[self.emoteIndex] = 1
         avatar.d_setEmoteAccess(avatar.emoteAccess)

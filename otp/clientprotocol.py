@@ -317,7 +317,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.send_datagram(query)
 
     def receive_set_avatar(self, dgi):
-        avId = dgi.get_uint32()
+        avId = dgi.getUint32()
 
         self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
 
@@ -937,7 +937,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         elif msgtype == STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE:
             self.handleInterestDone(dgi)
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
-            doId = dgi.get_uint32()
+            doId = dgi.getUint32()
 
             if not self.objectExists(doId):
                 queued = self.queuePending(doId, dgi, pos)
@@ -981,8 +981,6 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         if not self.objectExists(doId):
             self.service.log.debug(f'Got field update for unknown object {doId}')
-
-        pos = dgi.getCurrentIndex()
 
         fieldNumber = dgi.getUint16()
         field = self.service.dcFile.getFieldByIndex(fieldNumber)

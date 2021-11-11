@@ -138,7 +138,7 @@ class CatalogManagerAI(DistributedObjectAI):
         newWeeklyCatalog = (currentWeek != avatar.catalogScheduleCurrentWeek)
 
         self.notify.debug("Avatar %s at catalog week %s (previous %s)." % (
-            avatar.do_id, currentWeek, previousWeek))
+            avatar.doId, currentWeek, previousWeek))
 
         # Now schedule the next week's catalog delivery.
         avatar.b_setCatalogSchedule(currentWeek, nextTime)
@@ -203,19 +203,19 @@ class CatalogManagerAI(DistributedObjectAI):
         elif item in avatar.backCatalog:
             catalogType = CatalogItem.CatalogTypeBackorder
         else:
-            self.notify.warning("Avatar %s attempted to purchase %s, not on catalog." % (avatar.do_id, item))
-            self.notify.warning("Avatar %s weekly: %s" % (avatar.do_id, avatar.weeklyCatalog))
+            self.notify.warning("Avatar %s attempted to purchase %s, not on catalog." % (avatar.doId, item))
+            self.notify.warning("Avatar %s weekly: %s" % (avatar.doId, avatar.weeklyCatalog))
             return ToontownGlobals.P_NotInCatalog
 
         price = item.getPrice(catalogType)
         if price > avatar.getTotalMoney():
-            self.notify.warning("Avatar %s attempted to purchase %s, not enough money." % (avatar.do_id, item))
+            self.notify.warning("Avatar %s attempted to purchase %s, not enough money." % (avatar.doId, item))
             return ToontownGlobals.P_NotEnoughMoney
 
         deliveryTime = item.getDeliveryTime() / self.timeScale
         if deliveryTime == 0:
             # Deliver the item immediately.
-            self.notify.debug("Avatar %s purchased %s, delivered immediately." % (avatar.do_id, item))
+            self.notify.debug("Avatar %s purchased %s, delivered immediately." % (avatar.doId, item))
             retcode = item.recordPurchase(avatar, optional)
 
         else:
@@ -248,7 +248,7 @@ class CatalogManagerAI(DistributedObjectAI):
 
     def setDelivery(self, avatar, item, deliveryTime, retcode, doUpdateLater):
         if len(avatar.mailboxContents) + len(avatar.onOrder) >= ToontownGlobals.MaxMailboxContents:
-            self.notify.debug("Avatar %s has %s in mailbox and %s on order, too many." % (avatar.do_id, len(avatar.mailboxContents), len(avatar.onOrder)))
+            self.notify.debug("Avatar %s has %s in mailbox and %s on order, too many." % (avatar.doId, len(avatar.mailboxContents), len(avatar.onOrder)))
             if len(avatar.mailboxContents) == 0:
                 # If the mailbox is empty, don't tell the user to
                 # delete something out of his mailbox--he just has
@@ -260,7 +260,7 @@ class CatalogManagerAI(DistributedObjectAI):
                 # advise the user to do so.
                 retcode = ToontownGlobals.P_MailboxFull
         else:
-            self.notify.debug("Avatar %s purchased %s, to be delivered later." % (avatar.do_id, item))
+            self.notify.debug("Avatar %s purchased %s, to be delivered later." % (avatar.doId, item))
             now = (int)(time.time() / 60 + 0.5)
             item.deliveryDate = int(now + deliveryTime)
             avatar.onOrder.append(item)
@@ -278,14 +278,14 @@ class CatalogManagerAI(DistributedObjectAI):
         elif item in avatar.backCatalog:
             catalogType = CatalogItem.CatalogTypeBackorder
         else:
-            self.notify.warning("Avatar %s attempted to purchase %s, not on catalog." % (avatar.do_id, item))
-            self.notify.warning("Avatar %s weekly: %s" % (avatar.do_id, avatar.weeklyCatalog))
+            self.notify.warning("Avatar %s attempted to purchase %s, not on catalog." % (avatar.doId, item))
+            self.notify.warning("Avatar %s weekly: %s" % (avatar.doId, avatar.weeklyCatalog))
             retcode = ToontownGlobals.P_NotInCatalog
             return 0
 
         price = item.getPrice(catalogType)
         if price > avatar.getTotalMoney():
-            self.notify.warning("Avatar %s attempted to purchase %s, not enough money." % (avatar.do_id, item))
+            self.notify.warning("Avatar %s attempted to purchase %s, not enough money." % (avatar.doId, item))
             retcode = ToontownGlobals.P_NotEnoughMoney
             return 0
 
