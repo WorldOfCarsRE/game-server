@@ -202,7 +202,7 @@ class AIRepository:
 
     def setInterest(self, clientChannel, handle, context, parentId, zones):
         dg = Datagram()
-        addServerHeader(dg, clientChannel, self.ourChannel, CLIENT_AGENT_SET_INTEREST)
+        addServerHeader(dg, [clientChannel], self.ourChannel, CLIENT_AGENT_SET_INTEREST)
         dg.addUint16(handle)
         dg.addUint32(context)
         dg.addUint32(parentId)
@@ -212,7 +212,7 @@ class AIRepository:
 
     def removeInterest(self, clientChannel, handle, context):
         dg = Datagram()
-        addServerHeader(dg, clientChannel, self.ourChannel, CLIENT_AGENT_REMOVE_INTEREST)
+        addServerHeader(dg, [clientChannel], self.ourChannel, CLIENT_AGENT_REMOVE_INTEREST)
         dg.addUint16(handle)
         dg.addUint32(context)
         self.send(dg)
