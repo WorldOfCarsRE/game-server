@@ -203,7 +203,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                doId = dgi.get_uint32()
+                doId = dgi.getUint32()
                 if doId == OTP_DO_ID_CENTRAL_LOGGER:
                     self.receiveUpdateField(dgi, doId)
                 else:
@@ -222,7 +222,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_SET_NAME_PATTERN:
                 self.receive_set_name_pattern(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                doId = dgi.get_uint32()
+                doId = dgi.getUint32()
                 if doId == OTP_DO_ID_CENTRAL_LOGGER:
                     self.receiveUpdateField(dgi, doId)
                 else:
@@ -264,7 +264,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         if not sendable:
             self.disconnect(ClientDisconnect.INTERNAL_ERROR, 'Tried to send nonsendable field to object.')
-            self.service.log.warn(f'Client {self.channel} tried to update {doId} with nonsendable field {field.name}. '
+            self.service.log.warn(f'Client {self.channel} tried to update {doId} with nonsendable field {field.getName()}. '
                                   f'DCField keywords: {field.keywords}')
             return
 

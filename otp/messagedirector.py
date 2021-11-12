@@ -122,9 +122,6 @@ class MessageDirector(Service):
                 _dgi = DatagramIterator(dg, pos)
                 participant.handle_datagram(dg, _dgi)
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-
             self.log.debug(f'Exception while handling datagram: {e.__class__}: {repr(e)}')
 
     async def route(self):

@@ -143,15 +143,15 @@ class AIRepository:
 
     def handleChangeZone(self, dgi):
         doId = dgi.getUint32()
-        new_parent = dgi.getUint32()
-        new_zone = dgi.getUint32()
+        newParent = dgi.getUint32()
+        newZone = dgi.getUint32()
 
         # Should we only change location if the old location matches?
-        old_parent = dgi.getUint32()
-        old_zone = dgi.getUint32()
+        oldParent = dgi.getUint32()
+        oldZone = dgi.getUint32()
 
-        self.doTable[doId].location = (new_parent, new_zone)
-        self.storeLocation(doId, old_parent, old_zone, new_parent, new_zone)
+        self.doTable[doId].location = (newParent, newZone)
+        self.storeLocation(doId, oldParent, oldZone, newParent, newZone)
 
     def storeLocation(self, doId, oldParent, oldZone, newParent, newZone):
         if not doId:
@@ -205,7 +205,7 @@ class AIRepository:
         addServerHeader(dg, clientChannel, self.ourChannel, CLIENT_AGENT_SET_INTEREST)
         dg.addUint16(handle)
         dg.addUint32(context)
-        dg.addUint32(parent_id)
+        dg.addUint32(parentId)
         for zone in zones:
             dg.addUint32(zone)
         self.send(dg)
@@ -234,7 +234,7 @@ class AIRepository:
         unpacker.beginUnpack(field)
 
         try:
-            field.receiveUpdate(unpacker, self)
+            field.receiveUpdate(unpacker, do)
             unpacker.endUnpack()
         except Exception as e:
             print(f'failed to handle field update: <{field.getName()}> from {self.currentAvatarSender}')

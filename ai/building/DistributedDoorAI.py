@@ -95,7 +95,7 @@ class DistributedDoorAI(DistributedObjectAI):
 
         self.doorFSM.openDoor()
 
-        self.sendUpdateToAvatar(avId, 'setOtherZoneIdAndDoId', [self.otherDoor.zoneId, self.otherDoor.do_id])
+        self.sendUpdateToAvatar(avId, 'setOtherZoneIdAndDoId', [self.otherDoor.zoneId, self.otherDoor.doId])
 
     def requestExit(self):
         avId = self.air.currentAvatarSender
@@ -161,7 +161,7 @@ class DistributedCogHQDoorAI(DistributedDoorAI):
 
         self.doorFSM.openDoor()
 
-        self.sendUpdateToAvatar(avId, 'setOtherZoneIdAndDoId', [self.destinationZone, self.otherDoor.do_id])
+        self.sendUpdateToAvatar(avId, 'setOtherZoneIdAndDoId', [self.destinationZone, self.otherDoor.doId])
 
     def requestExit(self):
         avId = self.air.currentAvatarSender
