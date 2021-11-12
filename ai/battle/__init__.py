@@ -1699,7 +1699,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 deadToons.append(toon)
 
         for toon in deadToons:
-            self._removeToon(toon.do_id)
+            self._removeToon(toon.doId)
 
         self.clearAttacks()
         self.d_setMovie()
@@ -1746,7 +1746,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
     def addToon(self, toon, joining=True):
         # toon.stopToonUp()
-        toonId = toon.do_id
+        toonId = toon.doId
         event = self.air.getDeleteDoIdEvent(toonId)
         self.avatarExitEvents.append(event)
         self.accept(event, self.__handleUnexpectedExit, extraArgs=[toonId])
@@ -1853,7 +1853,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         #     if len(self.suits) > 0 and not self.streetBattle:
         #         self.notify.info('toon %d aborted non-street battle; clearing inventory and hp.' % toonId)
         #         toon = DistributedToonAI.DistributedToonAI(self.air)
-        #         toon.do_id = toonId
+        #         toon.doId = toonId
         #         empty = InventoryBase.InventoryBase(toon)
         #         toon.b_setInventory(empty.makeNetString())
         #         toon.b_setHp(0)

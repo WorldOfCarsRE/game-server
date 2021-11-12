@@ -210,17 +210,17 @@ async def main():
     dc.read('etc/dclass/toon.dc')
 
     loop = asyncio.get_running_loop()
-    central_logger = CentralLoggerUD(loop)
-    friend_manager = FriendManagerUD(loop)
+    centralLogger = CentralLoggerUD(loop)
+    friendManager = FriendManagerUD(loop)
     deliveryManager = DistributedDeliveryManagerUD(loop)
 
-    uberdog_tasks = [
-        asyncio.create_task(central_logger.run()),
-        asyncio.create_task(friend_manager.run()),
+    uberdogTasks = [
+        asyncio.create_task(centralLogger.run()),
+        asyncio.create_task(friendManager.run()),
         asyncio.create_task(deliveryManager.run())
     ]
 
-    await asyncio.gather(*uberdog_tasks)
+    await asyncio.gather(*uberdogTasks)
 
 if __name__ == '__main__':
     asyncio.run(main())

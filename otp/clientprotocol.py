@@ -833,7 +833,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 canonicalzoneId = getCanonicalZoneId(zoneId)
                 if canonicalzoneId in VIS_ZONES:
                     for viszoneId in VIS_ZONES[canonicalzoneId]:
-                        truezoneId = getTruezoneId(viszoneId, zoneId)
+                        truezoneId = getTrueZoneId(viszoneId, zoneId)
                         zones.append(truezoneId)
 
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {contextId} '
