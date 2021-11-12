@@ -35,7 +35,7 @@ class DistributedMailboxAI(DistributedObjectAI):
         DistributedObjectAI.delete(self)
 
     def getHouseId(self):
-        return self.house.do_id
+        return self.house.doId
 
     def getHousePos(self):
         return self.house.housePos

@@ -184,7 +184,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.pond = pond
 
     def delete(self):
-        DistributedObjectAI.DistributedObjectAI.delete(self)
+        DistributedObjectAI.delete(self)
 
     def getPondDoId(self):
         return self.pond.getDoId()
@@ -209,7 +209,6 @@ class DistributedFishingSpotAI(DistributedObjectAI):
             self.d_setOccupied(self.avId)
             self.d_setMovie(FishMovies.EnterMovie)
             self.__startTimeout(self.TIMEOUT)
-
 
     def requestExit(self):
         senderId = self.air.currentAvatarSender
@@ -326,7 +325,7 @@ class DistributedFishingPondAI(DistributedObjectAI):
         for target in self.targets.values():
             target.requestDelete()
         self.targets: Optional[Dict[DistributedFishingTargetAI]] = None
-        DistributedObjectAI.DistributedObjectAI.delete(self)
+        DistributedObjectAI.delete(self)
 
     def getCatch(self, av):
         itemType = FishItems.BootItem

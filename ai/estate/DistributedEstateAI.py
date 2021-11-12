@@ -44,7 +44,7 @@ class DistributedEstateAI(DistributedObjectAI):
         for spot in self.spots:
             spot.requestDelete()
         del self.spots
-        
+
     def announceGenerate(self):
         dna, storage = load_dna_file('dna/files/estate_1.dna')
 
