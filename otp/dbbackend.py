@@ -17,7 +17,7 @@ class DatabaseBackend:
     async def create_object(self, dclass, fields: Tuple[Tuple[str, bytes]]):
         raise NotImplementedError
 
-    def query_object_all(self, do_id: int):
+    def queryObjectAll(self, do_id: int):
         raise NotImplementedError
 
     def query_object_fields(self, do_id: int, fields):
@@ -128,7 +128,7 @@ class SQLBackend(DatabaseBackend):
         self.pool.release(conn)
         return do_id
 
-    async def query_object_all(self, do_id, dclass_name=None):
+    async def queryObjectAll(self, do_id, dclass_name=None):
         conn = await self.pool.acquire()
 
         if dclass_name is None:
@@ -295,7 +295,7 @@ class MongoBackend(DatabaseBackend):
 
         return objectId
 
-    async def query_object_all(self, doId, dclass_name=None):
+    async def queryObjectAll(self, doId, dclass_name=None):
         if dclass_name is None:
             dclass_name = await self.queryDC(doId)
 

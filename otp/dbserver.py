@@ -226,8 +226,8 @@ class DBServer(DownstreamMessageDirector):
 
         # These Fields are REQUIRED but not stored in db.
         estateOther = [
-            (estateClass['setDawnTime'], (0,)),
-            (estateClass['setClouds'], (0,)),
+            (estateClass.getFieldByName('setDawnTime'), (0,)),
+            (estateClass.getFieldByName('setClouds'), (0,)),
         ]
 
         if estateId == 0:
@@ -262,8 +262,8 @@ class DBServer(DownstreamMessageDirector):
 
             # These Fields are REQUIRED but not stored in db.
             houseOther = [
-                (houseClass['setHousePos'], (index,)),
-                (houseClass['setCannonEnabled'], (0,)),
+                (houseClass.getFieldByName('setHousePos'), (index,)),
+                (houseClass.getFieldByName('setCannonEnabled'), (0,)),
             ]
 
             houseDefaults = [
@@ -326,12 +326,18 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(parentId)
         dg.addUint32(zoneId)
         dg.addUint64(DBSERVERS_CHANNEL)
-        dg.addUint16(dclass.number)
+        dg.addUint16(dclass.getNumber())
         dg.addUint16(len(other))
 
         for f, arg in other:
-            dg.addUint16(f.number)
-            f.pack_value(dg, arg)
+            dg.addUint16(f.getNumber())
+
+            packer = DCPacker()
+            packer.beginPack(f)
+            f.packArgs(packer, arg)
+            packer.endPack()
+
+            dg.addBlob(packer.getBytes())
 
         self.send_datagram(dg)
 
@@ -488,7 +494,7 @@ class DBServer(DownstreamMessageDirector):
 
         dclass = self.dc.getClassByName('Account')
         toonDC = self.dc.getClassByName('DistributedToon')
-        fieldDict = await self.backend.query_object_all(doId, dclass.getName())
+        fieldDict = await self.backend.queryObjectAll(doId, dclass.getName())
 
         avIds = fieldDict['ACCOUNT_AV_SET']
 
@@ -541,7 +547,7 @@ class DBServer(DownstreamMessageDirector):
         self.send_datagram(dg)
 
     async def queryObjectDetails(self, avatarId: int, doId: int, access: int, dcName: str):
-        fieldDict = await self.backend.query_object_all(doId, dcName)
+        fieldDict = await self.backend.queryObjectAll(doId, dcName)
         dclass = self.dc.getClassByName(dcName)
 
         if dcName == 'DistributedToon':
