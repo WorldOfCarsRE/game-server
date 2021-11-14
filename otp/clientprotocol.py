@@ -1152,7 +1152,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             return True
         return False
 
-    def pending_object_needed(self, doId):
+    def pendingObjectNeeded(self, doId):
         for interest in self.interests:
             if doId in interest.pendingObjects:
                 return True
