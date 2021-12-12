@@ -129,7 +129,7 @@ class DistributedSuitBaseAI(DistributedObjectAI):
     def prepareToJoinBattle(self):
         pass
 
-from panda3d.toontown import SuitLegList, DNASuitPoint
+from panda3d.toontown import SuitLegList, DNASuitPoint, SuitLeg
 from typing import Optional, List
 
 class PathState(IntEnum):
@@ -197,7 +197,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             self.sendUpdateToAvatar(avId, 'denyBattle', [])
             return
 
-        if self.legType != SuitLegType.TWalk:
+        if self.legType != SuitLeg.TWalk:
             self.sendUpdate('setBrushOff', [0])
             self.sendUpdateToAvatar(avId, 'denyBattle', [])
             return
@@ -220,7 +220,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
         return self.legList.isPointInRange(point, elapsed - collisionBuffer, elapsed + collisionBuffer)
 
     def initializePath(self):
-        self.legList = SuitLegList(self.path, 
+        self.legList = SuitLegList(self.path,
                                    self.suitPlanner.dnaStore,
                                    self.suitPlanner.suitWalkSpeed,
                                    fromSky,
@@ -236,7 +236,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
         self.legType = self.legList.getType(0)
 
     def resync(self):
-        self.b_setPathPosition(self.currentLeg, self.pathStartTime + self.legList.get_start_time(self.currentLeg))
+        self.b_setPathPosition(self.currentLeg, self.pathStartTime + self.legList.getStartTime(self.currentLeg))
 
     def moveToNextLeg(self, task=None):
         now = globalClock.getFrameTime()
@@ -250,7 +250,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             self.__enterZone(zoneId)
             if 1:
                 leg = self.legList[nextLeg]
-                pos = leg.get_pos_at_time(elapsed - leg.start_time)
+                pos = leg.getPosAtTime(elapsed - leg.getStartTime())
                 self.sendUpdate('debugSuitPosition', [elapsed, nextLeg, pos[0], pos[1], globalClockDelta.localToNetworkTime(now)])
         if now - self.pathPositionTimestamp > UPDATE_TIMESTAMP_INTERVAL:
             self.resync()
@@ -278,9 +278,9 @@ class DistributedSuitAI(DistributedSuitBaseAI):
 
     def __beginLegType(self, legType):
         self.legType = legType
-        if legType == SuitLegType.TToCoghq:
+        if legType == SuitLeg.TToCoghq:
             self.openCogHQDoor(1)
-        elif legType == SuitLegType.TFromCoghq:
+        elif legType == SuitLeg.TFromCoghq:
             self.openCogHQDoor(0)
 
     def __enterZone(self, zoneId):
