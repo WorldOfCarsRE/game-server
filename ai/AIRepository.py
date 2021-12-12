@@ -85,7 +85,6 @@ class AIRepository:
         self.eventSocket = None # Socket for EventLogger, if enabled.
 
         self.setEventLogHost('127.0.0.1', port = 46668)
-        self.writeServerEvent('test', 1, 'test')
 
     def run(self):
         self.net_thread = Thread(target=self.__event_loop)
@@ -286,7 +285,7 @@ class AIRepository:
             self.storeLocation(doId, 0, 0, parentId, zoneId)
             obj.announceGenerate()
         else:
-            print('unknown object entry: %s' % dclass.name)
+            print(f'unknown object entry: {dclass.getName()}')
 
     def handleObjExit(self, dgi):
         doId = dgi.getUint32()

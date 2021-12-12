@@ -57,7 +57,7 @@ class EventLogger(Service):
 
         messageTime = datetime.utcfromtimestamp(ts).strftime('%m/%d/%Y %I:%M %p')
 
-        formatted = f'({messageTime} | {category} | {severity}): {message}'
+        formatted = f'({messageTime} | {category} | {severity}): {message}\n'
 
         with open(self.logFile, 'a') as f:
             f.write(formatted)
