@@ -6,8 +6,8 @@ from typing import List, Union, Dict, Tuple
 
 from Crypto.Cipher import AES
 from dataslots import with_slots
-from dc.objects import MolecularField
-from dc.util import Datagram
+from panda3d.direct import DCPacker
+from panda3d.core import Datagram, DatagramIterator
 
 from otp import config
 from otp.messagedirector import MDParticipant
@@ -32,12 +32,12 @@ class NamePart(IntEnum):
 @with_slots
 @dataclass
 class PotentialAvatar:
-    do_id: int
+    doId: int
     name: str
-    wish_name: str
-    approved_name: str
-    rejected_name: str
-    dna_string: str
+    wishName: str
+    approvedName: str
+    rejectedName: str
+    dnaString: str
     index: int
     allowName: int
 
@@ -66,43 +66,43 @@ class ClientDisconnect(IntEnum):
 @with_slots
 @dataclass
 class PendingObject:
-    do_id: int
-    dc_id: int
-    parent_id: int
-    zone_id: int
+    doId: int
+    dcId: int
+    parentId: int
+    zoneId: int
     datagrams: list
 
 class Interest:
-    def __init__(self, client, handle, context, parent_id, zones):
+    def __init__(self, client, handle, context, parentId, zones):
         self.client = client
         self.handle = handle
         self.context = context
-        self.parent_id = parent_id
+        self.parentId = parentId
         self.zones = zones
         self.done = False
         self.ai = False
-        self.pending_objects: List[int] = []
+        self.pendingObjects: List[int] = []
 
 @with_slots
 @dataclass
 class ObjectInfo:
-    do_id: int
-    dc_id: int
-    parent_id: int
-    zone_id: int
+    doId: int
+    dcId: int
+    parentId: int
+    zoneId: int
 
 CLIENTAGENT_SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 
 @with_slots
 @dataclass
 class DISLAccount:
-    username: bytes
+    username: str
     dislId: int
-    access: bytes
-    accountType: bytes
-    createFriendsWithChat: bytes
-    chatCodeCreationRule: bytes
-    whitelistChatEnabled: bytes
+    access: str
+    accountType: str
+    createFriendsWithChat: str
+    chatCodeCreationRule: str
+    whitelistChatEnabled: str
 
 class ClientProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):
@@ -115,39 +115,39 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.subscribe_channel(self.channel)
 
         self.interests: List[Interest] = []
-        self.visible_objects: Dict[int, ObjectInfo] = {}
-        self.owned_objects: Dict[int, ObjectInfo] = {}
+        self.visibleObjects: Dict[int, ObjectInfo] = {}
+        self.ownedObjects: Dict[int, ObjectInfo] = {}
 
         # TODO: make this configurable
         self.uberdogs: List[int] = [OTP_DO_ID_FRIEND_MANAGER]
 
         self.account: Union[DISLAccount, None] = None
-        self.avatar_id: int = 0
-        self.created_av_id: int = 0
-        self.wanted_name: str = ''
-        self.potential_avatar = None
-        self.potential_avatars: List[PotentialAvatar] = []
-        self.avs_deleted: List[Tuple[int, int]] = []
-        self.pending_objects: Dict[int, PendingObject] = {}
+        self.avatarId: int = 0
+        self.createdAvId: int = 0
+        self.wantedName: str = ''
+        self.potentialAvatar = None
+        self.potentialAvatars: List[PotentialAvatar] = []
+        self.avsDeleted: List[Tuple[int, int]] = []
+        self.pendingObjects: Dict[int, PendingObject] = {}
 
-    def disconnect(self, booted_index, booted_text):
+    def disconnect(self, bootedIndex, bootedText):
         for task in self.tasks:
             task.cancel()
         del self.tasks[:]
         resp = Datagram()
-        resp.add_uint16(CLIENT_GO_GET_LOST)
-        resp.add_uint16(booted_index)
-        resp.add_string16(booted_text.encode('utf-8'))
-        self.transport.write(len(resp).to_bytes(2, byteorder='little'))
-        self.transport.write(resp.bytes())
+        resp.addUint16(CLIENT_GO_GET_LOST)
+        resp.addUint16(bootedIndex)
+        resp.addString(bootedText)
+        self.transport.write(resp.getLength().to_bytes(2, byteorder='little'))
+        self.transport.write(resp.getMessage())
         self.transport.close()
-        self.service.log.debug(f'Booted client {self.channel} with index {booted_index} and text: "{booted_text}"')
+        self.service.log.debug(f'Booted client {self.channel} with index {bootedIndex} and text: "{bootedText}"')
 
     def connection_lost(self, exc):
         self.service.log.debug(f'Connection lost to client {self.channel}')
         ToontownProtocol.connection_lost(self, exc)
 
-        if self.avatar_id:
+        if self.avatarId:
             self.delete_avatar_ram()
 
         self.service.remove_participant(self)
@@ -158,12 +158,12 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def delete_avatar_ram(self):
         dg = Datagram()
-        dg.add_server_header([self.avatar_id], self.channel, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(self.avatar_id)
+        addServerHeader(dg, [self.avatarId], self.channel, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(self.avatarId)
         self.service.send_datagram(dg)
 
     def receive_datagram(self, dg):
-        dgi = dg.iterator()
+        dgi = DatagramIterator(dg)
         msgtype = dgi.get_uint16()
 
         if msgtype != CLIENT_OBJECT_UPDATE_FIELD:
@@ -178,19 +178,19 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         if self.state == ClientState.NEW:
             if msgtype == CLIENT_LOGIN_TOONTOWN:
-                self.receive_login(dgi)
+                self.receiveLogin(dgi)
                 self.state = ClientState.AUTHENTICATED
             else:
                 self.service.log.debug(f'Unexpected message type during handshake {msgtype}.')
         elif self.state == ClientState.AUTHENTICATED:
             if msgtype == CLIENT_GET_AVATARS:
-                self.receive_get_avatars(dgi)
+                self.receiveGetAvatars(dgi)
             elif msgtype == CLIENT_ADD_INTEREST:
                 self.receive_add_interest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                self.receive_update_field(dgi)
+                self.receiveUpdateField(dgi)
             else:
                 self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
         elif self.state == ClientState.AVATAR_CHOOSER:
@@ -203,11 +203,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                do_id = dgi.get_uint32()
-                if do_id == OTP_DO_ID_CENTRAL_LOGGER:
-                    self.receive_update_field(dgi, do_id)
+                doId = dgi.getUint32()
+                if doId == OTP_DO_ID_CENTRAL_LOGGER:
+                    self.receiveUpdateField(dgi, doId)
                 else:
-                    self.service.log.debug(f'Unexpected field update for do_id {do_id} during avatar chooser.')
+                    self.service.log.debug(f'Unexpected field update for doId {doId} during avatar chooser.')
             elif msgtype == CLIENT_DELETE_AVATAR:
                 self.receive_delete_avatar(dgi)
             elif msgtype == CLIENT_SET_WISHNAME_CLEAR:
@@ -222,11 +222,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_SET_NAME_PATTERN:
                 self.receive_set_name_pattern(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                do_id = dgi.get_uint32()
-                if do_id == OTP_DO_ID_CENTRAL_LOGGER:
-                    self.receive_update_field(dgi, do_id)
+                doId = dgi.getUint32()
+                if doId == OTP_DO_ID_CENTRAL_LOGGER:
+                    self.receiveUpdateField(dgi, doId)
                 else:
-                    self.service.log.debug(f'Unexpected field update for do_id {do_id} during avatar creation.')
+                    self.service.log.debug(f'Unexpected field update for doId {doId} during avatar creation.')
             else:
                 self.service.log.debug(f'Unexpected message type during avatar creation {msgtype}.')
         else:
@@ -239,7 +239,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_OBJECT_LOCATION:
                 self.receive_client_location(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                self.receive_update_field(dgi)
+                self.receiveUpdateField(dgi)
             elif msgtype == CLIENT_SET_AVATAR:
                 self.receive_set_avatar(dgi)
             elif msgtype in (CLIENT_GET_AVATAR_DETAILS, CLIENT_GET_PET_DETAILS):
@@ -247,64 +247,60 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             else:
                 self.service.log.debug(f'Unhandled msg type {msgtype} in state {self.state}')
 
-    def receive_update_field(self, dgi, do_id=None):
-        if do_id is None:
-            do_id = dgi.get_uint32()
+    def receiveUpdateField(self, dgi, doId = None):
+        if doId is None:
+            doId = dgi.getUint32()
 
-        field_number = dgi.get_uint16()
+        fieldNumber = dgi.getUint16()
 
-        field = self.service.dc_file.fields[field_number]()
+        field = self.service.dcFile.getFieldByIndex(fieldNumber)
 
         sendable = False
 
-        if field.is_ownsend and do_id in self.owned_objects:
+        if field.isOwnsend() and doId in self.ownedObjects:
             sendable = True
-        elif field.is_clsend:
+        elif field.isClsend():
             sendable = True
 
         if not sendable:
             self.disconnect(ClientDisconnect.INTERNAL_ERROR, 'Tried to send nonsendable field to object.')
-            self.service.log.warn(f'Client {self.channel} tried to update {do_id} with nonsendable field {field.name}. '
+            self.service.log.warn(f'Client {self.channel} tried to update {doId} with nonsendable field {field.getName()}. '
                                   f'DCField keywords: {field.keywords}')
             return
 
-        pos = dgi.tell()
-        field.unpack_bytes(dgi)
-        dgi.seek(pos)
-
         resp = Datagram()
-        resp.add_server_header([do_id], self.channel, STATESERVER_OBJECT_UPDATE_FIELD)
-        resp.add_uint32(do_id)
-        resp.add_uint16(field_number)
-        resp.add_bytes(dgi.remaining_bytes())
+        addServerHeader(resp, [doId], self.channel, STATESERVER_OBJECT_UPDATE_FIELD)
+        resp.addUint32(doId)
+        resp.addUint16(fieldNumber)
+        resp.appendData(dgi.getRemainingBytes())
         self.service.send_datagram(resp)
 
-        if field.name == 'setTalk':
+        if field.getName() == 'setTalk':
             # TODO: filtering
             resp = Datagram()
-            resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
-            resp.add_uint32(do_id)
-            resp.add_uint16(field_number)
-            resp.add_bytes(dgi.remaining_bytes())
+            resp.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
+            resp.addUint32(doId)
+            resp.addUint16(fieldNumber)
+            resp.appendData(dgi.getRemainingBytes())
             self.send_datagram(resp)
 
     def receive_client_location(self, dgi):
-        do_id = dgi.get_uint32()
-        parent_id = dgi.get_uint32()
-        zone_id = dgi.get_uint32()
+        doId = dgi.getUint32()
+        parentId = dgi.getUint32()
+        zoneId = dgi.getUint32()
 
-        self.service.log.debug(f'Client {self.channel} is setting their location to {parent_id} {zone_id}')
+        self.service.log.debug(f'Client {self.channel} is setting their location to {parentId} {zoneId}')
 
-        if do_id in self.owned_objects:
-            self.owned_objects[do_id].zone_id = zone_id
-            self.owned_objects[do_id].parent_id = parent_id
+        if doId in self.ownedObjects:
+            self.ownedObjects[doId].zoneId = zoneId
+            self.ownedObjects[doId].parentId = parentId
             dg = Datagram()
-            dg.add_server_header([do_id], self.channel, STATESERVER_OBJECT_SET_ZONE)
-            dg.add_uint32(parent_id)
-            dg.add_uint32(zone_id)
+            addServerHeader(dg, [doId], self.channel, STATESERVER_OBJECT_SET_ZONE)
+            dg.addUint32(parentId)
+            dg.addUint32(zoneId)
             self.service.send_datagram(dg)
         else:
-            self.service.log.debug(f'Client {self.channel} tried setting location for unowned object {do_id}!')
+            self.service.log.debug(f'Client {self.channel} tried setting location for unowned object {doId}!')
 
     def receive_get_friend_list(self, dgi):
         self.service.log.debug(f'Friend list query received from {self.channel}')
@@ -316,41 +312,41 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         # uint32 petId
 
         query = Datagram()
-        query.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_FRIENDS)
-        query.add_uint32(self.avatar_id)
+        addServerHeader(query, [DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_FRIENDS)
+        query.addUint32(self.avatarId)
         self.service.send_datagram(query)
 
     def receive_set_avatar(self, dgi):
-        av_id = dgi.get_uint32()
+        avId = dgi.getUint32()
 
-        self.service.log.debug(f'client {self.channel} is setting their avatar to {av_id}')
+        self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
 
-        if not av_id:
-            if self.avatar_id:
+        if not avId:
+            if self.avatarId:
                 # Client is logging out of their avatar.
                 self.delete_avatar_ram()
-                self.owned_objects.clear()
-                self.visible_objects.clear()
+                self.ownedObjects.clear()
+                self.visibleObjects.clear()
 
-                self.unsubscribe_channel(getClientSenderChannel(self.account.dislId, self.avatar_id))
-                self.unsubscribe_channel(getPuppetChannel(self.avatar_id))
+                self.unsubscribe_channel(getClientSenderChannel(self.account.dislId, self.avatarId))
+                self.unsubscribe_channel(getPuppetChannel(self.avatarId))
                 self.channel = getClientSenderChannel(self.account.dislId, 0)
                 self.subscribe_channel(self.channel)
 
                 self.state = ClientState.AUTHENTICATED
-                self.avatar_id = 0
+                self.avatarId = 0
                 return
             else:
                 # Do nothing.
                 return
         elif self.state == ClientState.PLAY_GAME:
-            self.service.log.debug(f'Client {self.channel} tried to set their avatar {av_id} while avatar is already set to {self.avatar_id}.')
+            self.service.log.debug(f'Client {self.channel} tried to set their avatar {avId} while avatar is already set to {self.avatarId}.')
             return
 
         pot_av = None
 
-        for pa in self.potential_avatars:
-            if pa and pa.do_id == av_id:
+        for pa in self.potentialAvatars:
+            if pa and pa.doId == avId:
                 pot_av = pa
                 break
 
@@ -358,126 +354,137 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.disconnect(ClientDisconnect.INTERNAL_ERROR, 'Could not find avatar on account.')
             return
 
-        self.avatar_id = av_id
-        self.created_av_id = 0
+        self.avatarId = avId
+        self.createdAvId = 0
 
         self.state = ClientState.SETTING_AVATAR
 
-        self.channel = getClientSenderChannel(self.account.dislId, self.avatar_id)
+        self.channel = getClientSenderChannel(self.account.dislId, self.avatarId)
         self.subscribe_channel(self.channel)
-        self.subscribe_channel(getPuppetChannel(self.avatar_id))
+        self.subscribe_channel(getPuppetChannel(self.avatarId))
 
-        dclass = self.service.dc_file.namespace['DistributedToon']
+        dclass = self.service.dcFile.getClassByName('DistributedToon')
 
-        access = 2 if self.account.access == b'FULL' else 1
+        access = 2 if self.account.access == 'FULL' else 1
 
         # These Fields are REQUIRED but not stored in db.
-        other_fields = [
-            (dclass['setAccess'], (access,)),
-            (dclass['setPreviousAccess'], (access,)),
-            (dclass['setAsGM'], (False,)),
-            (dclass['setBattleId'], (0,))
+        otherFields = [
+            (dclass.getFieldByName('setAccess'), (access,)),
+            (dclass.getFieldByName('setPreviousAccess'), (access,)),
+            (dclass.getFieldByName('setAsGM'), (False,)),
+            (dclass.getFieldByName('setBattleId'), (0,))
         ]
 
-        if pot_av.approved_name:
-            other_fields.append((dclass['setName'], (pot_av.approved_name,)))
-            pot_av.approved_name = ''
+        if pot_av.approvedName:
+            otherFields.append((dclass.getFieldByName('setName'), (pot_av.approvedName,)))
+            pot_av.approvedName = ''
 
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
-        dg.add_uint32(av_id)
-        dg.add_uint32(0)
-        dg.add_uint32(0)
-        dg.add_channel(self.channel)
-        dg.add_uint16(dclass.number)
-        dg.add_uint16(len(other_fields))
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
+        dg.addUint32(avId)
+        dg.addUint32(0)
+        dg.addUint32(0)
+        dg.addUint64(self.channel)
+        dg.addUint16(dclass.getNumber())
+        dg.addUint16(len(otherFields))
 
-        for f, arg in other_fields:
-            dg.add_uint16(f.number)
-            f.pack_value(dg, arg)
+        for f, arg in otherFields:
+            otherPacker = DCPacker()
+            otherPacker.rawPackUint16(f.getNumber())
+
+            otherPacker.beginPack(f)
+            f.packArgs(otherPacker, arg)
+            otherPacker.endPack()
+
+            dg.appendData(otherPacker.getBytes())
 
         self.service.send_datagram(dg)
 
     def receive_create_avatar(self, dgi):
         _ = dgi.get_uint16()
-        dna = dgi.get_blob16()
-        pos = dgi.get_uint8()
+        dna = dgi.getBlob()
+        pos = dgi.getUint8()
         self.service.log.debug(f'Client {self.channel} requesting avatar creation with dna {dna} and pos {pos}.')
 
-        if not 0 <= pos < 6 or self.potential_avatars[pos] is not None:
+        if not 0 <= pos < 6 or self.potentialAvatars[pos] is not None:
             self.service.log.debug(f'Client {self.channel} tried creating avatar in invalid position.')
             return
 
-        self.potential_avatar = PotentialAvatar(do_id = 0, name = 'Toon', wish_name = '', approved_name = '',
-                                                      rejected_name = '', dna_string = dna, index = pos, allowName = 1)
+        self.potentialAvatar = PotentialAvatar(doId = 0, name = 'Toon', wishName = '', approvedName = '',
+                                                      rejectedName = '', dnaString = dna, index = pos, allowName = 1)
 
-        dclass = self.service.dc_file.namespace['DistributedToon']
+        dclass = self.service.dcFile.getClassByName('DistributedToon')
 
         dg = Datagram()
-        dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
-        dg.add_uint32(0)
-        dg.add_uint16(dclass.number)
-        dg.add_uint32(self.account.dislId)
-        dg.add_uint8(pos)
-        pos = dg.tell()
-        dg.add_uint16(0)
+        addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
+        dg.addUint32(0)
+        dg.addUint16(dclass.getNumber())
+        dg.addUint32(self.account.dislId)
+        dg.addUint8(pos)
 
-        default_toon = dict(DEFAULT_TOON)
-        default_toon['setDNAString'] = (dna,)
-        default_toon['setDISLid'] = (self.account.dislId,)
-        default_toon['WishName'] = ('',)
-        default_toon['WishNameState'] = ('CLOSED',)
-        default_toon['setAccountName'] = (self.account.username,)
+        defaultToon = dict(DEFAULT_TOON)
+        defaultToon['setDNAString'] = (dna,)
+        defaultToon['setDISLid'] = (self.account.dislId,)
+        defaultToon['WishName'] = ('',)
+        defaultToon['WishNameState'] = ('CLOSED',)
+        defaultToon['setAccountName'] = (self.account.username,)
 
         count = 0
-        for field in dclass.inherited_fields:
-            if not isinstance(field, MolecularField) and field.is_db:
-                if field.name == 'DcObjectType':
+        packer = DCPacker()
+
+        for fieldId in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(fieldId)
+
+            if not field.asMolecularField() and field.isDb():
+                if field.getName() == 'DcObjectType':
                     continue
-                dg.add_uint16(field.number)
-                field.pack_value(dg, default_toon[field.name])
+
+                packer.rawPackUint16(field.getNumber())
+                packer.beginPack(field)
+                field.packArgs(packer, defaultToon[field.getName()])
+                packer.endPack()
                 count += 1
 
-        dg.seek(pos)
-        dg.add_uint16(count)
+        dg.addUint16(count)
+        dg.appendData(packer.getBytes())
 
         self.state = ClientState.CREATING_AVATAR
 
         self.service.send_datagram(dg)
 
-        self.tasks.append(self.service.loop.create_task(self.created_avatar()))
+        self.tasks.append(self.service.loop.create_task(self.createdAvatar()))
 
-    async def created_avatar(self):
+    async def createdAvatar(self):
         f = DatagramFuture(self.service.loop, DBSERVER_CREATE_STORED_OBJECT_RESP)
         self.futures.append(f)
         sender, dgi = await f
-        context = dgi.get_uint32()
-        return_code = dgi.get_uint8()
-        av_id = dgi.get_uint32()
+        context = dgi.getUint32()
+        returnCode = dgi.getUint8()
+        avId = dgi.getUint32()
 
-        av = self.potential_avatar
-        av.do_id = av_id
-        self.potential_avatars[av.index] = av
-        self.potential_avatar = None
+        av = self.potentialAvatar
+        av.doId = avId
+        self.potentialAvatars[av.index] = av
+        self.potentialAvatar = None
 
         resp = Datagram()
-        resp.add_uint16(CLIENT_CREATE_AVATAR_RESP)
-        resp.add_uint16(0)  # Context
-        resp.add_uint8(return_code)  # Return Code
-        resp.add_uint32(av_id)  # av_id
+        resp.addUint16(CLIENT_CREATE_AVATAR_RESP)
+        resp.addUint16(0) # Context
+        resp.addUint8(returnCode) # Return Code
+        resp.addUint32(avId) # avId
         self.send_datagram(resp)
 
-        self.created_av_id = av_id
+        self.createdAvId = avId
 
-        self.service.log.debug(f'New avatar {av_id} created for client {self.channel}.')
+        self.service.log.debug(f'New avatar {avId} created for client {self.channel}.')
 
     def receive_set_wishname(self, dgi):
-        av_id = dgi.get_uint32()
-        name = dgi.get_string16()
+        avId = dgi.getUint32()
+        name = dgi.getString()
 
-        av = self.get_potential_avatar(av_id)
+        av = self.getPotentialAvatar(avId)
 
-        self.service.log.debug(f'Received wishname request from {self.channel} for avatar {av_id} for name "{name}".')
+        self.service.log.debug(f'Received wishname request from {self.channel} for avatar {avId} for name "{name}".')
 
         pending = name.encode('utf-8')
         approved = b''
@@ -486,34 +493,34 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         failed = False
 
         resp = Datagram()
-        resp.add_uint16(CLIENT_SET_WISHNAME_RESP)
-        resp.add_uint32(av_id)
-        resp.add_uint16(failed)
-        resp.add_string16(pending)
-        resp.add_string16(approved)
-        resp.add_string16(rejected)
+        resp.addUint16(CLIENT_SET_WISHNAME_RESP)
+        resp.addUint32(avId)
+        resp.addUint16(failed)
+        resp.addString(pending)
+        resp.addString(approved)
+        resp.addString(rejected)
 
         self.send_datagram(resp)
 
-        if av_id and av:
-            dclass = self.service.dc_file.namespace['DistributedToon']
-            wishname_field = dclass['WishName']
+        if avId and av:
+            dclass = self.service.dcFile.getClassByName('DistributedToon')
+            wishname_field = dclass.getFieldByName('WishName')
             wishname_state_field = dclass['WishNameState']
 
             resp = Datagram()
-            resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
-            resp.add_uint32(av_id)
-            resp.add_uint16(2)
-            resp.add_uint16(wishname_state_field.number)
+            addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
+            resp.addUint32(avId)
+            resp.addUint16(2)
+            resp.addUint16(wishname_state_field.getNumber())
             wishname_state_field.pack_value(resp, ('PENDING',))
-            resp.add_uint16(wishname_field.number)
+            resp.addUint16(wishname_field.getNumber())
             wishname_field.pack_value(resp, (name,))
             self.service.send_datagram(resp)
 
     def receive_set_name_pattern(self, dgi):
-        av_id = dgi.get_uint32()
+        avId = dgi.get_uint32()
 
-        self.service.log.debug(f'Got name pattern request for av_id {av_id}.')
+        self.service.log.debug(f'Got name pattern request for avId {avId}.')
 
         title_index, title_flag = dgi.get_int16(), dgi.get_int16()
         first_index, first_flag = dgi.get_int16(), dgi.get_int16()
@@ -521,23 +528,23 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         last_suffix_index, last_suffix_flag = dgi.get_int16(), dgi.get_int16()
 
         resp = Datagram()
-        resp.add_uint16(CLIENT_SET_NAME_PATTERN_ANSWER)
-        resp.add_uint32(av_id)
+        resp.addUint16(CLIENT_SET_NAME_PATTERN_ANSWER)
+        resp.addUint32(avId)
 
-        if av_id != self.created_av_id:
-            resp.add_uint8(1)
+        if avId != self.createdAvId:
+            resp.addUint8(1)
             self.send_datagram(resp)
             return
 
         if first_index <= 0 and last_prefix_index <= 0 and last_suffix_index <= 0:
-            self.service.log.debug(f'Received request for empty name for {av_id}.')
-            resp.add_uint8(2)
+            self.service.log.debug(f'Received request for empty name for {avId}.')
+            resp.addUint8(2)
             self.send_datagram(resp)
             return
 
         if (last_prefix_index <= 0 <= last_suffix_index) or (last_suffix_index <= 0 <= last_prefix_index):
-            self.service.log.debug(f'Received request for invalid last name for {av_id}.')
-            resp.add_uint8(3)
+            self.service.log.debug(f'Received request for invalid last name for {avId}.')
+            resp.addUint8(3)
             self.send_datagram(resp)
             return
 
@@ -547,19 +554,19 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             last_prefix = self.get_name_part(last_prefix_index, last_prefix_flag, {NamePart.CAP_PREFIX, NamePart.LAST_PREFIX})
             last_suffix = self.get_name_part(last_suffix_index, last_suffix_flag, {NamePart.LAST_SUFFIX})
         except KeyError as e:
-            resp.add_uint8(4)
+            resp.addUint8(4)
             self.send_datagram(resp)
             self.service.log.debug(f'Received invalid index for name part. {e.args}')
             return
 
         name = f'{title}{" " if title else ""}{first}{" " if first else ""}{last_prefix}{last_suffix}'
 
-        for pot_av in self.potential_avatars:
-            if pot_av and pot_av.do_id == av_id:
-                pot_av.approved_name = name.strip()
+        for potAv in self.potentialAvatars:
+            if potAv and potAv.doId == avId:
+                potAv.approvedName = name.strip()
                 break
 
-        resp.add_uint8(0)
+        resp.addUint8(0)
         self.send_datagram(resp)
 
     def get_name_part(self, index, flag, categories):
@@ -574,61 +581,61 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             return ''
 
     def receive_delete_avatar(self, dgi):
-        av_id = dgi.get_uint32()
+        avId = dgi.get_uint32()
 
-        av = self.get_potential_avatar(av_id)
+        av = self.getPotentialAvatar(avId)
 
         if not av:
             return
 
         self.potential_avatars[av.index] = None
-        avatars = [pot_av.do_id if pot_av else 0 for pot_av in self.potential_avatars]
-        self.avs_deleted.append((av_id, int(time.time())))
+        avatars = [potAv.doId if potAv else 0 for potAv in self.potentialAvatars]
+        self.avsDeleted.append((av_id, int(time.time())))
 
-        field = self.service.dc_file.namespace['Account']['ACCOUNT_AV_SET']
-        del_field = self.service.dc_file.namespace['Account']['ACCOUNT_AV_SET_DEL']
+        field = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET']
+        delField = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET_DEL']
 
         dg = Datagram()
-        dg.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
-        dg.add_uint32(self.account.dislId)
-        dg.add_uint16(2)
-        dg.add_uint16(field.number)
+        addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
+        dg.addUint32(self.account.dislId)
+        dg.addUint16(2)
+        dg.addUint16(field.getNumber())
         field.pack_value(dg, avatars)
-        dg.add_uint16(del_field.number)
-        del_field.pack_value(dg, self.avs_deleted)
+        dg.addUint16(delField.getNumber())
+        delField.pack_value(dg, self.avsDeleted)
         self.service.send_datagram(dg)
 
         resp = Datagram()
-        resp.add_uint16(CLIENT_DELETE_AVATAR_RESP)
-        resp.add_uint8(0) # Return code
+        resp.addUint16(CLIENT_DELETE_AVATAR_RESP)
+        resp.addUint8(0) # Return code
 
         av_count = sum((1 if potAv else 0 for potAv in self.potential_avatars))
-        resp.add_uint16(av_count)
+        resp.addUint16(av_count)
 
-        for potAv in self.potential_avatars:
+        for potAv in self.potentialAvatars:
             if not potAv:
                 continue
-            resp.add_uint32(potAv.do_id)
-            resp.add_string16(potAv.name.encode('utf-8'))
-            resp.add_string16(potAv.wish_name.encode('utf-8'))
-            resp.add_string16(potAv.approved_name.encode('utf-8'))
-            resp.add_string16(potAv.rejected_name.encode('utf-8'))
+            resp.addUint32(potAv.doId)
+            resp.addString(potAv.name.encode('utf-8'))
+            resp.addString(potAv.wishName.encode('utf-8'))
+            resp.addString(potAv.approvedName.encode('utf-8'))
+            resp.addString(potAv.rejectedName.encode('utf-8'))
 
-            dnaString = potAv.dna_string
+            dnaString = potAv.dnaString
 
             if not isinstance(dnaString, bytes):
                 dnaString = dnaString.encode()
 
-            resp.add_string16(dnaString)
-            resp.add_uint8(potAv.index)
+            resp.addString(dnaString)
+            resp.addUint8(potAv.index)
 
         self.send_datagram(resp)
 
-    def receive_remove_interest(self, dgi, ai=False):
-        handle = dgi.get_uint16()
+    def receive_remove_interest(self, dgi, ai = False):
+        handle = dgi.getUint16()
 
-        if dgi.remaining():
-            context = dgi.get_uint32()
+        if dgi.getRemainingSize():
+            context = dgi.getUint32()
         else:
             context = None
 
@@ -647,93 +654,99 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.log.debug(f'Got remove interest request from client {self.channel} for interest handle '
                                f'{handle} with context {context}')
 
-        parent_id = interest.parent_id
+        parentId = interest.parentId
 
-        uninterested_zones = []
+        uninterestedZones = []
 
         for zone in interest.zones:
-            if len(self.lookup_interest(parent_id, zone)) == 1:
-                uninterested_zones.append(zone)
+            if len(self.lookupInterest(parentId, zone)) == 1:
+                uninterestedZones.append(zone)
 
-        to_remove = []
+        toRemove = []
 
-        for do_id in self.visible_objects:
-            do = self.visible_objects[do_id]
-            if do.parent_id == parent_id and do.zone_id in uninterested_zones:
-                self.service.log.debug(f'Object {do_id} killed by interest remove.')
-                self.send_remove_object(do_id)
+        for doId in self.visibleObjects:
+            do = self.visibleObjects[doId]
+            if do.parentId == parentId and do.zoneId in uninterestedZones:
+                self.service.log.debug(f'Object {doId} killed by interest remove.')
+                self.sendRemoveObject(doId)
 
-                to_remove.append(do_id)
+                toRemove.append(doId)
 
-        for do_id in to_remove:
-            del self.visible_objects[do_id]
+        for doId in toRemove:
+            del self.visibleObjects[doId]
 
-        for zone in uninterested_zones:
-            self.unsubscribe_channel(location_as_channel(parent_id, zone))
+        for zone in uninterestedZones:
+            self.unsubscribe_channel(locationAsChannel(parentId, zone))
 
         self.interests.remove(interest)
 
         if not ai:
             resp = Datagram()
-            resp.add_uint16(CLIENT_DONE_INTEREST_RESP)
-            resp.add_uint16(handle)
-            resp.add_uint32(context)
+            resp.addUint16(CLIENT_DONE_INTEREST_RESP)
+            resp.addUint16(handle)
+            resp.addUint32(context)
             self.send_datagram(resp)
 
-    def receive_get_avatars(self, dgi):
+    def receiveGetAvatars(self, dgi):
         query = Datagram()
-        query.add_server_header([DBSERVERS_CHANNEL, ], self.channel, DBSERVER_ACCOUNT_QUERY)
+        addServerHeader(query, [DBSERVERS_CHANNEL], self.channel, DBSERVER_ACCOUNT_QUERY)
 
-        disl_id = self.account.dislId
-        query.add_uint32(disl_id)
-        field_number = self.service.avatars_field.number
-        query.add_uint16(field_number)
+        dislId = self.account.dislId
+        query.addUint32(dislId)
+        fieldNumber = self.service.avatarsField.getNumber()
+        query.addUint16(fieldNumber)
         self.service.send_datagram(query)
 
-        self.tasks.append(self.service.loop.create_task(self.do_login()))
+        self.tasks.append(self.service.loop.create_task(self.doLogin()))
 
-    async def do_login(self):
+    async def doLogin(self):
         f = DatagramFuture(self.service.loop, DBSERVER_ACCOUNT_QUERY_RESP)
         self.futures.append(f)
         sender, dgi = await f
 
-        av_del_field = self.service.dc_file.namespace['Account']['ACCOUNT_AV_SET_DEL']
+        avDelField = self.service.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET_DEL')
         self.service.log.debug('Begin unpack of deleted avatars.')
         try:
-            self.avs_deleted = av_del_field.unpack_value(dgi)
+            unpacker = DCPacker()
+            unpacker.setUnpackData(dgi.getBlob())
+
+            unpacker.beginUnpack(avDelField)
+
+            self.avsDeleted = avDelField.unpackArgs(unpacker)
+
+            unpacker.endUnpack()
         except Exception:
             import traceback
             traceback.print_exc()
             return
-        self.service.log.debug(f'Avatars deleted list for {self.account.username}: {self.avs_deleted}')
+        self.service.log.debug(f'Avatars deleted list for {self.account.username}: {self.avsDeleted}')
 
-        pos = dgi.tell()
+        pos = dgi.getCurrentIndex()
 
-        avatar_info = [None] * 6
+        avatarInfo = [None] * 6
 
-        for i in range(dgi.get_uint16()):
-            potAv = PotentialAvatar(do_id = dgi.get_uint32(), name = dgi.get_string16(), wish_name = dgi.get_string16(),
-                                     approved_name = dgi.get_string16(), rejected_name = dgi.get_string16(),
-                                     dna_string = dgi.get_blob16(), index = dgi.get_uint8(), allowName = dgi.get_uint8())
+        for i in range(dgi.getUint16()):
+            potAv = PotentialAvatar(doId = dgi.getUint32(), name = dgi.getString(), wishName = dgi.getString(),
+                                     approvedName = dgi.getString(), rejectedName = dgi.getString(),
+                                     dnaString = dgi.getBlob(), index = dgi.getUint8(), allowName = dgi.getUint8())
 
-            avatar_info[potAv.index] = potAv
+            avatarInfo[potAv.index] = potAv
 
-        self.potential_avatars = avatar_info
+        self.potentialAvatars = avatarInfo
 
         self.state = ClientState.AVATAR_CHOOSER
 
         resp = Datagram()
-        resp.add_uint16(CLIENT_GET_AVATARS_RESP)
-        dgi.seek(pos)
-        resp.add_uint8(0) # Return code
-        resp.add_bytes(dgi.remaining_bytes())
+        resp.addUint16(CLIENT_GET_AVATARS_RESP)
+        resp.addUint8(0) # Return code
+        resp.appendData(dgi.getDatagram().getMessage()[pos:])
         self.send_datagram(resp)
 
-    def receive_login(self, dgi):
-        playToken = dgi.get_string16()
-        clientVersion = dgi.get_string16()
-        hashVal = dgi.get_uint32()
-        wantMagicWords = dgi.get_string16()
+    def receiveLogin(self, dgi):
+        playToken = dgi.getString()
+        clientVersion = dgi.getString()
+        hashVal = dgi.getUint32()
+        wantMagicWords = dgi.getString()
 
         if clientVersion != self.service.version:
             self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
@@ -752,7 +765,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             for key in list(data.keys()):
                 value = data[key]
                 if type(value) == str:
-                    data[key] = value.encode('utf-8')
+                    data[key] = value
             self.account = DISLAccount(**data)
         except ValueError as e:
             self.disconnect(ClientDisconnect.LOGIN_ERROR, 'Invalid token')
@@ -763,66 +776,69 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.subscribe_channel(getAccountChannel(self.account.dislId))
 
         resp = Datagram()
-        resp.add_uint16(CLIENT_LOGIN_TOONTOWN_RESP)
+        resp.addUint16(CLIENT_LOGIN_TOONTOWN_RESP)
 
         returnCode = 0  # -13 == period expired
-        resp.add_uint8(returnCode)
+        resp.addUint8(returnCode)
 
-        errorString = b'' # 'Bad DC Version Compare'
-        resp.add_string16(errorString)
+        errorString = '' # 'Bad DC Version Compare'
+        resp.addString(errorString)
 
-        resp.add_uint32(self.account.dislId)
-        resp.add_string16(self.account.username)
-        account_name_approved = True
-        resp.add_uint8(account_name_approved)
-        resp.add_string16(self.account.whitelistChatEnabled)
-        resp.add_string16(self.account.createFriendsWithChat)
-        resp.add_string16(self.account.chatCodeCreationRule)
+        resp.addUint32(self.account.dislId)
+        resp.addString(self.account.username)
+
+        accountNameApproved = True
+        resp.addUint8(accountNameApproved)
+
+        resp.addString(self.account.whitelistChatEnabled)
+        resp.addString(self.account.createFriendsWithChat)
+        resp.addString(self.account.chatCodeCreationRule)
 
         t = time.time() * 10e6
         usecs = int(t % 10e6)
         secs = int(t / 10e6)
-        resp.add_uint32(secs)
-        resp.add_uint32(usecs)
+        resp.addUint32(secs)
+        resp.addUint32(usecs)
 
-        resp.add_string16(self.account.access)
-        resp.add_string16(self.account.whitelistChatEnabled)
+        resp.addString(self.account.access)
+        resp.addString(self.account.whitelistChatEnabled)
 
         lastLoggedIn = time.strftime('%c') # time.strftime('%c')
-        resp.add_string16(lastLoggedIn.encode('utf-8'))
+        resp.addString(lastLoggedIn)
 
-        account_days = 0
-        resp.add_int32(account_days)
-        resp.add_string16(self.account.accountType)
-        resp.add_string16(self.account.username)
+        accountDays = 0
+        resp.add_int32(accountDays)
+
+        resp.addString(self.account.accountType)
+        resp.addString(self.account.username)
 
         self.send_datagram(resp)
 
-    def receive_add_interest(self, dgi, ai=False):
-        handle = dgi.get_uint16()
-        context_id = dgi.get_uint32()
-        parent_id = dgi.get_uint32()
+    def receive_add_interest(self, dgi, ai = False):
+        handle = dgi.getUint16()
+        contextId = dgi.getUint32()
+        parentId = dgi.getUint32()
 
-        num_zones = dgi.remaining() // 4
+        numZones = dgi.getRemainingSize() // 4
 
         zones = []
 
-        for i in range(num_zones):
-            zoneId = dgi.get_uint32()
+        for i in range(numZones):
+            zoneId = dgi.getUint32()
             if zoneId == 1:
                 continue
             zones.append(zoneId)
-            if num_zones == 1:
-                canonicalZoneId = getCanonicalZoneId(zoneId)
-                if canonicalZoneId in VIS_ZONES:
-                    for visZoneId in VIS_ZONES[canonicalZoneId]:
-                        trueZoneId = getTrueZoneId(visZoneId, zoneId)
-                        zones.append(trueZoneId)
+            if numZones == 1:
+                canonicalzoneId = getCanonicalZoneId(zoneId)
+                if canonicalzoneId in VIS_ZONES:
+                    for viszoneId in VIS_ZONES[canonicalzoneId]:
+                        truezoneId = getTrueZoneId(viszoneId, zoneId)
+                        zones.append(truezoneId)
 
-        self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {context_id} '
-                               f'for location {parent_id} {zones}')
+        self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {contextId} '
+                               f'for location {parentId} {zones}')
 
-        if self.state <= ClientState.AUTHENTICATED and parent_id != OTP_DO_ID_TOONTOWN:
+        if self.state <= ClientState.AUTHENTICATED and parentId != OTP_DO_ID_TOONTOWN:
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 
@@ -834,13 +850,13 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 break
 
         if previous_interest is None:
-            interest = Interest(self.channel, handle, context_id, parent_id, zones)
+            interest = Interest(self.channel, handle, contextId, parentId, zones)
             self.interests.append(interest)
         else:
             self.service.log.debug(f'Altering interest {handle} (done: {previous_interest.done}): {previous_interest.zones} -> {zones}')
             self.interests.remove(previous_interest)
 
-            if previous_interest.parent_id != parent_id:
+            if previous_interest.parentId != parentId:
                 killed_zones = previous_interest.zones
             else:
                 killed_zones = set(previous_interest.zones).difference(set(zones))
@@ -853,22 +869,22 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.log.debug(f'Zones killed by altering interest: {killed_zones}')
 
             if killed_zones:
-                for do_id in list(self.visible_objects.keys()):
-                    obj = self.visible_objects[do_id]
-                    if obj.parent_id == parent_id and obj.zone_id in killed_zones:
-                        self.service.log.debug(f'Object {obj.do_id}, location ({obj.parent_id}, {obj.zone_id}), killed by altered interest: {zones}')
-                        self.send_remove_object(obj.do_id)
-                        del self.visible_objects[do_id]
+                for doId in list(self.visibleObjects.keys()):
+                    obj = self.visibleObjects[doId]
+                    if obj.parentId == parentId and obj.zoneId in killed_zones:
+                        self.service.log.debug(f'Object {obj.doId}, location ({obj.parentId}, {obj.zoneId}), killed by altered interest: {zones}')
+                        self.sendRemoveObject(obj.doId)
+                        del self.visibleObjects[doId]
 
             for zone in killed_zones:
-                self.unsubscribe_channel(location_as_channel(previous_interest.parent_id, zone))
+                self.unsubscribe_channel(locationAsChannel(previous_interest.parentId, zone))
 
-            interest = Interest(self.channel, handle, context_id, parent_id, zones)
+            interest = Interest(self.channel, handle, contextId, parentId, zones)
             self.interests.append(interest)
 
-            for do_id in list(self.pending_objects.keys()):
-                if not self.pending_object_needed(do_id):
-                    del self.pending_objects[do_id]
+            for doId in list(self.pendingObjects.keys()):
+                if not self.pendingObjectNeeded(doId):
+                    del self.pendingObjects[doId]
 
         interest.ai = ai
 
@@ -876,180 +892,178 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             interest.done = True
             if not ai:
                 resp = Datagram()
-                resp.add_uint16(CLIENT_DONE_INTEREST_RESP)
-                resp.add_uint16(handle)
-                resp.add_uint32(context_id)
+                resp.addUint16(CLIENT_DONE_INTEREST_RESP)
+                resp.addUint16(handle)
+                resp.addUint32(contextId)
                 self.send_datagram(resp)
                 return
 
-        query_request = Datagram()
-        query_request.add_server_header([parent_id], self.channel, STATESERVER_QUERY_ZONE_OBJECT_ALL)
-        query_request.add_uint16(handle)
-        query_request.add_uint32(context_id)
-        query_request.add_uint32(parent_id)
+        queryReq = Datagram()
+        addServerHeader(queryReq, [parentId], self.channel, STATESERVER_QUERY_ZONE_OBJECT_ALL)
+        queryReq.addUint16(handle)
+        queryReq.addUint32(contextId)
+        queryReq.addUint32(parentId)
 
         for zone in zones:
-            query_request.add_uint32(zone)
-            self.subscribe_channel(location_as_channel(parent_id, zone))
+            queryReq.addUint32(zone)
+            self.subscribe_channel(locationAsChannel(parentId, zone))
 
-        self.service.send_datagram(query_request)
+        self.service.send_datagram(queryReq)
 
     def handle_datagram(self, dg, dgi):
-        pos = dgi.tell()
-        sender = dgi.get_channel()
+        pos = dgi.getCurrentIndex()
+        sender = dgi.getInt64()
 
         if sender == self.channel:
             return
 
-        msgtype = dgi.get_uint16()
+        msgtype = dgi.getUint16()
 
         self.check_futures(dgi, msgtype, sender)
 
         if msgtype == STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER:
-            self.handle_object_entrance(dgi, sender)
+            self.handleObjectEntrance(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_ENTER_OWNER_RECV:
-            self.handle_owned_object_entrance(dgi, sender)
+            self.handleOwnedObjectEntry(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_CHANGE_ZONE:
-            do_id = dgi.get_uint32()
+            doId = dgi.get_uint32()
 
-            if self.queue_pending(do_id, dgi, pos):
-                self.service.log.debug(f'Queued location change for pending object {do_id}.')
+            if self.queuePending(doId, dgi, pos):
+                self.service.log.debug(f'Queued location change for pending object {doId}.')
                 return
 
-            self.handle_location_change(dgi, sender, do_id)
+            self.handle_location_change(dgi, sender, doId)
         elif msgtype == STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE:
-            self.handle_interest_done(dgi)
+            self.handleInterestDone(dgi)
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
-            do_id = dgi.get_uint32()
+            doId = dgi.getUint32()
 
-            if not self.object_exists(do_id):
-                queued = self.queue_pending(do_id, dgi, pos)
+            if not self.objectExists(doId):
+                queued = self.queuePending(doId, dgi, pos)
                 if queued:
-                    self.service.log.debug(f'Queued field update for pending object {do_id}.')
+                    self.service.log.debug(f'Queued field update for pending object {doId}.')
                 else:
-                    self.service.log.debug(f'Got update for unknown object {do_id}.')
+                    self.service.log.debug(f'Got update for unknown object {doId}.')
                 return
 
-            self.handle_update_field(dgi, sender, do_id)
+            self.handleUpdateField(dgi, sender, doId)
         elif msgtype == STATESERVER_OBJECT_DELETE_RAM:
-            do_id = dgi.get_uint32()
+            doId = dgi.get_uint32()
 
-            if do_id == self.avatar_id:
+            if doId == self.avatarId:
                 if sender == self.account.dislId << 32:
                     self.disconnect(ClientDisconnect.RELOGGED, 'redundant login')
                 else:
                     self.disconnect(ClientDisconnect.SHARD_DISCONNECT, 'district reset')
-            elif not self.object_exists(do_id):
-                self.service.log.debug(f'Queued deletion for pending object {do_id}.')
-                self.queue_pending(do_id, dgi, pos)
+            elif not self.objectExists(doId):
+                self.service.log.debug(f'Queued deletion for pending object {doId}.')
+                self.queue_pending(doId, dgi, pos)
                 return
             else:
-                self.send_remove_object(do_id)
-                del self.visible_objects[do_id]
+                self.sendRemoveObject(doId)
+                del self.visibleObjects[doId]
         elif msgtype == CLIENT_AGENT_SET_INTEREST:
-            self.receive_add_interest(dgi, ai=True)
+            self.receive_add_interest(dgi, ai = True)
         elif msgtype == CLIENT_AGENT_REMOVE_INTEREST:
-            self.receive_remove_interest(dgi, ai=True)
+            self.receive_remove_interest(dgi, ai = True)
         elif msgtype in {CLIENT_FRIEND_ONLINE, CLIENT_FRIEND_OFFLINE, CLIENT_GET_FRIEND_LIST_RESP, CLIENT_GET_AVATAR_DETAILS_RESP}:
             dg = Datagram()
-            dg.add_uint16(msgtype)
-            dg.add_bytes(dgi.remaining_bytes())
+            dg.addUint16(msgtype)
+            dg.appendData(dgi.getRemainingBytes())
             self.send_datagram(dg)
         else:
            self.service.log.debug(f'Client {self.channel} received unhandled upstream msg {msgtype}.')
 
-    def handle_update_field(self, dgi, sender, do_id):
+    def handleUpdateField(self, dgi, sender, doId):
         if sender == self.channel:
             return
 
-        if not self.object_exists(do_id):
-            self.service.log.debug(f'Got field update for unknown object {do_id}')
+        if not self.objectExists(doId):
+            self.service.log.debug(f'Got field update for unknown object {doId}')
 
-        pos = dgi.tell()
-
-        field_number = dgi.get_uint16()
-        field = self.service.dc_file.fields[field_number]()
+        fieldNumber = dgi.getUint16()
+        field = self.service.dcFile.getFieldByIndex(fieldNumber)
 
         resp = Datagram()
-        resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
-        resp.add_uint32(do_id)
-        resp.add_uint16(field_number)
-        resp.add_bytes(dgi.remaining_bytes())
+        resp.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
+        resp.addUint32(doId)
+        resp.addUint16(fieldNumber)
+        resp.appendData(dgi.getRemainingBytes())
 
         self.send_datagram(resp)
 
-    def handle_owned_object_entrance(self, dgi, sender):
-        do_id = dgi.get_uint32()
-        parent_id = dgi.get_uint32()
-        zone_id = dgi.get_uint32()
-        dc_id = dgi.get_uint16()
+    def handleOwnedObjectEntry(self, dgi, sender):
+        doId = dgi.getUint32()
+        parentId = dgi.getUint32()
+        zoneId = dgi.getUint32()
+        dcId = dgi.getUint16()
 
-        self.owned_objects[do_id] = ObjectInfo(do_id, dc_id, parent_id, zone_id)
+        self.ownedObjects[doId] = ObjectInfo(doId, dcId, parentId, zoneId)
 
         resp = Datagram()
-        resp.add_uint16(CLIENT_GET_AVATAR_DETAILS_RESP)
-        resp.add_uint32(self.avatar_id)
-        resp.add_uint8(0) # Return code
-        resp.add_bytes(dgi.remaining_bytes())
+        resp.addUint16(CLIENT_GET_AVATAR_DETAILS_RESP)
+        resp.addUint32(self.avatarId)
+        resp.addUint8(0) # Return code
+        resp.appendData(dgi.getRemainingBytes())
         self.send_datagram(resp)
 
-    def handle_location_change(self, dgi, sender, do_id):
-        new_parent = dgi.get_uint32()
-        new_zone = dgi.get_uint32()
-        old_parent = dgi.get_uint32()
-        old_zone = dgi.get_uint32()
-        self.service.log.debug(f'Handle location change for {do_id}: ({old_parent} {old_zone}) -> ({new_parent} {new_zone})')
+    def handle_location_change(self, dgi, sender, doId):
+        newParent = dgi.get_uint32()
+        newZone = dgi.get_uint32()
+        oldParent = dgi.get_uint32()
+        oldZone = dgi.get_uint32()
+        self.service.log.debug(f'Handle location change for {doId}: ({oldParent} {oldZone}) -> ({newParent} {newZone})')
 
         disable = True
 
         for interest in self.interests:
-            if interest.parent_id == new_parent and new_zone in interest.zones:
+            if interest.parentId == newParent and newZone in interest.zones:
                 disable = False
                 break
 
-        visible = do_id in self.visible_objects
-        owned = do_id in self.owned_objects
+        visible = doId in self.visibleObjects
+        owned = doId in self.ownedObjects
 
         if not visible and not owned:
-            self.service.log.debug(f'Got location change for unknown object {do_id}')
+            self.service.log.debug(f'Got location change for unknown object {doId}')
             return
 
         if visible:
-            self.visible_objects[do_id].parent_id = new_parent
-            self.visible_objects[do_id].zone_id = new_zone
+            self.visibleObjects[doId].parentId = newParent
+            self.visibleObjects[doId].zoneId = newZone
 
         if owned:
-            self.owned_objects[do_id].parent_id = new_parent
-            self.owned_objects[do_id].zone_id = new_zone
+            self.ownedObjects[doId].parentId = newParent
+            self.ownedObjects[doId].zoneId = newZone
 
         if disable and visible:
             if owned:
-                self.send_object_location(do_id, new_parent, new_zone)
+                self.sendObjectLocation(doId, newParent, newZone)
                 return
-            self.service.log.debug(f'Got location change and object is no longer visible. Disabling {do_id}')
-            self.send_remove_object(do_id)
-            del self.visible_objects[do_id]
+            self.service.log.debug(f'Got location change and object is no longer visible. Disabling {doId}')
+            self.sendRemoveObject(doId)
+            del self.visibleObjects[doId]
         else:
-            self.send_object_location(do_id, new_parent, new_zone)
+            self.sendObjectLocation(doId, newParent, newZone)
 
-    def send_remove_object(self, do_id):
-        self.service.log.debug(f'Sending removal of {do_id}.')
+    def sendRemoveObject(self, doId):
+        self.service.log.debug(f'Sending removal of {doId}.')
         resp = Datagram()
-        resp.add_uint16(CLIENT_OBJECT_DISABLE)
-        resp.add_uint32(do_id)
+        resp.addUint16(CLIENT_OBJECT_DISABLE)
+        resp.addUint32(doId)
         self.send_datagram(resp)
 
-    def send_object_location(self, do_id, new_parent, new_zone):
+    def sendObjectLocation(self, doId, newParent, newZone):
         resp = Datagram()
-        resp.add_uint16(CLIENT_OBJECT_LOCATION)
-        resp.add_uint32(do_id)
-        resp.add_uint32(new_parent)
-        resp.add_uint32(new_zone)
+        resp.addUint16(CLIENT_OBJECT_LOCATION)
+        resp.addUint32(doId)
+        resp.addUint32(newParent)
+        resp.addUint32(newZone)
         self.send_datagram(resp)
 
-    def handle_interest_done(self, dgi):
-        handle = dgi.get_uint16()
-        context = dgi.get_uint32()
+    def handleInterestDone(self, dgi):
+        handle = dgi.getUint16()
+        context = dgi.getUint32()
         self.service.log.debug(f'sending interest done for handle {handle} context {context}')
 
         interest = None
@@ -1069,128 +1083,127 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         interest.done = True
 
-        pending = [self.pending_objects.pop(do_id) for do_id in interest.pending_objects if do_id in self.pending_objects]
+        pending = [self.pendingObjects.pop(doId) for doId in interest.pendingObjects if doId in self.pendingObjects]
         # Need this sorting.
-        pending.sort(key=lambda p: p.dc_id)
-        del interest.pending_objects[:]
+        pending.sort(key = lambda p: p.dcId)
+        del interest.pendingObjects[:]
 
-        self.service.log.debug(f'Replaying datagrams for {[p.do_id for p in pending]}')
+        self.service.log.debug(f'Replaying datagrams for {[p.doId for p in pending]}')
 
-        for pending_object in pending:
-            for datagram in pending_object.datagrams:
-                self.handle_datagram(datagram, datagram.iterator())
+        for pendingObject in pending:
+            for datagram in pendingObject.datagrams:
+                self.handle_datagram(datagram, DatagramIterator(datagram))
 
         if not interest.ai:
             resp = Datagram()
-            resp.add_uint16(CLIENT_DONE_INTEREST_RESP)
-            resp.add_uint16(handle)
-            resp.add_uint32(context)
+            resp.addUint16(CLIENT_DONE_INTEREST_RESP)
+            resp.addUint16(handle)
+            resp.addUint32(context)
             self.send_datagram(resp)
 
-    def lookup_interest(self, parent_id, zone_id):
-        return [interest for interest in self.interests if interest.parent_id == parent_id and zone_id in interest.zones]
+    def lookupInterest(self, parentId, zoneId):
+        return [interest for interest in self.interests if interest.parentId == parentId and zoneId in interest.zones]
 
-    def handle_object_entrance(self, dgi, sender):
+    def handleObjectEntrance(self, dgi, sender):
         # Before msgtype and sender
-        pos = dgi.tell() - 10
-        has_other = dgi.get_uint8()
-        do_id = dgi.get_uint32()
-        parent_id = dgi.get_uint32()
-        zone_id = dgi.get_uint32()
-        dc_id = dgi.get_uint16()
+        pos = dgi.getCurrentIndex() - 10
+        hasOther = dgi.getUint8()
+        doId = dgi.getUint32()
+        parentId = dgi.getUint32()
+        zoneId = dgi.getUint32()
+        dcId = dgi.getUint16()
 
-        pending_interests = list(self.get_pending_interests(parent_id, zone_id))
+        pendingInterests = list(self.getPendingInterests(parentId, zoneId))
 
-        if len(pending_interests):
-            self.service.log.debug(f'Queueing object generate for {do_id} in ({parent_id} {zone_id}) {do_id in self.visible_objects}')
-            pending_object = PendingObject(do_id, dc_id, parent_id, zone_id, datagrams=[])
-            dg = Datagram()
-            dgi.seek(pos)
-            dg.add_bytes(dgi.remaining_bytes())
-            pending_object.datagrams.append(dg)
-            self.pending_objects[do_id] = pending_object
+        if len(pendingInterests):
+            self.service.log.debug(f'Queueing object generate for {doId} in ({parentId} {zoneId}) {doId in self.visibleObjects}')
+            pendingObject = PendingObject(doId, dcId, parentId, zoneId, datagrams = [])
 
-            for interest in pending_interests:
-                interest.pending_objects.append(do_id)
+            dg = Datagram(dgi.getDatagram().getMessage()[pos:])
+
+            pendingObject.datagrams.append(dg)
+            self.pendingObjects[doId] = pendingObject
+
+            for interest in pendingInterests:
+                interest.pendingObjects.append(doId)
             return
 
-        if self.object_exists(do_id):
+        if self.objectExists(doId):
             return
 
-        self.visible_objects[do_id] = ObjectInfo(do_id, dc_id, parent_id, zone_id)
+        self.visibleObjects[doId] = ObjectInfo(doId, dcId, parentId, zoneId)
 
-        self.send_object_entrance(parent_id, zone_id, dc_id, do_id, dgi, has_other)
+        self.sendObjectEntrance(parentId, zoneId, dcId, doId, dgi, hasOther)
 
-    def get_pending_interests(self, parent_id, zone_id):
+    def getPendingInterests(self, parentId, zoneId):
         for interest in self.interests:
-            if not interest.done and interest.parent_id == parent_id and zone_id in interest.zones:
+            if not interest.done and interest.parentId == parentId and zoneId in interest.zones:
                 yield interest
 
-    def object_exists(self, do_id):
-        return do_id in self.visible_objects or do_id in self.owned_objects or do_id in self.uberdogs
+    def objectExists(self, doId):
+        return doId in self.visibleObjects or doId in self.ownedObjects or doId in self.uberdogs
 
-    def queue_pending(self, do_id, dgi, pos):
-        if do_id in self.pending_objects:
-            dgi.seek(pos)
-            dg = Datagram()
-            dg.add_bytes(dgi.remaining_bytes())
-            self.pending_objects[do_id].datagrams.append(dg)
+    def queuePending(self, doId, dgi, pos):
+        if doId in self.pendingObjects:
+            _dg = Datagram(dgi.getRemainingBytes())
+            dg = DatagramIterator(_dg).getDatagram()
+            self.pendingObjects[doId].datagrams.append(dg)
             return True
         return False
 
-    def pending_object_needed(self, do_id):
+    def pendingObjectNeeded(self, doId):
         for interest in self.interests:
-            if do_id in interest.pending_objects:
+            if doId in interest.pendingObjects:
                 return True
 
         return False
 
-    def send_object_entrance(self, parent_id, zone_id, dc_id, do_id, dgi, has_other):
+    def sendObjectEntrance(self, parentId, zoneId, dcId, doId, dgi, hasOther):
         resp = Datagram()
-        resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER if has_other else CLIENT_CREATE_OBJECT_REQUIRED)
-        resp.add_uint32(parent_id)
-        resp.add_uint32(zone_id)
-        resp.add_uint16(dc_id)
-        resp.add_uint32(do_id)
-        resp.add_bytes(dgi.remaining_bytes())
+        resp.addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER if hasOther else CLIENT_CREATE_OBJECT_REQUIRED)
+        resp.addUint32(parentId)
+        resp.addUint32(zoneId)
+        resp.addUint16(dcId)
+        resp.addUint32(doId)
+        resp.appendData(dgi.getRemainingBytes())
         self.send_datagram(resp)
 
-    def get_potential_avatar(self, av_id):
-        for pot_av in self.potential_avatars:
-            if pot_av and pot_av.do_id == av_id:
-                return pot_av
+    def getPotentialAvatar(self, avId):
+        for potAv in self.potentialAvatars:
+            if potAv and potAv.doId == avId:
+                return potAv
 
-    def send_go_get_lost(self, booted_index, booted_text):
+    def send_go_get_lost(self, bootedIndex, bootedText):
         resp = Datagram()
-        resp.add_uint16(CLIENT_GO_GET_LOST)
-        resp.add_uint16(booted_index)
-        resp.add_string16(booted_text.encode('utf-8'))
+        resp.addUint16(CLIENT_GO_GET_LOST)
+        resp.addUint16(bootedIndex)
+        resp.addString(bootedText)
         self.send_datagram(resp)
 
     def annihilate(self):
         self.service.upstream.unsubscribe_all(self)
 
     def receiveSetWishNameClear(self, dgi):
-        avatarId = dgi.get_uint32()
-        actionFlag = dgi.get_uint8()
+        avatarId = dgi.getUint32()
+        actionFlag = dgi.getUint8()
 
         # Send this to the Database server.
         resp = Datagram()
-        resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
-        resp.add_uint32(avatarId)
-        resp.add_uint8(actionFlag)
+        addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
+        resp.addUint32(avatarId)
+        resp.addUint8(actionFlag)
         self.service.send_datagram(resp)
 
     def receiveGetObjectDetails(self, dgi, msgType: int):
         doId = dgi.get_uint32()
-        access = 2 if self.account.access == b'FULL' else 1
+        access = 2 if self.account.access == 'FULL' else 1
         dclass = messageToClass[msgType]
 
         # Send this to the Database server.
         resp = Datagram()
-        resp.add_server_header([DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_AVATAR_DETAILS)
-        resp.add_uint32(self.avatar_id)
-        resp.add_uint32(doId)
-        resp.add_uint8(access)
-        resp.add_string16(dclass)
+        addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_AVATAR_DETAILS)
+        resp.addUint32(self.avatarId)
+        resp.addUint32(doId)
+        resp.addUint8(access)
+        resp.addString(dclass)
         self.service.send_datagram(resp)

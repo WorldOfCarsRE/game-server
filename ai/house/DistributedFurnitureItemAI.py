@@ -26,7 +26,7 @@ class DistributedFurnitureItemAI(DistributedHouseItemAI, DistributedSmoothNodeAI
         DistributedHouseItemAI.delete(self)
 
     def getItem(self):
-        return (self.furnitureMgr.do_id, self.item.getBlob(store = CatalogItem.Customization))
+        return (self.furnitureMgr.doId, self.item.getBlob(store = CatalogItem.Customization))
 
     def d_setSmPosHpr(self, x, y, z, h, p, r, t):
         self.sendUpdate('setSmPosHpr', [x, y, z, h, p, r, t])

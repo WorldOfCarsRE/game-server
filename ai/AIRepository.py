@@ -1,12 +1,12 @@
 from otp.messagetypes import *
-from dc.util import Datagram
+from panda3d.core import Datagram, DatagramIterator
 from otp.constants import *
 from otp.zone import *
 from otp.util import *
 
 from panda3d.core import UniqueIdAllocator
 from direct.showbase.MessengerGlobal import *
-from dc.parser import parse_dc_file
+from panda3d.direct import DCFile, DCPacker
 import queue
 
 from typing import Dict, Tuple
@@ -38,7 +38,7 @@ class AIProtocol(ToontownProtocol):
 
     def send_datagram(self, data: Datagram):
         loop = self.service.loop
-        loop.call_soon_threadsafe(self.outgoing_q.put_nowait, data.bytes())
+        loop.call_soon_threadsafe(self.outgoing_q.put_nowait, data.getMessage())
 
 class AIRepository:
     def __init__(self):
@@ -64,7 +64,8 @@ class AIRepository:
         self.zoneTable: Dict[int, set] = {}
         self.parentTable: Dict[int, set] = {}
 
-        self.dcFile = parse_dc_file('etc/dclass/toon.dc')
+        self.dcFile = DCFile()
+        self.dcFile.read('etc/dclass/toon.dc')
 
         self.currentSender = None
         self.loop = None
@@ -114,11 +115,11 @@ class AIRepository:
         return task.cont
 
     def handleDatagram(self, dg):
-        dgi = dg.iterator()
+        dgi = DatagramIterator(dg)
 
-        recipient_count = dgi.get_uint8()
-        recipients = [dgi.get_channel() for _ in range(recipient_count)]
-        self.currentSender = dgi.get_channel()
+        recipientCount = dgi.get_uint8()
+        recipients = [dgi.getInt64() for _ in range(recipientCount)]
+        self.currentSender = dgi.getInt64()
         msg_type = dgi.get_uint16()
 
         if msg_type == STATESERVER_OBJECT_ENTER_AI_RECV:
@@ -141,16 +142,16 @@ class AIRepository:
             print('Unhandled msg type: ', msg_type)
 
     def handleChangeZone(self, dgi):
-        do_id = dgi.get_uint32()
-        new_parent = dgi.get_uint32()
-        new_zone = dgi.get_uint32()
+        doId = dgi.getUint32()
+        newParent = dgi.getUint32()
+        newZone = dgi.getUint32()
 
         # Should we only change location if the old location matches?
-        old_parent = dgi.get_uint32()
-        old_zone = dgi.get_uint32()
+        oldParent = dgi.getUint32()
+        oldZone = dgi.getUint32()
 
-        self.doTable[do_id].location = (new_parent, new_zone)
-        self.storeLocation(do_id, old_parent, old_zone, new_parent, new_zone)
+        self.doTable[doId].location = (newParent, newZone)
+        self.storeLocation(doId, oldParent, oldZone, newParent, newZone)
 
     def storeLocation(self, doId, oldParent, oldZone, newParent, newZone):
         if not doId:
@@ -186,54 +187,60 @@ class AIRepository:
         if newZone != oldZone and newParentObj:
             newParentObj.handleChildArriveZone(obj, newZone)
 
-    def sendLocation(self, do_id, old_parent: int, old_zone: int, new_parent: int, new_zone: int):
+    def sendLocation(self, doId, old_parent: int, old_zone: int, new_parent: int, new_zone: int):
         dg = Datagram()
-        dg.add_server_header([do_id], self.ourChannel, STATESERVER_OBJECT_SET_ZONE)
-        dg.add_uint32(new_parent)
-        dg.add_uint32(new_zone)
-        dg.add_uint32(old_parent)
-        dg.add_uint32(old_zone)
+        addServerHeader(dg, [doId], self.ourChannel, STATESERVER_OBJECT_SET_ZONE)
+        dg.addUint32(new_parent)
+        dg.addUint32(new_zone)
+        dg.addUint32(old_parent)
+        dg.addUint32(old_zone)
         self.send(dg)
 
     @staticmethod
     def isClientChannel(channel):
         return config['ClientAgent.MIN_CHANNEL'] <= channel <= config['ClientAgent.MAX_CHANNEL']
 
-    def setInterest(self, client_channel, handle, context, parent_id, zones):
+    def setInterest(self, clientChannel, handle, context, parentId, zones):
         dg = Datagram()
-        dg.add_server_header([client_channel], self.ourChannel, CLIENT_AGENT_SET_INTEREST)
-        dg.add_uint16(handle)
-        dg.add_uint32(context)
-        dg.add_uint32(parent_id)
+        addServerHeader(dg, [clientChannel], self.ourChannel, CLIENT_AGENT_SET_INTEREST)
+        dg.addUint16(handle)
+        dg.addUint32(context)
+        dg.addUint32(parentId)
         for zone in zones:
-            dg.add_uint32(zone)
+            dg.addUint32(zone)
         self.send(dg)
 
-    def removeInterest(self, client_channel, handle, context):
+    def removeInterest(self, clientChannel, handle, context):
         dg = Datagram()
-        dg.add_server_header([client_channel], self.ourChannel, CLIENT_AGENT_REMOVE_INTEREST)
-        dg.add_uint16(handle)
-        dg.add_uint32(context)
+        addServerHeader(dg, [clientChannel], self.ourChannel, CLIENT_AGENT_REMOVE_INTEREST)
+        dg.addUint16(handle)
+        dg.addUint32(context)
         self.send(dg)
 
     def handleUpdateField(self, dgi):
-        do_id = dgi.get_uint32()
-        field_number = dgi.get_uint16()
+        doId = dgi.getUint32()
+        fieldNumber = dgi.getUint16()
 
         # TODO: security check here for client senders.
 
-        field = self.dcFile.fields[field_number]()
+        field = self.dcFile.getFieldByIndex(fieldNumber)
 
         self.currentSender = self.currentSender
-        do = self.doTable[do_id]
+        do = self.doTable[doId]
+
+        unpacker = DCPacker()
+        unpacker.setUnpackData(dgi.getRemainingBytes())
+
+        unpacker.beginUnpack(field)
+
         try:
-            field.receive_update(do, dgi)
+            field.receiveUpdate(unpacker, do)
+            unpacker.endUnpack()
         except Exception as e:
-            print(f'failed to handle field update: <{field}> from {self.currentAvatarSender}')
+            print(f'failed to handle field update: <{field.getName()}> from {self.currentAvatarSender}')
             import traceback
             traceback.print_exc()
-            dgi.seek(0)
-            print('datagram:', dgi.remaining_bytes())
+            print('datagram:', dgi.getRemainingBytes())
 
     @property
     def currentAvatarSender(self):
@@ -244,39 +251,39 @@ class AIRepository:
         return getAccountIDFromChannel(self.currentSender)
 
     def handleObjEntry(self, dgi):
-        do_id = dgi.get_uint32()
-        parent_id = dgi.get_uint32()
-        zone_id = dgi.get_uint32()
-        dc_id = dgi.get_uint16()
+        doId = dgi.getUint32()
+        parentId = dgi.getUint32()
+        zoneId = dgi.getUint32()
+        dcId = dgi.getUint16()
 
-        dclass = self.dcFile.classes[dc_id]
+        dclass = self.dcFile.getClass(dcId)
 
-        if do_id in self.doTable:
+        if doId in self.doTable:
             # This is a response from a generate by us.
-            do = self.doTable[do_id]
+            do = self.doTable[doId]
             do.queueUpdates = False
             while do.updateQueue:
                 dg = do.updateQueue.popleft()
                 self.send(dg)
             return
 
-        if dclass.name in ('DistributedToon', 'DistributedEstate', 'DistributedHouse'):
-            module = import_module(f'ai.{dclass.name[11:].lower()}.{dclass.name}AI')
-            obj = getattr(module, f'{dclass.name}AI')(self)
+        if dclass.getName() in ('DistributedToon', 'DistributedEstate', 'DistributedHouse'):
+            module = import_module(f'ai.{dclass.getName()[11:].lower()}.{dclass.getName()}AI')
+            obj = getattr(module, f'{dclass.getName()}AI')(self)
             # Don't queue updates as this object was generated by the stateserver.
             obj.queueUpdates = False
-            obj.do_id = do_id
-            obj.parentId = parent_id
-            obj.zoneId = zone_id
-            dclass.receive_update_all_required(obj, dgi)
-            self.doTable[obj.do_id] = obj
-            self.storeLocation(do_id, 0, 0, parent_id, zone_id)
+            obj.doId = doId
+            obj.parentId = parentId
+            obj.zoneId = zoneId
+            dclass.receiveUpdateAllRequired(obj, dgi)
+            self.doTable[obj.doId] = obj
+            self.storeLocation(doId, 0, 0, parentId, zoneId)
             obj.announceGenerate()
         else:
             print('unknown object entry: %s' % dclass.name)
 
     def handleObjExit(self, dgi):
-        doId = dgi.get_uint32()
+        doId = dgi.getUint32()
 
         try:
             do = self.doTable.pop(doId)
@@ -304,8 +311,8 @@ class AIRepository:
         self._registedChannels.add(channel)
 
         dg = Datagram()
-        dg.add_server_control_header(CONTROL_SET_CHANNEL)
-        dg.add_channel(channel)
+        addServerControlHeader(dg, CONTROL_SET_CHANNEL)
+        dg.addUint64(channel)
         self.send(dg)
 
     def unregisterForChannel(self, channel):
@@ -314,24 +321,24 @@ class AIRepository:
         self._registedChannels.remove(channel)
 
         dg = Datagram()
-        dg.add_server_control_header(CONTROL_REMOVE_CHANNEL)
-        dg.add_channel(channel)
+        addServerControlHeader(dg, CONTROL_REMOVE_CHANNEL)
+        dg.addUint64(channel)
         self.send(dg)
 
     def send(self, dg):
         self.connection.send_datagram(dg)
 
-    def generateWithRequired(self, do, parent_id, zone_id, optional=()):
-        do_id = self.allocateChannel()
-        self.generateWithRequiredAndId(do, do_id, parent_id, zone_id, optional)
+    def generateWithRequired(self, do, parentId, zoneId, optional = ()):
+        doId = self.allocateChannel()
+        self.generateWithRequiredAndId(do, doId, parentId, zoneId, optional)
 
-    def generateWithRequiredAndId(self, do, do_id, parent_id, zone_id, optional=()):
-        do.do_id = do_id
-        self.doTable[do_id] = do
-        dg = do.dclass.ai_format_generate(do, do_id, parent_id, zone_id, STATESERVERS_CHANNEL, self.ourChannel, optional)
+    def generateWithRequiredAndId(self, do, doId, parentId, zoneId, optional = ()):
+        do.doId = doId
+        self.doTable[doId] = do
+        dg = do.dclass.aiFormatGenerate(do, doId, parentId, zoneId, STATESERVERS_CHANNEL, self.ourChannel, optional)
         self.send(dg)
 
-        do.location = (parent_id, zone_id)
+        do.location = (parentId, zoneId)
         do.generate()
         do.announceGenerate()
 
@@ -351,26 +358,26 @@ class AIRepository:
         self.district.name = 'Sillyville'
         self.generateWithRequired(self.district, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS)
 
-        post_remove = Datagram()
-        post_remove.add_server_control_header(CONTROL_ADD_POST_REMOVE)
-        post_remove.add_server_header([STATESERVERS_CHANNEL, ], self.ourChannel, STATESERVER_SHARD_REST)
-        post_remove.add_channel(self.ourChannel)
-        self.send(post_remove)
+        postRemove = Datagram()
+        addServerControlHeader(postRemove, CONTROL_ADD_POST_REMOVE)
+        addServerHeader(postRemove, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_SHARD_REST)
+        postRemove.addUint64(self.ourChannel)
+        self.send(postRemove)
 
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
-        dg.add_uint32(self.district.do_id)
-        dg.add_channel(self.ourChannel)
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
+        dg.addUint32(self.district.doId)
+        dg.addUint64(self.ourChannel)
         self.send(dg)
 
         self.stats = ToontownDistrictStatsAI(self)
-        self.stats.settoontownDistrictId(self.district.do_id)
+        self.stats.settoontownDistrictId(self.district.doId)
         self.generateWithRequired(self.stats, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS_STATS)
 
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
-        dg.add_uint32(self.stats.do_id)
-        dg.add_channel(self.ourChannel)
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
+        dg.addUint32(self.stats.doId)
+        dg.addUint64(self.ourChannel)
         self.send(dg)
 
         self.timeManager = TimeManagerAI(self)
@@ -438,8 +445,8 @@ class AIRepository:
 
     def requestDelete(self, do):
         dg = Datagram()
-        dg.add_server_header([do.do_id], self.ourChannel, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(do.do_id)
+        addServerHeader(dg, [do.doId], self.ourChannel, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(do.doId)
         self.send(dg)
 
     @staticmethod

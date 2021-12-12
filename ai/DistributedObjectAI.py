@@ -9,12 +9,12 @@ from collections import deque
 
 class DistributedObjectAI(DirectObject):
     QUIET_ZONE = 1
-    do_id: Optional[int] = None
+    doId: Optional[int] = None
 
     def __init__(self, air: AIRepository.AIRepository):
         DirectObject.__init__(self)
         self.air = air
-        self.dclass = air.dcFile.namespace[self.__class__.__name__[:-2]]
+        self.dclass = air.dcFile.getClassByName(self.__class__.__name__[:-2])
         self.zoneId = 0
         self.parentId = 0
 
@@ -24,31 +24,31 @@ class DistributedObjectAI(DirectObject):
         self.queueUpdates = True
         self.updateQueue = deque()
 
-    def generateWithRequired(self, zone_id):
-        self.zoneId = zone_id
-        self.air.generateWithRequired(self, self.air.district.do_id, zone_id)
+    def generateWithRequired(self, zoneId):
+        self.zoneId = zoneId
+        self.air.generateWithRequired(self, self.air.district.doId, zoneId)
 
-    def sendUpdateToChannel(self, channel, field_name, args):
-        dg = self.dclass.ai_format_update(field_name, self.do_id, channel, self.air.ourChannel, args)
+    def sendUpdateToChannel(self, channel, fieldName, args):
+        dg = self.dclass.aiFormatUpdate(fieldName, self.doId, channel, self.air.ourChannel, args)
         if self.queueUpdates:
             # Avoid race conditions where stateserver has not subscribed to the doId channel on the message director
             # so it misses the field update.
-            # print(self.do_id, self.__class__.__name__, 'queueing field update', field_name)
+            # print(self.doId, self.__class__.__name__, 'queueing field update', fieldName)
             self.updateQueue.append(dg)
         else:
             self.air.send(dg)
 
-    def sendUpdate(self, field_name, args):
-        self.sendUpdateToChannel(self.do_id, field_name, args)
+    def sendUpdate(self, fieldName, args):
+        self.sendUpdateToChannel(self.doId, fieldName, args)
 
-    def sendUpdateToSender(self, field_name, args):
-        self.sendUpdateToChannel(self.air.currentSender, field_name, args)
+    def sendUpdateToSender(self, fieldName, args):
+        self.sendUpdateToChannel(self.air.currentSender, fieldName, args)
 
-    def sendUpdateToAvatar(self, av_id, field_name, args):
-        self.sendUpdateToChannel(getPuppetChannel(av_id), field_name, args)
+    def sendUpdateToAvatar(self, av_id, fieldName, args):
+        self.sendUpdateToChannel(getPuppetChannel(av_id), fieldName, args)
 
-    def sendUpdateToAccount(self, disl_id, field_name, args):
-        self.sendUpdateToChannel(getAccountChannel(disl_id), field_name, args)
+    def sendUpdateToAccount(self, disl_id, fieldName, args):
+        self.sendUpdateToChannel(getAccountChannel(disl_id), fieldName, args)
 
     @property
     def location(self):
@@ -63,7 +63,7 @@ class DistributedObjectAI(DirectObject):
         self.parentId = parentId
         self.zoneId = zoneId
 
-        self.air.storeLocation(self.do_id, oldParentId, oldZoneId, parentId, zoneId)
+        self.air.storeLocation(self.doId, oldParentId, oldZoneId, parentId, zoneId)
 
         self.handleZoneChange(oldZoneId, zoneId)
 
@@ -106,14 +106,14 @@ class DistributedObjectAI(DirectObject):
     def delete(self):
         if self.air:
             self.releaseZoneData()
-            if self.do_id and self.air.minChannel <= self.do_id <= self.air.maxChannel:
-                self.air.deallocateChannel(self.do_id)
+            if self.doId and self.air.minChannel <= self.doId <= self.air.maxChannel:
+                self.air.deallocateChannel(self.doId)
             self.air = None
             self.zoneId = 0
             self.parentId = 0
-            if self.do_id != None:
-                messenger.send('do-deleted-%d' % self.do_id)
-            self.do_id = None
+            if self.doId != None:
+                messenger.send('do-deleted-%d' % self.doId)
+            self.doId = None
 
     @property
     def deleted(self):
@@ -121,10 +121,10 @@ class DistributedObjectAI(DirectObject):
 
     @property
     def generated(self):
-        return self.do_id is not None
+        return self.doId is not None
 
     def requestDelete(self):
-        if not self.do_id:
+        if not self.doId:
             print(f'Tried deleting {self.__class__.__name__} more than once!')
             return
 
@@ -132,7 +132,7 @@ class DistributedObjectAI(DirectObject):
 
     def uniqueName(self, name, useDoId=True):
         if useDoId:
-            return f'{name}-{self.do_id}'
+            return f'{name}-{self.doId}'
         else:
             return f'{name}-{id(self)}'
 
@@ -152,5 +152,5 @@ class DistributedObjectAI(DirectObject):
         pass
 
     def sendSetZone(self, newZone: int):
-        self.air.sendLocation(self.do_id, self.parentId, self.zoneId, self.parentId, newZone)
+        self.air.sendLocation(self.doId, self.parentId, self.zoneId, self.parentId, newZone)
         self.location = (self.parentId, newZone)

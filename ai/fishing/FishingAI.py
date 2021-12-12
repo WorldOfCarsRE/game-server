@@ -184,7 +184,7 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         self.pond = pond
 
     def delete(self):
-        DistributedObjectAI.DistributedObjectAI.delete(self)
+        DistributedObjectAI.delete(self)
 
     def getPondDoId(self):
         return self.pond.getDoId()
@@ -209,7 +209,6 @@ class DistributedFishingSpotAI(DistributedObjectAI):
             self.d_setOccupied(self.avId)
             self.d_setMovie(FishMovies.EnterMovie)
             self.__startTimeout(self.TIMEOUT)
-
 
     def requestExit(self):
         senderId = self.air.currentAvatarSender
@@ -311,7 +310,7 @@ class DistributedFishingPondAI(DistributedObjectAI):
         return self.area
 
     def getDoId(self):
-        return self.do_id
+        return self.doId
 
     def generate(self):
         DistributedObjectAI.generate(self)
@@ -320,13 +319,13 @@ class DistributedFishingPondAI(DistributedObjectAI):
                      random.random() * (1-FishingTargetGlobals.MinimumHunger)
             target = DistributedFishingTargetAI(self.air, self, hunger)
             target.generateWithRequired(self.zoneId)
-            self.targets[target.do_id] = target
+            self.targets[target.doId] = target
 
     def delete(self):
         for target in self.targets.values():
             target.requestDelete()
-        self.targets = Optional[Dict[DistributedFishingTargetAI]] = None
-        DistributedObjectAI.DistributedObjectAI.delete(self)
+        self.targets: Optional[Dict[DistributedFishingTargetAI]] = None
+        DistributedObjectAI.delete(self)
 
     def getCatch(self, av):
         itemType = FishItems.BootItem

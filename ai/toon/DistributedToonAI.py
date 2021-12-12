@@ -1,7 +1,7 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 from ai.DistributedSmoothNodeAI import DistributedSmoothNodeAI
 from otp.util import getPuppetChannel
-from dc.util import Datagram
+from panda3d.core import Datagram, DatagramIterator
 
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
@@ -165,6 +165,22 @@ class DistributedToonAI(DistributedPlayerAI):
         self.nametagStyle = 0
         self.emoteAccess = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+    def delete(self):
+        # Stop our tasks too.
+        taskName = self.uniqueName('next-catalog')
+        taskMgr.remove(taskName)
+
+        taskName = self.uniqueName('next-delivery')
+        taskMgr.remove(taskName)
+
+        taskName = self.uniqueName('next-award-delivery')
+        taskMgr.remove(taskName)
+
+        taskName = f'next-bothDelivery-{self.doId}'
+        taskMgr.remove(taskName)
+
+        DistributedPlayerAI.delete(self)
+
     def setDNAString(self, dnaString):
         self.dna.makeFromNetString(dnaString)
 
@@ -305,7 +321,7 @@ class DistributedToonAI(DistributedPlayerAI):
         return f'goneSad-{avId}'
 
     def getGoneSadMessage(self):
-        return self.getGoneSadMessageForAvId(self.do_id)
+        return self.getGoneSadMessageForAvId(self.doId)
 
     def getBattleId(self):
         return self.battleId
@@ -917,7 +933,7 @@ class DistributedToonAI(DistributedPlayerAI):
         if not hasattr(self, 'air') or self.air is None:
             return
         if doUpdateLater and self.air.doLiveUpdates and hasattr(self, 'name'):
-            taskName = f'next-bothDelivery-{self.do_id}'
+            taskName = f'next-bothDelivery-{self.doId}'
             now = int(time.time() / 60 + 0.5)
             nextItem = None
             nextGiftItem = None
@@ -955,7 +971,7 @@ class DistributedToonAI(DistributedPlayerAI):
         now = int(time.time() / 60 + 0.5)
         delivered, remaining = self.onOrder.extractDeliveryItems(now)
         deliveredGifts, remainingGifts = self.onGiftOrder.extractDeliveryItems(now)
-        simbase.air.deliveryManager.sendDeliverGifts(self.do_id, now)
+        simbase.air.deliveryManager.sendDeliverGifts(self.doId, now)
         giftItem = CatalogItemList(deliveredGifts, store = CatalogItem.Customization | CatalogItem.DeliveryDate)
         self.b_setMailboxContents(self.mailboxContents + delivered + deliveredGifts)
         self.b_setCatalogNotify(self.catalogNotify, ToontownGlobals.NewItems)
@@ -1346,16 +1362,16 @@ class DistributedToonAI(DistributedPlayerAI):
         return 0
 
     def d_catalogGenClothes(self):
-        self.sendUpdate('catalogGenClothes', [self.do_id])
+        self.sendUpdate('catalogGenClothes', [self.doId])
 
     def d_catalogGenAccessories(self):
-        self.sendUpdate('catalogGenAccessories', [self.do_id])
+        self.sendUpdate('catalogGenAccessories', [self.doId])
 
     def getHoodId(self, zoneId):
         return zoneId - zoneId % 1000
 
     def handleZoneChange(self, oldZone: int, newZone: int):
-        channel = getPuppetChannel(self.do_id)
+        channel = getPuppetChannel(self.doId)
 
         if oldZone in self.air.vismap and newZone not in self.air.vismap:
             self.air.removeInterest(channel, DistributedToonAI.STREET_INTEREST_HANDLE, 0)
@@ -1530,11 +1546,12 @@ class Experience:
 
     @staticmethod
     def fromBytes(data):
-        return Experience.fromNetString(Datagram(data).iterator())
+        dg = Datagram(data)
+        return Experience.fromNetString(DatagramIterator(dg))
 
     @staticmethod
     def fromNetString(dgi):
-        return Experience([dgi.get_uint16() for _ in range(NUM_TRACKS)])
+        return Experience([dgi.getUint16() for _ in range(NUM_TRACKS)])
 
     def makeNetString(self):
         return b''.join((trackExp.to_bytes(2, 'little') for trackExp in self.experience))

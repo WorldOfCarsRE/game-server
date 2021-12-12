@@ -1,7 +1,7 @@
 from otp import config
 from otp.networking import ToontownProtocol, MDParticipant, Service, UpstreamServer, DownstreamClient
 from dc.messagetypes import *
-from dc.util import Datagram
+from panda3d.core import Datagram, DatagramIterator
 from asyncio import Queue
 import asyncio
 import par
@@ -13,7 +13,7 @@ class MDProtocol(ToontownProtocol, MDParticipant):
         ToontownProtocol.__init__(self, service)
         MDParticipant.__init__(self, service)
 
-        self.post_removes: List[Datagram] = []
+        self.postRemoves: List[Datagram] = []
 
     def connection_made(self, transport):
         ToontownProtocol.connection_made(self, transport)
@@ -25,48 +25,47 @@ class MDProtocol(ToontownProtocol, MDParticipant):
 
     def post_remove(self):
         self.service.log.debug(f'Sending out post removes for participant.')
-        while self.post_removes:
-            dg = self.post_removes.pop(0)
+        while self.postRemoves:
+            dg = self.postRemoves.pop(0)
             self.service.q.put_nowait((None, dg))
 
     def receive_datagram(self, dg):
-        dgi = dg.iterator()
+        dgi = DatagramIterator(dg)
 
-        recipient_count = dgi.get_uint8()
-        if recipient_count == 1 and dgi.get_channel() == CONTROL_MESSAGE:
+        recipientCount = dgi.getUint8()
+        if recipientCount == 1 and dgi.getInt64() == CONTROL_MESSAGE:
             # Control message.
-            msg_type = dgi.get_uint16()
+            msgType = dgi.getUint16()
 
-            if msg_type == CONTROL_SET_CHANNEL:
-                channel = dgi.get_channel()
+            if msgType == CONTROL_SET_CHANNEL:
+                channel = dgi.getInt64()
                 self.subscribe_channel(channel)
-            elif msg_type == CONTROL_REMOVE_CHANNEL:
-                channel = dgi.get_channel()
+            elif msgType == CONTROL_REMOVE_CHANNEL:
+                channel = dgi.getInt64()
                 self.unsubscribe_channel(channel)
-            elif msg_type == CONTROL_ADD_RANGE:
-                low = dgi.get_channel()
-                high = dgi.get_channel()
+            elif msgType == CONTROL_ADD_RANGE:
+                low = dgi.getInt64()
+                high = dgi.getInt64()
                 for channel in range(low, high, 1):
                     self.channels.add(channel)
-            elif msg_type == CONTROL_REMOVE_RANGE:
-                low = dgi.get_channel()
-                high = dgi.get_channel()
+            elif msgType == CONTROL_REMOVE_RANGE:
+                low = dgi.getInt64()
+                high = dgi.getInt64()
                 for channel in range(low, high, 1):
                     if channel in self.channels:
                         self.channels.remove(channel)
-            elif msg_type == CONTROL_ADD_POST_REMOVE:
-                post_dg = Datagram()
-                post_dg.add_bytes(dgi.get_bytes(dgi.remaining()))
-                self.service.log.debug(f'Received post remove:{post_dg.bytes()}')
-                self.post_removes.append(post_dg)
-            elif msg_type == CONTROL_CLEAR_POST_REMOVE:
-                del self.post_removes[:]
+            elif msgType == CONTROL_ADD_POST_REMOVE:
+                postDg = Datagram()
+                postDg.appendData(dgi.getRemainingBytes())
+                self.service.log.debug(f'Received post remove:{postDg.getMessage()}')
+                self.postRemoves.append(postDg)
+            elif msgType == CONTROL_CLEAR_POST_REMOVE:
+                del self.postRemoves[:]
         else:
             self.service.q.put_nowait((None, dg))
 
     def handle_datagram(self, dg, dgi):
         self.send_datagram(dg)
-
 
 class MessageDirector(Service):
     def __init__(self):
@@ -106,22 +105,21 @@ class MessageDirector(Service):
         self.participants.remove(participant)
 
     def process_datagram(self, participant: MDParticipant, dg: Datagram):
-        dgi = dg.iterator()
+        dgi = DatagramIterator(dg)
 
-        recipient_count = dgi.get_uint8()
-        recipients = (dgi.get_channel() for _ in range(recipient_count))
+        recipientCount = dgi.getUint8()
+        recipients = (dgi.getInt64() for _ in range(recipientCount))
 
-        receiving_participants = {p for c in recipients if c in self.channel_subscriptions for p in self.channel_subscriptions[c]}
+        receivingParticipants = {p for c in recipients if c in self.channel_subscriptions for p in self.channel_subscriptions[c]}
 
-        if participant is not None and participant in receiving_participants:
-            receiving_participants.remove(participant)
+        if participant is not None and participant in receivingParticipants:
+            receivingParticipants.remove(participant)
 
-        pos = dgi.tell()
+        pos = dgi.getCurrentIndex()
 
         try:
-            for participant in receiving_participants:
-                _dgi = dg.iterator()
-                _dgi.seek(pos)
+            for participant in receivingParticipants:
+                _dgi = DatagramIterator(dg, pos)
                 participant.handle_datagram(dg, _dgi)
         except Exception as e:
             self.log.debug(f'Exception while handling datagram: {e.__class__}: {repr(e)}')
@@ -130,7 +128,6 @@ class MessageDirector(Service):
         while True:
             participant, dg = await self.q.get()
             self.process_datagram(participant, dg)
-
 
 class MasterMessageDirector(MessageDirector, UpstreamServer):
     downstream_protocol = MDProtocol
@@ -147,7 +144,6 @@ class MasterMessageDirector(MessageDirector, UpstreamServer):
         self.loop.create_task(self.route())
         await self.listen(config['MessageDirector.HOST'], config['MessageDirector.PORT'])
 
-
 class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):
         ToontownProtocol.__init__(self, service)
@@ -163,18 +159,18 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
 
     def subscribe_channel(self, channel):
         dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_channel(CONTROL_MESSAGE)
-        dg.add_uint16(CONTROL_SET_CHANNEL)
-        dg.add_channel(channel)
+        dg.addUint8(1)
+        dg.addUint64(CONTROL_MESSAGE)
+        dg.addUint16(CONTROL_SET_CHANNEL)
+        dg.addUint64(channel)
         self.send_datagram(dg)
 
     def unsubscribe_channel(self, channel):
         dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_channel(CONTROL_MESSAGE)
-        dg.add_uint16(CONTROL_REMOVE_CHANNEL)
-        dg.add_channel(channel)
+        dg.addUint8(1)
+        dg.addUint64(CONTROL_MESSAGE)
+        dg.addUint16(CONTROL_REMOVE_CHANNEL)
+        dg.addUint64(channel)
         self.send_datagram(dg)
 
     def receive_datagram(self, dg):
@@ -215,7 +211,6 @@ class DownstreamMessageDirector(MessageDirector, DownstreamClient):
 
     def send_datagram(self, dg: Datagram):
         self._client.send_datagram(dg)
-
 
 async def main():
     loop = asyncio.get_running_loop()

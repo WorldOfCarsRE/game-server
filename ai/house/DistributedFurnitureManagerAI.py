@@ -48,7 +48,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
         return self.house.name
 
     def getInteriorId(self):
-        return self.house.interior.do_id
+        return self.house.interior.doId
 
     def getAtticItems(self):
         return self.house.getAtticItems()
@@ -271,7 +271,7 @@ class DistributedFurnitureManagerAI(DistributedObjectAI):
             return (ToontownGlobals.FM_InvalidItem, 0)
 
         self.d_setAtticItems(self.house.atticItems)
-        return (ToontownGlobals.FM_MovedItem, dfitem.do_id)
+        return (ToontownGlobals.FM_MovedItem, dfitem.doId)
 
     def moveWallpaperFromAtticMessage(self, index, room, context):
         # A request by the client to swap the given wallpaper from the

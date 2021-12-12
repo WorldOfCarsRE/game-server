@@ -113,7 +113,7 @@ class DistributedClosetAI(DistributedFurnitureItemAI):
         topList = self.ownerAv.getClothesTopsList()
         botList = self.ownerAv.getClothesBottomsList()
 
-        self.sendUpdate('setState', [OPEN, self.occupied, self.ownerAv.do_id, self.ownerAv.dna.gender, topList, botList])
+        self.sendUpdate('setState', [OPEN, self.occupied, self.ownerav.doId, self.ownerAv.dna.gender, topList, botList])
 
         taskMgr.doMethodLater(TIMEOUT_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
 

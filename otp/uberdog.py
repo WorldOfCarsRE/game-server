@@ -1,12 +1,13 @@
 from otp import config
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol
-from dc.parser import parse_dc_file
+from panda3d.direct import DCFile, DCPacker
 from otp.constants import *
 from otp.messagetypes import *
 from otp.util import *
 from otp.networking import DatagramFuture
+from direct.distributed.PyDatagram import PyDatagram
 
-from dc.util import Datagram
+from panda3d.core import Datagram, DatagramIterator
 
 import asyncio
 
@@ -17,12 +18,12 @@ class UberdogProtocol(MDUpstreamProtocol):
         self.subscribe_channel(self.service.GLOBAL_ID)
 
     def receive_datagram(self, dg):
-        self.service.log.debug(f'Received datagram: {dg.bytes()}')
+        self.service.log.debug(f'Received datagram: {dg.getMessage()}')
         MDUpstreamProtocol.receive_datagram(self, dg)
 
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msgtype = dgi.get_uint16()
+        sender = dgi.getInt64()
+        msgtype = dgi.getUint16()
         self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from {sender}.')
 
         if self.check_futures(dgi, msgtype, sender):
@@ -30,14 +31,15 @@ class UberdogProtocol(MDUpstreamProtocol):
             return
 
         if msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
-            do_id = dgi.get_uint32()
-            if do_id != self.service.GLOBAL_ID:
-                self.service.log.debug(f'Got field update for unknown object {do_id}.')
+            doId = dgi.getUint32()
+            if doId != self.service.GLOBAL_ID:
+                self.service.log.debug(f'Got field update for unknown object {doId}.')
                 return
-            self.service.receive_update(sender, dgi)
+            self.service.receiveUpdate(sender, dgi)
 
     def check_futures(self, dgi, msg_id, sender):
-        pos = dgi.tell()
+        pos = dgi.getCurrentIndex()
+
         for i in range(len(self.futures)):
             future = self.futures[i]
             if future.future_msg_id == msg_id and future.future_sender == sender:
@@ -46,11 +48,14 @@ class UberdogProtocol(MDUpstreamProtocol):
                     future.set_result((sender, dgi))
                     return True
                 else:
-                    context = dgi.get_uint32()
-                    dgi.seek(pos)
+                    context = dgi.getUint32()
+
+                    _dg = Datagram(dgi.getRemainingBytes())
+                    _dgi = DatagramIterator(_dg, pos)
+
                     if future.context == context:
                         self.futures.remove(future)
-                        future.set_result((sender, dgi))
+                        future.set_result((sender, _dgi))
                         return True
         else:
             return False
@@ -62,7 +67,7 @@ class Uberdog(DownstreamMessageDirector):
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)
 
-        self.dclass = dc.namespace[self.__class__.__name__[:-2]]
+        self.dclass = dc.getClassByName(self.__class__.__name__[:-2])
 
         self.lastSender = None
 
@@ -74,22 +79,30 @@ class Uberdog(DownstreamMessageDirector):
         self.subscribe_channel(self._client, self.GLOBAL_ID)
         self.log.debug('Uberdog online')
 
-        dg = self.dclass.ai_format_generate(self, self.GLOBAL_ID, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_MANAGEMENT,
+        dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_MANAGEMENT,
                                             STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields=None)
         self.send_datagram(dg)
 
-        dg = Datagram()
-        dg.add_server_control_header(CONTROL_ADD_POST_REMOVE)
-        dg.add_server_header([self.GLOBAL_ID], self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(self.GLOBAL_ID)
+        dg = PyDatagram()
+        addServerControlHeader(dg, CONTROL_ADD_POST_REMOVE)
+        addServerHeader(dg, [self.GLOBAL_ID], self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(self.GLOBAL_ID)
         self.send_datagram(dg)
 
-    def receive_update(self, sender, dgi):
+    def receiveUpdate(self, sender, dgi):
         self.lastSender = sender
-        field_number = dgi.get_uint16()
-        field = dc.fields[field_number]()
-        self.log.debug(f'Receiving field update for field {field.name} from {sender}.')
-        field.receive_update(self, dgi)
+        fieldNumber = dgi.getUint16()
+        field = dc.getFieldByIndex(fieldNumber)
+        self.log.debug(f'Receiving field update for field {field.getName()} from {sender}.')
+
+        unpacker = DCPacker()
+        unpacker.setUnpackData(dgi.getRemainingBytes())
+
+        unpacker.beginUnpack(field)
+
+        field.receiveUpdate(unpacker, self)
+
+        unpacker.endUnpack()
 
     def register_future(self, msg_type, sender, context):
         f = DatagramFuture(self.loop, msg_type, sender, context)
@@ -98,7 +111,7 @@ class Uberdog(DownstreamMessageDirector):
 
     async def query_location(self, avId, context):
         dg = Datagram()
-        dg.add_server_header([STATESERVERS_CHANNEL], self.GLOBAL_ID, STATESERVER_OBJECT_LOCATE)
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.GLOBAL_ID, STATESERVER_OBJECT_LOCATE)
         dg.add_uint32(context)
         dg.add_uint32(avId)
         self.send_datagram(dg)
@@ -192,20 +205,22 @@ class DistributedDeliveryManagerUD(Uberdog):
 
 async def main():
     import builtins
-    builtins.dc = parse_dc_file('etc/dclass/toon.dc')
+
+    builtins.dc = DCFile()
+    dc.read('etc/dclass/toon.dc')
 
     loop = asyncio.get_running_loop()
-    central_logger = CentralLoggerUD(loop)
-    friend_manager = FriendManagerUD(loop)
+    centralLogger = CentralLoggerUD(loop)
+    friendManager = FriendManagerUD(loop)
     deliveryManager = DistributedDeliveryManagerUD(loop)
 
-    uberdog_tasks = [
-        asyncio.create_task(central_logger.run()),
-        asyncio.create_task(friend_manager.run()),
+    uberdogTasks = [
+        asyncio.create_task(centralLogger.run()),
+        asyncio.create_task(friendManager.run()),
         asyncio.create_task(deliveryManager.run())
     ]
 
-    await asyncio.gather(*uberdog_tasks)
+    await asyncio.gather(*uberdogTasks)
 
 if __name__ == '__main__':
     asyncio.run(main())

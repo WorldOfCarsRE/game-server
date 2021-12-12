@@ -55,7 +55,7 @@ class TreasurePlanner:
 
     def grabAttempt(self, av, treasure: DistributedTreasureAI):
         index = self.treasures.index(treasure)
-        avId = av.do_id
+        avId = av.doId
 
         if treasure.validAvatar(av):
             self.treasures[index] = None

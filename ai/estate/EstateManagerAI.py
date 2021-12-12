@@ -3,7 +3,8 @@ from otp.constants import DBSERVERS_CHANNEL
 from otp.messagetypes import DBSERVER_GET_ESTATE, DBSERVER_UNLOAD_ESTATE
 from ai.estate.DistributedEstateAI import DistributedEstateAI
 from direct.showbase.PythonUtil import Functor
-from dc.util import Datagram
+from panda3d.core import Datagram
+from otp.util import addServerHeader
 
 class EstateManagerAI(DistributedObjectAI):
 
@@ -38,7 +39,7 @@ class EstateManagerAI(DistributedObjectAI):
 
     def sendGetEstate(self, avId: int, context: int, zone: int):
         dg = Datagram()
-        dg.add_server_header([DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_GET_ESTATE)
+        addServerHeader(dg, [DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_GET_ESTATE)
         dg.add_uint32(context)
         dg.add_uint32(avId)
         dg.add_uint32(self.parentId)
@@ -66,7 +67,7 @@ class EstateManagerAI(DistributedObjectAI):
 
         # Unload our estate.
         dg = Datagram()
-        dg.add_server_header([DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_UNLOAD_ESTATE)
+        addServerHeader(dg, [DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_UNLOAD_ESTATE)
         dg.add_uint32(avId)
         dg.add_uint32(self.parentId)
         self.air.send(dg)

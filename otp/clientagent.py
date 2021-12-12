@@ -1,8 +1,8 @@
 from otp import config
 import asyncio
 
-from dc.parser import parse_dc_file
-from dc.util import Datagram
+from panda3d.direct import DCFile
+from panda3d.core import Datagram
 
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol, UpstreamServer
 from otp.networking import ChannelAllocator
@@ -10,8 +10,8 @@ from .clientprotocol import ClientProtocol
 
 class ClientAgentProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msgtype = dgi.get_uint16()
+        sender = dgi.getUint64()
+        msgtype = dgi.getUint16()
 
         print('unhandled', msgtype)
 
@@ -27,16 +27,18 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
         UpstreamServer.__init__(self, loop)
         ChannelAllocator.__init__(self)
 
-        self.dc_file = parse_dc_file('etc/dclass/toon.dc')
-        self.dc_hash = self.dc_file.hash
+        self.dcFile = DCFile()
+        self.dcFile.read('etc/dclass/toon.dc')
 
-        self.avatars_field = self.dc_file.namespace['Account']['ACCOUNT_AV_SET']
+        self.dcHash = self.dcFile.getHash()
+
+        self.avatarsField = self.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
 
         self.loop.set_exception_handler(self._on_exception)
 
         self._context = 0
 
-        self.log.debug(f'DC Hash is {self.dc_hash}')
+        self.log.debug(f'DC Hash is {self.dcHash}')
 
         self.name_parts = {}
         self.name_categories = {}
@@ -80,4 +82,4 @@ async def main():
     await service.run()
 
 if __name__ == '__main__':
-    asyncio.run(main(), debug=True)
+    asyncio.run(main(), debug = True)

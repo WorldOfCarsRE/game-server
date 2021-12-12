@@ -1,5 +1,5 @@
 from panda3d.core import VBase4
-from dc.util import Datagram
+from panda3d.core import Datagram, DatagramIterator
 import random
 
 from dataclasses import dataclass
@@ -1303,7 +1303,7 @@ class ToonDNA(object):
 
     def makeNetString(self):
         dg = Datagram()
-        dg.add_bytes(self.toonType.encode('ascii'))
+        dg.addFixedString(self.toonType, 1)
         if self.toonType == 't':
             dg.add_uint8(toonHeadTypes.index(self.head))
             dg.add_uint8(toonTorsoTypes.index(self.torso))
@@ -1324,36 +1324,35 @@ class ToonDNA(object):
             dg.add_uint8(self.headColor)
         else:
             raise Exception(f'unknown avatar type: {self.toonType}')
-        return dg.bytes()
+        return dg.getMessage()
 
-    def makeFromNetString(self, dgi):
-        if isinstance(dgi, bytes):
-            dgi = Datagram(dgi).iterator()
+    def makeFromNetString(self, dnaString):
+        dg = Datagram(dnaString)
+        dgi = DatagramIterator(dg)
 
-        toonType = dgi.get_bytes(1)
+        self.toonType = dgi.getFixedString(1)
 
-        if toonType != b't':
-            raise Exception(f'unknown avatar type {toonType}')
+        if self.toonType != 't':
+            raise Exception(f'unknown avatar type {self.toonType}')
 
-        self.toonType = toonType.decode('ascii')
-        self.head = toonHeadTypes[dgi.get_uint8()]
-        self.torso = toonTorsoTypes[dgi.get_uint8()]
-        self.legs = toonLegTypes[dgi.get_uint8()]
-        self.gender = dgi.get_uint8()
+        self.head = toonHeadTypes[dgi.getUint8()]
+        self.torso = toonTorsoTypes[dgi.getUint8()]
+        self.legs = toonLegTypes[dgi.getUint8()]
+        self.gender = dgi.getUint8()
         if self.gender == 1:
             self.gender = 'm'
         else:
             self.gender = 'f'
-        self.topTex = dgi.get_uint8()
-        self.topTexColor = dgi.get_uint8()
-        self.sleeveTex = dgi.get_uint8()
-        self.sleeveTexColor = dgi.get_uint8()
-        self.botTex = dgi.get_uint8()
-        self.botTexColor = dgi.get_uint8()
-        self.armColor = dgi.get_uint8()
-        self.gloveColor = dgi.get_uint8()
-        self.legColor = dgi.get_uint8()
-        self.headColor = dgi.get_uint8()
+        self.topTex = dgi.getUint8()
+        self.topTexColor = dgi.getUint8()
+        self.sleeveTex = dgi.getUint8()
+        self.sleeveTexColor = dgi.getUint8()
+        self.botTex = dgi.getUint8()
+        self.botTexColor = dgi.getUint8()
+        self.armColor = dgi.getUint8()
+        self.gloveColor = dgi.getUint8()
+        self.legColor = dgi.getUint8()
+        self.headColor = dgi.getUint8()
 
     @staticmethod
     def randomDNA(seed=None, gender='m'):

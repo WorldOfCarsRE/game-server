@@ -120,10 +120,10 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
         # Send the setMovie command to the user to tell him to open up
         # his catalog. But first, tell him how much stuff he's got in
         # his house.
-        self.sendUpdateToAvatar(self.av.do_id, 'setLimits', [numHouseItems])
+        self.sendUpdateToAvatar(self.av.doId, 'setLimits', [numHouseItems])
 
         # Now open the catalog up on the client.
-        self.d_setMovie(PHONE_MOVIE_PICKUP, self.av.do_id)
+        self.d_setMovie(PHONE_MOVIE_PICKUP, self.av.doId)
 
         # The avatar has seen his catalog now.
         if self.av.catalogNotify == ToontownGlobals.NewItems:
@@ -133,7 +133,7 @@ class DistributedPhoneAI(DistributedFurnitureItemAI):
         avId = self.air.currentAvatarSender
 
         if self.busy == avId:
-            self.d_setMovie(PHONE_MOVIE_HANGUP, self.av.do_id)
+            self.d_setMovie(PHONE_MOVIE_HANGUP, self.av.doId)
             self.sendClearMovie()
         else:
             self.freeAvatar(avId)

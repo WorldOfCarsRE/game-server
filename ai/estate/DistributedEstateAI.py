@@ -3,6 +3,10 @@ from dataclasses import dataclass
 
 from ai.DistributedObjectAI import DistributedObjectAI
 from ai.house import HouseGlobals
+from ai.globals.HoodGlobals import MyEstate
+from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
+
+from dna.dnaparser import load_dna_file, DNAStorage
 
 from typing import List
 import time
@@ -29,6 +33,41 @@ class DistributedEstateAI(DistributedObjectAI):
         self.lawnItems: List[LawnItem] = [[], [], [], [], [], []]
         self.activeToons = [0, 0, 0, 0, 0, 0]
         self.clouds = 0
+        self.ponds = []
+        self.spots = []
+
+    def delete(self):
+        DistributedObjectAI.delete(self)
+        for pond in self.ponds:
+            pond.requestDelete()
+        del self.ponds
+        for spot in self.spots:
+            spot.requestDelete()
+        del self.spots
+
+    def announceGenerate(self):
+        dna, storage = load_dna_file('dna/files/estate_1.dna')
+
+        pondName2Do = {}
+
+        for pondName in storage.ponds:
+            group = storage.groups[pondName]
+            pond = DistributedFishingPondAI(self.air, MyEstate)
+            pond.generateWithRequired(self.zoneId)
+            pondName2Do[pondName] = pond
+            self.ponds.append(pond)
+
+        for dnaspot in storage.spots:
+            group = dnaspot.get_group()
+            pondName = dnaspot.get_pond_name()
+            pond = pondName2Do[pondName]
+            spot = DistributedFishingSpotAI(self.air, pond, group.get_pos_hpr())
+            spot.generateWithRequired(pond.zoneId)
+            self.spots.append(spot)
+
+        del pondName2Do
+
+        DistributedObjectAI.announceGenerate(self)
 
     def getEstateType(self) -> int:
         return self.estateType

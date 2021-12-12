@@ -17,7 +17,7 @@ class DatabaseBackend:
     async def create_object(self, dclass, fields: Tuple[Tuple[str, bytes]]):
         raise NotImplementedError
 
-    def query_object_all(self, do_id: int):
+    def queryObjectAll(self, do_id: int):
         raise NotImplementedError
 
     def query_object_fields(self, do_id: int, fields):
@@ -60,7 +60,7 @@ class SQLBackend(DatabaseBackend):
                 continue
 
             columns = ''.join(columns)
-            cmd = f'CREATE TABLE IF NOT EXISTS {dclass.name} (do_id INT, {columns} PRIMARY KEY (do_id), FOREIGN KEY (do_id) REFERENCES objects(do_id));'
+            cmd = f'CREATE TABLE IF NOT EXISTS {dclass.getName()} (do_id INT, {columns} PRIMARY KEY (do_id), FOREIGN KEY (do_id) REFERENCES objects(do_id));'
             await cursor.execute(cmd)
 
         await cursor.close()
@@ -86,10 +86,12 @@ class SQLBackend(DatabaseBackend):
         columns = [field[0] for field in fields]
         values = ["X'%s'" % field[1].hex().upper() for field in fields]
 
-        for field in dclass.inherited_fields:
-            if field.is_db and field.is_required:
-                if field.name not in columns:
-                    raise OTPCreateFailed('Missing required db field: %s' % field.name)
+        for fieldIndex in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(fieldIndex)
+
+            if field.isDb() and field.isRequired():
+                if field.getName() not in columns:
+                    raise OTPCreateFailed('Missing required db field: %s' % field.getName())
 
         columns = ', '.join(columns)
         values = ', '.join(values)
@@ -97,7 +99,7 @@ class SQLBackend(DatabaseBackend):
         conn = await self.pool.acquire()
         cursor = await conn.cursor()
 
-        cmd = f"INSERT INTO objects (class_name) VALUES ('{dclass.name}');"
+        cmd = f"INSERT INTO objects (class_name) VALUES ('{dclass.getName()}');"
         try:
             await cursor.execute(cmd)
             await conn.commit()
@@ -110,7 +112,7 @@ class SQLBackend(DatabaseBackend):
         await cursor.execute('SELECT LAST_INSERT_ID();')
         do_id = (await cursor.fetchone())[0]
 
-        cmd = f'INSERT INTO {dclass.name} (do_id, DcObjectType, {columns}) VALUES ({do_id}, \'{dclass.name}\', {values});'
+        cmd = f'INSERT INTO {dclass.getName()} (do_id, DcObjectType, {columns}) VALUES ({do_id}, \'{dclass.getName()}\', {values});'
 
         try:
             await cursor.execute(cmd)
@@ -126,7 +128,7 @@ class SQLBackend(DatabaseBackend):
         self.pool.release(conn)
         return do_id
 
-    async def query_object_all(self, do_id, dclass_name=None):
+    async def queryObjectAll(self, do_id, dclass_name=None):
         conn = await self.pool.acquire()
 
         if dclass_name is None:
@@ -263,35 +265,37 @@ class MongoBackend(DatabaseBackend):
         fields = cursor.find_one({'_id': doId})
         return fields['className']
 
-    async def create_object(self, dclass, fields: List[Tuple[str, bytes]]):
+    async def createObject(self, dclass, fields: List[Tuple[str, bytes]]):
         columns = [field[0] for field in fields]
 
-        for field in dclass.inherited_fields:
-            if field.is_db and field.is_required:
-                if field.name not in columns:
-                    raise OTPCreateFailed(f'Missing required db field: {field.name}')
+        for fieldIndex in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(fieldIndex)
+
+            if field.isDb() and field.isRequired():
+                if field.getName() not in columns:
+                    raise OTPCreateFailed(f'Missing required db field: {field.getName()}')
 
         objectId = await self.generateObjectId()
 
         data = {}
         data['_id'] = objectId
-        data['className'] = dclass.name
+        data['className'] = dclass.getName()
         self.mongodb.objects.insert_one(data)
 
         dcData = {}
         dcData['_id'] = objectId
-        dcData['DcObjectType'] = dclass.name
+        dcData['DcObjectType'] = dclass.getName()
 
         for field in fields:
             fieldName = field[0]
             dcData[fieldName] = field[1]
 
-        table = getattr(self.mongodb, dclass.name)
+        table = getattr(self.mongodb, dclass.getName())
         table.insert_one(dcData)
 
         return objectId
 
-    async def query_object_all(self, doId, dclass_name=None):
+    async def queryObjectAll(self, doId, dclass_name=None):
         if dclass_name is None:
             dclass_name = await self.queryDC(doId)
 

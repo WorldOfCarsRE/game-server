@@ -4,6 +4,8 @@ import copy
 import random
 import string
 
+from datetime import datetime
+
 from .DistributedObjectAI import DistributedObjectAI
 from ai.toon.DistributedToonAI import DistributedToonAI
 from ai.toon.DistributedToonAI import DistributedPlayerAI
@@ -13,11 +15,13 @@ from typing import List, Optional, Dict, NamedTuple
 from dataslots import with_slots
 from dataclasses import dataclass
 
-from dc.util import Datagram
+from panda3d.core import Datagram
 from otp.util import getPuppetChannel
 from otp.messagetypes import CLIENT_FRIEND_ONLINE
 
 from ai.catalog import CatalogItem
+from ai.catalog.CatalogBeanItem import CatalogBeanItem
+from ai import ToontownGlobals
 
 class DistributedDistrictAI(DistributedObjectAI):
     def __init__(self, air):
@@ -60,12 +64,12 @@ class ToontownDistrictAI(DistributedDistrictAI):
         self.allowAHNNLog(ahnnLog)
         self.d_allowAHNNLog(ahnnLog)
 
-    def allowAHNNLog(self):
+    def getAllowAHNNLog(self):
         return self.ahnnLog
 
     def handleChildArrive(self, obj, zoneId):
         if isinstance(obj, DistributedToonAI):
-            obj.sendUpdate('arrivedOnDistrict', [self.do_id])
+            obj.sendUpdate('arrivedOnDistrict', [self.doId])
             self.air.incrementPopulation()
 
 class ToontownDistrictStatsAI(DistributedObjectAI):
@@ -322,7 +326,7 @@ MAX_FRIENDS = 50
 MAX_PLAYER_FRIENDS = 300
 
 class FriendManagerAI(DistributedObjectGlobalAI):
-    do_id = OTP_DO_ID_FRIEND_MANAGER
+    doId = OTP_DO_ID_FRIEND_MANAGER
 
     def __init__(self, air):
         DistributedObjectGlobalAI.__init__(self, air)
@@ -870,18 +874,90 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
         self.sendResponseMessage(avId, response)
 
 class TTCodeRedemptionMgrAI(DistributedObjectAI):
+    Success = 0
+    InvalidCode = 1
+    ExpiredCode = 2
+    Ineligible = 3
+    AwardError = 4
+    TooManyFails = 5
+    ServiceUnavailable = 6
 
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
 
-    def redeemCode(self, context, code):
+    def redeemCode(self, context: int, code: str):
         avId = self.air.currentAvatarSender
         av = self.air.doTable.get(avId)
 
         if not av:
             return
 
-        self.sendUpdateToAvatar(avId, 'redeemCodeResult', [context, 6, 0])
+        code = code.lower()
+        code = ''.join(code.split())
+
+        items = self.air.mongoInterface.findCodeMatch(code)
+
+        if items is None:
+            status = self.InvalidCode
+            self.d_redeemCodeResult(avId, context, status)
+            return
+
+        # If our year is greater than 1, then we must have a month and day too.
+        if items['ExpirationYear']:
+            try:
+                expYear = items['ExpirationYear']
+                expMonth = items['ExpirationMonth']
+                expDay = items['ExpirationDay']
+            except:
+                print(f'Code {code} does not have a proper expiration date.')
+                status = self.InvalidCode
+                self.d_redeemCodeResult(avId, context, status)
+                return
+
+            # TODO: should this go off Toontown Time instead of local time?
+            today = datetime.today()
+            todayYear = today.year
+            todayMonth = today.month
+            todayDay = today.month
+
+            datetimeCode = datetime(expYear, expMonth, expDay)
+            datetimeToday = datetime(todayYear, todayMonth, todayDay)
+            if datetimeToday > datetimeCode:
+                status = self.ExpiredCode
+                self.d_redeemCodeResult(avId, context, status)
+                return
+
+        if avId in items['UsedBy']:
+            status = self.Ineligible
+            self.d_redeemCodeResult(avId, context, status)
+            return
+
+        # Update the list of avatars that has used this code.
+        items['UsedBy'].append(avId)
+        self.air.mongoInterface.updateCode(code, items)
+
+        itemList = []
+
+        for item in items['Items']:
+            itemType, itemId = item[0], item[1]
+
+            if itemType == 'CatalogBeanItem':
+                itemList.append(CatalogBeanItem(item[1], tagCode = 2))
+
+        for item in itemList:
+            if len(av.mailboxContents) + len(av.onGiftOrder) >= ToontownGlobals.MaxMailboxContents:
+                break
+
+            item.deliveryDate = int(time.time() / 60) + 1
+
+            av.onOrder.append(item)
+            av.b_setDeliverySchedule(av.onOrder)
+
+        # Send the response to the client.
+        self.d_redeemCodeResult(avId, context, self.Success)
+
+    def d_redeemCodeResult(self, avId: int, context: int, status: int):
+        self.sendUpdateToAvatar(avId, 'redeemCodeResult', [context, status, 0])
 
 class SafeZoneManagerAI(DistributedObjectAI):
 
@@ -905,7 +981,7 @@ class SafeZoneManagerAI(DistributedObjectAI):
             sender.stopToonUp()
 
 class DistributedDeliveryManagerAI(DistributedObjectGlobalAI):
-    do_id = OTP_DO_ID_TOONTOWN_DELIVERY_MANAGER
+    doId = OTP_DO_ID_TOONTOWN_DELIVERY_MANAGER
 
     def sendDeliverGifts(self, avId, now):
         if not avId:

@@ -1,4 +1,4 @@
-from dc.util import Datagram
+from panda3d.core import Datagram, DatagramIterator
 from ai.battle.BattleGlobals import *
 from typing import Union
 
@@ -104,11 +104,12 @@ class Inventory:
 
     @staticmethod
     def fromBytes(data):
-        return Inventory.fromNetString(Datagram(data).iterator())
+        dg = Datagram(data)
+        return Inventory.fromNetString(DatagramIterator(dg))
 
     @staticmethod
     def fromNetString(dgi):
-        return Inventory([dgi.get_uint8() for _ in range(NUM_TRACKS * NUM_PROPS)])
+        return Inventory([dgi.getUint8() for _ in range(NUM_TRACKS * NUM_PROPS)])
 
     def makeNetString(self):
         return b''.join((prop.to_bytes(1, 'little') for prop in self.inventory))

@@ -3,612 +3,684 @@ from otp import config
 import asyncio
 
 from otp.messagedirector import MDUpstreamProtocol, DownstreamMessageDirector
-from dc.util import Datagram
+from panda3d.core import Datagram, DatagramIterator
 from otp.constants import STATESERVERS_CHANNEL
 from otp.messagetypes import *
 from otp.messagedirector import MDParticipant
 from otp.networking import ChannelAllocator
 from otp.constants import *
-from dc.objects import MolecularField, AtomicField
+from panda3d.direct import DCPacker
+from otp.util import addServerHeader
 
 from typing import Dict, Set
 
 from otp.zone import *
 
 class DistributedObject(MDParticipant):
-    def __init__(self, state_server, sender, do_id, parent_id, zone_id, dclass, required, ram, owner_channel=None, db=False):
-        MDParticipant.__init__(self, state_server)
+    def __init__(self, stateServer, sender, doId, parentId, zoneId, dclass, required, ram, ownerChannel = None, db = False):
+        MDParticipant.__init__(self, stateServer)
         self.sender = sender
-        self.do_id = do_id
-        self.parent_id = 0
-        self.zone_id = 0
+        self.doId = doId
+        self.parentId = 0
+        self.zoneId = 0
         self.dclass = dclass
         self.required = required
         self.ram = ram
         self.db = db
 
-        self.ai_channel = None
-        self.owner_channel = owner_channel
+        self.aiChannel = None
+        self.ownerChannel = ownerChannel
 
-        self.ai_explicitly_set = False
-        self.parent_synced = False
-        self.next_context = 0
-        self.zone_objects: Dict[int, Set[int]] = {}
+        self.aiExplicitlySet = False
+        self.parentSynced = False
+        self.nextContext = 0
+        self.zoneObjects: Dict[int, Set[int]] = {}
 
         if self.dclass:
-            self.service.log.debug(f'Generating new object {do_id} with dclass {self.dclass.name} in location {parent_id} {zone_id}')
+            self.service.log.debug(f'Generating new object {doId} with dclass {self.dclass.getName()} in location {parentId} {zoneId}')
 
-        self.handle_location_change(parent_id, zone_id, sender)
-        self.subscribe_channel(do_id)
+        self.handleLocationChange(parentId, zoneId, sender)
+        self.subscribe_channel(doId)
 
-    def append_required_data(self, dg, client_only, also_owner):
-        dg.add_uint32(self.do_id)
-        dg.add_uint32(self.parent_id)
-        dg.add_uint32(self.zone_id)
+    def appendRequiredData(self, dg, clientOnly, alsoOwner):
+        dg.addUint32(self.doId)
+        dg.addUint32(self.parentId)
+        dg.addUint32(self.zoneId)
         if not self.dclass:
-            print('dclass is none for object id', self.do_id)
+            print('dclass is none for object id', self.doId)
             return
 
-        dg.add_uint16(self.dclass.number)
-        for field in self.dclass.inherited_fields:
-            if isinstance(field, MolecularField):
+        dg.addUint16(self.dclass.getNumber())
+
+        for fieldIndex in range(self.dclass.getNumInheritedFields()):
+            field = self.dclass.getInheritedField(fieldIndex)
+            if field.asMolecularField():
+                continue
+            if not field.isRequired():
                 continue
 
-            if not field.is_required:
-                continue
+            if not clientOnly or field.isBroadcast() or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
+                fieldPacker = DCPacker()
+                fieldPacker.beginPack(field)
 
-            if not client_only or field.is_broadcast or field.is_clrecv or (also_owner and field.is_ownrecv):
-                dg.add_bytes(self.required[field.name])
+                field.packArgs(fieldPacker, self.required[field.getName()])
+                fieldPacker.endPack()
 
-    def append_other_data(self, dg, client_only, also_owner):
-        if client_only:
-            fields_dg = Datagram()
+                dg.appendData(fieldPacker.getBytes())
+
+    def appendOtherData(self, dg, clientOnly, alsoOwner):
+        if clientOnly:
+            packer = DCPacker()
 
             count = 0
-            for field_name, raw_data in self.ram.items():
-                field = self.dclass.fields_by_name[field_name]
-                if field.is_broadcast or field.is_clrecv or (also_owner and field.is_ownrecv):
-                    fields_dg.add_uint16(field.number)
-                    fields_dg.add_bytes(raw_data)
+            for fieldName, rawData in self.ram.items():
+                field = self.dclass.getFieldByName(fieldName)
+                if field.isBroadcast() or field.isClrecv() or (alsoOwner and field.isOwnrecv()):
+                    packer.rawPackUint16(field.getNumber())
+                    packer.beginPack(field)
+                    field.packArgs(packer, rawData)
+                    packer.endPack()
                     count += 1
 
-            dg.add_uint16(count)
+            dg.addUint16(count)
             if count:
-                dg.add_bytes(fields_dg.bytes())
+                dg.appendData(packer.getBytes())
 
         else:
-            dg.add_uint16(len(self.ram))
-            for field_name, raw_data in self.ram.items():
-                field = self.dclass.fields_by_name[field_name]
-                dg.add_uint16(field.number)
-                dg.add_bytes(raw_data)
+            dg.addUint16(len(self.ram))
 
-    def send_interest_entry(self, location, context):
+            for fieldName, rawData in self.ram.items():
+                field = self.dclass.getFieldByName(fieldName)
+                otherPacker = DCPacker()
+
+                dg.addUint16(field.getNumber())
+
+                otherPacker.beginPack(field)
+                field.packArgs(otherPacker, rawData)
+                otherPacker.endPack()
+
+                dg.appendData(otherPacker.getBytes())
+
+    def sendInterestEntry(self, location, context):
         pass
 
-    def send_location_entry(self, location):
+    def sendLocationEntry(self, location):
         dg = Datagram()
-        dg.add_server_header([location], self.do_id, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
-        dg.add_uint8(bool(self.ram))
-        self.append_required_data(dg, True, False)
+        addServerHeader(dg, [location], self.doId, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg.addUint8(bool(self.ram))
+        self.appendRequiredData(dg, True, False)
         if self.ram:
-            self.append_other_data(dg, True, False)
+            self.appendOtherData(dg, True, False)
         self.service.send_datagram(dg)
 
-    def send_ai_entry(self, location):
+    def sendAIEntry(self, location):
         dg = Datagram()
-        dg.add_server_header([location], self.do_id, STATESERVER_OBJECT_ENTER_AI_RECV)
-        self.append_required_data(dg, False, False)
+        addServerHeader(dg, [location], self.doId, STATESERVER_OBJECT_ENTER_AI_RECV)
+        self.appendRequiredData(dg, False, False)
 
         if self.ram:
-            self.append_other_data(dg, False, False)
-
-        self.service.send_datagram(dg)
-
-    def send_owner_entry(self, location):
-        dg = Datagram()
-        dg.add_server_header([location], self.do_id, STATESERVER_OBJECT_ENTER_OWNER_RECV)
-        self.append_required_data(dg, False, True)
-
-        if self.ram:
-            self.append_other_data(dg, True, True)
+            self.appendOtherData(dg, False, False)
 
         self.service.send_datagram(dg)
 
-    def handle_location_change(self, new_parent, new_zone, sender):
-        old_parent = self.parent_id
-        old_zone = self.zone_id
+    def sendOwnerEntry(self, location):
+        dg = Datagram()
+        addServerHeader(dg, [location], self.doId, STATESERVER_OBJECT_ENTER_OWNER_RECV)
+        self.appendRequiredData(dg, False, True)
+
+        if self.ram:
+            self.appendOtherData(dg, True, True)
+
+        self.service.send_datagram(dg)
+
+    def handleLocationChange(self, newParent, newZone, sender):
+        oldParent = self.parentId
+        oldZone = self.zoneId
 
         targets = list()
 
-        if self.ai_channel is not None:
-            targets.append(self.ai_channel)
+        if self.aiChannel is not None:
+            targets.append(self.aiChannel)
 
-        if self.owner_channel is not None:
-            targets.append(self.owner_channel)
+        if self.ownerChannel is not None:
+            targets.append(self.ownerChannel)
 
-        if new_parent == self.do_id:
+        if newParent == self.doId:
             raise Exception('Object cannot be parented to itself.\n')
 
-        if new_parent != old_parent:
-            if old_parent:
-                self.unsubscribe_channel(parent_to_children(old_parent))
-                targets.append(old_parent)
-                targets.append(location_as_channel(old_parent, old_zone))
+        if newParent != oldParent:
+            if oldParent:
+                self.unsubscribe_channel(parentToChildren(oldParent))
+                targets.append(oldParent)
+                targets.append(locationAsChannel(oldParent, oldZone))
 
-            self.parent_id = new_parent
-            self.zone_id = new_zone
+            self.parentId = newParent
+            self.zoneId = newZone
 
-            if new_parent:
-                self.subscribe_channel(parent_to_children(new_parent))
+            if newParent:
+                self.subscribe_channel(parentToChildren(newParent))
 
-                if not self.ai_explicitly_set:
-                    new_ai_channel = self.service.resolve_ai_channel(new_parent)
-                    if new_ai_channel != self.ai_channel:
-                        self.ai_channel = new_ai_channel
-                        self.send_ai_entry(new_ai_channel)
+                if not self.aiExplicitlySet:
+                    newAIChannel = self.service.resolveAIChannel(newParent)
+                    if newAIChannel != self.aiChannel:
+                        self.aiChannel = newAIChannel
+                        self.sendAIEntry(newAIChannel)
 
-                targets.append(new_parent)
+                targets.append(newParent)
 
-        elif new_zone != old_zone:
-            self.zone_id = new_zone
+        elif newZone != oldZone:
+            self.zoneId = newZone
 
-            targets.append(self.parent_id)
-            targets.append(location_as_channel(self.parent_id, old_zone))
+            targets.append(self.parentId)
+            targets.append(locationAsChannel(self.parentId, oldZone))
         else:
             # Not changing zones.
             return
 
         dg = Datagram()
-        dg.add_server_header(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE)
-        dg.add_uint32(self.do_id)
-        dg.add_uint32(new_parent)
-        dg.add_uint32(new_zone)
-        dg.add_uint32(old_parent)
-        dg.add_uint32(old_zone)
+        addServerHeader(dg, targets, sender, STATESERVER_OBJECT_CHANGE_ZONE)
+
+        dg.addUint32(self.doId)
+        dg.addUint32(newParent)
+        dg.addUint32(newZone)
+        dg.addUint32(oldParent)
+        dg.addUint32(oldZone)
 
         self.service.send_datagram(dg)
 
-        self.parent_synced = False
+        self.parentSynced = False
 
-        if new_parent:
-            self.send_location_entry(location_as_channel(new_parent, new_zone))
+        if newParent:
+            self.sendLocationEntry(locationAsChannel(newParent, newZone))
 
-    def handle_ai_change(self, new_ai, sender, channel_is_explicit):
+    def handleAIChange(self, new_ai, sender, channel_is_explicit):
         pass
 
-    def annihilate(self, sender, notify_parent=True):
+    def annihilate(self, sender, notifyParent = True):
         targets = list()
 
-        if self.parent_id:
-            targets.append(location_as_channel(self.parent_id, self.zone_id))
+        if self.parentId:
+            targets.append(locationAsChannel(self.parentId, self.zoneId))
 
-            if notify_parent:
+            if notifyParent:
                 dg = Datagram()
-                dg.add_server_header([self.parent_id], sender, STATESERVER_OBJECT_CHANGE_ZONE)
-                dg.add_uint32(self.do_id)
-                dg.add_uint32(0)  # New parent
-                dg.add_uint32(0)  # new zone
-                dg.add_uint32(self.parent_id)   # old parent
-                dg.add_uint32(self.zone_id)  # old zone
+                addServerHeader(dg, [self.parentId], sender, STATESERVER_OBJECT_CHANGE_ZONE)
+                dg.addUint32(self.doId)
+                dg.addUint32(0) # New parent
+                dg.addUint32(0) # new zone
+                dg.addUint32(self.parentId) # old parent
+                dg.addUint32(self.zoneId) # old zone
                 self.service.send_datagram(dg)
 
-        if self.owner_channel:
-            targets.append(self.owner_channel)
-        if self.ai_channel:
-            targets.append(self.ai_channel)
+        if self.ownerChannel:
+            targets.append(self.ownerChannel)
+        if self.aiChannel:
+            targets.append(self.aiChannel)
 
         dg = Datagram()
-        dg.add_server_header(targets, sender, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(self.do_id)
+        addServerHeader(dg, targets, sender, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(self.doId)
         self.service.send_datagram(dg)
 
-        self.delete_children(sender)
+        self.deleteChildren(sender)
 
-        del self.service.objects[self.do_id]
+        del self.service.objects[self.doId]
 
         self.service.remove_participant(self)
 
         if self.db:
-            self.service.database_objects.remove(self.do_id)
+            self.service.databaseObjects.remove(self.doId)
 
-        self.service.log.debug(f'Object {self.do_id} has been deleted.')
+        self.service.log.debug(f'Object {self.doId} has been deleted.')
 
-    def delete_children(self, sender):
+    def deleteChildren(self, sender):
         pass
 
-    def handle_one_update(self, dgi, sender):
-        field_id = dgi.get_uint16()
-        field = self.dclass.dcfile().fields[field_id]()
-        pos = dgi.tell()
-        data = field.unpack_bytes(dgi)
+    def handleOneUpdate(self, dgi, sender):
+        fieldId = dgi.getUint16()
+        field = self.dclass.getFieldByIndex(fieldId)
+        pos = dgi.getCurrentIndex()
+        _data = dgi.getDatagram().getMessage()[pos:]
 
-        if isinstance(field, MolecularField):
-            dgi.seek(pos)
-            self.save_molecular(field, dgi)
+        unpacker = DCPacker()
+        unpacker.setUnpackData(_data)
+
+        molecular = field.asMolecularField()
+
+        if molecular:
+            for i in range(molecular.getNumAtomics()):
+                atomic = molecular.getAtomic(i)
+
+                unpacker.beginUnpack(atomic)
+                data = atomic.unpackArgs(unpacker)
+                unpacker.endUnpack()
+
+                self.saveField(atomic, data)
         else:
-            self.save_field(field, data)
+            unpacker.beginUnpack(field)
+            data = field.unpackArgs(unpacker)
+            unpacker.endUnpack()
+
+            self.saveField(field, data)
 
         targets = []
 
-        if field.is_broadcast:
-            targets.append(location_as_channel(self.parent_id, self.zone_id))
-        if field.is_airecv and self.ai_channel and self.ai_channel != sender:
-            targets.append(self.ai_channel)
-        if field.is_ownrecv and self.owner_channel and self.owner_channel != sender:
-            targets.append(self.owner_channel)
+        if field.isBroadcast():
+            targets.append(locationAsChannel(self.parentId, self.zoneId))
+        if field.isAirecv() and self.aiChannel and self.aiChannel != sender:
+            targets.append(self.aiChannel)
+        if field.isOwnrecv() and self.ownerChannel and self.ownerChannel != sender:
+            targets.append(self.ownerChannel)
 
         if targets:
             dg = Datagram()
-            dg.add_server_header(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD)
-            dg.add_uint32(self.do_id)
-            dg.add_uint16(field_id)
-            dg.add_bytes(data)
+            addServerHeader(dg, targets, sender, STATESERVER_OBJECT_UPDATE_FIELD)
+            dg.addUint32(self.doId)
+            dg.addUint16(fieldId)
+            dg.appendData(_data)
             self.service.send_datagram(dg)
 
-    def save_molecular(self, field: MolecularField, dgi):
-        for subfield in field.subfields:
-            if isinstance(subfield, MolecularField):
-                self.save_molecular(subfield, dgi)
-            else:
-                self.save_field(subfield, subfield.unpack_bytes(dgi))
+    def saveField(self, field, data):
+        if field.isRequired():
+            self.required[field.getName()] = data
+        elif field.isRam():
+            self.ram[field.getName()] = data
 
-    def save_field(self, field: AtomicField, data):
-        if field.is_required:
-            self.required[field.name] = data
-        elif field.is_ram:
-            self.ram[field.name] = data
-
-        if self.db and field.is_db:
+        if self.db and field.isDb():
             dg = Datagram()
-            dg.add_server_header([DBSERVERS_CHANNEL], self.do_id, DBSERVER_SET_STORED_VALUES)
-            dg.add_uint32(self.do_id)
-            dg.add_uint16(1)
-            dg.add_uint16(field.number)
-            dg.add_bytes(data)
+            addServerHeader(dg, [DBSERVERS_CHANNEL], self.doId, DBSERVER_SET_STORED_VALUES)
+            dg.addUint32(self.doId)
+            dg.addUint16(1)
+            dg.addUint16(field.getNumber())
+
+            packer = DCPacker()
+            packer.beginPack(field)
+            field.packArgs(packer, data)
+            packer.endPack()
+
+            dg.appendData(packer.getBytes())
+
             self.service.send_datagram(dg)
-            self.service.log.debug(f'Object {self.do_id} saved value {data} for field {field.name} to database.')
+            self.service.log.debug(f'Object {self.doId} saved value {data} for field {field.getName()} to database.')
 
-    def handle_one_get(self, dg, field_id, subfield=False):
-        field = self.dclass.dcfile().fields[field_id]()
+    def handleOneGet(self, dg, fieldId, subfield = False):
+        field = self.dclass.getFieldByIndex(fieldId)
 
-        if isinstance(field, MolecularField):
+        if field.asMolecularField():
             if not subfield:
-                dg.add_uint16(field_id)
+                dg.addUint16(fieldId)
             for field in field.subfields:
-                self.handle_one_get(dg, field.number, subfield)
+                self.handleOneGet(dg, field.getNumber(), subfield)
 
-        if field.name in self.required:
-            dg.append_data(self.required[field.name])
-        elif field.name in self.ram:
-            dg.append_data(self.ram[field.name])
+        if field.getName() in self.required:
+            dg.append_data(self.required[field.getName()])
+        elif field.getName() in self.ram:
+            dg.append_data(self.ram[field.getName()])
 
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msgtype = dgi.get_uint16()
+        sender = dgi.getInt64()
+        msgtype = dgi.getUint16()
 
         if msgtype == STATESERVER_OBJECT_DELETE_RAM:
-            do_id = dgi.get_uint32()
-            if do_id == self.do_id or do_id == self.parent_id:
+            doId = dgi.getUint32()
+            if doId == self.doId or doId == self.parentId:
                 self.annihilate(sender)
                 return
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
-            if self.do_id != dgi.get_uint32():
+            if self.doId != dgi.getUint32():
                 return
-            self.handle_one_update(dgi, sender)
+            self.handleOneUpdate(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE:
-            if self.do_id != dgi.get_uint32():
+            if self.doId != dgi.getUint32():
                 return
 
-            field_count = dgi.get_uint16()
-            for i in range(field_count):
-                self.handle_one_update(dgi, sender)
+            fieldCount = dgi.getUint16()
+            for i in range(fieldCount):
+                self.handleOneUpdate(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_SET_ZONE:
-            new_parent = dgi.get_uint32()
-            new_zone = dgi.get_uint32()
-            self.handle_location_change(new_parent, new_zone, sender)
+            newParent = dgi.getUint32()
+            newZone = dgi.getUint32()
+            self.handleLocationChange(newParent, newZone, sender)
         elif msgtype == STATESERVER_OBJECT_CHANGE_ZONE:
-            child_id = dgi.get_uint32()
-            new_parent = dgi.get_uint32()
-            new_zone = dgi.get_uint32()
-            old_parent = dgi.get_uint32()
-            old_zone = dgi.get_uint32()
+            childId = dgi.getUint32()
+            newParent = dgi.getUint32()
+            newZone = dgi.getUint32()
+            oldParent = dgi.getUint32()
+            oldZone = dgi.getUint32()
 
-            if new_parent == self.do_id:
-                if old_parent == self.do_id:
-                    if new_zone == old_zone:
+            if newParent == self.doId:
+                if oldParent == self.doId:
+                    if newZone == oldZone:
                         return
 
-                    children = self.zone_objects[old_zone]
-                    children.remove(child_id)
+                    children = self.zoneObjects[oldZone]
+                    children.remove(childId)
 
                     if not len(children):
-                        del self.zone_objects[old_zone]
+                        del self.zoneObjects[oldZone]
 
-                if new_zone not in self.zone_objects:
-                    self.zone_objects[new_zone] = set()
+                if newZone not in self.zoneObjects:
+                    self.zoneObjects[newZone] = set()
 
-                self.zone_objects[new_zone].add(child_id)
-            elif old_parent == self.do_id:
-                children = self.zone_objects[old_zone]
-                children.remove(child_id)
+                self.zoneObjects[newZone].add(childId)
+            elif oldParent == self.doId:
+                children = self.zoneObjects[oldZone]
+                children.remove(childId)
 
                 if not len(children):
-                    del self.zone_objects[old_zone]
+                    del self.zoneObjects[oldZone]
         elif msgtype == STATESERVER_QUERY_ZONE_OBJECT_ALL:
             self.handle_query_zone(dgi, sender)
         elif msgtype == STATESERVER_QUERY_OBJECT_ALL:
             self.handle_query_all(dgi, sender)
 
     def handle_query_all(self, dgi, sender):
-        other = dgi.get_uint8()
-        context = dgi.get_uint32()
+        other = dgi.getUint8()
+        context = dgi.getUint32()
 
         resp = Datagram()
-        resp.add_server_header([sender], self.do_id, STATESERVER_QUERY_OBJECT_ALL_RESP)
-        resp.add_uint32(self.do_id)
-        resp.add_uint16(context)
-        self.append_required_data(resp, False, True)
+        addServerHeader(resp, [sender], self.doId, STATESERVER_QUERY_OBJECT_ALL_RESP)
+        resp.addUint32(self.doId)
+        resp.addUint16(context)
+        self.appendRequiredData(resp, False, True)
         self.service.send_datagram(resp)
 
     def handle_query_zone(self, dgi, sender):
         # STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE
         handle = dgi.get_uint16()
-        context_id = dgi.get_uint32()
-        parent_id = dgi.get_uint32()
+        contextId = dgi.getUint32()
+        parentId = dgi.getUint32()
 
-        if parent_id != self.do_id:
+        if parentId != self.doId:
             return
 
-        num_zones = dgi.remaining() // 4
+        numZones = dgi.getRemainingSize() // 4
 
         zones = []
 
-        for i in range(num_zones):
-            zones.append(dgi.get_uint32())
+        for i in range(numZones):
+            zones.append(dgi.getUint32())
 
-        object_ids = []
+        objectIds = []
 
         for zone in zones:
-            if zone not in self.zone_objects:
+            if zone not in self.zoneObjects:
                 continue
 
-            object_ids.extend(self.zone_objects[zone])
+            objectIds.extend(self.zoneObjects[zone])
 
         resp = Datagram()
-        resp.add_server_header([sender], self.do_id, STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE)
-        resp.add_uint16(handle)
-        resp.add_uint32(context_id)
+        addServerHeader(resp, [sender], self.doId, STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE)
+        resp.addUint16(handle)
+        resp.addUint32(contextId)
 
-        if not len(object_ids):
+        if not len(objectIds):
             self.service.send_datagram(resp)
             return
 
-        self.send_location_entry(sender)
+        self.sendLocationEntry(sender)
 
-        for do_id in object_ids:
-            self.service.objects[do_id].send_location_entry(sender)
+        for doId in objectIds:
+            self.service.objects[doId].sendLocationEntry(sender)
 
         self.service.send_datagram(resp)
 
 class StateServerProtocol(MDUpstreamProtocol):
     def handle_datagram(self, dg, dgi):
-        sender = dgi.get_channel()
-        msgtype = dgi.get_uint16()
+        sender = dgi.getInt64()
+        msgtype = dgi.getUint16()
         self.service.log.debug(f'State server directly received msgtype {MSG_TO_NAME_DICT[msgtype]} from {sender}.')
 
         if msgtype == STATESERVER_OBJECT_GENERATE_WITH_REQUIRED:
-            self.handle_generate(dgi, sender, False)
+            self.handleGenerate(dgi, sender, False)
         elif msgtype == STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
-            self.handle_generate(dgi, sender, True)
+            self.handleGenerate(dgi, sender, True)
         elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT: # DBSS msg
-            self.handle_db_generate(dgi, sender, False)
+            self.handleDBGenerate(dgi, sender, False)
         elif msgtype == STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT: # DBSS msg
-            self.handle_db_generate(dgi, sender, True)
+            self.handleDBGenerate(dgi, sender, True)
         elif msgtype == STATESERVER_ADD_AI_RECV:
-            self.handle_add_ai(dgi, sender)
+            self.handleAddAI(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_SET_OWNER_RECV:
-            self.handle_set_owner(dgi, sender)
+            self.handleSetOwner(dgi, sender)
         elif msgtype == DBSERVER_GET_STORED_VALUES_RESP:
-            self.activate_callback(dgi)
+            self.activeCallback(dgi)
         elif msgtype == STATESERVER_SHARD_REST:
-            self.handle_shard_rest(dgi)
+            self.handleShardRest(dgi)
         elif msgtype == STATESERVER_OBJECT_LOCATE:
-            context = dgi.get_uint32()
-            do_id = dgi.get_uint32()
+            context = dgi.getUint32()
+            doId = dgi.getUint32()
 
-            do = self.service.objects.get(do_id)
+            do = self.service.objects.get(doId)
 
             resp = Datagram()
-            resp.add_server_header([sender], do_id, STATESERVER_OBJECT_LOCATE_RESP)
-            resp.add_uint32(context)
-            resp.add_uint32(do_id)
+            addServerHeader(resp, [sender], doId, STATESERVER_OBJECT_LOCATE_RESP)
+            resp.addUint32(context)
+            resp.addUint32(doId)
 
             if do is None:
-                resp.add_uint8(False)
+                resp.addUint8(False)
                 self.service.send_datagram(resp)
             else:
-                resp.add_uint8(True)
-                parent_id, zone_id = do.parent_id, do.zone_id
-                resp.add_uint32(parent_id)
-                resp.add_uint32(zone_id)
-                ai_channel = do.ai_channel if do.ai_channel else 0
-                resp.add_uint32(ai_channel)
+                resp.addUint8(True)
+                parentId, zoneId = do.parentId, do.zoneId
+                resp.addUint32(parentId)
+                resp.addUint32(zoneId)
+                aiChannel = do.aiChannel if do.aiChannel else 0
+                resp.addUint32(aiChannel)
                 self.service.send_datagram(resp)
 
-    def handle_db_generate(self, dgi, sender, other=False):
-        do_id = dgi.get_uint32()
+    def handleDBGenerate(self, dgi, sender, other = False):
+        doId = dgi.getUint32()
 
-        if do_id in self.service.queries or do_id in self.service.database_objects:
-            self.service.log.debug(f'Got duplicate activate request for object {do_id} from {sender}')
+        if doId in self.service.queries or doId in self.service.databaseObjects:
+            self.service.log.debug(f'Got duplicate activate request for object {doId} from {sender}')
             return
 
-        parent_id = dgi.get_uint32()
-        zone_id = dgi.get_uint32()
-        owner_channel = dgi.get_channel()
-        number = dgi.get_uint16()
+        parentId = dgi.getUint32()
+        zoneId = dgi.getUint32()
+        ownerChannel = dgi.getInt64()
+        number = dgi.getUint16()
 
-        other_data = []
+        otherData = []
 
-        state_server = self.service
+        stateServer = self.service
 
         if other:
-            field_count = dgi.get_uint16()
+            fieldCount = dgi.getUint16()
 
-            for i in range(field_count):
-                field_number = dgi.get_uint16()
-                field = state_server.dc_file.fields[field_number]()
-                data = field.unpack_bytes(dgi)
-                other_data.append((field_number, data))
+            unpacker = DCPacker()
+            unpacker.setUnpackData(dgi.getRemainingBytes())
 
-        dclass = state_server.dc_file.classes[number]
+            for i in range(fieldCount):
+                fieldNum = unpacker.rawUnpackUint16()
+                field = stateServer.dcFile.getFieldByIndex(fieldNum)
+
+                unpacker.beginUnpack(field)
+
+                data = field.unpackArgs(unpacker)
+
+                unpacker.endUnpack()
+
+                otherData.append((fieldNum, data))
+
+        dclass = stateServer.dcFile.getClass(number)
 
         query = Datagram()
-        query.add_server_header([DBSERVERS_CHANNEL], STATESERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES)
-        query.add_uint32(1)
-        query.add_uint32(do_id)
+        addServerHeader(query, [DBSERVERS_CHANNEL], STATESERVERS_CHANNEL, DBSERVER_GET_STORED_VALUES)
+        query.addUint32(1)
+        query.addUint32(doId)
 
-        pos = query.tell()
-        query.add_uint16(0)
         count = 0
-        for field in dclass:
-            if not isinstance(field, MolecularField) and field.is_db:
-                if field.name == 'DcObjectType':
+
+        for fieldId in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(fieldId)
+
+            if not field.asMolecularField() and field.isDb():
+                if field.getName() == 'DcObjectType':
                     continue
-                query.add_uint16(field.number)
+                query.addUint16(field.getNumber())
                 count += 1
-        query.seek(pos)
-        query.add_uint16(count)
 
-        self.service.log.debug(f'Querying {count} fields for {dclass.name} {do_id}. Other data: {other_data}')
+        self.service.log.debug(f'Querying {count} fields for {dclass.getName()} {doId}. Other data: {otherData}')
 
-        self.service.queries[do_id] = (parent_id, zone_id, owner_channel, number, other_data)
+        self.service.queries[doId] = (parentId, zoneId, ownerChannel, number, otherData)
         self.service.send_datagram(query)
 
-    def activate_callback(self, dgi):
-        context = dgi.get_uint32()
-        do_id = dgi.get_uint32()
+    def activeCallback(self, dgi):
+        context = dgi.getUint32()
+        doId = dgi.getUint32()
 
-        state_server = self.service
+        stateServer = self.service
 
-        parent_id, zone_id, owner_channel, number, other_data = state_server.queries[do_id]
-        dclass = state_server.dc_file.classes[number]
+        parentId, zoneId, ownerChannel, number, otherData = stateServer.queries[doId]
+        dclass = stateServer.dcFile.getClass(number)
 
-        del state_server.queries[do_id]
+        del stateServer.queries[doId]
 
         required = {}
         ram = {}
 
-        count = dgi.get_uint16()
+        count = dgi.getUint16()
 
         for i in range(count):
-            field_number = dgi.get_uint16()
-            field = state_server.dc_file.fields[field_number]()
+            fieldNumber = dgi.getUint16()
+            field = stateServer.dcFile.getFieldByIndex(fieldNumber)
 
-            if field.is_required:
-                required[field.name] = field.unpack_bytes(dgi)
+            unpacker = DCPacker()
+            unpacker.setUnpackData(dgi.getBlob())
+
+            unpacker.beginUnpack(field)
+
+            data = field.unpackArgs(unpacker)
+
+            if field.isRequired():
+                required[field.getName()] = data
             else:
-                ram[field.name] = field.unpack_bytes(dgi)
+                ram[field.getName()] = data
 
-        for field_number, data in other_data:
-            field = state_server.dc_file.fields[field_number]()
-            if field.is_required:
-                required[field.name] = data
+            unpacker.endUnpack()
+
+        for fieldNumber, data in otherData:
+            field = stateServer.dcFile.getFieldByIndex(fieldNumber)
+
+            if field.isRequired():
+                required[field.getName()] = data
             else:
-                ram[field.name] = data
+                ram[field.getName()] = data
 
-            if field.is_db:
+            # Pack the data back up.
+            packer = DCPacker()
+            packer.beginPack(field)
+            field.packArgs(packer, data)
+            packer.endPack()
+
+            if field.isDb():
                 dg = Datagram()
-                dg.add_server_header([DBSERVERS_CHANNEL], do_id, DBSERVER_SET_STORED_VALUES)
-                dg.add_uint32(do_id)
-                dg.add_uint16(1)
-                dg.add_uint16(field.number)
-                dg.add_bytes(data)
+                addServerHeader(dg, [DBSERVERS_CHANNEL], doId, DBSERVER_SET_STORED_VALUES)
+                dg.addUint32(doId)
+                dg.addUint16(1)
+                dg.addUint16(field.getNumber())
+                dg.appendData(packer.getBytes())
                 self.service.send_datagram(dg)
 
-        self.service.log.debug(f'Activating {do_id} with required:{required}\nram:{ram}\n')
+        self.service.log.debug(f'Activating {doId} with required:{required}\nram:{ram}\n')
 
-        obj = DistributedObject(state_server, STATESERVERS_CHANNEL, do_id, parent_id, zone_id, dclass, required, ram,
-                                owner_channel=owner_channel, db=True)
-        state_server.database_objects.add(do_id)
-        state_server.objects[do_id] = obj
-        obj.send_owner_entry(owner_channel)
+        obj = DistributedObject(stateServer, STATESERVERS_CHANNEL, doId, parentId, zoneId, dclass, required, ram,
+                                ownerChannel = ownerChannel, db = True)
+        stateServer.databaseObjects.add(doId)
+        stateServer.objects[doId] = obj
+        obj.sendOwnerEntry(ownerChannel)
 
-    def handle_add_ai(self, dgi, sender):
-        object_id = dgi.get_uint32()
-        ai_channel = dgi.get_channel()
-        state_server = self.service
-        obj = state_server.objects[object_id]
-        obj.ai_channel = ai_channel
-        obj.ai_explicitly_set = True
-        print('AI SET FOR', object_id, 'TO', ai_channel)
-        obj.send_ai_entry(ai_channel)
+    def handleAddAI(self, dgi, sender):
+        objectId = dgi.getUint32()
+        aiChannel = dgi.getInt64()
+        stateServer = self.service
+        obj = stateServer.objects[objectId]
+        obj.aiChannel = aiChannel
+        obj.aiExplicitlySet = True
+        print('AI SET FOR', objectId, 'TO', aiChannel)
+        obj.sendAIEntry(aiChannel)
 
-    def handle_set_owner(self, dgi, sender):
-        object_id = dgi.get_uint32()
-        owner_channel = dgi.get_channel()
-        state_server = self.service
-        obj = state_server.objects[object_id]
-        obj.owner_channel = owner_channel
-        obj.send_owner_entry(owner_channel)
+    def handleSetOwner(self, dgi, sender):
+        objectId = dgi.getUint32()
+        ownerChannel = dgi.getInt64()
+        stateServer = self.service
+        obj = stateServer.objects[objectId]
+        obj.ownerChannel = ownerChannel
+        obj.sendOwnerEntry(ownerChannel)
 
-    def handle_generate(self, dgi, sender, other=False):
-        parent_id = dgi.get_uint32()
-        zone_id = dgi.get_uint32()
-        number = dgi.get_uint16()
-        do_id = dgi.get_uint32()
+    def handleGenerate(self, dgi, sender, other = False):
+        parentId = dgi.getUint32()
+        zoneId = dgi.getUint32()
+        number = dgi.getUint16()
+        doId = dgi.getUint32()
 
-        state_server = self.service
+        stateServer = self.service
 
-        if do_id in state_server.objects:
-            self.service.log.debug(f'Received duplicate generate for object {do_id}')
+        if doId in stateServer.objects:
+            self.service.log.debug(f'Received duplicate generate for object {doId}')
             return
 
-        if number > len(state_server.dc_file.classes):
+        if number > stateServer.dcFile.getNumClasses():
             self.service.log.debug(f'Received create for unknown dclass with class id {number}')
             return
 
-        dclass = state_server.dc_file.classes[number]
+        dclass = stateServer.dcFile.getClass(number)
 
         required = {}
         ram = {}
 
-        for field in dclass.inherited_fields:
-            if not isinstance(field, MolecularField) and field.is_required:
-                required[field.name] = field.unpack_bytes(dgi)
+        unpacker = DCPacker()
+        unpacker.setUnpackData(dgi.getRemainingBytes())
+
+        for fieldIndex in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(fieldIndex)
+
+            if field.asMolecularField():
+                continue
+
+            if not field.isRequired():
+                continue
+
+            unpacker.beginUnpack(field)
+            fieldArgs = field.unpackArgs(unpacker)
+            unpacker.endUnpack()
+
+            required[field.getName()] = fieldArgs
 
         if other:
-            num_optional_fields = dgi.get_uint16()
+            numOptionalFields = dgi.getUint16()
 
-            for i in range(num_optional_fields):
-                field_number = dgi.get_uint16()
+            for i in range(numOptionalFields):
+                fieldNumber = dgi.getUint16()
 
-                field = dclass.fields[field_number]
+                field = dclass.getFieldByIndex(fieldNumber)
 
-                if not field.is_ram:
-                    self.service.log.debug(f'Received non-RAM field {field.name} within an OTHER section.\n')
+                if not field.isRam():
+                    self.service.log.debug(f'Received non-RAM field {field.getName()} within an OTHER section.\n')
                     field.unpack_bytes(dgi)
                     continue
                 else:
-                    ram[field.name] = field.unpack_bytes(dgi)
+                    ram[field.getName()] = field.unpackBytes(dgi)
 
-        obj = DistributedObject(state_server, sender, do_id, parent_id, zone_id, dclass, required, ram)
-        state_server.objects[do_id] = obj
+        obj = DistributedObject(stateServer, sender, doId, parentId, zoneId, dclass, required, ram)
+        stateServer.objects[doId] = obj
 
-    def handle_shard_rest(self, dgi):
-        ai_channel = dgi.get_channel()
+    def handleShardRest(self, dgi):
+        aiChannel = dgi.getInt64()
 
-        for object_id in list(self.service.objects.keys()):
-            obj = self.service.objects[object_id]
-            if obj.ai_channel == ai_channel:
-                obj.annihilate(ai_channel)
+        for objectId in list(self.service.objects.keys()):
+            obj = self.service.objects[objectId]
+            if obj.aiChannel == aiChannel:
+                obj.annihilate(aiChannel)
 
-from dc.parser import parse_dc_file
+from panda3d.direct import DCFile
 
 class StateServer(DownstreamMessageDirector, ChannelAllocator):
     upstream_protocol = StateServerProtocol
-    service_channels = []
-    root_object_id = OTP_DO_ID_TOONTOWN
+    serviceChannels = []
+    rootObjectId = OTP_DO_ID_TOONTOWN
 
     min_channel = 100000000
     max_channel = 399999999
@@ -617,12 +689,13 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
         DownstreamMessageDirector.__init__(self, loop)
         ChannelAllocator.__init__(self)
 
-        self.dc_file = parse_dc_file('etc/dclass/toon.dc')
+        self.dcFile = DCFile()
+        self.dcFile.read('etc/dclass/toon.dc')
 
         self.loop.set_exception_handler(self._on_exception)
 
         self.objects: Dict[int, DistributedObject] = {}
-        self.database_objects = set()
+        self.databaseObjects = set()
         self.queries = {}
 
     def _on_exception(self, loop, context):
@@ -634,22 +707,22 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
 
     def on_upstream_connect(self):
         self.subscribe_channel(self._client, STATESERVERS_CHANNEL)
-        self.objects[self.root_object_id] = DistributedObject(self, STATESERVERS_CHANNEL, self.root_object_id,
-                                                              0, 2, self.dc_file.namespace['DistributedDirectory'],
+        self.objects[self.rootObjectId] = DistributedObject(self, STATESERVERS_CHANNEL, self.rootObjectId,
+                                                              0, 2, self.dcFile.getClassByName('DistributedDirectory'),
                                                               None, None)
 
-    def resolve_ai_channel(self, parent_id):
-        ai_channel = None
+    def resolveAIChannel(self, parentId):
+        aiChannel = None
 
-        while ai_channel is None:
+        while aiChannel is None:
             try:
-                obj = self.objects[parent_id]
-                parent_id = obj.parent_id
-                ai_channel = obj.ai_channel
+                obj = self.objects[parentId]
+                parentId = obj.parentId
+                aiChannel = obj.aiChannel
             except KeyError:
                 return None
 
-        return ai_channel
+        return aiChannel
 
 async def main():
     loop = asyncio.get_running_loop()
@@ -657,4 +730,4 @@ async def main():
     await service.run()
 
 if __name__ == '__main__':
-    asyncio.run(main(), debug=True)
+    asyncio.run(main(), debug = True)

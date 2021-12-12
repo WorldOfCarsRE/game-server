@@ -119,7 +119,7 @@ class DistributedSuitBaseAI(DistributedObjectAI):
             return 0
 
     def getDeathEvent(self):
-        return 'cogDead-%s' % self.do_id
+        return 'cogDead-%s' % self.doId
 
     def resume(self):
         if self.hp <= 0:
@@ -162,7 +162,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
 
     def getSPDoId(self):
         if self.suitPlanner:
-            return self.suitPlanner.do_id
+            return self.suitPlanner.doId
         else:
             return 0
 
@@ -299,9 +299,9 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             return
 
         if enter:
-            door.d_suitEnter(self.do_id)
+            door.d_suitEnter(self.doId)
         else:
-            door.d_suitExit(self.do_id)
+            door.d_suitExit(self.doId)
 
     def stopPathNow(self):
         taskMgr.remove(self.uniqueName('move'))
