@@ -1,9 +1,9 @@
 from panda3d.core import Datagram, DatagramIterator
 from .networking import Service
 
-from datetime import datetime, timezone
+from datetime import datetime
 
-import socket, asyncio, time, os
+import socket, asyncio, os
 
 class EventLogger(Service):
     PORT = 46668
