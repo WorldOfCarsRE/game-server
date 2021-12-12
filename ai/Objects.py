@@ -409,16 +409,16 @@ class FriendManagerAI(DistributedObjectGlobalAI):
                 # Likely they logged off just before a response was sent. RIP.
                 return
 
-            requested.extendFriendsList(requester.do_id, False)
-            requester.extendFriendsList(requested.do_id, False)
+            requested.extendFriendsList(requester.doId, False)
+            requester.extendFriendsList(requested.doId, False)
 
             requested.d_setFriendsList(requested.getFriendsList())
             requester.d_setFriendsList(requester.getFriendsList())
 
-            taskMgr.doMethodLater(1, self.sendFriendOnline, f'send-online-{requested.do_id}-{requester.do_id}',
-                                  extraArgs=[requested.do_id, requester.do_id])
-            taskMgr.doMethodLater(1, self.sendFriendOnline, f'send-online-{requester.do_id}-{requested.do_id}',
-                                  extraArgs=[requester.do_id, requested.do_id])
+            taskMgr.doMethodLater(1, self.sendFriendOnline, f'send-online-{requested.doId}-{requester.doId}',
+                                  extraArgs=[requested.doId, requester.doId])
+            taskMgr.doMethodLater(1, self.sendFriendOnline, f'send-online-{requester.doId}-{requested.doId}',
+                                  extraArgs=[requester.doId, requested.doId])
 
     def requestSecret(self):
         avId = self.air.currentAvatarSender
@@ -773,7 +773,7 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
 
         for doId, do in list(self.air.doTable.items()):
             if isinstance(do, DistributedPlayerAI):
-                if str(doId)[0] != str(self.air.district.do_id)[0]:
+                if str(doId)[0] != str(self.air.district.doId)[0]:
                     do.d_setSystemMessage(0, msg)
 
         return 'Broadcasted message to everyone on this shard.'
@@ -940,6 +940,8 @@ class TTCodeRedemptionMgrAI(DistributedObjectAI):
 
         for item in items['Items']:
             itemType, itemId = item[0], item[1]
+
+            itemObj = getattr(globals(), itemType)
 
             if itemType == 'CatalogBeanItem':
                 itemList.append(CatalogBeanItem(item[1], tagCode = 2))

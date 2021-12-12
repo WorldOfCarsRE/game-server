@@ -25,6 +25,9 @@ class DistributedAvatarAI(DistributedSmoothNodeAI):
 
         self.name = 'Toon'
 
+        self.hp = 15
+        self.maxHp = 15
+
     def setName(self, name):
         self.name = name
 
@@ -37,6 +40,25 @@ class DistributedAvatarAI(DistributedSmoothNodeAI):
 
     def d_setName(self, name):
         self.sendUpdate('setName', [name])
+
+    def setMaxHp(self, hp):
+        self.maxHp = hp
+
+    def getMaxHp(self):
+        return self.maxHp
+
+    def setHp(self, hp):
+        self.hp = hp
+
+    def getHp(self):
+        return self.hp
+
+    def d_setHp(self, hp):
+        self.sendUpdate('setHp', [hp])
+
+    def b_setHp(self, hp):
+        self.setHp(hp)
+        self.d_setHp(hp)
 
 class FriendEntry(NamedTuple):
     doId: int
@@ -110,8 +132,6 @@ class DistributedToonAI(DistributedPlayerAI):
     def __init__(self, air):
         DistributedPlayerAI.__init__(self, air)
 
-        self.hp = 15
-        self.maxHp = 15
         self.maxMoney = 40
         self.money = 0
         self.bankMoney = 0
@@ -258,25 +278,6 @@ class DistributedToonAI(DistributedPlayerAI):
         if overflowMoney > 0:
             bankMoney = self.bankMoney + overflowMoney
             self.b_setBankMoney(bankMoney)
-
-    def setMaxHp(self, hp):
-        self.maxHp = hp
-
-    def getMaxHp(self):
-        return self.maxHp
-
-    def setHp(self, hp):
-        self.hp = hp
-
-    def getHp(self):
-        return self.hp
-
-    def d_setHp(self, hp):
-        self.sendUpdate('setHp', [hp])
-
-    def b_setHp(self, hp):
-        self.setHp(hp)
-        self.d_setHp(hp)
 
     def toonUp(self, hpGained, quietly = 0, sendTotal = 1):
         hpGained = min(self.maxHp, hpGained)
