@@ -216,7 +216,7 @@ class SafeZoneAI(PlaceAI):
         for i in range(self.dnaStore.getNumDNAVisGroupsAI()):
             visGroup = self.dnaStore.getDNAVisGroupAI(i)
             zone = int(visGroup.name.split(':')[0])
-            
+
             visibles = []
             for x in range(visGroup.getNumVisibles()):
                 visibles.append(visGroup.getVisibleName(x))
@@ -278,7 +278,7 @@ class CogHQAI(PlaceAI):
         self.wantSuits = True
         self.suitPlanners = []
         self.facilityMgr = facilityMgr
-        
+
         self.zone2Dna = {}
         self.zone2Storage = {}
 
@@ -287,7 +287,7 @@ class CogHQAI(PlaceAI):
             if zoneId in DNA_MAP:
                 dnaStore = DNAStorage()
                 dnaData = loadDNAFileAI(dnaStore, 'dna/' + DNA_MAP[self.zoneId])
-                
+
                 self.zone2Dna[zoneId] = dnaData
                 self.zone2Storage[zoneId] = dnaStore
 
