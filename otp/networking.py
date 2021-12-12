@@ -4,22 +4,19 @@ from panda3d.core import Datagram
 from asyncio import Future
 from typing import List
 
-import logging, traceback, asyncio, struct, ssl
+import logging, coloredlogs, traceback, asyncio, struct, ssl
 
 class Service:
     def __init__(self):
         self.log = logging.getLogger(self.__class__.__name__)
         self.log.setLevel(logging.DEBUG)
+        coloredlogs.install(level = 'DEBUG', logger = self.log)
         fh = logging.FileHandler('logs/' + self.__class__.__name__ + '.log')
         fh.setLevel(logging.DEBUG)
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
         formatter = logging.Formatter('(%(name)s::%(asctime)s): %(message)s')
         fh.setFormatter(formatter)
-        ch.setFormatter(formatter)
-        # add the handlers to the logger
+        # add the handler to the logger
         self.log.addHandler(fh)
-        self.log.addHandler(ch)
 
     async def run(self):
         raise NotImplementedError
