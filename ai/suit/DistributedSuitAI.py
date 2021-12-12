@@ -11,7 +11,7 @@ import random
 from typing import Optional
 
 from .SuitGlobals import *
-from .SuitTimings import victoryDance, toSky
+from .SuitTimings import victoryDance, fromSky, toSky, fromSuitBuilding, toSuitBuilding, toToonBuilding
 
 @with_slots
 @dataclass
@@ -169,7 +169,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
     def getPathEndpoints(self):
         from ai.suit.DistributedSuitPlannerAI import MIN_PATH_LEN, MAX_PATH_LEN
 
-        return self.startPoint.index, self.endPoint.index, \
+        return self.startPoint.getIndex(), self.endPoint.getIndex(), \
                MIN_PATH_LEN, MAX_PATH_LEN
 
     def getPathState(self):
@@ -217,16 +217,23 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             return
         then = globalClock.getFrameTime() + elapsed
         elapsed = then - self.pathStartTime
-        return self.legList.is_point_in_range(point, elapsed - collisionBuffer, elapsed + collisionBuffer)
+        return self.legList.isPointInRange(point, elapsed - collisionBuffer, elapsed + collisionBuffer)
 
     def initializePath(self):
-        self.legList = SuitLegList(self.path, self.suitPlanner.storage)
+        self.legList = SuitLegList(self.path, 
+                                   self.suitPlanner.dnaStore,
+                                   self.suitPlanner.suitWalkSpeed,
+                                   fromSky,
+                                   toSky,
+                                   fromSuitBuilding,
+                                   toSuitBuilding,
+                                   toToonBuilding)
         self.pathStartTime = globalClock.getFrameTime()
         self.pathPositionIndex = 0
         self.pathState = PathState.MOVE
         self.currentLeg = 0
-        self.zoneId = self.legList.get_zone_id(0)
-        self.legType = self.legList.get_type(0)
+        self.zoneId = self.legList.getZoneId(0)
+        self.legType = self.legList.getType(0)
 
     def resync(self):
         self.b_setPathPosition(self.currentLeg, self.pathStartTime + self.legList.get_start_time(self.currentLeg))
@@ -234,12 +241,12 @@ class DistributedSuitAI(DistributedSuitBaseAI):
     def moveToNextLeg(self, task=None):
         now = globalClock.getFrameTime()
         elapsed = now - self.pathStartTime
-        nextLeg = self.legList.get_leg_index_at_time(elapsed, 0)  # self.currentLeg)
-        numLegs = len(self.legList)
+        nextLeg = self.legList.getLegIndexAtTime(elapsed, self.currentLeg)
+        numLegs = self.legList.getNumLegs()
         if self.currentLeg != nextLeg:
             self.currentLeg = nextLeg
-            self.__beginLegType(self.legList.get_type(nextLeg))
-            zoneId = self.legList.get_zone_id(nextLeg)
+            self.__beginLegType(self.legList.getType(nextLeg))
+            zoneId = self.legList.getZoneId(nextLeg)
             self.__enterZone(zoneId)
             if 1:
                 leg = self.legList[nextLeg]
@@ -250,11 +257,11 @@ class DistributedSuitAI(DistributedSuitBaseAI):
         if self.pathState != PathState.MOVE:
             return Task.done
         nextLeg += 1
-        while nextLeg + 1 < numLegs and self.legList.get_zone_id(nextLeg) == self.zoneId and self.legList.get_type(nextLeg) == self.legType:
+        while nextLeg + 1 < numLegs and self.legList.getZoneId(nextLeg) == self.zoneId and self.legList.getType(nextLeg) == self.legType:
             nextLeg += 1
 
         if nextLeg < numLegs:
-            nextTime = self.legList.get_start_time(nextLeg)
+            nextTime = self.legList.getStartTime(nextLeg)
             delay = nextTime - elapsed
             taskMgr.doMethodLater(delay, self.moveToNextLeg, self.uniqueName('move'))
         else:

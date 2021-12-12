@@ -1,7 +1,7 @@
 from ai.globals.HoodGlobals import *
 from typing import List, Dict, Union, Optional
 from ai.DistributedObjectAI import DistributedObjectAI
-from panda3d.toontown import loadDNAFileAI, DNAStorage, DNAGroup, DNAVisGroup
+from panda3d.toontown import loadDNAFileAI, DNAStorage, DNAData, DNAGroup, DNAVisGroup
 from ai.toon import NPCToons
 from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 from ai.safezone import ButterflyGlobals
@@ -175,6 +175,7 @@ class SafeZoneAI(PlaceAI):
         self.hq: Union[HQBuildingAI, None] = None
         self.gagShop: Union[GagshopBuildingAI, None] = None
         self.dnaStore: DNAStorage = None
+        self.dnaData: DNAData = None
 
     @staticmethod
     def getInteriorZone(zoneId, block):
@@ -182,7 +183,7 @@ class SafeZoneAI(PlaceAI):
 
     def create(self):
         self.dnaStore = DNAStorage()
-        loadDNAFileAI(self.dnaStore, 'dna/' + DNA_MAP[self.zoneId])
+        self.dnaData = loadDNAFileAI(self.dnaStore, 'dna/' + DNA_MAP[self.zoneId])
 
         for i in range(self.dnaStore.getNumBlockNumbers()):
             blockNumber = self.dnaStore.getBlockNumberAt(i)
@@ -212,13 +213,19 @@ class SafeZoneAI(PlaceAI):
                 bldg.request('Toon')
                 self.buildings[blockNumber] = bldg
 
-        for visgroup in self.storage[self.zoneId].visgroups:
-            zone = int(visgroup.name.split(':')[0])
-            visibles = visgroup.visibles
+        for i in range(self.dnaStore.getNumDNAVisGroupsAI()):
+            visGroup = self.dnaStore.getDNAVisGroupAI(i)
+            zone = int(visGroup.name.split(':')[0])
+            
+            visibles = []
+            for x in range(visGroup.getNumVisibles()):
+                visibles.append(visGroup.getVisibleName(x))
             if self.zoneId not in visibles:
                 visibles.append(self.zoneId)
+
             self.air.vismap[zone] = tuple(visibles)
 
+        """
         pondName2Do = {}
 
         for pondName in self.storage[self.zoneId].ponds:
@@ -241,6 +248,7 @@ class SafeZoneAI(PlaceAI):
             spot.generateWithRequired(pond.zoneId)
 
         del pondName2Do
+        """
 
 class StreetAI(SafeZoneAI):
     def __init__(self, air, zoneId):
@@ -254,7 +262,7 @@ class StreetAI(SafeZoneAI):
 
         # TODO: suits
         if self.wantSuits:
-            self.suitPlanner = DistributedSuitPlannerAI(self.air, self, self.zoneId)
+            self.suitPlanner = DistributedSuitPlannerAI(self.air, self.dnaStore, self.zoneId)
             self.suitPlanner.generateWithRequired(self.zoneId)
             self.suitPlanner.startup()
 
@@ -270,17 +278,24 @@ class CogHQAI(PlaceAI):
         self.wantSuits = True
         self.suitPlanners = []
         self.facilityMgr = facilityMgr
+        
+        self.zone2Dna = {}
+        self.zone2Storage = {}
 
     def create(self):
         for zoneId in self.suitZones:
             if zoneId in DNA_MAP:
-                self.dna[zoneId], self.storage[zoneId] = load_dna_file('dna/files/' + DNA_MAP[zoneId])
+                dnaStore = DNAStorage()
+                dnaData = loadDNAFileAI(dnaStore, 'dna/' + DNA_MAP[self.zoneId])
+                
+                self.zone2Dna[zoneId] = dnaData
+                self.zone2Storage[zoneId] = dnaStore
 
     def startup(self):
         self.active = True
         if self.wantSuits:
             for zoneId in self.suitZones:
-                suitPlanner = DistributedSuitPlannerAI(self.air, self, zoneId)
+                suitPlanner = DistributedSuitPlannerAI(self.air, self.zone2Storage[zoneId], zoneId)
                 suitPlanner.generateWithRequired(zoneId)
                 suitPlanner.startup()
                 self.suitPlanners.append(suitPlanner)
