@@ -559,25 +559,39 @@ class DBServer(DownstreamMessageDirector):
         # Prepare our response.
         dg = Datagram()
         addServerHeader(dg, [getPuppetChannel(avatarId)], DBSERVERS_CHANNEL, CLIENT_GET_AVATAR_DETAILS_RESP)
-        dg.add_uint32(doId)
-        dg.add_uint8(0)
+        dg.addUint32(doId)
+        dg.addUint8(0)
 
         # Pack our field data to go to the client.
-        for fieldIndex in range(self.dclass.getNumInheritedFields()):
-            field = self.dclass.getInheritedField(fieldIndex)
-            if not field.isRequired() or field.asMolecularField():
-                continue
-
-            packer = DCPacker()
-            packer.setUnpackData(dg)
-
-            packer.beginPack(field)
-            field.packArgs(packer, fieldDict[field.getName()])
-
-            packer.endPack()
+        packedData = self.packDetails(dclass, fieldDict)
+        dg.appendData(packedData)
 
         # Send the response to the client.
         self.send_datagram(dg)
+
+    def packDetails(self, dclass, fields):
+        # Pack required fields.
+        fieldPacker = DCPacker()
+
+        for i in range(dclass.getNumInheritedFields()):
+            field = dclass.getInheritedField(i)
+
+            if not field.isRequired() or field.asMolecularField():
+                continue
+
+            k = field.getName()
+            v = fields.get(k, None)
+
+            fieldPacker.beginPack(field)
+
+            if not v:
+                fieldPacker.packDefaultValue()
+            else:
+                field.packArgs(fieldPacker, v)
+
+            fieldPacker.endPack()
+
+        return fieldPacker.getBytes()
 
 async def main():
     loop = asyncio.get_running_loop()
