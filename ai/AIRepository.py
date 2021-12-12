@@ -1,5 +1,6 @@
 from otp.messagetypes import *
 from panda3d.core import Datagram, DatagramIterator
+from panda3d.core import SocketAddress, SocketUDPOutgoing
 from otp.constants import *
 from otp.zone import *
 from otp.util import *
@@ -24,6 +25,7 @@ from ai.globals.HoodGlobals import DynamicZonesBegin, DynamicZonesEnd
 from .MongoInterface import MongoInterface
 
 from importlib import import_module
+import time
 
 class AIProtocol(ToontownProtocol):
     def connection_made(self, transport):
@@ -80,6 +82,11 @@ class AIRepository:
 
         self.mongoInterface = MongoInterface(self)
         self.doLiveUpdates = True
+
+        self.eventSocket = None # Socket for EventLogger, if enabled.
+
+        self.setEventLogHost('127.0.0.1', port = 46668)
+        self.writeServerEvent('test', 1, 'test')
 
     def run(self):
         self.net_thread = Thread(target=self.__event_loop)
@@ -463,3 +470,45 @@ class AIRepository:
 
     def decrementPopulation(self):
         self.stats.b_setAvatarCount(self.stats.getAvatarCount() - 1)
+
+    def setEventLogHost(self, host, port = 6668):
+        '''
+        Set the target host for Event Logger messaging. This should be pointed
+        at the UDP IP:port that hosts the cluster's running Event Logger.
+
+        Providing a value of None or an empty string for 'host' will disable
+        event logging.
+        '''
+
+        if not host:
+            self.eventSocket = None
+            return
+
+        address = SocketAddress()
+
+        if not address.setHost(host, port):
+            self.notify.warning(f'Invalid Event Log host specified: {host}:{post}')
+            self.eventSocket = None
+        else:
+            self.eventSocket = SocketUDPOutgoing()
+            self.eventSocket.InitToAddress(address)
+
+    def writeServerEvent(self, event, doId, message):
+        '''
+        Sends the indicated event data to the event server via UDP for
+        recording and/or statistics gathering.
+        '''
+
+        if self.eventSocket is None:
+            return
+
+        eventDg = PyDatagram()
+        eventDg.addUint32(int(time.time()))
+        eventDg.addString(event)
+        eventDg.addString(str(doId))
+        eventDg.addString(message)
+
+        dg = PyDatagram()
+        dg.addUint16(eventDg.getLength())
+        dg.appendData(eventDg.getMessage())
+        self.eventSocket.Send(dg.getMessage())
