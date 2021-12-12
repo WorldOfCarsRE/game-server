@@ -3,12 +3,12 @@ from multiprocessing import Pool
 
 import sys
 
-def run_process(process):
+def runProcess(process):
     os.system(f'{sys.executable} {process}')
 
 def main():
-    pool = Pool(processes = 4)
-    pool.map(run_process, ('-m otp.messagedirector', '-m otp.dbserver', '-m otp.stateserver', '-m otp.clientagent'))
+    pool = Pool(processes = 5)
+    pool.map(runProcess, ('-m otp.messagedirector', '-m otp.dbserver', '-m otp.stateserver', '-m otp.clientagent', '-m otp.eventlogger'))
 
 if __name__ == '__main__':
     main()
