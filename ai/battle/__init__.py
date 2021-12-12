@@ -1332,7 +1332,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         else:
             raise IndexError
 
-    def getMovie(self):
+    def getMovieData(self):
         # Use a generator here to avoid putting all 71 parameters in a list every time.
         yield self.movieActive
         yield self.activeToons
@@ -1350,13 +1350,17 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         for suitAttack in self.suitAttacks:
             yield from suitAttack(self)
 
+    def getMovie(self):
+        # TODO: Panda's DC parser doesn't seem to support generator usage for getters.
+        return list(self.getMovieData())
+
     def getBossBattle(self):
         return self.bossBattle
 
     def getState(self):
         return [self.state, globalClockDelta.getRealNetworkTime()]
 
-    def getBattleExperience(self):
+    def getBattleExperienceData(self):
         deathList = []
         uberList = []
         helpfulToonsList = []
@@ -1370,6 +1374,10 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         yield deathList
         yield uberList
         yield helpfulToonsList
+
+    def getBattleExperience(self):
+        # TODO: Read the getMovie() comment.
+        return list(self.getBattleExperienceData())
 
     def d_setMovie(self):
         self.sendUpdate('setMovie', self.getMovie())
