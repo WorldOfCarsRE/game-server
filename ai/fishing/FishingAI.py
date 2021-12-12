@@ -100,6 +100,14 @@ class FishGlobals:
     FishingAngleMax = 50
     MaxRodId = 4
 
+    RodPriceDict = {
+        0: 0,
+        1: 400,
+        2: 800,
+        3: 1200,
+        4: 2000
+    }
+
 class DistributedFishingTargetAI(DistributedNodeAI, FSM):
 
     def __init__(self, air, pond, hunger):
