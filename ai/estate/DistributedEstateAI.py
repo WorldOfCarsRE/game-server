@@ -6,7 +6,7 @@ from ai.house import HouseGlobals
 from ai.globals.HoodGlobals import MyEstate
 from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 
-from dna.dnaparser import load_dna_file, DNAStorage
+from panda3d.toontown import loadDNAFileAI, DNAStorage
 
 from typing import List
 import time
@@ -46,7 +46,8 @@ class DistributedEstateAI(DistributedObjectAI):
         del self.spots
 
     def announceGenerate(self):
-        dna, storage = load_dna_file('dna/files/estate_1.dna')
+        storage = DNAStorage()
+        dna = loadDNAFileAI(storage, 'dna/estate_1.dna')
 
         pondName2Do = {}
 

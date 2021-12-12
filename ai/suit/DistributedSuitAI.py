@@ -11,7 +11,7 @@ import random
 from typing import Optional
 
 from .SuitGlobals import *
-from dna.objects import VICTORY_DANCE, TO_SKY, SuitLegType
+from .SuitTimings import victoryDance, toSky
 
 @with_slots
 @dataclass
@@ -129,7 +129,7 @@ class DistributedSuitBaseAI(DistributedObjectAI):
     def prepareToJoinBattle(self):
         pass
 
-from dna.objects import SuitLegList, DNASuitPoint
+from panda3d.toontown import SuitLegList, DNASuitPoint
 from typing import Optional, List
 
 class PathState(IntEnum):
@@ -305,7 +305,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
 
     def stopPathNow(self):
         taskMgr.remove(self.uniqueName('move'))
-        
+
     def flyAwayNow(self):
         self.b_setPathState(PathState.STOP_FLYAWAY)
         self.stopPathNow()

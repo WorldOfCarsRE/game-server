@@ -1,8 +1,7 @@
 from ai.globals.HoodGlobals import *
 from typing import List, Dict, Union, Optional
 from ai.DistributedObjectAI import DistributedObjectAI
-from dna.dnaparser import load_dna_file, DNAStorage
-from dna.objects import DNAGroup, DNAVisGroup
+from panda3d.toontown import loadDNAFileAI, DNAStorage, DNAGroup, DNAVisGroup
 from ai.toon import NPCToons
 from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 from ai.safezone import ButterflyGlobals
@@ -45,9 +44,9 @@ DNA_MAP = {
 }
 
 class PlaceAI:
-    def __init__(self, air, zone_id):
+    def __init__(self, air, zoneId):
         self.air = air
-        self.zone_id: int = zone_id
+        self.zoneId: int = zoneId
 
         self._active = False
         # self.doTable: Dict[int, DistributedObjectAI] = {}
@@ -170,28 +169,31 @@ from ai.building.DistributedBuildingAI import DistributedBuildingAI
 
 class SafeZoneAI(PlaceAI):
 
-    def __init__(self, air, zone_id):
-        PlaceAI.__init__(self, air, zone_id)
+    def __init__(self, air, zoneId):
+        PlaceAI.__init__(self, air, zoneId)
         self.buildings: Dict[int, object] = {}
         self.hq: Union[HQBuildingAI, None] = None
         self.gagShop: Union[GagshopBuildingAI, None] = None
+        self.dnaStore: DNAStorage = None
 
     @staticmethod
     def getInteriorZone(zoneId, block):
         return zoneId - zoneId % 100 + 500 + block
 
     def create(self):
-        self.dna[self.zone_id], self.storage[self.zone_id] = load_dna_file('dna/files/' + DNA_MAP[self.zone_id])
+        self.dnaStore = DNAStorage()
+        loadDNAFileAI(self.dnaStore, 'dna/' + DNA_MAP[self.zoneId])
 
-        for block in self.storage[self.zone_id].blocks:
-            buildingType = self.storage[self.zone_id].block_building_types[block]
-            interiorZone = self.getInteriorZone(self.zone_id, block)
-            exteriorZone = self.storage[self.zone_id].block_zones.get(block, self.zone_id)
+        for i in range(self.dnaStore.getNumBlockNumbers()):
+            blockNumber = self.dnaStore.getBlockNumberAt(i)
+            buildingType = self.dnaStore.getBlockBuildingType(blockNumber)
+            interiorZone = self.getInteriorZone(self.zoneId, blockNumber)
+            exteriorZone = self.dnaStore.getZoneFromBlockNumber(blockNumber)
 
             if buildingType == 'hq':
-                self.buildings[block] = HQBuildingAI(self.air, exteriorZone, interiorZone, block)
+                self.buildings[blockNumber] = HQBuildingAI(self.air, exteriorZone, interiorZone, blockNumber)
             elif buildingType == 'gagshop':
-                self.buildings[block] = GagshopBuildingAI(self.air, exteriorZone, interiorZone, block)
+                self.buildings[blockNumber] = GagshopBuildingAI(self.air, exteriorZone, interiorZone, blockNumber)
             elif buildingType == 'petshop':
                 # TODO
                 pass
@@ -203,35 +205,35 @@ class SafeZoneAI(PlaceAI):
                 pass
             else:
                 bldg = DistributedBuildingAI(self.air)
-                bldg.block = block
+                bldg.block = blockNumber
                 bldg.exteriorZoneId = exteriorZone
-                bldg.interiorZoneId = self.getInteriorZone(exteriorZone, block)
-                bldg.generateWithRequired(self.zone_id)
+                bldg.interiorZoneId = self.getInteriorZone(exteriorZone, blockNumber)
+                bldg.generateWithRequired(self.zoneId)
                 bldg.request('Toon')
-                self.buildings[block] = bldg
+                self.buildings[blockNumber] = bldg
 
-        for visgroup in self.storage[self.zone_id].visgroups:
+        for visgroup in self.storage[self.zoneId].visgroups:
             zone = int(visgroup.name.split(':')[0])
             visibles = visgroup.visibles
-            if self.zone_id not in visibles:
-                visibles.append(self.zone_id)
+            if self.zoneId not in visibles:
+                visibles.append(self.zoneId)
             self.air.vismap[zone] = tuple(visibles)
 
         pondName2Do = {}
 
-        for pondName in self.storage[self.zone_id].ponds:
-            group = self.storage[self.zone_id].groups[pondName]
+        for pondName in self.storage[self.zoneId].ponds:
+            group = self.storage[self.zoneId].groups[pondName]
             visName = group.get_vis_group().name
             if ':' in visName:
                 zoneId = int(visName.split(':')[0])
             else:
                 zoneId = int(visName)
 
-            pond = DistributedFishingPondAI(self.air, self.zone_id)
+            pond = DistributedFishingPondAI(self.air, self.zoneId)
             pond.generateWithRequired(zoneId)
             pondName2Do[pondName] = pond
 
-        for dnaspot in self.storage[self.zone_id].spots:
+        for dnaspot in self.storage[self.zoneId].spots:
             group = dnaspot.get_group()
             pondName = dnaspot.get_pond_name()
             pond = pondName2Do[pondName]
@@ -241,8 +243,8 @@ class SafeZoneAI(PlaceAI):
         del pondName2Do
 
 class StreetAI(SafeZoneAI):
-    def __init__(self, air, zone_id):
-        SafeZoneAI.__init__(self, air, zone_id)
+    def __init__(self, air, zoneId):
+        SafeZoneAI.__init__(self, air, zoneId)
 
         self.wantSuits = False
         self.suitPlanner: Optional[DistributedSuitPlannerAI] = None
@@ -252,8 +254,8 @@ class StreetAI(SafeZoneAI):
 
         # TODO: suits
         if self.wantSuits:
-            self.suitPlanner = DistributedSuitPlannerAI(self.air, self, self.zone_id)
-            self.suitPlanner.generateWithRequired(self.zone_id)
+            self.suitPlanner = DistributedSuitPlannerAI(self.air, self, self.zoneId)
+            self.suitPlanner.generateWithRequired(self.zoneId)
             self.suitPlanner.startup()
 
 class CogHQAI(PlaceAI):
@@ -262,8 +264,8 @@ class CogHQAI(PlaceAI):
     elevatorZones = []
     numExtDoors = 0
 
-    def __init__(self, air, zone_id, facilityMgr):
-        PlaceAI.__init__(self, air, zone_id)
+    def __init__(self, air, zoneId, facilityMgr):
+        PlaceAI.__init__(self, air, zoneId)
 
         self.wantSuits = True
         self.suitPlanners = []
@@ -277,9 +279,9 @@ class CogHQAI(PlaceAI):
     def startup(self):
         self.active = True
         if self.wantSuits:
-            for zone_id in self.suitZones:
-                suitPlanner = DistributedSuitPlannerAI(self.air, self, zone_id)
-                suitPlanner.generateWithRequired(zone_id)
+            for zoneId in self.suitZones:
+                suitPlanner = DistributedSuitPlannerAI(self.air, self, zoneId)
+                suitPlanner.generateWithRequired(zoneId)
                 suitPlanner.startup()
                 self.suitPlanners.append(suitPlanner)
 
@@ -339,8 +341,8 @@ class BBHQHoodAI(CogHQAI):
 class PlaygroundAI(SafeZoneAI):
     treasurePlannerClass: Optional[Type[RegenTreasurePlanner]] = None
 
-    def __init__(self, air, zone_id):
-        SafeZoneAI.__init__(self, air, zone_id)
+    def __init__(self, air, zoneId):
+        SafeZoneAI.__init__(self, air, zoneId)
         self.npcs = []
         self.butterflies = []
         self.trolley: Optional[DistributedTrolleyAI] = None
@@ -349,22 +351,22 @@ class PlaygroundAI(SafeZoneAI):
     def create(self):
         super().create()
 
-        self.npcs = NPCToons.createNpcsInZone(self.air, self.zone_id)
+        self.npcs = NPCToons.createNpcsInZone(self.air, self.zoneId)
         # TODO: trolley, butterflys, disney npc
         self.trolley = DistributedTrolleyAI(self.air)
-        self.trolley.generateWithRequired(self.zone_id)
+        self.trolley.generateWithRequired(self.zoneId)
 
         if self.treasurePlannerClass is not None:
-            self.treasurePlanner = self.treasurePlannerClass(self.zone_id)
+            self.treasurePlanner = self.treasurePlannerClass(self.zoneId)
             self.treasurePlanner.start()
 
     def createButterflies(self, playground):
-        ButterflyGlobals.generateIndexes(self.zone_id, playground)
+        ButterflyGlobals.generateIndexes(self.zoneId, playground)
         for i in range(0, ButterflyGlobals.NUM_BUTTERFLY_AREAS[playground]):
             for _ in range(0, ButterflyGlobals.NUM_BUTTERFLIES[playground]):
-                butterfly = DistributedButterflyAI(self.air, playground, i, self.zone_id)
+                butterfly = DistributedButterflyAI(self.air, playground, i, self.zoneId)
                 butterfly.request('Off')
-                butterfly.generateWithRequired(self.zone_id)
+                butterfly.generateWithRequired(self.zoneId)
                 butterfly.start()
                 self.butterflies.append(butterfly)
 

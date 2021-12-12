@@ -48,7 +48,9 @@ SUIT_HOOD_INFO = {
                             levels=(8, 9, 10), buildingDifficulties=()),
 }
 
-from dna.objects import DNASuitPoint, SuitPointType, SuitLegType, FROM_SKY, SUIT_WALK_SPEED
+from panda3d.toontown import DNASuitPoint
+from .SuitTimings import fromSky, suitWalkSpeed
+
 import random
 from typing import Optional
 
@@ -91,13 +93,13 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.cogHQDoors = []
 
         for suitPoint in self.storage.suit_points:
-            if suitPoint.point_type == SuitPointType.STREET_POINT:
+            if suitPoint.point_type == DNASuitPoint.STREET_POINT:
                 self.streetPoints.append(suitPoint)
-            elif suitPoint.point_type == SuitPointType.FRONT_DOOR_POINT:
+            elif suitPoint.point_type == DNASuitPoint.FRONT_DOOR_POINT:
                 self.frontDoorPoints.append(suitPoint)
-            elif suitPoint.point_type == SuitPointType.SIDE_DOOR_POINT:
+            elif suitPoint.point_type == DNASuitPoint.SIDE_DOOR_POINT:
                 self.sideDoorPoints.append(suitPoint)
-            elif suitPoint.point_type == SuitPointType.COGHQ_IN_POINT or suitPoint.point_type == SuitPointType.COGHQ_OUT_POINT:
+            elif suitPoint.point_type == DNASuitPoint.COGHQ_IN_POINT or suitPoint.point_type == DNASuitPoint.COGHQ_OUT_POINT:
                 self.cogHQDoorPoints.append(suitPoint)
 
         self.suits: List[DistributedSuitAI] = []
@@ -224,7 +226,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         pointIndex, adjacentPointIndex = path[i], path[i + 1]
         point = self.storage.suit_point_map[pointIndex]
 
-        while point.point_type == SuitPointType.FRONT_DOOR_POINT or point.point_type == SuitPointType.SIDE_DOOR_POINT:
+        while point.point_type == DNASuitPoint.FRONT_DOOR_POINT or point.point_type == DNASuitPoint.SIDE_DOOR_POINT:
             i += 1
             elapsedTime += self.storage.get_suit_edge_travel_time(pointIndex, adjacentPointIndex, SUIT_WALK_SPEED)
             pointIndex, adjacentPointIndex = path[i], path[i + 1]

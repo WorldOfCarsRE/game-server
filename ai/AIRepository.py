@@ -13,7 +13,6 @@ from typing import Dict, Tuple
 
 from otp.networking import ToontownProtocol
 
-from dna.objects import DNAVisGroup
 from threading import Thread, Event
 
 import asyncio
