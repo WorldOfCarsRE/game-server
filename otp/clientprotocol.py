@@ -508,7 +508,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             wishNameStateField = dclass.getFieldByName('WishNameState')
 
             resp = Datagram()
-            addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
+            addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
             resp.addUint32(avId)
             resp.addUint16(2)
 
@@ -535,10 +535,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.service.log.debug(f'Got name pattern request for avId {avId}.')
 
-        title_index, title_flag = dgi.get_int16(), dgi.get_int16()
-        first_index, first_flag = dgi.get_int16(), dgi.get_int16()
-        last_prefix_index, last_prefix_flag = dgi.get_int16(), dgi.get_int16()
-        last_suffix_index, last_suffix_flag = dgi.get_int16(), dgi.get_int16()
+        title_index, title_flag = dgi.getInt16(), dgi.getInt16()
+        first_index, first_flag = dgi.getInt16(), dgi.getInt16()
+        last_prefix_index, last_prefix_flag = dgi.getInt16(), dgi.getInt16()
+        last_suffix_index, last_suffix_flag = dgi.getInt16(), dgi.getInt16()
 
         resp = Datagram()
         resp.addUint16(CLIENT_SET_NAME_PATTERN_ANSWER)
@@ -644,6 +644,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
             resp.addBlob(dnaString)
             resp.addUint8(potAv.index)
+            resp.addUint8(potAv.allowName)
 
         self.send_datagram(resp)
 
