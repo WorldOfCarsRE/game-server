@@ -489,12 +489,12 @@ class StateServerProtocol(MDUpstreamProtocol):
         if other:
             fieldCount = dgi.getUint16()
 
-            for i in range(fieldCount):
-                fieldNumber = dgi.getUint16()
-                field = stateServer.dcFile.getFieldByIndex(fieldNumber)
+            unpacker = DCPacker()
+            unpacker.setUnpackData(dgi.getRemainingBytes())
 
-                unpacker = DCPacker()
-                unpacker.setUnpackData(dgi.getRemainingBytes())
+            for i in range(fieldCount):
+                fieldNum = unpacker.rawUnpackUint16()
+                field = stateServer.dcFile.getFieldByIndex(fieldNum)
 
                 unpacker.beginUnpack(field)
 
@@ -502,7 +502,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
                 unpacker.endUnpack()
 
-                otherData.append((fieldNumber, data))
+                otherData.append((fieldNum, data))
 
         dclass = stateServer.dcFile.getClass(number)
 
@@ -650,7 +650,7 @@ class StateServerProtocol(MDUpstreamProtocol):
             required[field.getName()] = fieldArgs
 
         if other:
-            numOptionalFields = dgi.get_uint16()
+            numOptionalFields = dgi.getUint16()
 
             for i in range(numOptionalFields):
                 fieldNumber = dgi.getUint16()

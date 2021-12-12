@@ -329,16 +329,15 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint16(dclass.getNumber())
         dg.addUint16(len(other))
 
-        packer = DCPacker()
-
         for f, arg in other:
-            dg.addUint16(f.getNumber())
+            packer = DCPacker()
+            packer.rawPackUint16(f.getNumber())
 
             packer.beginPack(f)
             f.packArgs(packer, arg)
             packer.endPack()
 
-        dg.appendData(packer.getBytes())
+            dg.appendData(packer.getBytes())
 
         self.send_datagram(dg)
 

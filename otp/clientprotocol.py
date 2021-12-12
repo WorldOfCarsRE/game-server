@@ -365,7 +365,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         dclass = self.service.dcFile.getClassByName('DistributedToon')
 
-        access = 2 if self.account.access == b'FULL' else 1
+        access = 2 if self.account.access == 'FULL' else 1
 
         # These Fields are REQUIRED but not stored in db.
         otherFields = [
@@ -388,16 +388,15 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.addUint16(dclass.getNumber())
         dg.addUint16(len(otherFields))
 
-        otherPacker = DCPacker()
-
         for f, arg in otherFields:
-            dg.addUint16(f.getNumber())
+            otherPacker = DCPacker()
+            otherPacker.rawPackUint16(f.getNumber())
 
             otherPacker.beginPack(f)
             f.packArgs(otherPacker, arg)
             otherPacker.endPack()
 
-        dg.appendData(otherPacker.getBytes())
+            dg.appendData(otherPacker.getBytes())
 
         self.service.send_datagram(dg)
 
@@ -1197,7 +1196,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def receiveGetObjectDetails(self, dgi, msgType: int):
         doId = dgi.get_uint32()
-        access = 2 if self.account.access == b'FULL' else 1
+        access = 2 if self.account.access == 'FULL' else 1
         dclass = messageToClass[msgType]
 
         # Send this to the Database server.
