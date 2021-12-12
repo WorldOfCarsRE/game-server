@@ -11,9 +11,8 @@ class EventLogger(Service):
     def __init__(self, loop):
         Service.__init__(self)
 
-        # EventLogger sock and clients
+        # EventLogger sock
         self.sock = None
-        self.clients = []
 
         self.logFolder = 'logs/events/'
         self.logFile = None
@@ -21,13 +20,14 @@ class EventLogger(Service):
         self.createLog()
 
     def run(self):
-        # EventLogger sock and clients
+        # Setup our EventLogger.
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('127.0.0.1', self.PORT))
 
         self.log.debug(f'EventLogger listening on port {self.PORT}.')
 
         while True:
+            # Listen for data.
             data, address = self.sock.recvfrom(1024)
             self.handleMessage(data)
 
