@@ -531,7 +531,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         return packer.getBytes()
 
     def receive_set_name_pattern(self, dgi):
-        avId = dgi.get_uint32()
+        avId = dgi.getUint32()
 
         self.service.log.debug(f'Got name pattern request for avId {avId}.')
 
@@ -943,7 +943,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         elif msgtype == STATESERVER_OBJECT_ENTER_OWNER_RECV:
             self.handleOwnedObjectEntry(dgi, sender)
         elif msgtype == STATESERVER_OBJECT_CHANGE_ZONE:
-            doId = dgi.get_uint32()
+            doId = dgi.getUint32()
 
             if self.queuePending(doId, dgi, pos):
                 self.service.log.debug(f'Queued location change for pending object {doId}.')
@@ -965,7 +965,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
             self.handleUpdateField(dgi, sender, doId)
         elif msgtype == STATESERVER_OBJECT_DELETE_RAM:
-            doId = dgi.get_uint32()
+            doId = dgi.getUint32()
 
             if doId == self.avatarId:
                 if sender == self.account.dislId << 32:
@@ -1025,10 +1025,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.send_datagram(resp)
 
     def handle_location_change(self, dgi, sender, doId):
-        newParent = dgi.get_uint32()
-        newZone = dgi.get_uint32()
-        oldParent = dgi.get_uint32()
-        oldZone = dgi.get_uint32()
+        newParent = dgi.getUint32()
+        newZone = dgi.getUint32()
+        oldParent = dgi.getUint32()
+        oldZone = dgi.getUint32()
         self.service.log.debug(f'Handle location change for {doId}: ({oldParent} {oldZone}) -> ({newParent} {newZone})')
 
         disable = True
@@ -1212,7 +1212,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.send_datagram(resp)
 
     def receiveGetObjectDetails(self, dgi, msgType: int):
-        doId = dgi.get_uint32()
+        doId = dgi.getUint32()
         access = 2 if self.account.access == 'FULL' else 1
         dclass = messageToClass[msgType]
 

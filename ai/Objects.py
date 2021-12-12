@@ -21,6 +21,7 @@ from otp.messagetypes import CLIENT_FRIEND_ONLINE
 
 from ai.catalog import CatalogItem
 from ai.catalog.CatalogBeanItem import CatalogBeanItem
+from ai.catalog.CatalogClothingItem import CatalogClothingItem
 from ai import ToontownGlobals
 
 class DistributedDistrictAI(DistributedObjectAI):
@@ -842,7 +843,8 @@ class ToontownMagicWordManagerAI(MagicWordManagerAI):
             'run',
             'walk',
             'fps',
-            'sit'
+            'sit',
+            'sbm'
         ]
 
         if magicWord in clientWords or magicWord == '':
@@ -893,7 +895,6 @@ class TTCodeRedemptionMgrAI(DistributedObjectAI):
             return
 
         code = code.lower()
-        code = ''.join(code.split())
 
         items = self.air.mongoInterface.findCodeMatch(code)
 
@@ -941,10 +942,12 @@ class TTCodeRedemptionMgrAI(DistributedObjectAI):
         for item in items['Items']:
             itemType, itemId = item[0], item[1]
 
-            itemObj = getattr(globals(), itemType)
+            item = globals()[itemType]
 
-            if itemType == 'CatalogBeanItem':
-                itemList.append(CatalogBeanItem(item[1], tagCode = 2))
+            if item == CatalogBeanItem:
+                itemList.append(item(itemId, tagCode = 2))
+            elif item == CatalogClothingItem:
+                itemList.append(item(itemId, 0))
 
         for item in itemList:
             if len(av.mailboxContents) + len(av.onGiftOrder) >= ToontownGlobals.MaxMailboxContents:
