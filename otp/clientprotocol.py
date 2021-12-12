@@ -195,11 +195,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
         elif self.state == ClientState.AVATAR_CHOOSER:
             if msgtype == CLIENT_CREATE_AVATAR:
-                self.receive_create_avatar(dgi)
+                self.receiveCreateAvatar(dgi)
             elif msgtype == CLIENT_SET_AVATAR:
                 self.receive_set_avatar(dgi)
             elif msgtype == CLIENT_SET_WISHNAME:
-                self.receive_set_wishname(dgi)
+                self.receiveSetWishName(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
@@ -209,7 +209,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 else:
                     self.service.log.debug(f'Unexpected field update for doId {doId} during avatar chooser.')
             elif msgtype == CLIENT_DELETE_AVATAR:
-                self.receive_delete_avatar(dgi)
+                self.receiveDeleteAvatar(dgi)
             elif msgtype == CLIENT_SET_WISHNAME_CLEAR:
                 self.receiveSetWishNameClear(dgi)
             else:
@@ -218,7 +218,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             if msgtype == CLIENT_SET_AVATAR:
                 self.receive_set_avatar(dgi)
             elif msgtype == CLIENT_SET_WISHNAME:
-                self.receive_set_wishname(dgi)
+                self.receiveSetWishName(dgi)
             elif msgtype == CLIENT_SET_NAME_PATTERN:
                 self.receive_set_name_pattern(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
@@ -400,8 +400,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.service.send_datagram(dg)
 
-    def receive_create_avatar(self, dgi):
-        _ = dgi.get_uint16()
+    def receiveCreateAvatar(self, dgi):
+        _ = dgi.getUint16()
         dna = dgi.getBlob()
         pos = dgi.getUint8()
         self.service.log.debug(f'Client {self.channel} requesting avatar creation with dna {dna} and pos {pos}.')
@@ -478,7 +478,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.service.log.debug(f'New avatar {avId} created for client {self.channel}.')
 
-    def receive_set_wishname(self, dgi):
+    def receiveSetWishName(self, dgi):
         avId = dgi.getUint32()
         name = dgi.getString()
 
@@ -486,9 +486,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.service.log.debug(f'Received wishname request from {self.channel} for avatar {avId} for name "{name}".')
 
-        pending = name.encode('utf-8')
-        approved = b''
-        rejected = b''
+        pending = name
+        approved = ''
+        rejected = ''
 
         failed = False
 
@@ -504,18 +504,31 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         if avId and av:
             dclass = self.service.dcFile.getClassByName('DistributedToon')
-            wishname_field = dclass.getFieldByName('WishName')
-            wishname_state_field = dclass['WishNameState']
+            wishNameField = dclass.getFieldByName('WishName')
+            wishNameStateField = dclass.getFieldByName('WishNameState')
 
             resp = Datagram()
             addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
             resp.addUint32(avId)
             resp.addUint16(2)
-            resp.addUint16(wishname_state_field.getNumber())
-            wishname_state_field.pack_value(resp, ('PENDING',))
-            resp.addUint16(wishname_field.getNumber())
-            wishname_field.pack_value(resp, (name,))
+
+            resp.addUint16(wishNameStateField.getNumber())
+            resp.appendData(self.packFieldData(wishNameStateField, ('PENDING',)))
+
+            resp.addUint16(wishNameField.getNumber())
+            resp.appendData(self.packFieldData(wishNameField, (name,)))
+
             self.service.send_datagram(resp)
+
+    def packFieldData(self, field, data):
+        packer = DCPacker()
+        packer.beginPack(field)
+
+        field.packArgs(packer, data)
+
+        packer.endPack()
+
+        return packer.getBytes()
 
     def receive_set_name_pattern(self, dgi):
         avId = dgi.get_uint32()
@@ -580,53 +593,56 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         else:
             return ''
 
-    def receive_delete_avatar(self, dgi):
-        avId = dgi.get_uint32()
+    def receiveDeleteAvatar(self, dgi):
+        avId = dgi.getUint32()
 
         av = self.getPotentialAvatar(avId)
 
         if not av:
             return
 
-        self.potential_avatars[av.index] = None
+        self.potentialAvatars[av.index] = None
         avatars = [potAv.doId if potAv else 0 for potAv in self.potentialAvatars]
-        self.avsDeleted.append((av_id, int(time.time())))
+        self.avsDeleted.append((avId, int(time.time())))
 
-        field = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET']
-        delField = self.service.dcFile.namespace['Account']['ACCOUNT_AV_SET_DEL']
+        field = self.service.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
+        delField = self.service.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET_DEL')
 
         dg = Datagram()
         addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
         dg.addUint32(self.account.dislId)
         dg.addUint16(2)
+
         dg.addUint16(field.getNumber())
-        field.pack_value(dg, avatars)
+        dg.appendData(self.packFieldData(field, avatars))
+
         dg.addUint16(delField.getNumber())
-        delField.pack_value(dg, self.avsDeleted)
+        dg.appendData(self.packFieldData(delField, self.avsDeleted))
+
         self.service.send_datagram(dg)
 
         resp = Datagram()
         resp.addUint16(CLIENT_DELETE_AVATAR_RESP)
         resp.addUint8(0) # Return code
 
-        av_count = sum((1 if potAv else 0 for potAv in self.potential_avatars))
-        resp.addUint16(av_count)
+        avCount = sum((1 if potAv else 0 for potAv in self.potentialAvatars))
+        resp.addUint16(avCount)
 
         for potAv in self.potentialAvatars:
             if not potAv:
                 continue
             resp.addUint32(potAv.doId)
-            resp.addString(potAv.name.encode('utf-8'))
-            resp.addString(potAv.wishName.encode('utf-8'))
-            resp.addString(potAv.approvedName.encode('utf-8'))
-            resp.addString(potAv.rejectedName.encode('utf-8'))
+            resp.addString(potAv.name)
+            resp.addString(potAv.wishName)
+            resp.addString(potAv.approvedName)
+            resp.addString(potAv.rejectedName)
 
             dnaString = potAv.dnaString
 
             if not isinstance(dnaString, bytes):
                 dnaString = dnaString.encode()
 
-            resp.addString(dnaString)
+            resp.addBlob(dnaString)
             resp.addUint8(potAv.index)
 
         self.send_datagram(resp)
