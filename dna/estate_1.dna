@@ -1,7 +1,7 @@
 group "Estate" [
  visgroup "30000:estate" [
   vis [   "30000:estate"   ]
-  group "level" [
+  node "level" [
    group "fishing_pond_1" [
     prop "fishing_spot_DNARoot" [
      code [ "fishing_spot" ]
