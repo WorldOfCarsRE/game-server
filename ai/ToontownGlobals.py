@@ -423,3 +423,6 @@ FM_SwappedItem = 2
 
 MaxAccessories = 50
 ExtraDeletedItems = 5
+
+RentalCannon = 1
+RentalGameTable = 2

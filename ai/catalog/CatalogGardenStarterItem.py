@@ -1,4 +1,5 @@
 from . import CatalogItem
+from ai import ToontownGlobals
 import time
 
 class CatalogGardenStarterItem(CatalogItem.CatalogItem):

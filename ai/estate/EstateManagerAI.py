@@ -18,6 +18,12 @@ class EstateManagerAI(DistributedObjectAI):
         self.queryContext = 0
         self.queries = {}
 
+        # Dict of DistributedEstateAI's keyed on avId.
+        self.estate: Dict[int] = {}
+
+        # Dict of DistributedEstateAI doId's keyed on avId.
+        self.avIdToEstate: Dict[int] = {}
+
     def getEstateZone(self, avId: int, name: str):
         av = self.air.doTable.get(avId)
         accId = self.air.currentAccountSender
@@ -62,8 +68,9 @@ class EstateManagerAI(DistributedObjectAI):
             # Deallocate this zone.
             self.air.deallocateZone(self.estateZones[avId])
 
-            # Remove this avatar from our dictionary.
+            # Remove this avatar from our dictionaries.
             del self.estateZones[avId]
+            del self.avIdToEstate[avId]
 
         # Unload our estate.
         dg = Datagram()
@@ -73,14 +80,23 @@ class EstateManagerAI(DistributedObjectAI):
         self.air.send(dg)
 
     def handleGetEstateResp(self, dgi):
-        context = dgi.get_uint32()
+        context = dgi.getUint32()
+
         callback = self.queries.get(context)
 
         if callback:
             del self.queries[context]
+
+            avId = dgi.getUint32()
+            estateId = dgi.getUint32()
+
+            self.avIdToEstate[avId] = estateId
+
             callback()
 
     def handleGetEstate(self, avId: int):
+        self.estate[avId] = self.air.doTable.get(self.avIdToEstate[avId])
+
         self.sendUpdateToAvatar(avId, 'setEstateZone', [avId, self.estateZones[avId]])
 
     def removeFriend(self, ownerId, friendId):

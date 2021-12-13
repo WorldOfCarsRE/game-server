@@ -317,6 +317,8 @@ class DBServer(DownstreamMessageDirector):
         dg = Datagram()
         addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
         dg.addUint32(context)
+        dg.addUint32(avId)
+        dg.addUint32(estateId)
         self.send_datagram(dg)
 
     async def activateObjectWithOther(self, doId: int, parentId: int, zoneId: int, dclass, other: list):
