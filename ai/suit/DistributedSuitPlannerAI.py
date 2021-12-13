@@ -79,7 +79,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             visGroup = self.dnaStore.getDNAVisGroupAI(i)
             visZone = int(visGroup.name)
             numBattleCells = visGroup.getNumBattleCells()
-            
+
             if not numBattleCells:
                 print('zone has no battle cells: %d' % visZone)
                 continue
@@ -108,7 +108,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
                 self.sideDoorPoints.append(suitPoint)
             elif pointType == DNASuitPoint.COGHQ_IN_POINT or pointType == DNASuitPoint.COGHQ_OUT_POINT:
                 self.cogHQDoorPoints.append(suitPoint)
-            
+
             self.pointIndexes[suitPoint.getIndex()] = suitPoint
 
         self.suits: List[DistributedSuitAI] = []
