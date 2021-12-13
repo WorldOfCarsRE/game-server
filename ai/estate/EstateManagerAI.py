@@ -46,10 +46,10 @@ class EstateManagerAI(DistributedObjectAI):
     def sendGetEstate(self, avId: int, context: int, zone: int):
         dg = Datagram()
         addServerHeader(dg, [DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_GET_ESTATE)
-        dg.add_uint32(context)
-        dg.add_uint32(avId)
-        dg.add_uint32(self.parentId)
-        dg.add_uint32(zone)
+        dg.addUint32(context)
+        dg.addUint32(avId)
+        dg.addUint32(self.parentId)
+        dg.addUint32(zone)
         self.air.send(dg)
 
     def handleUnexpectedEdit(self, avId: int):
@@ -75,8 +75,8 @@ class EstateManagerAI(DistributedObjectAI):
         # Unload our estate.
         dg = Datagram()
         addServerHeader(dg, [DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_UNLOAD_ESTATE)
-        dg.add_uint32(avId)
-        dg.add_uint32(self.parentId)
+        dg.addUint32(avId)
+        dg.addUint32(self.parentId)
         self.air.send(dg)
 
     def handleGetEstateResp(self, dgi):
