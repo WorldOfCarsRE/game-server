@@ -18,6 +18,12 @@ class EstateManagerAI(DistributedObjectAI):
         self.queryContext = 0
         self.queries = {}
 
+        # Dict of DistributedEstateAI's keyed on avId.
+        self.estate: Dict[int] = {}
+
+        # Dict of DistributedEstateAI doId's keyed on avId.
+        self.avIdToEstate: Dict[int] = {}
+
     def getEstateZone(self, avId: int, name: str):
         av = self.air.doTable.get(avId)
         accId = self.air.currentAccountSender
@@ -40,10 +46,10 @@ class EstateManagerAI(DistributedObjectAI):
     def sendGetEstate(self, avId: int, context: int, zone: int):
         dg = Datagram()
         addServerHeader(dg, [DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_GET_ESTATE)
-        dg.add_uint32(context)
-        dg.add_uint32(avId)
-        dg.add_uint32(self.parentId)
-        dg.add_uint32(zone)
+        dg.addUint32(context)
+        dg.addUint32(avId)
+        dg.addUint32(self.parentId)
+        dg.addUint32(zone)
         self.air.send(dg)
 
     def handleUnexpectedEdit(self, avId: int):
@@ -62,25 +68,35 @@ class EstateManagerAI(DistributedObjectAI):
             # Deallocate this zone.
             self.air.deallocateZone(self.estateZones[avId])
 
-            # Remove this avatar from our dictionary.
+            # Remove this avatar from our dictionaries.
             del self.estateZones[avId]
+            del self.avIdToEstate[avId]
 
         # Unload our estate.
         dg = Datagram()
         addServerHeader(dg, [DBSERVERS_CHANNEL], self.air.ourChannel, DBSERVER_UNLOAD_ESTATE)
-        dg.add_uint32(avId)
-        dg.add_uint32(self.parentId)
+        dg.addUint32(avId)
+        dg.addUint32(self.parentId)
         self.air.send(dg)
 
     def handleGetEstateResp(self, dgi):
-        context = dgi.get_uint32()
+        context = dgi.getUint32()
+
         callback = self.queries.get(context)
 
         if callback:
             del self.queries[context]
+
+            avId = dgi.getUint32()
+            estateId = dgi.getUint32()
+
+            self.avIdToEstate[avId] = estateId
+
             callback()
 
     def handleGetEstate(self, avId: int):
+        self.estate[avId] = self.air.doTable.get(self.avIdToEstate[avId])
+
         self.sendUpdateToAvatar(avId, 'setEstateZone', [avId, self.estateZones[avId]])
 
     def removeFriend(self, ownerId, friendId):

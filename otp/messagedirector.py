@@ -1,6 +1,6 @@
 from otp import config
 from otp.networking import ToontownProtocol, MDParticipant, Service, UpstreamServer, DownstreamClient
-from dc.messagetypes import *
+from otp.messagetypes import *
 from panda3d.core import Datagram, DatagramIterator
 from asyncio import Queue
 import asyncio

@@ -122,7 +122,7 @@ class AIRepository:
     def handleDatagram(self, dg):
         dgi = DatagramIterator(dg)
 
-        recipientCount = dgi.get_uint8()
+        recipientCount = dgi.getUint8()
         recipients = [dgi.getInt64() for _ in range(recipientCount)]
         self.currentSender = dgi.getInt64()
         msg_type = dgi.get_uint16()

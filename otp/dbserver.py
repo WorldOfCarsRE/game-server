@@ -46,16 +46,16 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handle_account_query(sender, dgi)
 
     def handleGetEstate(self, sender, dgi):
-        context = dgi.get_uint32()
-        avId = dgi.get_uint32()
-        parentId = dgi.get_uint32()
-        zoneId = dgi.get_uint32()
+        context = dgi.getUint32()
+        avId = dgi.getUint32()
+        parentId = dgi.getUint32()
+        zoneId = dgi.getUint32()
 
         self.service.loop.create_task(self.service.queryEstate(sender, context, avId, parentId, zoneId))
 
     def handleUnloadEstate(self, dgi):
-        avId = dgi.get_uint32()
-        parentId = dgi.get_uint32()
+        avId = dgi.getUint32()
+        parentId = dgi.getUint32()
 
         self.service.loop.create_task(self.service.unloadEstate(avId, parentId))
 
@@ -317,6 +317,8 @@ class DBServer(DownstreamMessageDirector):
         dg = Datagram()
         addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
         dg.addUint32(context)
+        dg.addUint32(avId)
+        dg.addUint32(estateId)
         self.send_datagram(dg)
 
     async def activateObjectWithOther(self, doId: int, parentId: int, zoneId: int, dclass, other: list):
