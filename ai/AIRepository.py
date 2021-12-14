@@ -37,7 +37,7 @@ class AIProtocol(ToontownProtocol):
     def receiveDatagram(self, dg):
         self.service.queue.put_nowait(dg)
 
-    def send_datagram(self, data: Datagram):
+    def sendDatagram(self, data: Datagram):
         loop = self.service.loop
         loop.call_soon_threadsafe(self.outgoingQ.put_nowait, data.getMessage())
 
@@ -331,7 +331,7 @@ class AIRepository:
         self.send(dg)
 
     def send(self, dg):
-        self.connection.send_datagram(dg)
+        self.connection.sendDatagram(dg)
 
     def generateWithRequired(self, do, parentId, zoneId, optional = ()):
         doId = self.allocateChannel()

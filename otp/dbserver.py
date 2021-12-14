@@ -197,7 +197,7 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(context)
         dg.addUint8(doId == 0)
         dg.addUint32(doId)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     async def unloadEstate(self, avId, parentId):
         if avId in self.estates:
@@ -319,7 +319,7 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(context)
         dg.addUint32(avId)
         dg.addUint32(estateId)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     async def activateObjectWithOther(self, doId: int, parentId: int, zoneId: int, dclass, other: list):
         dg = Datagram()
@@ -341,13 +341,13 @@ class DBServer(DownstreamMessageDirector):
 
             dg.appendData(packer.getBytes())
 
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     async def deleteDO(self, doId: int):
         dg = Datagram()
         addServerHeader(dg, [doId], DBSERVERS_CHANNEL, STATESERVER_OBJECT_DELETE_RAM)
         dg.addUint32(doId)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     async def createToon(self, sender, context, dclass, dislId, pos, fields):
         try:
@@ -365,7 +365,7 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(context)
         dg.addUint8(doId == 0)
         dg.addUint32(doId)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     async def get_stored_values(self, sender, context, doId, fields):
         try:
@@ -384,7 +384,7 @@ class DBServer(DownstreamMessageDirector):
 
         if fieldDict is None:
             print('object not found... %s' % doId, sender, context)
-            self.send_datagram(dg)
+            self.sendDatagram(dg)
             return
 
         counter = 0
@@ -421,7 +421,7 @@ class DBServer(DownstreamMessageDirector):
         fieldDi = DatagramIterator(fieldDg)
         dg.appendData(fieldDi.getRemainingBytes())
 
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     async def set_stored_values(self, do_id, fields):
         self.log.debug(f'Setting stored values for {do_id}: {fields}')
@@ -482,7 +482,7 @@ class DBServer(DownstreamMessageDirector):
             dg.add_uint32(friend[3]) # setPetId
 
         # Send the response to the client.
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     async def queryObject(self, sender, doId):
         if self.wantSQL:
@@ -546,7 +546,7 @@ class DBServer(DownstreamMessageDirector):
             dg.addUint8(avIds.index(avId))
             dg.addUint8(1 if nameState == 'OPEN' else 0)
 
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     async def queryObjectDetails(self, avatarId: int, doId: int, access: int, dcName: str):
         fieldDict = await self.backend.queryObjectAll(doId, dcName)
@@ -569,7 +569,7 @@ class DBServer(DownstreamMessageDirector):
         dg.appendData(packedData)
 
         # Send the response to the client.
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     def packDetails(self, dclass, fields):
         # Pack required fields.

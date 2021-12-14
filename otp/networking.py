@@ -109,7 +109,7 @@ class ToontownProtocol(asyncio.Protocol):
     def data_received(self, data: bytes):
         self.buf.extend(data)
 
-    def send_datagram(self, data: Datagram):
+    def sendDatagram(self, data: Datagram):
         self.outgoingQ.put_nowait(data.getMessage())
 
     async def transportDatagrams(self):

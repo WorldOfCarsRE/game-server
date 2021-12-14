@@ -20,10 +20,10 @@ class MDProtocol(ToontownProtocol, MDParticipant):
 
     def connection_lost(self, exc):
         ToontownProtocol.connection_lost(self, exc)
-        self.service.remove_participant(self)
-        self.post_remove()
+        self.service.removeParticipant(self)
+        self.postRemove()
 
-    def post_remove(self):
+    def postRemove(self):
         self.service.log.debug(f'Sending out post removes for participant.')
         while self.postRemoves:
             dg = self.postRemoves.pop(0)
@@ -65,34 +65,34 @@ class MDProtocol(ToontownProtocol, MDParticipant):
             self.service.q.put_nowait((None, dg))
 
     def handleDatagram(self, dg, dgi):
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
 class MessageDirector(Service):
     def __init__(self):
         Service.__init__(self)
         self.participants: Set[MDParticipant] = set()
-        self.channel_subscriptions: Dict[int, Set[MDParticipant]] = {}
+        self.channelSubscriptions: Dict[int, Set[MDParticipant]] = {}
         self.q = Queue()
 
     def subscribeChannel(self, participant: MDParticipant, channel: int):
         if channel not in participant.channels:
             participant.channels.add(channel)
 
-        if channel not in self.channel_subscriptions:
-            self.channel_subscriptions[channel] = set()
+        if channel not in self.channelSubscriptions:
+            self.channelSubscriptions[channel] = set()
 
-        if participant not in self.channel_subscriptions[channel]:
-            self.channel_subscriptions[channel].add(participant)
+        if participant not in self.channelSubscriptions[channel]:
+            self.channelSubscriptions[channel].add(participant)
 
     def unsubscribeChannel(self, participant: MDParticipant, channel: int):
         if channel in participant.channels:
             participant.channels.remove(channel)
 
-        if channel in self.channel_subscriptions:
-            if participant in self.channel_subscriptions[channel]:
-                self.channel_subscriptions[channel].remove(participant)
+        if channel in self.channelSubscriptions:
+            if participant in self.channelSubscriptions[channel]:
+                self.channelSubscriptions[channel].remove(participant)
 
-    def unsubscribe_all(self, participant: MDParticipant):
+    def unsubscribeAll(self, participant: MDParticipant):
         while participant.channels:
             channel = participant.channels.pop()
             self.unsubscribeChannel(participant, channel)
@@ -100,17 +100,17 @@ class MessageDirector(Service):
     def addParticipant(self, participant: MDParticipant):
         self.participants.add(participant)
 
-    def remove_participant(self, participant: MDParticipant):
-        self.unsubscribe_all(participant)
+    def removeParticipant(self, participant: MDParticipant):
+        self.unsubscribeAll(participant)
         self.participants.remove(participant)
 
-    def process_datagram(self, participant: MDParticipant, dg: Datagram):
+    def processDatagram(self, participant: MDParticipant, dg: Datagram):
         dgi = DatagramIterator(dg)
 
         recipientCount = dgi.getUint8()
         recipients = (dgi.getInt64() for _ in range(recipientCount))
 
-        receivingParticipants = {p for c in recipients if c in self.channel_subscriptions for p in self.channel_subscriptions[c]}
+        receivingParticipants = {p for c in recipients if c in self.channelSubscriptions for p in self.channelSubscriptions[c]}
 
         if participant is not None and participant in receivingParticipants:
             receivingParticipants.remove(participant)
@@ -127,7 +127,7 @@ class MessageDirector(Service):
     async def route(self):
         while True:
             participant, dg = await self.q.get()
-            self.process_datagram(participant, dg)
+            self.processDatagram(participant, dg)
 
 class MasterMessageDirector(MessageDirector, UpstreamServer):
     downstreamProtocol = MDProtocol
@@ -135,9 +135,9 @@ class MasterMessageDirector(MessageDirector, UpstreamServer):
     def __init__(self, loop):
         MessageDirector.__init__(self)
         UpstreamServer.__init__(self, loop)
-        self.loop.set_exception_handler(self._on_exception)
+        self.loop.set_exception_handler(self.onException)
 
-    def _on_exception(self, loop, context):
+    def onException(self, loop, context):
         print('err', context)
 
     async def run(self):
@@ -163,7 +163,7 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
         dg.addUint64(CONTROL_MESSAGE)
         dg.addUint16(CONTROL_SET_CHANNEL)
         dg.addUint64(channel)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     def unsubscribeChannel(self, channel):
         dg = Datagram()
@@ -171,7 +171,7 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
         dg.addUint64(CONTROL_MESSAGE)
         dg.addUint16(CONTROL_REMOVE_CHANNEL)
         dg.addUint64(channel)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     def receiveDatagram(self, dg):
         self.service.q.put_nowait((None, dg))
@@ -190,27 +190,27 @@ class DownstreamMessageDirector(MessageDirector, DownstreamClient):
         raise NotImplementedError
 
     def subscribeChannel(self, participant, channel):
-        subscribe_upstream = channel not in self.channel_subscriptions or not len(self.channel_subscriptions[channel])
+        subscribeUpstream = channel not in self.channelSubscriptions or not len(self.channelSubscriptions[channel])
         MessageDirector.subscribeChannel(self, participant, channel)
 
-        if subscribe_upstream:
+        if subscribeUpstream:
             self._client.subscribeChannel(channel)
 
     def unsubscribeChannel(self, participant, channel):
         MessageDirector.unsubscribeChannel(self, participant, channel)
 
-        if len(self.channel_subscriptions[channel]) == 0:
+        if len(self.channelSubscriptions[channel]) == 0:
             self._client.unsubscribeChannel(channel)
 
-    def process_datagram(self, participant, dg):
-        MessageDirector.process_datagram(self, participant, dg)
+    def processDatagram(self, participant, dg):
+        MessageDirector.processDatagram(self, participant, dg)
 
         if participant is not None:
             # send upstream
-            self._client.send_datagram(dg)
+            self._client.sendDatagram(dg)
 
-    def send_datagram(self, dg: Datagram):
-        self._client.send_datagram(dg)
+    def sendDatagram(self, dg: Datagram):
+        self._client.sendDatagram(dg)
 
 async def main():
     loop = asyncio.get_running_loop()

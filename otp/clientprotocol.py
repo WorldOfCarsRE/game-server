@@ -148,19 +148,19 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         ToontownProtocol.connection_lost(self, exc)
 
         if self.avatarId:
-            self.delete_avatar_ram()
+            self.deleteAvatarRam()
 
-        self.service.remove_participant(self)
+        self.service.removeParticipant(self)
 
     def connection_made(self, transport):
         ToontownProtocol.connection_made(self, transport)
         self.subscribeChannel(CLIENTS_CHANNEL)
 
-    def delete_avatar_ram(self):
+    def deleteAvatarRam(self):
         dg = Datagram()
         addServerHeader(dg, [self.avatarId], self.channel, STATESERVER_OBJECT_DELETE_RAM)
         dg.addUint32(self.avatarId)
-        self.service.send_datagram(dg)
+        self.service.sendDatagram(dg)
 
     def receiveDatagram(self, dg):
         dgi = DatagramIterator(dg)
@@ -170,7 +170,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from client {self.channel}')
 
         if msgtype == CLIENT_HEARTBEAT:
-            self.send_datagram(dg)
+            self.sendDatagram(dg)
             return
 
         if msgtype == CLIENT_DISCONNECT:
@@ -197,7 +197,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             if msgtype == CLIENT_CREATE_AVATAR:
                 self.receiveCreateAvatar(dgi)
             elif msgtype == CLIENT_SET_AVATAR:
-                self.receive_set_avatar(dgi)
+                self.receiveSetAvatar(dgi)
             elif msgtype == CLIENT_SET_WISHNAME:
                 self.receiveSetWishName(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
@@ -216,11 +216,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.service.log.debug(f'Unexpected message type during avatar chooser {msgtype}.')
         elif self.state == ClientState.CREATING_AVATAR:
             if msgtype == CLIENT_SET_AVATAR:
-                self.receive_set_avatar(dgi)
+                self.receiveSetAvatar(dgi)
             elif msgtype == CLIENT_SET_WISHNAME:
                 self.receiveSetWishName(dgi)
             elif msgtype == CLIENT_SET_NAME_PATTERN:
-                self.receive_set_name_pattern(dgi)
+                self.receiveSetNamePattern(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 doId = dgi.getUint32()
                 if doId == OTP_DO_ID_CENTRAL_LOGGER:
@@ -235,13 +235,13 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receive_remove_interest(dgi)
             elif msgtype == CLIENT_GET_FRIEND_LIST:
-                self.receive_get_friend_list(dgi)
+                self.receiveGetFriendList(dgi)
             elif msgtype == CLIENT_OBJECT_LOCATION:
-                self.receive_client_location(dgi)
+                self.receiveClientLocation(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 self.receiveUpdateField(dgi)
             elif msgtype == CLIENT_SET_AVATAR:
-                self.receive_set_avatar(dgi)
+                self.receiveSetAvatar(dgi)
             elif msgtype in (CLIENT_GET_AVATAR_DETAILS, CLIENT_GET_PET_DETAILS):
                 self.receiveGetObjectDetails(dgi, msgtype)
             else:
@@ -273,7 +273,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint32(doId)
         resp.addUint16(fieldNumber)
         resp.appendData(dgi.getRemainingBytes())
-        self.service.send_datagram(resp)
+        self.service.sendDatagram(resp)
 
         if field.getName() == 'setTalk':
             # TODO: filtering
@@ -282,9 +282,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             resp.addUint32(doId)
             resp.addUint16(fieldNumber)
             resp.appendData(dgi.getRemainingBytes())
-            self.send_datagram(resp)
+            self.sendDatagram(resp)
 
-    def receive_client_location(self, dgi):
+    def receiveClientLocation(self, dgi):
         doId = dgi.getUint32()
         parentId = dgi.getUint32()
         zoneId = dgi.getUint32()
@@ -298,11 +298,11 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             addServerHeader(dg, [doId], self.channel, STATESERVER_OBJECT_SET_ZONE)
             dg.addUint32(parentId)
             dg.addUint32(zoneId)
-            self.service.send_datagram(dg)
+            self.service.sendDatagram(dg)
         else:
             self.service.log.debug(f'Client {self.channel} tried setting location for unowned object {doId}!')
 
-    def receive_get_friend_list(self, dgi):
+    def receiveGetFriendList(self, dgi):
         self.service.log.debug(f'Friend list query received from {self.channel}')
 
         # Friend Structure
@@ -314,9 +314,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         query = Datagram()
         addServerHeader(query, [DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_FRIENDS)
         query.addUint32(self.avatarId)
-        self.service.send_datagram(query)
+        self.service.sendDatagram(query)
 
-    def receive_set_avatar(self, dgi):
+    def receiveSetAvatar(self, dgi):
         avId = dgi.getUint32()
 
         self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
@@ -324,7 +324,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         if not avId:
             if self.avatarId:
                 # Client is logging out of their avatar.
-                self.delete_avatar_ram()
+                self.deleteAvatarRam()
                 self.ownedObjects.clear()
                 self.visibleObjects.clear()
 
@@ -343,14 +343,14 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.log.debug(f'Client {self.channel} tried to set their avatar {avId} while avatar is already set to {self.avatarId}.')
             return
 
-        pot_av = None
+        potAv = None
 
         for pa in self.potentialAvatars:
             if pa and pa.doId == avId:
-                pot_av = pa
+                potAv = pa
                 break
 
-        if pot_av is None:
+        if potAv is None:
             self.disconnect(ClientDisconnect.INTERNAL_ERROR, 'Could not find avatar on account.')
             return
 
@@ -375,9 +375,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             (dclass.getFieldByName('setBattleId'), (0,))
         ]
 
-        if pot_av.approvedName:
-            otherFields.append((dclass.getFieldByName('setName'), (pot_av.approvedName,)))
-            pot_av.approvedName = ''
+        if potAv.approvedName:
+            otherFields.append((dclass.getFieldByName('setName'), (potAv.approvedName,)))
+            potAv.approvedName = ''
 
         dg = Datagram()
         addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
@@ -398,7 +398,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
             dg.appendData(otherPacker.getBytes())
 
-        self.service.send_datagram(dg)
+        self.service.sendDatagram(dg)
 
     def receiveCreateAvatar(self, dgi):
         _ = dgi.getUint16()
@@ -450,7 +450,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.state = ClientState.CREATING_AVATAR
 
-        self.service.send_datagram(dg)
+        self.service.sendDatagram(dg)
 
         self.tasks.append(self.service.loop.create_task(self.createdAvatar()))
 
@@ -472,7 +472,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(0) # Context
         resp.addUint8(returnCode) # Return Code
         resp.addUint32(avId) # avId
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
         self.createdAvId = avId
 
@@ -500,7 +500,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addString(approved)
         resp.addString(rejected)
 
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
         if avId and av:
             dclass = self.service.dcFile.getClassByName('DistributedToon')
@@ -518,7 +518,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             resp.addUint16(wishNameField.getNumber())
             resp.appendData(self.packFieldData(wishNameField, (name,)))
 
-            self.service.send_datagram(resp)
+            self.service.sendDatagram(resp)
 
     def packFieldData(self, field, data):
         packer = DCPacker()
@@ -530,7 +530,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         return packer.getBytes()
 
-    def receive_set_name_pattern(self, dgi):
+    def receiveSetNamePattern(self, dgi):
         avId = dgi.getUint32()
 
         self.service.log.debug(f'Got name pattern request for avId {avId}.')
@@ -546,19 +546,19 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         if avId != self.createdAvId:
             resp.addUint8(1)
-            self.send_datagram(resp)
+            self.sendDatagram(resp)
             return
 
         if first_index <= 0 and last_prefix_index <= 0 and last_suffix_index <= 0:
             self.service.log.debug(f'Received request for empty name for {avId}.')
             resp.addUint8(2)
-            self.send_datagram(resp)
+            self.sendDatagram(resp)
             return
 
         if (last_prefix_index <= 0 <= last_suffix_index) or (last_suffix_index <= 0 <= last_prefix_index):
             self.service.log.debug(f'Received request for invalid last name for {avId}.')
             resp.addUint8(3)
-            self.send_datagram(resp)
+            self.sendDatagram(resp)
             return
 
         try:
@@ -568,7 +568,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             last_suffix = self.get_name_part(last_suffix_index, last_suffix_flag, {NamePart.LAST_SUFFIX})
         except KeyError as e:
             resp.addUint8(4)
-            self.send_datagram(resp)
+            self.sendDatagram(resp)
             self.service.log.debug(f'Received invalid index for name part. {e.args}')
             return
 
@@ -580,7 +580,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 break
 
         resp.addUint8(0)
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def get_name_part(self, index, flag, categories):
         if index >= 0:
@@ -619,7 +619,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.addUint16(delField.getNumber())
         dg.appendData(self.packFieldData(delField, self.avsDeleted))
 
-        self.service.send_datagram(dg)
+        self.service.sendDatagram(dg)
 
         resp = Datagram()
         resp.addUint16(CLIENT_DELETE_AVATAR_RESP)
@@ -646,7 +646,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             resp.addUint8(potAv.index)
             resp.addUint8(potAv.allowName)
 
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def receive_remove_interest(self, dgi, ai = False):
         handle = dgi.getUint16()
@@ -702,7 +702,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             resp.addUint16(CLIENT_DONE_INTEREST_RESP)
             resp.addUint16(handle)
             resp.addUint32(context)
-            self.send_datagram(resp)
+            self.sendDatagram(resp)
 
     def receiveGetAvatars(self, dgi):
         query = Datagram()
@@ -712,7 +712,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         query.addUint32(dislId)
         fieldNumber = self.service.avatarsField.getNumber()
         query.addUint16(fieldNumber)
-        self.service.send_datagram(query)
+        self.service.sendDatagram(query)
 
         self.tasks.append(self.service.loop.create_task(self.doLogin()))
 
@@ -757,7 +757,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(CLIENT_GET_AVATARS_RESP)
         resp.addUint8(0) # Return code
         resp.appendData(dgi.getDatagram().getMessage()[pos:])
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def receiveLogin(self, dgi):
         playToken = dgi.getString()
@@ -829,7 +829,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addString(self.account.accountType)
         resp.addString(self.account.username)
 
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def receive_add_interest(self, dgi, ai = False):
         handle = dgi.getUint16()
@@ -912,7 +912,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 resp.addUint16(CLIENT_DONE_INTEREST_RESP)
                 resp.addUint16(handle)
                 resp.addUint32(contextId)
-                self.send_datagram(resp)
+                self.sendDatagram(resp)
                 return
 
         queryReq = Datagram()
@@ -925,7 +925,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             queryReq.addUint32(zone)
             self.subscribeChannel(locationAsChannel(parentId, zone))
 
-        self.service.send_datagram(queryReq)
+        self.service.sendDatagram(queryReq)
 
     def handleDatagram(self, dg, dgi):
         pos = dgi.getCurrentIndex()
@@ -987,7 +987,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             dg = Datagram()
             dg.addUint16(msgtype)
             dg.appendData(dgi.getRemainingBytes())
-            self.send_datagram(dg)
+            self.sendDatagram(dg)
         else:
            self.service.log.debug(f'Client {self.channel} received unhandled upstream msg {msgtype}.')
 
@@ -1007,7 +1007,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(fieldNumber)
         resp.appendData(dgi.getRemainingBytes())
 
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def handleOwnedObjectEntry(self, dgi, sender):
         doId = dgi.getUint32()
@@ -1022,7 +1022,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint32(self.avatarId)
         resp.addUint8(0) # Return code
         resp.appendData(dgi.getRemainingBytes())
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def handle_location_change(self, dgi, sender, doId):
         newParent = dgi.getUint32()
@@ -1068,7 +1068,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp = Datagram()
         resp.addUint16(CLIENT_OBJECT_DISABLE)
         resp.addUint32(doId)
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def sendObjectLocation(self, doId, newParent, newZone):
         resp = Datagram()
@@ -1076,7 +1076,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint32(doId)
         resp.addUint32(newParent)
         resp.addUint32(newZone)
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def handleInterestDone(self, dgi):
         handle = dgi.getUint16()
@@ -1116,7 +1116,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             resp.addUint16(CLIENT_DONE_INTEREST_RESP)
             resp.addUint16(handle)
             resp.addUint32(context)
-            self.send_datagram(resp)
+            self.sendDatagram(resp)
 
     def lookupInterest(self, parentId, zoneId):
         return [interest for interest in self.interests if interest.parentId == parentId and zoneId in interest.zones]
@@ -1183,7 +1183,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(dcId)
         resp.addUint32(doId)
         resp.appendData(dgi.getRemainingBytes())
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def getPotentialAvatar(self, avId):
         for potAv in self.potentialAvatars:
@@ -1195,10 +1195,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(CLIENT_GO_GET_LOST)
         resp.addUint16(bootedIndex)
         resp.addString(bootedText)
-        self.send_datagram(resp)
+        self.sendDatagram(resp)
 
     def annihilate(self):
-        self.service.upstream.unsubscribe_all(self)
+        self.service.upstream.unsubscribeAll(self)
 
     def receiveSetWishNameClear(self, dgi):
         avatarId = dgi.getUint32()
@@ -1209,7 +1209,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
         resp.addUint32(avatarId)
         resp.addUint8(actionFlag)
-        self.service.send_datagram(resp)
+        self.service.sendDatagram(resp)
 
     def receiveGetObjectDetails(self, dgi, msgType: int):
         doId = dgi.getUint32()
@@ -1223,4 +1223,4 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint32(doId)
         resp.addUint8(access)
         resp.addString(dclass)
-        self.service.send_datagram(resp)
+        self.service.sendDatagram(resp)

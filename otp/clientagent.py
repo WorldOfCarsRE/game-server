@@ -34,7 +34,7 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
 
         self.avatarsField = self.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
 
-        self.loop.set_exception_handler(self._on_exception)
+        self.loop.set_exception_handler(self.onException)
 
         self._context = 0
 
@@ -61,7 +61,7 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
         self.listen_task = None
         self.version = config['ClientAgent.Version']
 
-    def _on_exception(self, loop, context):
+    def onException(self, loop, context):
         print('err', context)
 
     async def run(self):

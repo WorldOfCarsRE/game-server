@@ -81,13 +81,13 @@ class Uberdog(DownstreamMessageDirector):
 
         dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_MANAGEMENT,
                                             STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields=None)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
         dg = PyDatagram()
         addServerControlHeader(dg, CONTROL_ADD_POST_REMOVE)
         addServerHeader(dg, [self.GLOBAL_ID], self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
         dg.addUint32(self.GLOBAL_ID)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     def receiveUpdate(self, sender, dgi):
         self.lastSender = sender
@@ -114,7 +114,7 @@ class Uberdog(DownstreamMessageDirector):
         addServerHeader(dg, [STATESERVERS_CHANNEL], self.GLOBAL_ID, STATESERVER_OBJECT_LOCATE)
         dg.add_uint32(context)
         dg.add_uint32(avId)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
         f = self.register_future(STATESERVER_OBJECT_LOCATE_RESP, avId, context)
 
@@ -132,7 +132,7 @@ class Uberdog(DownstreamMessageDirector):
 
     def sendUpdateToChannel(self, channel, fieldName, args):
         dg = self.dclass.ai_format_update(fieldName, self.GLOBAL_ID, channel, self.GLOBAL_ID, args)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
 class CentralLoggerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_CENTRAL_LOGGER
