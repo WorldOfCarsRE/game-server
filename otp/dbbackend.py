@@ -45,7 +45,7 @@ class SQLBackend(DatabaseBackend):
         await cursor.execute('SHOW TABLES LIKE \'objects\';')
         if await cursor.fetchone() is None:
             await cursor.execute('CREATE TABLE objects (do_id INT NOT NULL AUTO_INCREMENT, class_name VARCHAR(255), PRIMARY KEY (do_id));')
-            await cursor.execute("ALTER TABLE objects AUTO_INCREMENT = %d;" % self.service.min_channel)
+            await cursor.execute("ALTER TABLE objects AUTO_INCREMENT = %d;" % self.service.minChannel)
 
         for dclass in self.dc.classes:
             if 'DcObjectType' not in dclass.fields_by_name:

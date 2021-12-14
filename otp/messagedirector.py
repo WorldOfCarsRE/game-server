@@ -29,7 +29,7 @@ class MDProtocol(ToontownProtocol, MDParticipant):
             dg = self.postRemoves.pop(0)
             self.service.q.put_nowait((None, dg))
 
-    def receive_datagram(self, dg):
+    def receiveDatagram(self, dg):
         dgi = DatagramIterator(dg)
 
         recipientCount = dgi.getUint8()
@@ -39,10 +39,10 @@ class MDProtocol(ToontownProtocol, MDParticipant):
 
             if msgType == CONTROL_SET_CHANNEL:
                 channel = dgi.getInt64()
-                self.subscribe_channel(channel)
+                self.subscribeChannel(channel)
             elif msgType == CONTROL_REMOVE_CHANNEL:
                 channel = dgi.getInt64()
-                self.unsubscribe_channel(channel)
+                self.unsubscribeChannel(channel)
             elif msgType == CONTROL_ADD_RANGE:
                 low = dgi.getInt64()
                 high = dgi.getInt64()
@@ -74,7 +74,7 @@ class MessageDirector(Service):
         self.channel_subscriptions: Dict[int, Set[MDParticipant]] = {}
         self.q = Queue()
 
-    def subscribe_channel(self, participant: MDParticipant, channel: int):
+    def subscribeChannel(self, participant: MDParticipant, channel: int):
         if channel not in participant.channels:
             participant.channels.add(channel)
 
@@ -84,7 +84,7 @@ class MessageDirector(Service):
         if participant not in self.channel_subscriptions[channel]:
             self.channel_subscriptions[channel].add(participant)
 
-    def unsubscribe_channel(self, participant: MDParticipant, channel: int):
+    def unsubscribeChannel(self, participant: MDParticipant, channel: int):
         if channel in participant.channels:
             participant.channels.remove(channel)
 
@@ -95,9 +95,9 @@ class MessageDirector(Service):
     def unsubscribe_all(self, participant: MDParticipant):
         while participant.channels:
             channel = participant.channels.pop()
-            self.unsubscribe_channel(participant, channel)
+            self.unsubscribeChannel(participant, channel)
 
-    def add_participant(self, participant: MDParticipant):
+    def addParticipant(self, participant: MDParticipant):
         self.participants.add(participant)
 
     def remove_participant(self, participant: MDParticipant):
@@ -157,7 +157,7 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
         ToontownProtocol.connection_lost(self, exc)
         raise Exception('lost upsteam connection!', exc)
 
-    def subscribe_channel(self, channel):
+    def subscribeChannel(self, channel):
         dg = Datagram()
         dg.addUint8(1)
         dg.addUint64(CONTROL_MESSAGE)
@@ -165,7 +165,7 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
         dg.addUint64(channel)
         self.send_datagram(dg)
 
-    def unsubscribe_channel(self, channel):
+    def unsubscribeChannel(self, channel):
         dg = Datagram()
         dg.addUint8(1)
         dg.addUint64(CONTROL_MESSAGE)
@@ -173,14 +173,14 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
         dg.addUint64(channel)
         self.send_datagram(dg)
 
-    def receive_datagram(self, dg):
+    def receiveDatagram(self, dg):
         self.service.q.put_nowait((None, dg))
 
     def handle_datagram(self, dg, dgi):
         raise NotImplementedError
 
 class DownstreamMessageDirector(MessageDirector, DownstreamClient):
-    upstream_protocol = MDUpstreamProtocol
+    upstreamProtocol = MDUpstreamProtocol
 
     def __init__(self, loop):
         MessageDirector.__init__(self)
@@ -189,18 +189,18 @@ class DownstreamMessageDirector(MessageDirector, DownstreamClient):
     async def run(self):
         raise NotImplementedError
 
-    def subscribe_channel(self, participant, channel):
+    def subscribeChannel(self, participant, channel):
         subscribe_upstream = channel not in self.channel_subscriptions or not len(self.channel_subscriptions[channel])
-        MessageDirector.subscribe_channel(self, participant, channel)
+        MessageDirector.subscribeChannel(self, participant, channel)
 
         if subscribe_upstream:
-            self._client.subscribe_channel(channel)
+            self._client.subscribeChannel(channel)
 
-    def unsubscribe_channel(self, participant, channel):
-        MessageDirector.unsubscribe_channel(self, participant, channel)
+    def unsubscribeChannel(self, participant, channel):
+        MessageDirector.unsubscribeChannel(self, participant, channel)
 
         if len(self.channel_subscriptions[channel]) == 0:
-            self._client.unsubscribe_channel(channel)
+            self._client.unsubscribeChannel(channel)
 
     def process_datagram(self, participant, dg):
         MessageDirector.process_datagram(self, participant, dg)

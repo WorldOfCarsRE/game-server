@@ -40,7 +40,7 @@ class DistributedObject(MDParticipant):
             self.service.log.debug(f'Generating new object {doId} with dclass {self.dclass.getName()} in location {parentId} {zoneId}')
 
         self.handleLocationChange(parentId, zoneId, sender)
-        self.subscribe_channel(doId)
+        self.subscribeChannel(doId)
 
     def appendRequiredData(self, dg, clientOnly, alsoOwner):
         dg.addUint32(self.doId)
@@ -150,7 +150,7 @@ class DistributedObject(MDParticipant):
 
         if newParent != oldParent:
             if oldParent:
-                self.unsubscribe_channel(parentToChildren(oldParent))
+                self.unsubscribeChannel(parentToChildren(oldParent))
                 targets.append(oldParent)
                 targets.append(locationAsChannel(oldParent, oldZone))
 
@@ -158,7 +158,7 @@ class DistributedObject(MDParticipant):
             self.zoneId = newZone
 
             if newParent:
-                self.subscribe_channel(parentToChildren(newParent))
+                self.subscribeChannel(parentToChildren(newParent))
 
                 if not self.aiExplicitlySet:
                     newAIChannel = self.service.resolveAIChannel(newParent)
@@ -678,12 +678,12 @@ class StateServerProtocol(MDUpstreamProtocol):
 from panda3d.direct import DCFile
 
 class StateServer(DownstreamMessageDirector, ChannelAllocator):
-    upstream_protocol = StateServerProtocol
+    upstreamProtocol = StateServerProtocol
     serviceChannels = []
     rootObjectId = OTP_DO_ID_TOONTOWN
 
-    min_channel = 100000000
-    max_channel = 399999999
+    minChannel = 100000000
+    maxChannel = 399999999
 
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)
@@ -706,7 +706,7 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
         await self.route()
 
     def on_upstream_connect(self):
-        self.subscribe_channel(self._client, STATESERVERS_CHANNEL)
+        self.subscribeChannel(self._client, STATESERVERS_CHANNEL)
         self.objects[self.rootObjectId] = DistributedObject(self, STATESERVERS_CHANNEL, self.rootObjectId,
                                                               0, 2, self.dcFile.getClassByName('DistributedDirectory'),
                                                               None, None)

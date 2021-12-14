@@ -34,12 +34,12 @@ class AIProtocol(ToontownProtocol):
     def connection_lost(self, exc):
         raise Exception('AI CONNECTION LOST', exc)
 
-    def receive_datagram(self, dg):
+    def receiveDatagram(self, dg):
         self.service.queue.put_nowait(dg)
 
     def send_datagram(self, data: Datagram):
         loop = self.service.loop
-        loop.call_soon_threadsafe(self.outgoing_q.put_nowait, data.getMessage())
+        loop.call_soon_threadsafe(self.outgoingQ.put_nowait, data.getMessage())
 
 class AIRepository:
     def __init__(self):
@@ -48,9 +48,9 @@ class AIRepository:
 
         base_channel = 4000000
 
-        max_channels = 1000000
+        maxChannels = 1000000
         self.minChannel = base_channel
-        self.maxChannel = base_channel + max_channels
+        self.maxChannel = base_channel + maxChannels
         self.channelAllocator = UniqueIdAllocator(self.minChannel, self.maxChannel)
         self.zoneAllocator = UniqueIdAllocator(DynamicZonesBegin, DynamicZonesEnd)
 
@@ -101,10 +101,10 @@ class AIRepository:
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self.loop.set_exception_handler(self._on_net_except)
-        self.loop.run_until_complete(self.loop.create_connection(self._on_connect, '127.0.0.1', 46668))
+        self.loop.run_until_complete(self.loop.create_connection(self._onConnect, '127.0.0.1', 46668))
         self.loop.run_forever()
 
-    def _on_connect(self):
+    def _onConnect(self):
         self.connection = AIProtocol(self)
         return self.connection
 
@@ -203,7 +203,7 @@ class AIRepository:
 
     @staticmethod
     def isClientChannel(channel):
-        return config['ClientAgent.MIN_CHANNEL'] <= channel <= config['ClientAgent.MAX_CHANNEL']
+        return config['ClientAgent.minChannel'] <= channel <= config['ClientAgent.maxChannel']
 
     def setInterest(self, clientChannel, handle, context, parentId, zones):
         dg = Datagram()

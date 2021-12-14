@@ -17,10 +17,10 @@ class ClientAgentProtocol(MDUpstreamProtocol):
 
 class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
     downstream_protocol = ClientProtocol
-    upstream_protocol = ClientAgentProtocol
+    upstreamProtocol = ClientAgentProtocol
 
-    min_channel = config['ClientAgent.MIN_CHANNEL']
-    max_channel = config['ClientAgent.MAX_CHANNEL']
+    minChannel = config['ClientAgent.minChannel']
+    maxChannel = config['ClientAgent.maxChannel']
 
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)

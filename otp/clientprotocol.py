@@ -110,9 +110,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         MDParticipant.__init__(self, service)
 
         self.state: int = ClientState.NEW
-        self.channel: int = service.new_channel_id()
+        self.channel: int = service.newChannelId()
         self.alloc_channel = self.channel
-        self.subscribe_channel(self.channel)
+        self.subscribeChannel(self.channel)
 
         self.interests: List[Interest] = []
         self.visibleObjects: Dict[int, ObjectInfo] = {}
@@ -154,7 +154,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def connection_made(self, transport):
         ToontownProtocol.connection_made(self, transport)
-        self.subscribe_channel(CLIENTS_CHANNEL)
+        self.subscribeChannel(CLIENTS_CHANNEL)
 
     def delete_avatar_ram(self):
         dg = Datagram()
@@ -162,7 +162,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         dg.addUint32(self.avatarId)
         self.service.send_datagram(dg)
 
-    def receive_datagram(self, dg):
+    def receiveDatagram(self, dg):
         dgi = DatagramIterator(dg)
         msgtype = dgi.get_uint16()
 
@@ -328,10 +328,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.ownedObjects.clear()
                 self.visibleObjects.clear()
 
-                self.unsubscribe_channel(getClientSenderChannel(self.account.dislId, self.avatarId))
-                self.unsubscribe_channel(getPuppetChannel(self.avatarId))
+                self.unsubscribeChannel(getClientSenderChannel(self.account.dislId, self.avatarId))
+                self.unsubscribeChannel(getPuppetChannel(self.avatarId))
                 self.channel = getClientSenderChannel(self.account.dislId, 0)
-                self.subscribe_channel(self.channel)
+                self.subscribeChannel(self.channel)
 
                 self.state = ClientState.AUTHENTICATED
                 self.avatarId = 0
@@ -360,8 +360,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.state = ClientState.SETTING_AVATAR
 
         self.channel = getClientSenderChannel(self.account.dislId, self.avatarId)
-        self.subscribe_channel(self.channel)
-        self.subscribe_channel(getPuppetChannel(self.avatarId))
+        self.subscribeChannel(self.channel)
+        self.subscribeChannel(getPuppetChannel(self.avatarId))
 
         dclass = self.service.dcFile.getClassByName('DistributedToon')
 
@@ -693,7 +693,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             del self.visibleObjects[doId]
 
         for zone in uninterestedZones:
-            self.unsubscribe_channel(locationAsChannel(parentId, zone))
+            self.unsubscribeChannel(locationAsChannel(parentId, zone))
 
         self.interests.remove(interest)
 
@@ -789,8 +789,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             return
 
         self.channel = getClientSenderChannel(self.account.dislId, 0)
-        self.subscribe_channel(self.channel)
-        self.subscribe_channel(getAccountChannel(self.account.dislId))
+        self.subscribeChannel(self.channel)
+        self.subscribeChannel(getAccountChannel(self.account.dislId))
 
         resp = Datagram()
         resp.addUint16(CLIENT_LOGIN_TOONTOWN_RESP)
@@ -874,27 +874,27 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.interests.remove(previous_interest)
 
             if previous_interest.parentId != parentId:
-                killed_zones = previous_interest.zones
+                killedZones = previous_interest.zones
             else:
-                killed_zones = set(previous_interest.zones).difference(set(zones))
+                killedZones = set(previous_interest.zones).difference(set(zones))
 
             for _interest in self.interests:
-                killed_zones = killed_zones.difference(set(_interest.zones))
-                if not killed_zones:
+                killedZones = killedZones.difference(set(_interest.zones))
+                if not killedZones:
                     break
 
-            self.service.log.debug(f'Zones killed by altering interest: {killed_zones}')
+            self.service.log.debug(f'Zones killed by altering interest: {killedZones}')
 
-            if killed_zones:
+            if killedZones:
                 for doId in list(self.visibleObjects.keys()):
                     obj = self.visibleObjects[doId]
-                    if obj.parentId == parentId and obj.zoneId in killed_zones:
+                    if obj.parentId == parentId and obj.zoneId in killedZones:
                         self.service.log.debug(f'Object {obj.doId}, location ({obj.parentId}, {obj.zoneId}), killed by altered interest: {zones}')
                         self.sendRemoveObject(obj.doId)
                         del self.visibleObjects[doId]
 
-            for zone in killed_zones:
-                self.unsubscribe_channel(locationAsChannel(previous_interest.parentId, zone))
+            for zone in killedZones:
+                self.unsubscribeChannel(locationAsChannel(previous_interest.parentId, zone))
 
             interest = Interest(self.channel, handle, contextId, parentId, zones)
             self.interests.append(interest)
@@ -923,7 +923,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         for zone in zones:
             queryReq.addUint32(zone)
-            self.subscribe_channel(locationAsChannel(parentId, zone))
+            self.subscribeChannel(locationAsChannel(parentId, zone))
 
         self.service.send_datagram(queryReq)
 

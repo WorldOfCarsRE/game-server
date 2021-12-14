@@ -155,7 +155,7 @@ from otp.util import getPuppetChannel
 from panda3d.core import Datagram, DatagramIterator
 
 class DBServer(DownstreamMessageDirector):
-    upstream_protocol = DBServerProtocol
+    upstreamProtocol = DBServerProtocol
 
     minChannel = config['DatabaseServer.MinRange']
     maxChannel = config['DatabaseServer.MaxRange']
@@ -428,7 +428,7 @@ class DBServer(DownstreamMessageDirector):
         await self.backend.set_fields(do_id, fields)
 
     def on_upstream_connect(self):
-        self.subscribe_channel(self._client, DBSERVERS_CHANNEL)
+        self.subscribeChannel(self._client, DBSERVERS_CHANNEL)
 
     async def handleClearWishName(self, avatarId, actionFlag):
         # Grab the fields from the avatar.
