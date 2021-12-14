@@ -5,7 +5,7 @@ from typing import Union
 class Inventory:
     __slots__ = 'inventory', 'toon'
 
-    def __init__(self, inventory=None, toon=None):
+    def __init__(self, inventory = None, toon = None):
         if not inventory:
             self.inventory = [0] * NUM_TRACKS * NUM_PROPS
         else:
@@ -114,7 +114,7 @@ class Inventory:
     def makeNetString(self):
         return b''.join((prop.to_bytes(1, 'little') for prop in self.inventory))
 
-    def zero(self, killUber=False):
+    def zero(self, killUber = False):
         for i in range(NUM_TRACKS * NUM_PROPS):
             if not killUber and (i + 1) % 7 == 0:
                 continue
