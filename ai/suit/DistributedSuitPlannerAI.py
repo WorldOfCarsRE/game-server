@@ -100,13 +100,13 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         for i in range(numPoints):
             suitPoint = self.dnaStore.getSuitPointAtIndex(i)
             pointType = suitPoint.getPointType()
-            if pointType == DNASuitPoint.STREET_POINT:
+            if pointType == DNASuitPoint.STREETPOINT:
                 self.streetPoints.append(suitPoint)
-            elif pointType == DNASuitPoint.FRONT_DOOR_POINT:
+            elif pointType == DNASuitPoint.FRONTDOORPOINT:
                 self.frontDoorPoints.append(suitPoint)
-            elif pointType == DNASuitPoint.SIDE_DOOR_POINT:
+            elif pointType == DNASuitPoint.SIDEDOORPOINT:
                 self.sideDoorPoints.append(suitPoint)
-            elif pointType == DNASuitPoint.COGHQ_IN_POINT or pointType == DNASuitPoint.COGHQ_OUT_POINT:
+            elif pointType == DNASuitPoint.COGHQINPOINT or pointType == DNASuitPoint.COGHQOUTPOINT:
                 self.cogHQDoorPoints.append(suitPoint)
 
             self.pointIndexes[suitPoint.getIndex()] = suitPoint
