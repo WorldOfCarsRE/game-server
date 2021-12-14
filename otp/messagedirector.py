@@ -64,7 +64,7 @@ class MDProtocol(ToontownProtocol, MDParticipant):
         else:
             self.service.q.put_nowait((None, dg))
 
-    def handle_datagram(self, dg, dgi):
+    def handleDatagram(self, dg, dgi):
         self.send_datagram(dg)
 
 class MessageDirector(Service):
@@ -120,7 +120,7 @@ class MessageDirector(Service):
         try:
             for participant in receivingParticipants:
                 _dgi = DatagramIterator(dg, pos)
-                participant.handle_datagram(dg, _dgi)
+                participant.handleDatagram(dg, _dgi)
         except Exception as e:
             self.log.debug(f'Exception while handling datagram: {e.__class__}: {repr(e)}')
 
@@ -130,7 +130,7 @@ class MessageDirector(Service):
             self.process_datagram(participant, dg)
 
 class MasterMessageDirector(MessageDirector, UpstreamServer):
-    downstream_protocol = MDProtocol
+    downstreamProtocol = MDProtocol
 
     def __init__(self, loop):
         MessageDirector.__init__(self)
@@ -176,7 +176,7 @@ class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
     def receiveDatagram(self, dg):
         self.service.q.put_nowait((None, dg))
 
-    def handle_datagram(self, dg, dgi):
+    def handleDatagram(self, dg, dgi):
         raise NotImplementedError
 
 class DownstreamMessageDirector(MessageDirector, DownstreamClient):

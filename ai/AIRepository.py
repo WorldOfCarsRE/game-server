@@ -46,11 +46,11 @@ class AIRepository:
         self.connection = None
         self.queue = queue.Queue()
 
-        base_channel = 4000000
+        baseChannel = 4000000
 
         maxChannels = 1000000
-        self.minChannel = base_channel
-        self.maxChannel = base_channel + maxChannels
+        self.minChannel = baseChannel
+        self.maxChannel = baseChannel + maxChannels
         self.channelAllocator = UniqueIdAllocator(self.minChannel, self.maxChannel)
         self.zoneAllocator = UniqueIdAllocator(DynamicZonesBegin, DynamicZonesEnd)
 
@@ -203,7 +203,7 @@ class AIRepository:
 
     @staticmethod
     def isClientChannel(channel):
-        return config['ClientAgent.minChannel'] <= channel <= config['ClientAgent.maxChannel']
+        return config['ClientAgent.MIN_CHANNEL'] <= channel <= config['ClientAgent.MAX_CHANNEL']
 
     def setInterest(self, clientChannel, handle, context, parentId, zones):
         dg = Datagram()

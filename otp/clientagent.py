@@ -9,18 +9,18 @@ from otp.networking import ChannelAllocator
 from .clientprotocol import ClientProtocol
 
 class ClientAgentProtocol(MDUpstreamProtocol):
-    def handle_datagram(self, dg, dgi):
+    def handleDatagram(self, dg, dgi):
         sender = dgi.getUint64()
         msgtype = dgi.getUint16()
 
         print('unhandled', msgtype)
 
 class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
-    downstream_protocol = ClientProtocol
+    downstreamProtocol = ClientProtocol
     upstreamProtocol = ClientAgentProtocol
 
-    minChannel = config['ClientAgent.minChannel']
-    maxChannel = config['ClientAgent.maxChannel']
+    minChannel = config['ClientAgent.MIN_CHANNEL']
+    maxChannel = config['ClientAgent.MAX_CHANNEL']
 
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)

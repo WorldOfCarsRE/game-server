@@ -32,7 +32,7 @@ class Service:
 
 class UpstreamServer:
     sslContext = None
-    downstream_protocol = None
+    downstreamProtocol = None
 
     def __init__(self, loop):
         self.loop = loop
@@ -40,7 +40,7 @@ class UpstreamServer:
         self._clients = set()
 
     async def listen(self, host: str, port: int, secure: int = 0):
-        if self.downstream_protocol is None:
+        if self.downstreamProtocol is None:
             raise Exception('PROTOCOL NOT DEFINED!')
 
         self.log.debug(f'Listening on {host}:{port}')
@@ -57,7 +57,7 @@ class UpstreamServer:
             self._clients.clear()
 
     def new_client(self):
-        client = self.downstream_protocol(self)
+        client = self.downstreamProtocol(self)
         self._clients.add(client)
         return client
 

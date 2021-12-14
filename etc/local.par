@@ -10,8 +10,8 @@ PORT=46668
 HOST=0.0.0.0
 PORT=6667
 SSL=0
-minChannel=2000000000
-maxChannel=2000999999
+MIN_CHANNEL=2000000000
+MAX_CHANNEL=2000999999
 
 # The client/server version.
 # This is checked against the client's version to make sure they match.

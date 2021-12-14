@@ -20,7 +20,7 @@ class EstateInfo:
     houseIds = list
 
 class DBServerProtocol(MDUpstreamProtocol):
-    def handle_datagram(self, dg, dgi):
+    def handleDatagram(self, dg, dgi):
         sender = dgi.getInt64()
         msgId = dgi.getUint16()
 

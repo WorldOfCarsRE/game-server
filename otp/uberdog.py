@@ -21,7 +21,7 @@ class UberdogProtocol(MDUpstreamProtocol):
         self.service.log.debug(f'Received datagram: {dg.getMessage()}')
         MDUpstreamProtocol.receiveDatagram(self, dg)
 
-    def handle_datagram(self, dg, dgi):
+    def handleDatagram(self, dg, dgi):
         sender = dgi.getInt64()
         msgtype = dgi.getUint16()
         self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from {sender}.')

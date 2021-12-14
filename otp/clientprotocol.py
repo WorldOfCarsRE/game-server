@@ -927,7 +927,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.service.send_datagram(queryReq)
 
-    def handle_datagram(self, dg, dgi):
+    def handleDatagram(self, dg, dgi):
         pos = dgi.getCurrentIndex()
         sender = dgi.getInt64()
 
@@ -1109,7 +1109,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         for pendingObject in pending:
             for datagram in pendingObject.datagrams:
-                self.handle_datagram(datagram, DatagramIterator(datagram))
+                self.handleDatagram(datagram, DatagramIterator(datagram))
 
         if not interest.ai:
             resp = Datagram()
