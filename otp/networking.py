@@ -149,7 +149,7 @@ class ToontownProtocol(asyncio.Protocol):
     def receiveDatagram(self, data: bytes):
         raise NotImplementedError
 
-    def check_futures(self, dgi, msgId, sender):
+    def checkFutures(self, dgi, msgId, sender):
         for f in self.futures[:]:
             if msgId != f.futureMsgId:
                 continue

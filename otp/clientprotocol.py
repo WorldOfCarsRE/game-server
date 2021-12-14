@@ -186,9 +186,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             if msgtype == CLIENT_GET_AVATARS:
                 self.receiveGetAvatars(dgi)
             elif msgtype == CLIENT_ADD_INTEREST:
-                self.receive_add_interest(dgi)
+                self.receiveAddInterest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
-                self.receive_remove_interest(dgi)
+                self.receiveRemoveInterest(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 self.receiveUpdateField(dgi)
             else:
@@ -201,7 +201,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             elif msgtype == CLIENT_SET_WISHNAME:
                 self.receiveSetWishName(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
-                self.receive_remove_interest(dgi)
+                self.receiveRemoveInterest(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 doId = dgi.getUint32()
                 if doId == OTP_DO_ID_CENTRAL_LOGGER:
@@ -231,9 +231,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.service.log.debug(f'Unexpected message type during avatar creation {msgtype}.')
         else:
             if msgtype == CLIENT_ADD_INTEREST:
-                self.receive_add_interest(dgi)
+                self.receiveAddInterest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
-                self.receive_remove_interest(dgi)
+                self.receiveRemoveInterest(dgi)
             elif msgtype == CLIENT_GET_FRIEND_LIST:
                 self.receiveGetFriendList(dgi)
             elif msgtype == CLIENT_OBJECT_LOCATION:
@@ -648,7 +648,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.sendDatagram(resp)
 
-    def receive_remove_interest(self, dgi, ai = False):
+    def receiveRemoveInterest(self, dgi, ai = False):
         handle = dgi.getUint16()
 
         if dgi.getRemainingSize():
@@ -831,7 +831,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         self.sendDatagram(resp)
 
-    def receive_add_interest(self, dgi, ai = False):
+    def receiveAddInterest(self, dgi, ai = False):
         handle = dgi.getUint16()
         contextId = dgi.getUint32()
         parentId = dgi.getUint32()
@@ -936,7 +936,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
         msgtype = dgi.getUint16()
 
-        self.check_futures(dgi, msgtype, sender)
+        self.checkFutures(dgi, msgtype, sender)
 
         if msgtype == STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER:
             self.handleObjectEntrance(dgi, sender)
@@ -949,7 +949,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                 self.service.log.debug(f'Queued location change for pending object {doId}.')
                 return
 
-            self.handle_location_change(dgi, sender, doId)
+            self.handleLocationChange(dgi, sender, doId)
         elif msgtype == STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE:
             self.handleInterestDone(dgi)
         elif msgtype == STATESERVER_OBJECT_UPDATE_FIELD:
@@ -974,15 +974,15 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                     self.disconnect(ClientDisconnect.SHARD_DISCONNECT, 'district reset')
             elif not self.objectExists(doId):
                 self.service.log.debug(f'Queued deletion for pending object {doId}.')
-                self.queue_pending(doId, dgi, pos)
+                self.queuePending(doId, dgi, pos)
                 return
             else:
                 self.sendRemoveObject(doId)
                 del self.visibleObjects[doId]
         elif msgtype == CLIENT_AGENT_SET_INTEREST:
-            self.receive_add_interest(dgi, ai = True)
+            self.receiveAddInterest(dgi, ai = True)
         elif msgtype == CLIENT_AGENT_REMOVE_INTEREST:
-            self.receive_remove_interest(dgi, ai = True)
+            self.receiveRemoveInterest(dgi, ai = True)
         elif msgtype in {CLIENT_FRIEND_ONLINE, CLIENT_FRIEND_OFFLINE, CLIENT_GET_FRIEND_LIST_RESP, CLIENT_GET_AVATAR_DETAILS_RESP}:
             dg = Datagram()
             dg.addUint16(msgtype)
@@ -1024,7 +1024,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.appendData(dgi.getRemainingBytes())
         self.sendDatagram(resp)
 
-    def handle_location_change(self, dgi, sender, doId):
+    def handleLocationChange(self, dgi, sender, doId):
         newParent = dgi.getUint32()
         newZone = dgi.getUint32()
         oldParent = dgi.getUint32()

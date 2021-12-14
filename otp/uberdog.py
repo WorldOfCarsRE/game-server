@@ -26,7 +26,7 @@ class UberdogProtocol(MDUpstreamProtocol):
         msgtype = dgi.getUint16()
         self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from {sender}.')
 
-        if self.check_futures(dgi, msgtype, sender):
+        if self.checkFutures(dgi, msgtype, sender):
             self.service.log.debug(f'Future handled datagram')
             return
 
@@ -37,7 +37,7 @@ class UberdogProtocol(MDUpstreamProtocol):
                 return
             self.service.receiveUpdate(sender, dgi)
 
-    def check_futures(self, dgi, msgId, sender):
+    def checkFutures(self, dgi, msgId, sender):
         pos = dgi.getCurrentIndex()
 
         for i in range(len(self.futures)):
