@@ -255,7 +255,8 @@ class SafeZoneAI(PlaceAI):
 
             visibles = []
             for x in range(visGroup.getNumVisibles()):
-                visibles.append(visGroup.getVisibleName(x))
+                zoneId = int(visGroup.getVisibleName(x).split(':')[0])
+                visibles.append(zoneId)
             if self.zoneId not in visibles:
                 visibles.append(self.zoneId)
 
