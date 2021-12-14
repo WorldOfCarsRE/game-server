@@ -180,14 +180,13 @@ class SafeZoneAI(PlaceAI):
     @staticmethod
     def getInteriorZone(zoneId, block):
         return zoneId - zoneId % 100 + 500 + block
-        
 
     def findFishingPonds(self, dnaGroup, zoneId, overrideDNAZone = 0):
         fishingPonds = []
         fishingPondGroups = []
 
         if ((isinstance(dnaGroup, DNAGroup)) and
-            (str.find(dnaGroup.getName(), 'fishing_pond') >= 0)):
+            (dnaGroup.getName().find('fishing_pond') >= 0)):
             fishingPondGroups.append(dnaGroup)
             fp = DistributedFishingPondAI(self.air, self.zoneId)
             fp.generateWithRequired(zoneId)
@@ -201,17 +200,17 @@ class SafeZoneAI(PlaceAI):
                 fishingPonds += childFishingPonds
                 fishingPondGroups += childFishingPondGroups
         return fishingPonds, fishingPondGroups
-            
+
     def findFishingSpots(self, distPond, dnaPondGroup):
         fishingSpots = []
         for i in range(dnaPondGroup.getNumChildren()):
             dnaGroup = dnaPondGroup.at(i)
-            if ((isinstance(dnaGroup, DNAProp)) and 
-                (str.find(dnaGroup.getCode(), 'fishing_spot') >= 0)):
-                
+            if ((isinstance(dnaGroup, DNAProp)) and
+                (dnaGroup.getCode().find('fishing_spot') >= 0)):
+
                 pos = dnaGroup.getPos()
                 hpr = dnaGroup.getHpr()
-                
+
                 spot = DistributedFishingSpotAI(self.air, distPond, (pos[0], pos[1], pos[2], hpr[0], hpr[1], hpr[2]))
                 spot.generateWithRequired(distPond.zoneId)
                 fishingSpots.append(spot)
@@ -261,9 +260,9 @@ class SafeZoneAI(PlaceAI):
                 visibles.append(self.zoneId)
 
             self.air.vismap[zone] = tuple(visibles)
-        
+
         fPonds, fGroups = self.findFishingPonds(self.dnaData, self.zoneId)
-        
+
         for pond, group in zip(fPonds, fGroups):
             self.findFishingSpots(pond, group)
 
