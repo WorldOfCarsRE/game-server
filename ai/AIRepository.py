@@ -20,7 +20,9 @@ import asyncio
 
 from . import AIZoneData
 
-from ai.globals.HoodGlobals import DynamicZonesBegin, DynamicZonesEnd
+from ai.globals.HoodGlobals import DynamicZonesBegin, DynamicZonesEnd, MyEstate
+from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
+from panda3d.toontown import DNAProp, DNAGroup, DNAVisGroup
 from .MongoInterface import MongoInterface
 
 from importlib import import_module
@@ -510,3 +512,38 @@ class AIRepository:
         dg.addUint16(eventDg.getLength())
         dg.appendData(eventDg.getMessage())
         self.eventSocket.Send(dg.getMessage())
+
+    def findFishingPonds(self, dnaGroup, zoneId, overrideDNAZone = 0):
+        fishingPonds = []
+        fishingPondGroups = []
+
+        if ((isinstance(dnaGroup, DNAGroup)) and
+            (dnaGroup.getName().find('fishing_pond') >= 0)):
+            fishingPondGroups.append(dnaGroup)
+            fp = DistributedFishingPondAI(self, MyEstate)
+            fp.generateWithRequired(zoneId)
+            fishingPonds.append(fp)
+        else:
+            if (isinstance(dnaGroup, DNAVisGroup) and not overrideDNAZone):
+                zoneId = int(dnaGroup.getName().split(':')[0])
+            for i in range(dnaGroup.getNumChildren()):
+                childFishingPonds, childFishingPondGroups = self.findFishingPonds(
+                        dnaGroup.at(i), zoneId, overrideDNAZone)
+                fishingPonds += childFishingPonds
+                fishingPondGroups += childFishingPondGroups
+        return fishingPonds, fishingPondGroups
+
+    def findFishingSpots(self, distPond, dnaPondGroup):
+        fishingSpots = []
+        for i in range(dnaPondGroup.getNumChildren()):
+            dnaGroup = dnaPondGroup.at(i)
+            if ((isinstance(dnaGroup, DNAProp)) and
+                (dnaGroup.getCode().find('fishing_spot') >= 0)):
+
+                pos = dnaGroup.getPos()
+                hpr = dnaGroup.getHpr()
+
+                spot = DistributedFishingSpotAI(self, distPond, (pos[0], pos[1], pos[2], hpr[0], hpr[1], hpr[2]))
+                spot.generateWithRequired(distPond.zoneId)
+                fishingSpots.append(spot)
+        return fishingSpots

@@ -1,9 +1,8 @@
 from ai.globals.HoodGlobals import *
 from typing import List, Dict, Union, Optional
 from ai.DistributedObjectAI import DistributedObjectAI
-from panda3d.toontown import loadDNAFileAI, DNAStorage, DNAData, DNAProp, DNAGroup, DNAVisGroup
+from panda3d.toontown import loadDNAFileAI, DNAStorage, DNAData, DNAGroup
 from ai.toon import NPCToons
-from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 from ai.safezone import ButterflyGlobals
 from ai.safezone.DistributedButterflyAI import DistributedButterflyAI
 from ai.trolley.DistributedTrolleyAI import DistributedTrolleyAI
@@ -181,41 +180,6 @@ class SafeZoneAI(PlaceAI):
     def getInteriorZone(zoneId, block):
         return zoneId - zoneId % 100 + 500 + block
 
-    def findFishingPonds(self, dnaGroup, zoneId, overrideDNAZone = 0):
-        fishingPonds = []
-        fishingPondGroups = []
-
-        if ((isinstance(dnaGroup, DNAGroup)) and
-            (dnaGroup.getName().find('fishing_pond') >= 0)):
-            fishingPondGroups.append(dnaGroup)
-            fp = DistributedFishingPondAI(self.air, self.zoneId)
-            fp.generateWithRequired(zoneId)
-            fishingPonds.append(fp)
-        else:
-            if (isinstance(dnaGroup, DNAVisGroup) and not overrideDNAZone):
-                zoneId = int(dnaGroup.getName().split(':')[0])
-            for i in range(dnaGroup.getNumChildren()):
-                childFishingPonds, childFishingPondGroups = self.findFishingPonds(
-                        dnaGroup.at(i), zoneId, overrideDNAZone)
-                fishingPonds += childFishingPonds
-                fishingPondGroups += childFishingPondGroups
-        return fishingPonds, fishingPondGroups
-
-    def findFishingSpots(self, distPond, dnaPondGroup):
-        fishingSpots = []
-        for i in range(dnaPondGroup.getNumChildren()):
-            dnaGroup = dnaPondGroup.at(i)
-            if ((isinstance(dnaGroup, DNAProp)) and
-                (dnaGroup.getCode().find('fishing_spot') >= 0)):
-
-                pos = dnaGroup.getPos()
-                hpr = dnaGroup.getHpr()
-
-                spot = DistributedFishingSpotAI(self.air, distPond, (pos[0], pos[1], pos[2], hpr[0], hpr[1], hpr[2]))
-                spot.generateWithRequired(distPond.zoneId)
-                fishingSpots.append(spot)
-        return fishingSpots
-
     def create(self):
         self.dnaStore = DNAStorage()
         self.dnaData = loadDNAFileAI(self.dnaStore, 'dna/' + DNA_MAP[self.zoneId])
@@ -261,10 +225,10 @@ class SafeZoneAI(PlaceAI):
 
             self.air.vismap[zone] = tuple(visibles)
 
-        fPonds, fGroups = self.findFishingPonds(self.dnaData, self.zoneId)
+        fPonds, fGroups = self.air.findFishingPonds(self.dnaData, self.zoneId)
 
         for pond, group in zip(fPonds, fGroups):
-            self.findFishingSpots(pond, group)
+            fSpots = self.air.findFishingSpots(pond, group)
 
 class StreetAI(SafeZoneAI):
     def __init__(self, air, zoneId):
