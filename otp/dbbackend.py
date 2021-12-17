@@ -20,13 +20,13 @@ class DatabaseBackend:
     def queryObjectAll(self, do_id: int):
         raise NotImplementedError
 
-    def query_object_fields(self, do_id: int, fields):
+    def queryObjectFIelds(self, do_id: int, fields):
         raise NotImplementedError
 
-    def set_field(self, do_id: int, field: str, value: bytes):
+    def setField(self, do_id: int, field: str, value: bytes):
         raise NotImplementedError
 
-    def set_fields(self, do_id: int, fields: Tuple[Tuple[str, bytes]]):
+    def setFields(self, do_id: int, fields: Tuple[Tuple[str, bytes]]):
         raise NotImplementedError
 
 class SQLBackend(DatabaseBackend):
@@ -54,7 +54,7 @@ class SQLBackend(DatabaseBackend):
             columns = []
             for field in dclass.inherited_fields:
                 if field.is_db:
-                    columns.append(f'{field.name} blob,')
+                    columns.append(f'{field.getName()} blob,')
 
             if not columns:
                 continue
@@ -150,7 +150,7 @@ class SQLBackend(DatabaseBackend):
 
         return fields
 
-    async def query_object_fields(self, do_id, field_names, dclass_name=None):
+    async def queryObjectFIelds(self, do_id, field_names, dclass_name=None):
         conn = await self.pool.acquire()
 
         if dclass_name is None:
@@ -167,7 +167,7 @@ class SQLBackend(DatabaseBackend):
 
         return values
 
-    async def set_field(self, do_id, field_name, value, dclass_name=None):
+    async def setField(self, do_id, field_name, value, dclass_name=None):
         conn = await self.pool.acquire()
 
         if dclass_name is None:
@@ -190,7 +190,7 @@ class SQLBackend(DatabaseBackend):
         conn.close()
         self.pool.release(conn)
 
-    async def set_fields(self, do_id, fields, dclass_name=None):
+    async def setFields(self, do_id, fields, dclass_name=None):
         conn = await self.pool.acquire()
 
         if dclass_name is None:
@@ -307,7 +307,7 @@ class MongoBackend(DatabaseBackend):
         fields = cursor.find_one({'_id': doId})
         return fields
 
-    async def query_object_fields(self, doId, field_names, dclass_name=None):
+    async def queryObjectFIelds(self, doId, field_names, dclass_name=None):
         if dclass_name is None:
             dclass_name = await self.queryDC(doId)
 
@@ -322,7 +322,7 @@ class MongoBackend(DatabaseBackend):
 
         return values
 
-    async def set_field(self, doId, field_name, value, dclass_name=None):
+    async def setField(self, doId, field_name, value, dclass_name=None):
         if dclass_name is None:
             dclass_name = await self.queryDC(doId)
 
@@ -332,7 +332,7 @@ class MongoBackend(DatabaseBackend):
         table = getattr(self.mongodb, dclass_name)
         table.update_one(queryData, updatedVal)
 
-    async def set_fields(self, doId, fields, dclass_name=None):
+    async def setFields(self, doId, fields, dclass_name=None):
         if dclass_name is None:
             dclass_name = await self.queryDC(doId)
 

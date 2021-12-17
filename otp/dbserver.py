@@ -91,7 +91,7 @@ class DBServerProtocol(MDUpstreamProtocol):
 
             coro = self.service.createToon(sender, context, dclass, dislId, pos, fields)
         else:
-            print('Unhandled creation for dclass %s' % dclass.name)
+            print(f'Unhandled creation for dclass {dclass.getName()}')
             return
 
         self.service.loop.create_task(coro)
@@ -110,8 +110,8 @@ class DBServerProtocol(MDUpstreamProtocol):
         self.service.loop.create_task(self.service.get_stored_values(sender, context, doId, fields))
 
     def handleSetStoredValues(self, sender, dgi):
-        doId = dgi.get_uint32()
-        fieldCount = dgi.get_uint16()
+        doId = dgi.getUint32()
+        fieldCount = dgi.getUint16()
         fields = []
 
         unpacker = DCPacker()
@@ -130,7 +130,7 @@ class DBServerProtocol(MDUpstreamProtocol):
         self.service.loop.create_task(self.service.set_stored_values(doId, fields))
 
     def handle_account_query(self, sender, dgi):
-        do_id = dgi.get_uint32()
+        do_id = dgi.getUint32()
         self.service.loop.create_task(self.service.queryObject(sender, do_id))
 
     def handleClearWishName(self, dgi):
@@ -212,14 +212,12 @@ class DBServer(DownstreamMessageDirector):
                 await self.deleteDO(doId)
 
     async def queryEstate(self, sender, context, avId, parentId, zoneId):
-        toon = await self.backend.query_object_fields(avId, ['setDISLid'], 'DistributedToon')
+        toon = await self.backend.queryObjectFIelds(avId, ['setDISLid'], 'DistributedToon')
         accountId = toon['setDISLid'][0]
 
-        account = await self.backend.query_object_fields(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
+        account = await self.backend.queryObjectFIelds(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
 
-        houseIds = account['HOUSE_ID_SET']
-        avatars = account['ACCOUNT_AV_SET']
-        estateId = account['ESTATE_ID']
+        houseIds, avatars, estateId = account['HOUSE_ID_SET'], account['ACCOUNT_AV_SET'], account['ESTATE_ID']
 
         estateClass = self.dc.getClassByName('DistributedEstate')
         houseClass = self.dc.getClassByName('DistributedHouse')
@@ -252,7 +250,7 @@ class DBServer(DownstreamMessageDirector):
             ]
 
             estateId = await self.backend.createObject(estateClass, defaultFields)
-            await self.backend.set_field(accountId, 'ESTATE_ID', estateId, 'Account')
+            await self.backend.setField(accountId, 'ESTATE_ID', estateId, 'Account')
 
         # Generate the estate.
         await self.activateObjectWithOther(estateId, parentId, zoneId, estateClass, estateOther)
@@ -288,20 +286,21 @@ class DBServer(DownstreamMessageDirector):
 
             if avatarId != 0:
                 # Update the toon with their new house.
-                await self.backend.set_field(avatarId, 'setHouseId', [houseId], 'DistributedToon')
+                await self.backend.setField(avatarId, 'setHouseId', [houseId], 'DistributedToon')
 
                 # Update the house with the toon's name & avatarId.
-                owner = await self.backend.query_object_fields(avatarId, ['setName'], 'DistributedToon')
+                owner = await self.backend.queryObjectFIelds(avatarId, ['setName'], 'DistributedToon')
                 toonName = owner['setName'][0]
 
-                await self.backend.set_field(houseId, 'setName', [toonName], 'DistributedHouse')
-                await self.backend.set_field(houseId, 'setAvatarId', [avatarId], 'DistributedHouse')
+                await self.backend.setField(houseId, 'setName', [toonName], 'DistributedHouse')
+                await self.backend.setField(houseId, 'setAvatarId', [avatarId], 'DistributedHouse')
 
             # Generate the houses.
+            print('Activating', houseId)
             await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
 
         # Update the account's house list.
-        await self.backend.set_field(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
+        await self.backend.setField(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
 
         # Make a class containing estate data.
         info = EstateInfo()
@@ -352,10 +351,10 @@ class DBServer(DownstreamMessageDirector):
     async def createToon(self, sender, context, dclass, dislId, pos, fields):
         try:
             doId = await self.backend.createObject(dclass, fields)
-            account = await self.backend.query_object_fields(dislId, ['ACCOUNT_AV_SET'], 'Account')
+            account = await self.backend.queryObjectFIelds(dislId, ['ACCOUNT_AV_SET'], 'Account')
             avSet = account['ACCOUNT_AV_SET']
             avSet[pos] = doId
-            await self.backend.set_field(dislId, 'ACCOUNT_AV_SET', avSet, 'Account')
+            await self.backend.setField(dislId, 'ACCOUNT_AV_SET', avSet, 'Account')
         except OTPCreateFailed as e:
             print('creation failed', e)
             doId = 0
@@ -369,7 +368,7 @@ class DBServer(DownstreamMessageDirector):
 
     async def get_stored_values(self, sender, context, doId, fields):
         try:
-            fieldDict = await self.backend.query_object_fields(doId, [field.getName() for field in fields])
+            fieldDict = await self.backend.queryObjectFIelds(doId, [field.getName() for field in fields])
         except OTPQueryNotFound:
             fieldDict = None
 
@@ -425,14 +424,14 @@ class DBServer(DownstreamMessageDirector):
 
     async def set_stored_values(self, do_id, fields):
         self.log.debug(f'Setting stored values for {do_id}: {fields}')
-        await self.backend.set_fields(do_id, fields)
+        await self.backend.setFields(do_id, fields)
 
     def on_upstream_connect(self):
         self.subscribeChannel(self._client, DBSERVERS_CHANNEL)
 
     async def handleClearWishName(self, avatarId, actionFlag):
         # Grab the fields from the avatar.
-        toonFields = await self.backend.query_object_fields(avatarId, ['WishName'], 'DistributedToon')
+        toonFields = await self.backend.queryObjectFIelds(avatarId, ['WishName'], 'DistributedToon')
 
         if actionFlag == 1:
             # This name was approved.
@@ -454,7 +453,7 @@ class DBServer(DownstreamMessageDirector):
         await self.set_stored_values(avatarId, fields)
 
     async def queryFriends(self, avatarId):
-        fields = await self.backend.query_object_fields(avatarId, ['setFriendsList'], 'DistributedToon')
+        fields = await self.backend.queryObjectFIelds(avatarId, ['setFriendsList'], 'DistributedToon')
         friendsList = fields['setFriendsList'][0]
 
         dg = Datagram()
@@ -467,7 +466,7 @@ class DBServer(DownstreamMessageDirector):
         for i in range(0, len(friendsList)):
             friendId = friendsList[i][0]
 
-            friend = await self.backend.query_object_fields(friendId, ['setName', 'setDNAString', 'setPetId'], 'DistributedToon')
+            friend = await self.backend.queryObjectFIelds(friendId, ['setName', 'setDNAString', 'setPetId'], 'DistributedToon')
             friendData[count] = [friendId, friend['setName'][0], friend['setDNAString'][0], friend['setPetId'][0]]
             count += 1
 
@@ -516,7 +515,7 @@ class DBServer(DownstreamMessageDirector):
         for avId in avIds:
             if not avId:
                 continue
-            toonFields = await self.backend.query_object_fields(avId, ['setName', 'WishNameState', 'WishName', 'setDNAString'], 'DistributedToon')
+            toonFields = await self.backend.queryObjectFIelds(avId, ['setName', 'WishNameState', 'WishName', 'setDNAString'], 'DistributedToon')
 
             wishName = toonFields['WishName']
 
@@ -597,8 +596,8 @@ class DBServer(DownstreamMessageDirector):
 
 async def main():
     loop = asyncio.get_running_loop()
-    db_server = DBServer(loop)
-    await db_server.run()
+    dbServer = DBServer(loop)
+    await dbServer.run()
 
 if __name__ == '__main__':
     asyncio.run(main())
