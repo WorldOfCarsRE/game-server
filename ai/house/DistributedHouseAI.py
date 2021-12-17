@@ -11,7 +11,6 @@ from ai.catalog.CatalogFurnitureItem import FLBank, FLCloset
 from ai.catalog import CatalogWallpaperItem, CatalogMouldingItem, CatalogFlooringItem, CatalogWainscotingItem
 from ai.catalog.CatalogWindowItem import CatalogWindowItem
 from ai import ToontownGlobals
-from panda3d.core import Datagram, DatagramIterator
 import time, random
 
 class DistributedHouseAI(DistributedObjectAI):
@@ -94,8 +93,6 @@ class DistributedHouseAI(DistributedObjectAI):
 
         setMailboxContents = fields['setMailboxContents'][0]
         mailboxContents = CatalogItemList(setMailboxContents, store = CatalogItem.Customization)
-
-        hp = fields['setMaxHp']
 
         mailboxAwardContents = fields['setAwardMailboxContents'][0]
         awardMailboxContents = CatalogItemList(mailboxAwardContents, store = CatalogItem.Customization)
