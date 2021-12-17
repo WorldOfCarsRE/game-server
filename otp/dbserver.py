@@ -212,10 +212,10 @@ class DBServer(DownstreamMessageDirector):
                 await self.deleteDO(doId)
 
     async def queryEstate(self, sender, context, avId, parentId, zoneId):
-        toon = await self.backend.queryObjectFIelds(avId, ['setDISLid'], 'DistributedToon')
+        toon = await self.backend.queryObjectFields(avId, ['setDISLid'], 'DistributedToon')
         accountId = toon['setDISLid'][0]
 
-        account = await self.backend.queryObjectFIelds(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
+        account = await self.backend.queryObjectFields(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
 
         houseIds, avatars, estateId = account['HOUSE_ID_SET'], account['ACCOUNT_AV_SET'], account['ESTATE_ID']
 
@@ -289,7 +289,7 @@ class DBServer(DownstreamMessageDirector):
                 await self.backend.setField(avatarId, 'setHouseId', [houseId], 'DistributedToon')
 
                 # Update the house with the toon's name & avatarId.
-                owner = await self.backend.queryObjectFIelds(avatarId, ['setName'], 'DistributedToon')
+                owner = await self.backend.queryObjectFields(avatarId, ['setName'], 'DistributedToon')
                 toonName = owner['setName'][0]
 
                 await self.backend.setField(houseId, 'setName', [toonName], 'DistributedHouse')
@@ -351,7 +351,7 @@ class DBServer(DownstreamMessageDirector):
     async def createToon(self, sender, context, dclass, dislId, pos, fields):
         try:
             doId = await self.backend.createObject(dclass, fields)
-            account = await self.backend.queryObjectFIelds(dislId, ['ACCOUNT_AV_SET'], 'Account')
+            account = await self.backend.queryObjectFields(dislId, ['ACCOUNT_AV_SET'], 'Account')
             avSet = account['ACCOUNT_AV_SET']
             avSet[pos] = doId
             await self.backend.setField(dislId, 'ACCOUNT_AV_SET', avSet, 'Account')
@@ -368,7 +368,7 @@ class DBServer(DownstreamMessageDirector):
 
     async def get_stored_values(self, sender, context, doId, fields):
         try:
-            fieldDict = await self.backend.queryObjectFIelds(doId, [field.getName() for field in fields])
+            fieldDict = await self.backend.queryObjectFields(doId, [field.getName() for field in fields])
         except OTPQueryNotFound:
             fieldDict = None
 
@@ -431,7 +431,7 @@ class DBServer(DownstreamMessageDirector):
 
     async def handleClearWishName(self, avatarId, actionFlag):
         # Grab the fields from the avatar.
-        toonFields = await self.backend.queryObjectFIelds(avatarId, ['WishName'], 'DistributedToon')
+        toonFields = await self.backend.queryObjectFields(avatarId, ['WishName'], 'DistributedToon')
 
         if actionFlag == 1:
             # This name was approved.
@@ -453,7 +453,7 @@ class DBServer(DownstreamMessageDirector):
         await self.set_stored_values(avatarId, fields)
 
     async def queryFriends(self, avatarId):
-        fields = await self.backend.queryObjectFIelds(avatarId, ['setFriendsList'], 'DistributedToon')
+        fields = await self.backend.queryObjectFields(avatarId, ['setFriendsList'], 'DistributedToon')
         friendsList = fields['setFriendsList'][0]
 
         dg = Datagram()
@@ -466,7 +466,7 @@ class DBServer(DownstreamMessageDirector):
         for i in range(0, len(friendsList)):
             friendId = friendsList[i][0]
 
-            friend = await self.backend.queryObjectFIelds(friendId, ['setName', 'setDNAString', 'setPetId'], 'DistributedToon')
+            friend = await self.backend.queryObjectFields(friendId, ['setName', 'setDNAString', 'setPetId'], 'DistributedToon')
             friendData[count] = [friendId, friend['setName'][0], friend['setDNAString'][0], friend['setPetId'][0]]
             count += 1
 
@@ -515,7 +515,7 @@ class DBServer(DownstreamMessageDirector):
         for avId in avIds:
             if not avId:
                 continue
-            toonFields = await self.backend.queryObjectFIelds(avId, ['setName', 'WishNameState', 'WishName', 'setDNAString'], 'DistributedToon')
+            toonFields = await self.backend.queryObjectFields(avId, ['setName', 'WishNameState', 'WishName', 'setDNAString'], 'DistributedToon')
 
             wishName = toonFields['WishName']
 
