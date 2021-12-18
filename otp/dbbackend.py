@@ -20,7 +20,7 @@ class DatabaseBackend:
     def queryObjectAll(self, doId: int):
         raise NotImplementedError
 
-    def queryObjectFIelds(self, doId: int, fields):
+    def queryObjectFields(self, doId: int, fields):
         raise NotImplementedError
 
     def setField(self, doId: int, field: str, value: bytes):
@@ -132,7 +132,7 @@ class SQLBackend(DatabaseBackend):
         conn = await self.pool.acquire()
 
         if dclassName is None:
-            dclassName = await self._query_dclass(conn, doId)
+            dclassName = await self._queryDClass(conn, doId)
 
         cursor = await conn.cursor(aiomysql.DictCursor)
         try:
@@ -150,11 +150,11 @@ class SQLBackend(DatabaseBackend):
 
         return fields
 
-    async def queryObjectFIelds(self, doId, fieldNames, dclassName = None):
+    async def queryObjectFields(self, doId, fieldNames, dclassName = None):
         conn = await self.pool.acquire()
 
         if dclassName is None:
-            dclassName = await self._query_dclass(conn, doId)
+            dclassName = await self._queryDClass(conn, doId)
 
         fieldNames = ", ".join(fieldNames)
 
@@ -171,7 +171,7 @@ class SQLBackend(DatabaseBackend):
         conn = await self.pool.acquire()
 
         if dclassName is None:
-            dclassName = await self._query_dclass(conn, doId)
+            dclassName = await self._queryDClass(conn, doId)
 
         cursor = await conn.cursor()
 
@@ -194,7 +194,7 @@ class SQLBackend(DatabaseBackend):
         conn = await self.pool.acquire()
 
         if dclassName is None:
-            dclassName = await self._query_dclass(conn, doId)
+            dclassName = await self._queryDClass(conn, doId)
 
         cursor = await conn.cursor()
 
@@ -307,7 +307,7 @@ class MongoBackend(DatabaseBackend):
         fields = cursor.find_one({'_id': doId})
         return fields
 
-    async def queryObjectFIelds(self, doId, fieldNames, dclassName = None):
+    async def queryObjectFields(self, doId, fieldNames, dclassName = None):
         if dclassName is None:
             dclassName = await self.queryDC(doId)
 
