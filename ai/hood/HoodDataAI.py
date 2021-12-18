@@ -225,7 +225,7 @@ class SafeZoneAI(PlaceAI):
 
             self.air.vismap[zone] = tuple(visibles)
 
-        fPonds, fGroups = self.air.findFishingPonds(self.dnaData, self.zoneId)
+        fPonds, fGroups = self.air.findFishingPonds(self.dnaData, self.zoneId, self.zoneId)
 
         for pond, group in zip(fPonds, fGroups):
             fSpots = self.air.findFishingSpots(pond, group)

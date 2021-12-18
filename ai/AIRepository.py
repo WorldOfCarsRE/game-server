@@ -20,7 +20,7 @@ import asyncio
 
 from . import AIZoneData
 
-from ai.globals.HoodGlobals import DynamicZonesBegin, DynamicZonesEnd, MyEstate
+from ai.globals.HoodGlobals import DynamicZonesBegin, DynamicZonesEnd
 from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 from panda3d.toontown import DNAProp, DNAGroup, DNAVisGroup
 from .MongoInterface import MongoInterface
@@ -513,14 +513,14 @@ class AIRepository:
         dg.appendData(eventDg.getMessage())
         self.eventSocket.Send(dg.getMessage())
 
-    def findFishingPonds(self, dnaGroup, zoneId, overrideDNAZone = 0):
+    def findFishingPonds(self, dnaGroup, zoneId, area, overrideDNAZone = 0):
         fishingPonds = []
         fishingPondGroups = []
 
         if ((isinstance(dnaGroup, DNAGroup)) and
             (dnaGroup.getName().find('fishing_pond') >= 0)):
             fishingPondGroups.append(dnaGroup)
-            fp = DistributedFishingPondAI(self, MyEstate)
+            fp = DistributedFishingPondAI(self, area)
             fp.generateWithRequired(zoneId)
             fishingPonds.append(fp)
         else:
@@ -528,7 +528,7 @@ class AIRepository:
                 zoneId = int(dnaGroup.getName().split(':')[0])
             for i in range(dnaGroup.getNumChildren()):
                 childFishingPonds, childFishingPondGroups = self.findFishingPonds(
-                        dnaGroup.at(i), zoneId, overrideDNAZone)
+                        dnaGroup.at(i), zoneId, area, overrideDNAZone)
                 fishingPonds += childFishingPonds
                 fishingPondGroups += childFishingPondGroups
         return fishingPonds, fishingPondGroups

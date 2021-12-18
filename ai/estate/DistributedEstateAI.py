@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from ai.DistributedObjectAI import DistributedObjectAI
 from ai.house import HouseGlobals
+from ai.globals.HoodGlobals import MyEstate
 from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 
 from panda3d.toontown import loadDNAFileAI, DNAStorage
@@ -48,10 +49,12 @@ class DistributedEstateAI(DistributedObjectAI):
         storage = DNAStorage()
         dnaData = loadDNAFileAI(storage, 'dna/estate_1.dna')
 
-        fPonds, fGroups = self.air.findFishingPonds(dnaData, self.zoneId)
+        fPonds, fGroups = self.air.findFishingPonds(dnaData, self.zoneId, MyEstate, 1)
+        self.ponds = fPonds
 
         for pond, group in zip(fPonds, fGroups):
             fSpots = self.air.findFishingSpots(pond, group)
+        self.spots = fSpots
 
         DistributedObjectAI.announceGenerate(self)
 
