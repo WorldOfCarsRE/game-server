@@ -83,8 +83,21 @@ class DistributedHouseAI(DistributedObjectAI):
             hp = owner.getMaxHp()
             self.__checkMailbox(owner.onOrder, owner.mailboxContents, 1, owner.awardMailboxContents, owner.numMailItems, owner.getNumInvitesToShowInMailbox())
         else:
-            # TODO
-            pass
+            fields = self.air.mongoInterface.retrieveFields('DistributedToon', self.avId)
+            self.__gotOwnerAv(fields)
+
+    def __gotOwnerAv(self, fields):
+        # The avatar still exists, so check its properties.
+        setDeliverySchedule = fields['setDeliverySchedule'][0]
+        onOrder = CatalogItemList(setDeliverySchedule, store = CatalogItem.Customization | CatalogItem.DeliveryDate)
+
+        setMailboxContents = fields['setMailboxContents'][0]
+        mailboxContents = CatalogItemList(setMailboxContents, store = CatalogItem.Customization)
+
+        mailboxAwardContents = fields['setAwardMailboxContents'][0]
+        awardMailboxContents = CatalogItemList(mailboxAwardContents, store = CatalogItem.Customization)
+
+        self.__checkMailbox(onOrder, mailboxContents, 0, awardMailboxContents)
 
     def __checkMailbox(self, onOrder, mailboxContents, liveDatabase, awardMailboxContents, numMailItems = 0, numPartyInvites = 0):
         # We have gotten the above data for the owner of this house.
