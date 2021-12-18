@@ -290,5 +290,5 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     app = loop.run_until_complete(init_app())
     print('running app..')
-    web.run_app(app, host=HOST, port=PORT)
+    web.run_app(app, host = HOST, port = PORT)
     app['pool'].terminate()
