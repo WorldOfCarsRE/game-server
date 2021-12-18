@@ -54,15 +54,15 @@ class AIBase:
 
     def _ival_loop(self, state):
         ivalMgr.step()
-        return Task.cont
+        yield
 
     def _ig_loop(self, state):
         self.graphicsEngine.renderFrame()
-        return Task.cont
+        yield
 
     def __sleep(self, task):
         time.sleep(self.AISleep)
-        return Task.cont
+        yield
 
     def run(self):
         self.air.run()
