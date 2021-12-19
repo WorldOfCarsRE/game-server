@@ -138,7 +138,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addUint16(CLIENT_GO_GET_LOST)
         resp.addUint16(bootedIndex)
         resp.addString(bootedText)
-        self.transport.write(resp.getLength().to_bytes(2, byteorder='little'))
+        self.transport.write(resp.getLength().to_bytes(2, byteorder = 'little'))
         self.transport.write(resp.getMessage())
         self.transport.close()
         self.service.log.debug(f'Booted client {self.channel} with index {bootedIndex} and text: "{bootedText}"')
@@ -983,6 +983,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.receive_add_interest(dgi, ai = True)
         elif msgtype == CLIENT_AGENT_REMOVE_INTEREST:
             self.receive_remove_interest(dgi, ai = True)
+        elif msgtype == CLIENT_AGENT_EJECT:
+            bootCode, message = dgi.getUint16(), dgi.getMessage()
+            self.disconnect(bootCode, message)
         elif msgtype in {CLIENT_FRIEND_ONLINE, CLIENT_FRIEND_OFFLINE, CLIENT_GET_FRIEND_LIST_RESP, CLIENT_GET_AVATAR_DETAILS_RESP}:
             dg = Datagram()
             dg.addUint16(msgtype)
@@ -1190,7 +1193,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             if potAv and potAv.doId == avId:
                 return potAv
 
-    def send_go_get_lost(self, bootedIndex, bootedText):
+    def sendGoGetLost(self, bootedIndex, bootedText):
         resp = Datagram()
         resp.addUint16(CLIENT_GO_GET_LOST)
         resp.addUint16(bootedIndex)

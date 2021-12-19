@@ -47,11 +47,11 @@ class AIRepository:
         self.connection = None
         self.queue = queue.Queue()
 
-        base_channel = 4000000
+        baseChannel = 4000000
 
-        max_channels = 1000000
-        self.minChannel = base_channel
-        self.maxChannel = base_channel + max_channels
+        maxChannels = 1000000
+        self.minChannel = baseChannel
+        self.maxChannel = baseChannel + maxChannels
         self.channelAllocator = UniqueIdAllocator(self.minChannel, self.maxChannel)
         self.zoneAllocator = UniqueIdAllocator(DynamicZonesBegin, DynamicZonesEnd)
 
@@ -248,9 +248,21 @@ class AIRepository:
             traceback.print_exc()
             print('datagram:', dgi.getRemainingBytes())
 
+            avatarId = self.currentAvatarSender
+
+            if avatarId > 100000000:
+                self.ejectPlayer(avatarId, 1, 'Internal server error.')
+
     @property
     def currentAvatarSender(self):
         return getAvatarIDFromChannel(self.currentSender)
+
+    def ejectPlayer(self, avatarId, bootCode, message):
+        dg = Datagram()
+        addServerHeader(dg, [getPuppetChannel(avatarId)], self.ourChannel, CLIENT_AGENT_EJECT)
+        dg.addUint16(bootCode)
+        dg.addString(message)
+        self.send(dg)
 
     @property
     def currentAccountSender(self):
