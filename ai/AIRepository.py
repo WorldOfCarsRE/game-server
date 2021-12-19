@@ -249,9 +249,21 @@ class AIRepository:
             traceback.print_exc()
             print('datagram:', dgi.getRemainingBytes())
 
+            avatarId = self.currentAvatarSender
+
+            if avatarId > 100000000:
+                self.ejectPlayer(avatarId, 1, 'Internal server error.')
+
     @property
     def currentAvatarSender(self):
         return getAvatarIDFromChannel(self.currentSender)
+
+    def ejectPlayer(self, avatarId, bootCode, message):
+        dg = Datagram()
+        addServerHeader(dg, [getPuppetChannel(avatarId)], self.ourChannel, CLIENT_AGENT_EJECT)
+        dg.addUint16(bootCode)
+        dg.addString(message)
+        self.send(dg)
 
     @property
     def currentAccountSender(self):
