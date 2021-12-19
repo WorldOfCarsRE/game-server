@@ -984,7 +984,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         elif msgtype == CLIENT_AGENT_REMOVE_INTEREST:
             self.receive_remove_interest(dgi, ai = True)
         elif msgtype == CLIENT_AGENT_EJECT:
-            bootCode, message = dgi.getUint16(), dgi.getMessage()
+            bootCode, message = dgi.getUint16(), dgi.getString()
             self.disconnect(bootCode, message)
         elif msgtype in {CLIENT_FRIEND_ONLINE, CLIENT_FRIEND_OFFLINE, CLIENT_GET_FRIEND_LIST_RESP, CLIENT_GET_AVATAR_DETAILS_RESP}:
             dg = Datagram()
