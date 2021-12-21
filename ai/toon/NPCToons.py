@@ -717,8 +717,7 @@ for npcId, desc in NPCToonDict.items():
 from .DistributedNPCToonAI import *
 from .ToonDNA import ToonDNA
 
-
-def createNPC(air, npcId, zoneId, posIndex=0):
+def createNPC(air, npcId, zoneId, posIndex = 0):
     npcZone, name, dna, gender, protected, npcType = NPCToonDict[npcId]
 
     if npcType == NPC_REGULAR:
@@ -766,26 +765,22 @@ def createNPC(air, npcId, zoneId, posIndex=0):
 
     return npc
 
-
 def createNpcsInZone(air, zoneId):
     if zoneId not in zone2NpcId:
         return ()
 
-    return tuple(createNPC(air, npcId, zoneId, posIndex=i) for i, npcId in enumerate(zone2NpcId[zoneId]))
-
+    return tuple(createNPC(air, npcId, zoneId, posIndex = i) for i, npcId in enumerate(zone2NpcId[zoneId]))
 
 from ai.battle.BattleGlobals import *
 from ai import ToontownGlobals
 
 from typing import NamedTuple
 
-
 class SOSCard(NamedTuple):
     track: Tracks
     level: int
     damage: int
     rarity: int
-
 
 COGHQ_NPCFRIENDS = {
     2001: SOSCard(Tracks.HEAL, level=5, damage=ToontownGlobals.MaxHpLimit, rarity=5),

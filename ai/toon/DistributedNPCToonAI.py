@@ -52,15 +52,31 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
     def getGivesQuests(self):
         return True
 
+    def getNpcId(self):
+        return self.npcId
+
 class DistributedNPCToonAI(DistributedNPCToonBaseAI):
+
+    def __init__(self, air, npcId, name):
+        DistributedNPCToonBaseAI.__init__(self, air, npcId, name)
+
+        self.tutorial = False
+
+    def getTutorial(self):
+        return self.tutorial
+
     def setMovieDone(self):
         pass
 
-    def chooseQuest(self, choice):
-        pass
+    def chooseQuest(self, questId):
+        print('chooseQuest', questId)
 
     def chooseTrack(self, choice):
         pass
+
+    def avatarEnter(self):
+        avId = self.air.currentAvatarSender
+        self.air.questManager.requestInteract(avId, self)
 
 class DistributedNPCSpecialQuestGiverAI(DistributedNPCToonBaseAI):
     def setMovieDone(self):
