@@ -6,7 +6,7 @@ from ai.house import HouseGlobals
 from ai.globals.HoodGlobals import MyEstate
 from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
 
-from dna.dnaparser import load_dna_file, DNAStorage
+from panda3d.toontown import loadDNAFileAI, DNAStorage
 
 from typing import List
 import time
@@ -46,26 +46,15 @@ class DistributedEstateAI(DistributedObjectAI):
         del self.spots
 
     def announceGenerate(self):
-        dna, storage = load_dna_file('dna/files/estate_1.dna')
+        storage = DNAStorage()
+        dnaData = loadDNAFileAI(storage, 'dna/estate_1.dna')
 
-        pondName2Do = {}
+        fPonds, fGroups = self.air.findFishingPonds(dnaData, self.zoneId, MyEstate, 1)
+        self.ponds = fPonds
 
-        for pondName in storage.ponds:
-            group = storage.groups[pondName]
-            pond = DistributedFishingPondAI(self.air, MyEstate)
-            pond.generateWithRequired(self.zoneId)
-            pondName2Do[pondName] = pond
-            self.ponds.append(pond)
-
-        for dnaspot in storage.spots:
-            group = dnaspot.get_group()
-            pondName = dnaspot.get_pond_name()
-            pond = pondName2Do[pondName]
-            spot = DistributedFishingSpotAI(self.air, pond, group.get_pos_hpr())
-            spot.generateWithRequired(pond.zoneId)
-            self.spots.append(spot)
-
-        del pondName2Do
+        for pond, group in zip(fPonds, fGroups):
+            fSpots = self.air.findFishingSpots(pond, group)
+        self.spots = fSpots
 
         DistributedObjectAI.announceGenerate(self)
 

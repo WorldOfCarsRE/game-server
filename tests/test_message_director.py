@@ -6,7 +6,7 @@ class TestProtocol(ToontownProtocol):
     pass
 
 class TestClient(DownstreamClient):
-    upstream_protocol = TestProtocol
+    upstreamProtocol = TestProtocol
 
 class TestMessageDirector(unittest.TestCase):
     pass

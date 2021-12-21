@@ -9,18 +9,18 @@ from otp.networking import ChannelAllocator
 from .clientprotocol import ClientProtocol
 
 class ClientAgentProtocol(MDUpstreamProtocol):
-    def handle_datagram(self, dg, dgi):
+    def handleDatagram(self, dg, dgi):
         sender = dgi.getUint64()
         msgtype = dgi.getUint16()
 
         print('unhandled', msgtype)
 
 class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
-    downstream_protocol = ClientProtocol
-    upstream_protocol = ClientAgentProtocol
+    downstreamProtocol = ClientProtocol
+    upstreamProtocol = ClientAgentProtocol
 
-    min_channel = config['ClientAgent.MIN_CHANNEL']
-    max_channel = config['ClientAgent.MAX_CHANNEL']
+    minChannel = config['ClientAgent.MIN_CHANNEL']
+    maxChannel = config['ClientAgent.MAX_CHANNEL']
 
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)
@@ -34,7 +34,7 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
 
         self.avatarsField = self.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
 
-        self.loop.set_exception_handler(self._on_exception)
+        self.loop.set_exception_handler(self.onException)
 
         self._context = 0
 
@@ -61,7 +61,7 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
         self.listen_task = None
         self.version = config['ClientAgent.Version']
 
-    def _on_exception(self, loop, context):
+    def onException(self, loop, context):
         print('err', context)
 
     async def run(self):

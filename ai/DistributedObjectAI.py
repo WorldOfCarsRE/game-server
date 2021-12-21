@@ -1,8 +1,6 @@
 from otp.util import getPuppetChannel, getAccountChannel
 from direct.showbase.DirectObject import DirectObject
 
-from . import AIRepository
-
 from .AIZoneData import AIZoneData
 from typing import Optional
 from collections import deque
@@ -11,7 +9,7 @@ class DistributedObjectAI(DirectObject):
     QUIET_ZONE = 1
     doId: Optional[int] = None
 
-    def __init__(self, air: AIRepository.AIRepository):
+    def __init__(self, air):
         DirectObject.__init__(self)
         self.air = air
         self.dclass = air.dcFile.getClassByName(self.__class__.__name__[:-2])

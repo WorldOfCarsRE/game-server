@@ -48,7 +48,9 @@ SUIT_HOOD_INFO = {
                             levels=(8, 9, 10), buildingDifficulties=()),
 }
 
-from dna.objects import DNASuitPoint, SuitPointType, SuitLegType, FROM_SKY, SUIT_WALK_SPEED
+from panda3d.toontown import DNASuitPoint
+from .SuitTimings import fromSky, suitWalkSpeed
+
 import random
 from typing import Optional
 
@@ -64,24 +66,27 @@ MAX_PATH_LEN = 300
 MAX_SUIT_TIER = 5
 
 class DistributedSuitPlannerAI(DistributedObjectAI):
-    def __init__(self, air, place, zoneId):
+    def __init__(self, air, dnaStore, zoneId):
         DistributedObjectAI.__init__(self, air)
-        self.place = place
+        self.dnaStore = dnaStore
         self.zoneId = zoneId
         self.info: SuitHoodInfo = SUIT_HOOD_INFO[zoneId]
         self.battleMgr: BattleManagerAI = BattleManagerAI(self.air)
 
         self.zone2battlePos: Dict[int, Point3] = {}
 
-        for visGroup in self.storage.visgroups:
+        for i in range(self.dnaStore.getNumDNAVisGroupsAI()):
+            visGroup = self.dnaStore.getDNAVisGroupAI(i)
             visZone = int(visGroup.name)
-            if not visGroup.battle_cells:
+            numBattleCells = visGroup.getNumBattleCells()
+
+            if not numBattleCells:
                 print('zone has no battle cells: %d' % visZone)
                 continue
 
-            self.zone2battlePos[visZone] = visGroup.battle_cells[0].pos
+            self.zone2battlePos[visZone] = visGroup.getBattleCell(0).getPos()
 
-            if len(visGroup.battle_cells) > 1:
+            if numBattleCells > 1:
                 print('Multiple battle cells for zoneId: %d' % visZone)
 
         self.streetPoints: List[DNASuitPoint] = []
@@ -89,35 +94,34 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.sideDoorPoints: List[DNASuitPoint] = []
         self.cogHQDoorPoints: List[DNASuitPoint] = []
         self.cogHQDoors = []
+        self.pointIndexes = {}
 
-        for suitPoint in self.storage.suit_points:
-            if suitPoint.point_type == SuitPointType.STREET_POINT:
+        numPoints = self.dnaStore.getNumSuitPoints()
+        for i in range(numPoints):
+            suitPoint = self.dnaStore.getSuitPointAtIndex(i)
+            pointType = suitPoint.getPointType()
+            if pointType == DNASuitPoint.STREETPOINT:
                 self.streetPoints.append(suitPoint)
-            elif suitPoint.point_type == SuitPointType.FRONT_DOOR_POINT:
+            elif pointType == DNASuitPoint.FRONTDOORPOINT:
                 self.frontDoorPoints.append(suitPoint)
-            elif suitPoint.point_type == SuitPointType.SIDE_DOOR_POINT:
+            elif pointType == DNASuitPoint.SIDEDOORPOINT:
                 self.sideDoorPoints.append(suitPoint)
-            elif suitPoint.point_type == SuitPointType.COGHQ_IN_POINT or suitPoint.point_type == SuitPointType.COGHQ_OUT_POINT:
+            elif pointType == DNASuitPoint.COGHQINPOINT or pointType == DNASuitPoint.COGHQOUTPOINT:
                 self.cogHQDoorPoints.append(suitPoint)
+
+            self.pointIndexes[suitPoint.getIndex()] = suitPoint
 
         self.suits: List[DistributedSuitAI] = []
         self.baseNumSuits = (self.info.maxSuits + self.info.minSuits) // 2
         self.popAdjustment = 0
         self.numFlyInSuits = 0
+        self.suitWalkSpeed = suitWalkSpeed
 
     def getZoneId(self):
         return self.zoneId
 
     def genPath(self, startPoint, endPoint, minPathLen, maxPathLen):
-        return self.storage.get_suit_path(startPoint, endPoint, minPathLen, maxPathLen)
-
-    @property
-    def dna(self):
-        return self.place.dna[self.zoneId]
-
-    @property
-    def storage(self):
-        return self.place.storage[self.zoneId]
+        return self.dnaStore.getSuitPath(startPoint, endPoint, minPathLen, maxPathLen)
 
     def startup(self):
         self.upkeep()
@@ -132,7 +136,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         while startPoint is None and streetPoints:
             point = self.streetPoints[streetPoints.pop()]
 
-            if not self.pointCollision(point.index, None, FROM_SKY):
+            if not self.pointCollision(point, None, fromSky):
                 startPoint = point
 
         if startPoint is None:
@@ -143,7 +147,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         suit.startPoint = startPoint
         suit.flyInSuit = 1
 
-        if not self.chooseDestination(suit, FROM_SKY):
+        if not self.chooseDestination(suit, fromSky):
             print(f'({self.zoneId}) failed to choose destination')
             suit.delete()
             return False
@@ -199,7 +203,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         t = random.random() * 2.0 + ADJUST_DELAY
         taskMgr.doMethodLater(t, self.upkeep, self.uniqueName('adjust-suits'))
 
-    def pointCollision(self, point: int, adjacentPoint: Optional[int], elapsedTime):
+    def pointCollision(self, point, adjacentPoint, elapsedTime):
         for suit in self.suits:
             if suit.pointInMyPath(point, elapsedTime, PATH_COLLISION_BUFFER):
                 return True
@@ -207,30 +211,46 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         if adjacentPoint is not None:
             return self.battleCollision(point, adjacentPoint)
         else:
-            adjacentPoints = self.storage.get_adjacent_points(point)
+            adjacentPoints = self.dnaStore.getAdjacentPoints(point)
+            i = adjacentPoints.getNumPoints() - 1
+            while i >= 0:
+                pi = adjacentPoints.getPointIndex(i)
+                adjacentPoint = self.pointIndexes[pi]
+                i -= 1
 
-            for adjacentPoint in adjacentPoints:
                 if self.battleCollision(point, adjacentPoint):
                     return True
 
         return False
 
-    def battleCollision(self, point: int, adjacentPoint: int):
-        zone = self.storage.get_suit_edge_zone(point, adjacentPoint)
+    def battleCollision(self, point, adjacentPoint):
+        zone = self.dnaStore.getSuitEdgeZone(point.getIndex(), adjacentPoint.getIndex())
         return self.battleMgr.cellHasBattle(zone)
 
     def pathCollision(self, path: List[int], elapsedTime):
+        pathLength = path.getNumPoints()
+
         i = 0
-        pointIndex, adjacentPointIndex = path[i], path[i + 1]
-        point = self.storage.suit_point_map[pointIndex]
+        assert i < pathLength
+        pi = path.getPointIndex(i)
+        point = self.pointIndexes[pi]
 
-        while point.point_type == SuitPointType.FRONT_DOOR_POINT or point.point_type == SuitPointType.SIDE_DOOR_POINT:
+        adjacentPoint = self.pointIndexes[path.getPointIndex(i + 1)]
+
+        while point.getPointType() == DNASuitPoint.FRONTDOORPOINT or \
+              point.getPointType() == DNASuitPoint.SIDEDOORPOINT:
             i += 1
-            elapsedTime += self.storage.get_suit_edge_travel_time(pointIndex, adjacentPointIndex, SUIT_WALK_SPEED)
-            pointIndex, adjacentPointIndex = path[i], path[i + 1]
-            point = self.storage.suit_point_map[pointIndex]
+            assert i < pathLength
 
-        return self.pointCollision(pointIndex, adjacentPointIndex, elapsedTime)
+            lastPi = pi
+            pi = path.getPointIndex(i)
+            adjacentPoint = point
+            point = self.pointIndexes[pi]
+
+            elapsedTime += self.dnaStore.getSuitEdgeTravelTime(
+                lastPi, pi, self.suitWalkSpeed)
+
+        return self.pointCollision(point, adjacentPoint, elapsedTime)
 
     def chooseDestination(self, suit: DistributedSuitAI, startTime):
         streetPoints = list(range(len(self.streetPoints)))

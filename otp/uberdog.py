@@ -15,18 +15,18 @@ class UberdogProtocol(MDUpstreamProtocol):
     def __init__(self, service):
         MDUpstreamProtocol.__init__(self, service)
 
-        self.subscribe_channel(self.service.GLOBAL_ID)
+        self.subscribeChannel(self.service.GLOBAL_ID)
 
-    def receive_datagram(self, dg):
+    def receiveDatagram(self, dg):
         self.service.log.debug(f'Received datagram: {dg.getMessage()}')
-        MDUpstreamProtocol.receive_datagram(self, dg)
+        MDUpstreamProtocol.receiveDatagram(self, dg)
 
-    def handle_datagram(self, dg, dgi):
+    def handleDatagram(self, dg, dgi):
         sender = dgi.getInt64()
         msgtype = dgi.getUint16()
         self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from {sender}.')
 
-        if self.check_futures(dgi, msgtype, sender):
+        if self.checkFutures(dgi, msgtype, sender):
             self.service.log.debug(f'Future handled datagram')
             return
 
@@ -37,12 +37,12 @@ class UberdogProtocol(MDUpstreamProtocol):
                 return
             self.service.receiveUpdate(sender, dgi)
 
-    def check_futures(self, dgi, msg_id, sender):
+    def checkFutures(self, dgi, msgId, sender):
         pos = dgi.getCurrentIndex()
 
         for i in range(len(self.futures)):
             future = self.futures[i]
-            if future.future_msg_id == msg_id and future.future_sender == sender:
+            if future.futureMsgId == msgId and future.futureSender == sender:
                 if not future.context:
                     self.futures.remove(future)
                     future.set_result((sender, dgi))
@@ -61,7 +61,7 @@ class UberdogProtocol(MDUpstreamProtocol):
             return False
 
 class Uberdog(DownstreamMessageDirector):
-    upstream_protocol = UberdogProtocol
+    upstreamProtocol = UberdogProtocol
     GLOBAL_ID = None
 
     def __init__(self, loop):
@@ -76,18 +76,18 @@ class Uberdog(DownstreamMessageDirector):
         await self.route()
 
     def on_upstream_connect(self):
-        self.subscribe_channel(self._client, self.GLOBAL_ID)
+        self.subscribeChannel(self._client, self.GLOBAL_ID)
         self.log.debug('Uberdog online')
 
         dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_MANAGEMENT,
                                             STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields=None)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
         dg = PyDatagram()
         addServerControlHeader(dg, CONTROL_ADD_POST_REMOVE)
         addServerHeader(dg, [self.GLOBAL_ID], self.GLOBAL_ID, STATESERVER_OBJECT_DELETE_RAM)
         dg.addUint32(self.GLOBAL_ID)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
     def receiveUpdate(self, sender, dgi):
         self.lastSender = sender
@@ -114,7 +114,7 @@ class Uberdog(DownstreamMessageDirector):
         addServerHeader(dg, [STATESERVERS_CHANNEL], self.GLOBAL_ID, STATESERVER_OBJECT_LOCATE)
         dg.add_uint32(context)
         dg.add_uint32(avId)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
         f = self.register_future(STATESERVER_OBJECT_LOCATE_RESP, avId, context)
 
@@ -132,7 +132,7 @@ class Uberdog(DownstreamMessageDirector):
 
     def sendUpdateToChannel(self, channel, fieldName, args):
         dg = self.dclass.ai_format_update(fieldName, self.GLOBAL_ID, channel, self.GLOBAL_ID, args)
-        self.send_datagram(dg)
+        self.sendDatagram(dg)
 
 class CentralLoggerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_CENTRAL_LOGGER

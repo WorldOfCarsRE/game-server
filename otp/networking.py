@@ -21,18 +21,18 @@ class Service:
     async def run(self):
         raise NotImplementedError
 
-    def add_participant(self, participant):
+    def addParticipant(self, participant):
         raise NotImplementedError
 
-    def subscribe_channel(self, participant, channel):
+    def subscribeChannel(self, participant, channel):
         raise NotImplementedError
 
-    def unsubscribe_channel(self, participant, channel):
+    def unsubscribeChannel(self, participant, channel):
         raise NotImplementedError
 
 class UpstreamServer:
     sslContext = None
-    downstream_protocol = None
+    downstreamProtocol = None
 
     def __init__(self, loop):
         self.loop = loop
@@ -40,7 +40,7 @@ class UpstreamServer:
         self._clients = set()
 
     async def listen(self, host: str, port: int, secure: int = 0):
-        if self.downstream_protocol is None:
+        if self.downstreamProtocol is None:
             raise Exception('PROTOCOL NOT DEFINED!')
 
         self.log.debug(f'Listening on {host}:{port}')
@@ -57,31 +57,31 @@ class UpstreamServer:
             self._clients.clear()
 
     def new_client(self):
-        client = self.downstream_protocol(self)
+        client = self.downstreamProtocol(self)
         self._clients.add(client)
         return client
 
 class DownstreamClient:
     CLIENT_SSL_CONTEXT = None
-    upstream_protocol = None
+    upstreamProtocol = None
 
     def __init__(self, loop):
         self.loop = loop
         self._client = None
 
     async def connect(self, host: str, port: int):
-        await self.loop.create_connection(self.on_connect, host, port)
+        await self.loop.create_connection(self.onConnect, host, port)
 
-    def on_connect(self):
-        self._client = self.upstream_protocol(self)
+    def onConnect(self):
+        self._client = self.upstreamProtocol(self)
         return self._client
 
 class DatagramFuture(Future):
     def __init__(self, loop, msgId, sender = None, context = None):
         Future.__init__(self, loop = loop)
 
-        self.future_msg_id = msgId
-        self.future_sender = sender
+        self.futureMsgId = msgId
+        self.futureSender = sender
         self.context = context
 
 class ToontownProtocol(asyncio.Protocol):
@@ -91,16 +91,16 @@ class ToontownProtocol(asyncio.Protocol):
         self.expected = 0
         self.buf = bytearray()
         self.transport = None
-        self.outgoing_q = Queue()
-        self.incoming_q = Queue()
+        self.outgoingQ = Queue()
+        self.incomingQ = Queue()
         self.tasks: List[asyncio.Task] = []
         self.futures: List[DatagramFuture] = []
 
     def connection_made(self, transport):
         # name = transport.get_extra_info('peername')
         self.transport = transport
-        self.tasks.append(self.service.loop.create_task(self.handle_datagrams()))
-        self.tasks.append(self.service.loop.create_task(self.transport_datagrams()))
+        self.tasks.append(self.service.loop.create_task(self.handleDatagrams()))
+        self.tasks.append(self.service.loop.create_task(self.transportDatagrams()))
 
     def connection_lost(self, exc):
         for task in self.tasks:
@@ -109,16 +109,16 @@ class ToontownProtocol(asyncio.Protocol):
     def data_received(self, data: bytes):
         self.buf.extend(data)
 
-    def send_datagram(self, data: Datagram):
-        self.outgoing_q.put_nowait(data.getMessage())
+    def sendDatagram(self, data: Datagram):
+        self.outgoingQ.put_nowait(data.getMessage())
 
-    async def transport_datagrams(self):
+    async def transportDatagrams(self):
         while True:
-            data: bytes = await self.outgoing_q.get()
-            self.transport.write(len(data).to_bytes(2, byteorder='little'))
+            data: bytes = await self.outgoingQ.get()
+            self.transport.write(len(data).to_bytes(2, byteorder = 'little'))
             self.transport.write(data)
 
-    async def handle_datagrams(self):
+    async def handleDatagrams(self):
         # TODO: run this tight loop in a seperate process, maybe proccess pool for CA and MD
         expected = 0
 
@@ -131,7 +131,7 @@ class ToontownProtocol(asyncio.Protocol):
                     try:
                         dg = Datagram()
                         dg.appendData(bytes(self.buf[:expected]))
-                        self.receive_datagram(dg)
+                        self.receiveDatagram(dg)
                         del self.buf[:expected]
                         expected = 0
                         continue
@@ -146,15 +146,15 @@ class ToontownProtocol(asyncio.Protocol):
             else:
                 await asyncio.sleep(0.01)
 
-    def receive_datagram(self, data: bytes):
+    def receiveDatagram(self, data: bytes):
         raise NotImplementedError
 
-    def check_futures(self, dgi, msg_id, sender):
+    def checkFutures(self, dgi, msgId, sender):
         for f in self.futures[:]:
-            if msg_id != f.future_msg_id:
+            if msgId != f.futureMsgId:
                 continue
 
-            if f.future_sender is not None and sender != f.future_sender:
+            if f.futureSender is not None and sender != f.futureSender:
                 continue
 
             f.set_result((sender, dgi))
@@ -164,36 +164,36 @@ class MDParticipant:
     def __init__(self, service: Service):
         self.channels = set()
         self.service = service
-        self.service.add_participant(self)
+        self.service.addParticipant(self)
 
-    def subscribe_channel(self, channel):
-        self.service.subscribe_channel(self, channel)
+    def subscribeChannel(self, channel):
+        self.service.subscribeChannel(self, channel)
 
-    def unsubscribe_channel(self, channel):
-        self.service.unsubscribe_channel(self, channel)
+    def unsubscribeChannel(self, channel):
+        self.service.unsubscribeChannel(self, channel)
 
 class ChannelAllocator:
-    min_channel = None
-    max_channel = None
+    minChannel = None
+    maxChannel = None
 
     def __init__(self):
-        self._used_channels = set()
-        self._freed_channels = set()
-        self._next_channel = self.min_channel
+        self._usedChannels = set()
+        self._freedChannels = set()
+        self._nextChannel = self.minChannel
 
-    def new_channel_id(self):
-        channel = self._next_channel
-        self._next_channel += 1
+    def newChannelId(self):
+        channel = self._nextChannel
+        self._nextChannel += 1
 
-        if channel in self._used_channels:
-            if self._next_channel > self.max_channel:
-                if len(self._used_channels) >= self.max_channel - self.min_channel:
+        if channel in self._usedChannels:
+            if self._nextChannel > self.maxChannel:
+                if len(self._usedChannels) >= self.maxChannel - self.minChannel:
                     raise OverflowError
-                self._next_channel = self.min_channel
-            return self.new_channel_id()
+                self._nextChannel = self.minChannel
+            return self.newChannelId()
         else:
-            self._used_channels.add(channel)
+            self._usedChannels.add(channel)
             return channel
 
-    def free_channel_id(self, channel):
-        self._freed_channels.add(channel)
+    def freeChannelId(self, channel):
+        self._freedChannels.add(channel)

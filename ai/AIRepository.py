@@ -14,7 +14,6 @@ from typing import Dict, Tuple
 
 from otp.networking import ToontownProtocol
 
-from dna.objects import DNAVisGroup
 from threading import Thread, Event
 
 import asyncio
@@ -22,6 +21,8 @@ import asyncio
 from . import AIZoneData
 
 from ai.globals.HoodGlobals import DynamicZonesBegin, DynamicZonesEnd
+from ai.fishing.FishingAI import DistributedFishingPondAI, DistributedFishingSpotAI
+from panda3d.toontown import DNAProp, DNAGroup, DNAVisGroup
 from .MongoInterface import MongoInterface
 
 from importlib import import_module
@@ -35,23 +36,23 @@ class AIProtocol(ToontownProtocol):
     def connection_lost(self, exc):
         raise Exception('AI CONNECTION LOST', exc)
 
-    def receive_datagram(self, dg):
+    def receiveDatagram(self, dg):
         self.service.queue.put_nowait(dg)
 
-    def send_datagram(self, data: Datagram):
+    def sendDatagram(self, data: Datagram):
         loop = self.service.loop
-        loop.call_soon_threadsafe(self.outgoing_q.put_nowait, data.getMessage())
+        loop.call_soon_threadsafe(self.outgoingQ.put_nowait, data.getMessage())
 
 class AIRepository:
     def __init__(self):
         self.connection = None
         self.queue = queue.Queue()
 
-        base_channel = 4000000
+        baseChannel = 4000000
 
-        max_channels = 1000000
-        self.minChannel = base_channel
-        self.maxChannel = base_channel + max_channels
+        maxChannels = 1000000
+        self.minChannel = baseChannel
+        self.maxChannel = baseChannel + maxChannels
         self.channelAllocator = UniqueIdAllocator(self.minChannel, self.maxChannel)
         self.zoneAllocator = UniqueIdAllocator(DynamicZonesBegin, DynamicZonesEnd)
 
@@ -102,10 +103,10 @@ class AIRepository:
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self.loop.set_exception_handler(self._on_net_except)
-        self.loop.run_until_complete(self.loop.create_connection(self._on_connect, '127.0.0.1', 46668))
+        self.loop.run_until_complete(self.loop.create_connection(self._onConnect, '127.0.0.1', 46668))
         self.loop.run_forever()
 
-    def _on_connect(self):
+    def _onConnect(self):
         self.connection = AIProtocol(self)
         return self.connection
 
@@ -123,7 +124,7 @@ class AIRepository:
     def handleDatagram(self, dg):
         dgi = DatagramIterator(dg)
 
-        recipientCount = dgi.get_uint8()
+        recipientCount = dgi.getUint8()
         recipients = [dgi.getInt64() for _ in range(recipientCount)]
         self.currentSender = dgi.getInt64()
         msg_type = dgi.get_uint16()
@@ -248,9 +249,21 @@ class AIRepository:
             traceback.print_exc()
             print('datagram:', dgi.getRemainingBytes())
 
+            avatarId = self.currentAvatarSender
+
+            if avatarId > 100000000:
+                self.ejectPlayer(avatarId, 1, 'Internal server error.')
+
     @property
     def currentAvatarSender(self):
         return getAvatarIDFromChannel(self.currentSender)
+
+    def ejectPlayer(self, avatarId, bootCode, message):
+        dg = Datagram()
+        addServerHeader(dg, [getPuppetChannel(avatarId)], self.ourChannel, CLIENT_AGENT_EJECT)
+        dg.addUint16(bootCode)
+        dg.addString(message)
+        self.send(dg)
 
     @property
     def currentAccountSender(self):
@@ -332,7 +345,7 @@ class AIRepository:
         self.send(dg)
 
     def send(self, dg):
-        self.connection.send_datagram(dg)
+        self.connection.sendDatagram(dg)
 
     def generateWithRequired(self, do, parentId, zoneId, optional = ()):
         doId = self.allocateChannel()
@@ -515,3 +528,38 @@ class AIRepository:
         dg.addUint16(eventDg.getLength())
         dg.appendData(eventDg.getMessage())
         self.eventSocket.Send(dg.getMessage())
+
+    def findFishingPonds(self, dnaGroup, zoneId, area, overrideDNAZone = 0):
+        fishingPonds = []
+        fishingPondGroups = []
+
+        if ((isinstance(dnaGroup, DNAGroup)) and
+            (dnaGroup.getName().find('fishing_pond') >= 0)):
+            fishingPondGroups.append(dnaGroup)
+            fp = DistributedFishingPondAI(self, area)
+            fp.generateWithRequired(zoneId)
+            fishingPonds.append(fp)
+        else:
+            if (isinstance(dnaGroup, DNAVisGroup) and not overrideDNAZone):
+                zoneId = int(dnaGroup.getName().split(':')[0])
+            for i in range(dnaGroup.getNumChildren()):
+                childFishingPonds, childFishingPondGroups = self.findFishingPonds(
+                        dnaGroup.at(i), zoneId, area, overrideDNAZone)
+                fishingPonds += childFishingPonds
+                fishingPondGroups += childFishingPondGroups
+        return fishingPonds, fishingPondGroups
+
+    def findFishingSpots(self, distPond, dnaPondGroup):
+        fishingSpots = []
+        for i in range(dnaPondGroup.getNumChildren()):
+            dnaGroup = dnaPondGroup.at(i)
+            if ((isinstance(dnaGroup, DNAProp)) and
+                (dnaGroup.getCode().find('fishing_spot') >= 0)):
+
+                pos = dnaGroup.getPos()
+                hpr = dnaGroup.getHpr()
+
+                spot = DistributedFishingSpotAI(self, distPond, (pos[0], pos[1], pos[2], hpr[0], hpr[1], hpr[2]))
+                spot.generateWithRequired(distPond.zoneId)
+                fishingSpots.append(spot)
+        return fishingSpots

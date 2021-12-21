@@ -1639,6 +1639,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 pass
             elif attack.actualTrack.isGagTrack():
                 toon.inventory.use(attack.actualTrack, attack.level)
+                toon.d_setInventory(toon.inventory.makeNetString())
 
             if attack.actualTrack == Tracks.HEAL:
                 if attack.affectsGroup:
