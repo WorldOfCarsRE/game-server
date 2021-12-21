@@ -998,4 +998,4 @@ class DistributedDeliveryManagerAI(DistributedObjectGlobalAI):
             return
 
         _, remainingGifts = av.onGiftOrder.extractDeliveryItems(now)
-        av.sendUpdate('setGiftSchedule', [remainingGifts.getBlob(store =CatalogItem.Customization | CatalogItem.DeliveryDate)])
+        av.sendUpdate('setGiftSchedule', [remainingGifts.getBlob(store = CatalogItem.Customization | CatalogItem.DeliveryDate)])

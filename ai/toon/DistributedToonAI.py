@@ -541,6 +541,9 @@ class DistributedToonAI(DistributedPlayerAI):
     def getZonesVisited(self):
         return []
 
+    def setHoodsVisited(self, hoods: list):
+        self.hoodsVisited = hoods
+
     def b_setHoodsVisited(self, hoodsVisited: list):
         self.hoodsVisited = hoodsVisited
         self.d_setHoodsVisited(hoodsVisited)
@@ -1557,7 +1560,7 @@ class Experience:
     def makeNetString(self):
         return b''.join((trackExp.to_bytes(2, 'little') for trackExp in self.experience))
 
-    def addExp(self, track, amount=1):
+    def addExp(self, track, amount = 1):
         current = self.experience[track]
 
         if self.toon.getAccess() == OTPGlobals.AccessFull:
