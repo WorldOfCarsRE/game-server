@@ -2,12 +2,10 @@ from enum import IntEnum
 from typing import NamedTuple, List, Tuple, Union
 import math
 
-
 MIN_TRACK_INDEX = 0
 MAX_TRACK_INDEX = 6
 MIN_LEVEL_INDEX = 0
 MAX_LEVEL_INDEX = 6
-
 
 class Tracks(IntEnum):
     UN_ATTACK = -2

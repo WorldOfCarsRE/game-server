@@ -47,6 +47,13 @@ class DistributedAvatarAI(DistributedSmoothNodeAI):
     def getMaxHp(self):
         return self.maxHp
 
+    def b_setMaxHp(self, maxHp):
+        self.d_setMaxHp(maxHp)
+        self.setMaxHp(maxHp)
+
+    def d_setMaxHp(self, maxHp):
+        self.sendUpdate('setMaxHp', [maxHp])
+
     def setHp(self, hp):
         self.hp = hp
 
@@ -184,6 +191,10 @@ class DistributedToonAI(DistributedPlayerAI):
         self.shoes = (0, 0, 0)
         self.nametagStyle = 0
         self.emoteAccess = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.questHistory = []
+        self.rewardTier = 0
+        self.rewardHistory = []
+        self.questCarryLimit = 1
 
     def delete(self):
         # Stop our tasks too.
@@ -1152,14 +1163,45 @@ class DistributedToonAI(DistributedPlayerAI):
 
         return flattenedQuests
 
-    def getQuestHistory(self):
-        return []
+    def b_setQuestHistory(self, questList):
+        self.setQuestHistory(questList)
+        self.d_setQuestHistory(questList)
+
+    def d_setQuestHistory(self, questList):
+        self.sendUpdate('setQuestHistory', [questList])
+
+    def setQuestHistory(self, questList):
+        self.questHistory = questList
+
+    def getQuestHistory(self) -> list:
+        return self.questHistory
+
+    def b_setRewardHistory(self, tier, rewardList):
+        self.setRewardHistory(tier, rewardList)
+        self.d_setRewardHistory(tier, rewardList)
+
+    def d_setRewardHistory(self, tier, rewardList):
+        self.sendUpdate('setRewardHistory', [tier, rewardList])
+
+    def setRewardHistory(self, tier, rewardList):
+        self.rewardTier = tier
+        self.rewardHistory = rewardList
 
     def getRewardHistory(self):
-        return 0, []
+        return (self.rewardTier, self.rewardHistory)
+
+    def b_setQuestCarryLimit(self, limit):
+        self.setQuestCarryLimit(limit)
+        self.d_setQuestCarryLimit(limit)
+
+    def d_setQuestCarryLimit(self, limit):
+        self.sendUpdate('setQuestCarryLimit', [limit])
+
+    def setQuestCarryLimit(self, limit):
+        self.questCarryLimit = limit
 
     def getQuestCarryLimit(self):
-        return 1
+        return self.questCarryLimit
 
     def getCheesyEffect(self):
         return 0, 0, 0
@@ -1534,7 +1576,7 @@ class FishTank:
 class Experience:
     __slots__ = 'experience', 'toon'
 
-    def __init__(self, experience=None, toon=None):
+    def __init__(self, experience = None, toon = None):
         if not experience:
             self.experience = [0] * NUM_TRACKS
         else:
@@ -1547,6 +1589,10 @@ class Experience:
             raise IndexError
 
         return self.experience[key]
+
+    def zeroOutExp(self):
+        for track in range(0, NUM_TRACKS):
+            self.experience[track] = 0
 
     @staticmethod
     def fromBytes(data):

@@ -2,6 +2,7 @@ from ai.toon import NPCToons
 from ai.DistributedObjectAI import DistributedObjectAI
 from direct.fsm.FSM import FSM
 from typing import Dict
+from ai.battle.BattleGlobals import Tracks
 
 class TutorialBattleManager:
     pass
@@ -105,13 +106,56 @@ class TutorialManagerAI(DistributedObjectAI):
         self.sendUpdateToAvatar(avId, 'enterTutorial', [branchZone, streetZone, shopZone, hqZone])
 
     def rejectTutorial(self):
-        pass
+        avId = self.air.currentAvatarSender
+
+        # Make sure the avatar exists
+        av = self.air.doTable.get(avId)
+
+        if av:
+            # Acknowlege that the player has seen a tutorial
+            self.air.writeServerEvent('finishedTutorial', avId, '')
+            av.b_setTutorialAck(1)
+
+            self.sendUpdateToAvatar(avId, 'skipTutorialResponse', [1])
 
     def requestSkipTutorial(self):
         pass
 
     def allDone(self):
-        pass
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if av:
+            av.b_setTutorialAck(1)
+
+        self.cleanup(avId)
+        self.ignore(self.air.getAvatarExitEvent(avId))
 
     def toonArrived(self):
-        pass
+        avId = self.air.currentAvatarSender
+
+        # Make sure the avatar exists
+        av = self.air.doTable.get(avId)
+
+        # Clear out the avatar's quests, hp, inventory, and everything else in case
+        # he made it half way through the tutorial last time.
+        if av:
+            # No quests
+            av.b_setQuests([])
+            av.b_setQuestHistory([])
+            av.b_setRewardHistory(0, [])
+            av.b_setQuestCarryLimit(1)
+            # Starting HP
+            av.b_setMaxHp(15)
+            av.b_setHp(15)
+            # No exp
+            av.experience.zeroOutExp()
+            av.d_setExperience(av.experience.makeNetString())
+            # One cupcake and one squirting flower
+            av.inventory.zero()
+            av.inventory.addItems(Tracks.THROW, 0, 1)
+            av.inventory.addItems(Tracks.SQUIRT, 0, 1)
+            av.d_setInventory(av.inventory.makeNetString())
+            # No cogs defeated
+            av.b_setCogStatus([1] * 32)
+            av.b_setCogCount([0] * 32)
