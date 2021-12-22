@@ -32,16 +32,13 @@ class Tracks(IntEnum):
     def isGagTrack(self):
         return 0 <= self.value <= 6
 
-
 NUM_TRACKS = 7
 UBER_INDEX = 6
 NUM_PROPS = 7
 
-
 regMaxSkill = 10000
 UberSkill = 500
 MaxSkill = UberSkill + regMaxSkill
-
 
 class GagTrack(NamedTuple):
     index: int
@@ -82,7 +79,6 @@ class GagTrack(NamedTuple):
             return self.levels[4] - 1
         else:
             return self.levels[1] - 1
-
 
 GagTracks = (
     GagTrack(
@@ -241,10 +237,8 @@ GagTracks = (
     ),
 )
 
-
 def getGagTrack(index: Union[int, Tracks]) -> GagTrack:
     return GagTracks[index]
-
 
 AvPropAccuracy = (
     (70, 70, 70, 70, 70, 70, 100),
@@ -256,8 +250,8 @@ AvPropAccuracy = (
     (50, 50, 50, 50, 50, 50, 50)
 )
 
-
 AvLureBonusAccuracy = (60, 60, 70, 70, 80, 80, 100)
 
-
 ExperienceCap = 200
+
+LAST_REGULAR_GAG_LEVEL = 5

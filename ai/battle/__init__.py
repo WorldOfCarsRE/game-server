@@ -27,6 +27,16 @@ from dataclasses import dataclass, field
 NO_ID = -1
 NO_ATTACK = -1
 
+
+def getSkillGained(toonSkillPtsGained, toonId, track):
+    exp = 0
+    expList = self.toonSkillPtsGained.get(toonId, None)
+
+    if expList is not None:
+        exp = expList[track]
+
+    return int(exp + 0.5)
+
 @with_slots
 @dataclass
 class ToonAttack(object):
@@ -34,10 +44,10 @@ class ToonAttack(object):
     track: Union[int, Tracks] = NO_ATTACK
     level: int = -1
     target: int = -1
-    hps: List[int] = field(default_factory=list)
+    hps: List[int] = field(default_factory = list)
     accBonus: int = 0
     hpBonus: int = 0
-    kbBonuses: List[int] = field(default_factory=list)
+    kbBonuses: List[int] = field(default_factory = list)
     suitsDiedFlag: int = 0
     suitsRevivedFlag: int = 0
     _battle: Optional['DistributedBattleBaseAI'] = None
@@ -160,7 +170,6 @@ class SuitAttack(object):
         self._battle = battle
         return self
 
-
 class BattleExperience(NamedTuple):
     toonId: int
     originalExp: List[int]
@@ -172,9 +181,7 @@ class BattleExperience(NamedTuple):
     earnedMerits: List[int]
     suitParts: List[int]
 
-
 from panda3d.core import Point3, Vec3
-
 
 class Point3H(object):
     __slots__ = 'point', 'h'
@@ -260,7 +267,6 @@ class SuitTrap(NamedTuple):
     attackerId: int
     damage: int
 
-
 from dataclasses import dataclass
 
 @dataclass
@@ -302,6 +308,7 @@ class BattleCalculator:
         self.kbBonuses = [{}, {}, {}, {}]
         self.hpBonuses = [{}, {}, {}, {}]
         self.toonHPAdjusts: Dict[int, int] = {}
+        self.toonSkillPtsGained: Dict[int] = {}
 
         self.traps: Dict[int, SuitTrap] = {}
         self.luredSuits: Dict[int, LuredSuitInfo] = {}
@@ -312,6 +319,8 @@ class BattleCalculator:
 
         self.suitAttackers: Dict[int, Dict[int, int]] = {}
         self.trainTrapTriggered = False
+
+        self.__skillCreditMultiplier = 1
 
     def calculateRound(self):
         longest = max(len(self.battle.activeToons), len(self.battle.activeSuits))
@@ -384,8 +393,8 @@ class BattleCalculator:
             self.toonHPAdjusts[toonId] -= damage
 
     def toonLeftBattle(self, toonId):
-        # if toonId in self.toonSkillPtsGained:
-        #     del self.toonSkillPtsGained[toonId]
+        if toonId in self.toonSkillPtsGained:
+            del self.toonSkillPtsGained[toonId]
 
         self._clearTrapCreator(toonId)
         self._clearLurer(toonId)
@@ -985,8 +994,18 @@ class BattleCalculator:
         pass
 
     def _addAttackExp(self, attack: ToonAttack):
-        #TODO
-        pass
+        trk = attack.track
+        lvl = attack.level
+        avId = attack.avId
+
+        if trk != -1 and trk != Tracks.NPCSOS and trk != Tracks.PETSOS and lvl != -1 and avId != -1:
+            expList = self.toonSkillPtsGained.get(avId, None)
+
+            if not expList:
+                expList = [0, 0, 0, 0, 0, 0, 0]
+                self.toonSkillPtsGained[avId] = expList
+
+            expList[trk] = min(ExperienceCap, expList[trk] + (lvl + 1) * self.__skillCreditMultiplier)
 
     def _createToonAtkTargetList(self, attack: ToonAttack) -> List[int]:
         actualTrack, actualLevel = attack.actualTrackLevel
@@ -1257,6 +1276,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.battleExperience: List[BattleExperience] = []
         self.taskNames: List[str] = []
 
+        self.suitsKilled: List[int] = []
         self.suitsKilledThisBattle: List[int] = []
 
     def enterOff(self):
@@ -1452,9 +1472,6 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             self.notify.debug('__adjustDone() - need to adjust again')
             self._requestAdjust()
 
-    def sendEarnedExperience(self, toonId):
-        pass
-
     def _estimateAdjustTime(self):
         self.needAdjust = False
         adjustTime = 0
@@ -1564,6 +1581,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         ids, tracks, levels, targets = islice(zip(*attacks), 4)
         return ids, tracks, levels, targets
 
+    def d_setBattleExperience(self):
+        self.sendUpdate('setBattleExperience', self.getBattleExperience())
+
     def checkNPCCollision(self, npcId):
         for attack in self.toonAttacks.values():
             if attack.track == Tracks.NPCSOS and attack.target == npcId:
@@ -1620,6 +1640,53 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         if self._barrier is not None and self._barrier.active:
             self._barrier.clear(senderId)
+
+    def assignRewards(self):
+        activeToonList = []
+
+        for t in self.activeToons:
+            toon = simbase.air.doTable.get(t)
+
+            if toon != None:
+                activeToonList.append(toon)
+
+            for toon in activeToonList:
+                for i in range(NUM_TRACKS):
+                    uberIndex = LAST_REGULAR_GAG_LEVEL + 1
+                    exp = getSkillGained(self.battleCalc.toonSkillPtsGained, toon.doId, i)
+                    needed = Levels[i][LAST_REGULAR_GAG_LEVEL + 1] + UberSkill
+                    hasUber = 0
+                    totalExp = exp + toon.experience.getExp(i)
+
+                    if toon.inventory.numItem(i, uberIndex) > 0:
+                        hasUber = 1
+
+                    if totalExp >= needed or totalExp >= MaxSkill:
+                        if toon.inventory.totalProps < toon.getMaxCarry() and not hasUber:
+                            uberLevel = LAST_REGULAR_GAG_LEVEL + 1
+                            toon.inventory.addItem(i, uberLevel)
+                            toon.experience.setExp(i, Levels[i][LAST_REGULAR_GAG_LEVEL + 1])
+                        else:
+                            toon.experience.setExp(i, MaxSkill)
+                    else:
+                        if exp > 0:
+                            newGagList = toon.experience.getNewGagIndexList(i, exp)
+                            toon.experience.addExp(i, amount = exp)
+                            toon.inventory.addItemWithList(i, newGagList)
+
+                toon.b_setExperience(toon.experience.makeNetString())
+                toon.d_setInventory(toon.inventory.makeNetString())
+                toon.b_setAnimState('victory', 1)
+
+                if simbase.air.config.GetBool('battle-passing-no-credit', True):
+                    if self.helpfulToons and toon.doId in self.helpfulToons:
+                        simbase.air.questManager.toonKilledCogs(toon, self.suitsKilled, zoneId, self.helpfulToons)
+                        simbase.air.cogPageManager.toonKilledCogs(toon, self.suitsKilled, zoneId)
+                    else:
+                        self.notify.debug(f'toon={toon.doId} unhelpful not getting killed cog quest credit')
+                else:
+                    simbase.air.questManager.toonKilledCogs(toon, self.suitsKilled, zoneId, self.helpfulToons)
+                    simbase.air.cogPageManager.toonKilledCogs(toon, self.suitsKilled, zoneId)
 
     def _serverMovieDone(self, avIds):
         deltaHps: Dict[int, int] = {toonId: 0 for toonId in self.activeToons}
@@ -1678,6 +1745,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 'activeToons': self.activeToons[:]
             }
 
+            self.suitsKilled.append(encounter)
             self.suitsKilledThisBattle.append(encounter)
             self._removeSuit(suit)
             suit.resume()
@@ -2004,6 +2072,28 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             self.taskNames.remove(name)
             taskMgr.remove(name)
 
+    def getToon(self, toonId):
+        if toonId in self.air.doTable:
+            return self.air.doTable[toonId]
+
+        return False
+
+    def sendEarnedExperience(self, toonId):
+        toon = self.getToon(toonId)
+
+        if toon:
+            expList = self.battleCalc.toonSkillPtsGained.get(toonId, None)
+
+            if expList is None:
+                toon.d_setEarnedExperience([])
+            else:
+                roundList = []
+
+                for exp in expList:
+                    roundList.append(int(exp + 0.5))
+
+                toon.d_setEarnedExperience(roundList)
+
 from direct.task import Task
 
 class DistributedBattleAI(DistributedBattleBaseAI):
@@ -2060,14 +2150,14 @@ class DistributedBattleAI(DistributedBattleBaseAI):
 
         self.handleFaceOffDone()
 
-    def handleFaceOffDone(self, task=None):
+    def handleFaceOffDone(self, task = None):
         self.activeSuits.append(self.suits[0])
         if len(self.toons) == 0:
             self.demand('Resume')
         else:
             if self.initialAvId == self.toons[0]:
                 self.activeToons.append(self.toons[0])
-                # self.sendEarnedExperience(self.toons[0])
+                self.sendEarnedExperience(self.toons[0])
         self.d_setMembers()
         self.demand('WaitForInput')
 
@@ -2087,13 +2177,19 @@ class DistributedBattleAI(DistributedBattleBaseAI):
                 #             self.toonMerits[toonId] = self.air.promotionMgr.recoverMerits(toon, self.suitsKilled, self.zoneId)
 
                 self.d_setMembers()
-                # self.d_setBattleExperience()
+                self.d_setBattleExperience()
                 self.demand('Reward')
             else:
                 self.d_setMembers()
                 if len(deadSuits) and not lastActiveSuitDied or len(deadToons):
                     self.needAdjust = True
                 self.demand('WaitForJoin')
+
+    def enterReward(self):
+        self.joinable = False
+        self.runnable = False
+
+        self.assignRewards()
 
     def enterResume(self):
         DistributedBattleBaseAI.enterResume(self)

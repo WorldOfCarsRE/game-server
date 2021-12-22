@@ -271,7 +271,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.setMoney(money)
         self.d_setMoney(money)
 
-    def takeMoney(self, deltaMoney, useBank=True):
+    def takeMoney(self, deltaMoney, useBank = True):
         totalMoney = self.money + (self.bankMoney if useBank else 0)
         if deltaMoney > totalMoney:
             return False
@@ -1499,6 +1499,9 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def d_catalogGenAccessories(self):
         self.sendUpdate('catalogGenAccessories', [self.doId])
+
+    def d_setEarnedExperience(self, earnedExp):
+        self.sendUpdate('setEarnedExperience', [earnedExp])
 
     def getHoodId(self, zoneId):
         return zoneId - zoneId % 1000
