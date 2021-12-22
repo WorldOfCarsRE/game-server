@@ -55,6 +55,9 @@ def seedRandomGen(npcId, avId, tier, rewardHistory):
 def seededRandomChoice(seq):
     return QuestRandGen.choice(seq)
 
+def npcMatches(toNpcId, npc):
+    return toNpcId == npc.getNpcId() or toNpcId == Any or toNpcId == ToonHQ and npc.getHq() or toNpcId == ToonTailor and npc.getTailor()
+
 class Quest:
 
     def __init__(self, id, quest):
@@ -91,7 +94,6 @@ class Quest:
     def getCompletionStatus(self, av, questDesc, npc = None):
         print('getCompletionStatus(): please override me!')
         return None
-
 
 class LocationBasedQuest(Quest):
     def __init__(self, id, quest):
@@ -581,7 +583,6 @@ class DeliverGagQuest(Quest):
         questComplete = npc and av.inventory and av.inventory.numItem(track, level) >= num
         return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
 
-
 class DeliverItemQuest(Quest):
     def __init__(self, id, quest):
         Quest.__init__(self, id, quest)
@@ -597,7 +598,6 @@ class DeliverItemQuest(Quest):
         else:
             return INCOMPLETE_WRONG_NPC
 
-
 class VisitQuest(Quest):
     def __init__(self, id, quest):
         Quest.__init__(self, id, quest)
@@ -608,7 +608,6 @@ class VisitQuest(Quest):
             return COMPLETE
         else:
             return INCOMPLETE_WRONG_NPC
-
 
 class RecoverItemQuest(LocationBasedQuest):
     def __init__(self, id, quest):
@@ -683,7 +682,6 @@ class FriendQuest(Quest):
 
     def doesFriendCount(self, av, otherAv):
         return 1
-
 
 class FriendNewbieQuest(FriendQuest, NewbieQuest):
     def filterFunc(avatar):
@@ -16320,6 +16318,20 @@ def getNumChoices(tier):
 def getOptionalRewardsInTier(tier):
     return OptionalRewardTrackDict.get(tier, [])
 
+def getQuestFromNpcId(questId):
+    return QuestDict.get(questId).fromNpc
+
+def getQuestToNpcId(questId):
+    return QuestDict.get(questId).toNpc
+
+def getQuestClass(id):
+    questEntry = QuestDict.get(id)
+    if questEntry:
+        return questEntry.desc[0]
+    else:
+        return
+    return
+
 def chooseBestQuests(tier, currentNpc, av):
     if isLoopingFinalTier(tier):
         rewardHistory = [questDesc[3] for questDesc in av.quests]
@@ -16369,3 +16381,51 @@ def chooseBestQuests(tier, currentNpc, av):
         quest[1] = transformReward(quest[1], av)
 
     return bestQuests
+
+def filterQuests(entireQuestPool, currentNpc, av):
+    if notify.getDebug():
+        notify.debug('filterQuests: entireQuestPool: %s' % entireQuestPool)
+    validQuestPool = dict([ (questId, 1) for questId in entireQuestPool ])
+    if isLoopingFinalTier(av.getRewardTier()):
+        history = [questDesc[0] for questDesc in av.quests]
+    else:
+        history = av.getQuestHistory()
+    if notify.getDebug():
+        notify.debug('filterQuests: av quest history: %s' % history)
+    currentQuests = av.quests
+    for questId in entireQuestPool:
+        if questId in history:
+            if notify.getDebug():
+                notify.debug('filterQuests: Removed %s because in history' % questId)
+            validQuestPool[questId] = 0
+            continue
+        potentialFromNpc = getQuestFromNpcId(questId)
+        if not npcMatches(potentialFromNpc, currentNpc):
+            if notify.getDebug():
+                notify.debug('filterQuests: Removed %s: potentialFromNpc does not match currentNpc' % questId)
+            validQuestPool[questId] = 0
+            continue
+        potentialToNpc = getQuestToNpcId(questId)
+        if currentNpc.getNpcId() == potentialToNpc:
+            if notify.getDebug():
+                notify.debug('filterQuests: Removed %s because potentialToNpc is currentNpc' % questId)
+            validQuestPool[questId] = 0
+            continue
+        if not getQuestClass(questId).filterFunc(av):
+            if notify.getDebug():
+                notify.debug('filterQuests: Removed %s because of filterFunc' % questId)
+            validQuestPool[questId] = 0
+            continue
+        for quest in currentQuests:
+            fromNpcId = quest.fromNpc
+            toNpcId = quest.toNpc
+            if potentialToNpc == toNpcId and toNpcId != ToonHQ:
+                validQuestPool[questId] = 0
+                if notify.getDebug():
+                    notify.debug('filterQuests: Removed %s because npc involved' % questId)
+                break
+
+    finalQuestPool = [key for key in list(validQuestPool.keys()) if validQuestPool[key]]
+    if notify.getDebug():
+        notify.debug('filterQuests: finalQuestPool: %s' % finalQuestPool)
+    return finalQuestPool
