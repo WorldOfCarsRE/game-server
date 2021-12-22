@@ -342,6 +342,13 @@ class DistributedToonAI(DistributedPlayerAI):
         self.battleId = battleId
         self.sendUpdate('setBattleId', [battleId])
 
+    def b_setExperience(self, experience):
+        self.d_setExperience(experience)
+        self.setExperience(experience)
+
+    def d_setExperience(self, experience):
+        self.sendUpdate('setExperience', [experience])
+
     def setExperience(self, experience):
         self.experience = Experience.fromBytes(experience)
         self.experience.toon = self

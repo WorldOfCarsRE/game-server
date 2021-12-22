@@ -1,6 +1,9 @@
 from typing import NamedTuple
 from ai.globals import HoodGlobals
 from ai.battle.BattleGlobals import Tracks
+from ai.globals import CheesyEffects
+from ai.globals import CogDisguiseGlobals
+import random
 
 Any = 1
 OBSOLETE = 'OBSOLETE'
@@ -39,6 +42,14 @@ PHONE_QUEST_ID = 175
 NEWBIE_HP = 25
 SELLBOT_HQ_NEWBIE_HP = 50
 CASHBOT_HQ_NEWBIE_HP = 85
+
+QuestRandGen = random.Random()
+
+def seedRandomGen(npcId, avId, tier, rewardHistory):
+    QuestRandGen.seed(npcId * 100 + avId + tier + len(rewardHistory))
+
+def seededRandomChoice(seq):
+    return QuestRandGen.choice(seq)
 
 class Quest:
 
@@ -262,12 +273,8 @@ class SkeleReviveQuest(CogQuest, SkeleReviveQBase):
     def getCogType(self):
         return Any
 
-    def getCogNameString(self):
-        return SkeleReviveQBase.getCogNameString(self)
-
     def doesCogCount(self, avId, cogDict, zoneId, avList):
         return SkeleReviveQBase.doesCogCount(self, avId, cogDict, zoneId, avList)
-
 
 class ForemanQuest(CogQuest):
     def __init__(self, id, quest):
@@ -279,7 +286,6 @@ class ForemanQuest(CogQuest):
 
     def doesCogCount(self, avId, cogDict, zoneId, avList):
         return bool(CogQuest.doesCogCount(self, avId, cogDict, zoneId, avList) and cogDict['isForeman'])
-
 
 class ForemanNewbieQuest(ForemanQuest, NewbieQuest):
     def __init__(self, id, quest):
@@ -295,7 +301,6 @@ class ForemanNewbieQuest(ForemanQuest, NewbieQuest):
         else:
             return 0
 
-
 class VPQuest(CogQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
@@ -310,7 +315,6 @@ class VPQuest(CogQuest):
     def doesVPCount(self, avId, cogDict, zoneId, avList):
         return self.isLocationMatch(zoneId)
 
-
 class VPNewbieQuest(VPQuest, NewbieQuest):
     def __init__(self, id, quest):
         VPQuest.__init__(self, id, quest)
@@ -324,7 +328,6 @@ class VPNewbieQuest(VPQuest, NewbieQuest):
             return self.getNumNewbies(avId, avList)
         else:
             return 0
-
 
 class SupervisorQuest(CogQuest):
     def __init__(self, id, quest):
@@ -351,7 +354,6 @@ class SupervisorNewbieQuest(SupervisorQuest, NewbieQuest):
             return self.getNumNewbies(avId, avList)
         else:
             return 0
-
 
 class CFOQuest(CogQuest):
     def __init__(self, id, quest):
@@ -382,14 +384,12 @@ class CFONewbieQuest(CFOQuest, NewbieQuest):
         else:
             return 0
 
-
 class RescueQuest(VPQuest):
     def __init__(self, id, quest):
         VPQuest.__init__(self, id, quest)
 
     def getNumToons(self):
         return self.getNumCogs()
-
 
 class RescueNewbieQuest(RescueQuest, NewbieQuest):
     def __init__(self, id, quest):
@@ -404,7 +404,6 @@ class RescueNewbieQuest(RescueQuest, NewbieQuest):
             return self.getNumNewbies(avId, avList)
         else:
             return 0
-
 
 class BuildingQuest(CogQuest):
 
@@ -437,7 +436,6 @@ class BuildingQuest(CogQuest):
     def doesBuildingCount(self, avId, avList):
         return 1
 
-
 class BuildingNewbieQuest(BuildingQuest, NewbieQuest):
     def __init__(self, id, quest):
         BuildingQuest.__init__(self, id, quest)
@@ -448,7 +446,6 @@ class BuildingNewbieQuest(BuildingQuest, NewbieQuest):
 
     def doesBuildingCount(self, avId, avList):
         return self.getNumNewbies(avId, avList)
-
 
 class FactoryQuest(LocationBasedQuest):
 
@@ -477,7 +474,6 @@ class FactoryQuest(LocationBasedQuest):
     def doesFactoryCount(self, avId, location, avList):
         return self.isLocationMatch(location)
 
-
 class FactoryNewbieQuest(FactoryQuest, NewbieQuest):
     def __init__(self, id, quest):
         FactoryQuest.__init__(self, id, quest)
@@ -491,7 +487,6 @@ class FactoryNewbieQuest(FactoryQuest, NewbieQuest):
             return self.getNumNewbies(avId, avList)
         else:
             return num
-
 
 class MintQuest(LocationBasedQuest):
     def __init__(self, id, quest):
@@ -521,15 +516,11 @@ class MintNewbieQuest(MintQuest, NewbieQuest):
     def getNewbieLevel(self):
         return self.quest[2]
 
-    def getString(self):
-        return NewbieQuest.getString(self)
-
     def doesMintCount(self, avId, location, avList):
         if MintQuest.doesMintCount(self, avId, location, avList):
             return self.getNumNewbies(avId, avList)
         else:
             return num
-
 
 class CogPartQuest(LocationBasedQuest):
     def __init__(self, id, quest):
@@ -549,7 +540,6 @@ class CogPartQuest(LocationBasedQuest):
 
     def doesCogPartCount(self, avId, location, avList):
         return self.isLocationMatch(location)
-
 
 class CogPartNewbieQuest(CogPartQuest, NewbieQuest):
     def __init__(self, id, quest):
@@ -15118,3 +15108,594 @@ QuestDict = {
                          reward = 4216,
                          nextQuest = NA)
 }
+
+class Reward:
+
+    def __init__(self, id, reward):
+        self.id = id
+        self.reward = reward
+
+    def getId(self):
+        return self.id
+
+    def getType(self):
+        return self.__class__
+
+    def getAmount(self):
+        return
+
+    def sendRewardAI(self, av):
+        raise 'not implemented'
+
+    def countReward(self, qrc):
+        raise 'not implemented'
+
+class MaxHpReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getAmount(self):
+        return self.reward[0]
+
+    def sendRewardAI(self, av):
+        maxHp = av.getMaxHp()
+        maxHp = min(ToontownGlobals.MaxHpLimit, maxHp + self.getAmount())
+        av.b_setMaxHp(maxHp)
+        av.toonUp(maxHp)
+
+    def countReward(self, qrc):
+        qrc.maxHp += self.getAmount()
+
+class MoneyReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getAmount(self):
+        return self.reward[0]
+
+    def sendRewardAI(self, av):
+        money = av.getMoney()
+        maxMoney = av.getMaxMoney()
+        av.addMoney(self.getAmount())
+
+    def countReward(self, qrc):
+        qrc.money += self.getAmount()
+
+class MaxMoneyReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getAmount(self):
+        return self.reward[0]
+
+    def sendRewardAI(self, av):
+        av.b_setMaxMoney(self.getAmount())
+
+    def countReward(self, qrc):
+        qrc.maxMoney = self.getAmount()
+
+class MaxGagCarryReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getAmount(self):
+        return self.reward[0]
+
+    def getName(self):
+        return self.reward[1]
+
+    def sendRewardAI(self, av):
+        av.b_setMaxCarry(self.getAmount())
+
+    def countReward(self, qrc):
+        qrc.maxCarry = self.getAmount()
+
+class MaxQuestCarryReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getAmount(self):
+        return self.reward[0]
+
+    def sendRewardAI(self, av):
+        av.b_setQuestCarryLimit(self.getAmount())
+
+    def countReward(self, qrc):
+        qrc.questCarryLimit = self.getAmount()
+
+class TeleportReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getZone(self):
+        return self.reward[0]
+
+    def sendRewardAI(self, av):
+        av.addTeleportAccess(self.getZone())
+
+    def countReward(self, qrc):
+        qrc.addTeleportAccess(self.getZone())
+
+TrackTrainingQuotas = {
+    Tracks.HEAL: 15,
+    Tracks.TRAP: 15,
+    Tracks.LURE: 15,
+    Tracks.SOUND: 15,
+    Tracks.THROW: 15,
+    Tracks.SQUIRT: 15,
+    Tracks.DROP: 15,
+}
+
+class TrackTrainingReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getTrack(self):
+        track = self.reward[0]
+        if track == None:
+            track = 0
+        return track
+
+    def sendRewardAI(self, av):
+        av.b_setTrackProgress(self.getTrack(), 0)
+
+    def countReward(self, qrc):
+        qrc.trackProgressId = self.getTrack()
+        qrc.trackProgress = 0
+
+class TrackProgressReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getTrack(self):
+        track = self.reward[0]
+        if track == None:
+            track = 0
+        return track
+
+    def getProgressIndex(self):
+        return self.reward[1]
+
+    def sendRewardAI(self, av):
+        av.addTrackProgress(self.getTrack(), self.getProgressIndex())
+
+    def countReward(self, qrc):
+        qrc.addTrackProgress(self.getTrack(), self.getProgressIndex())
+
+class TrackCompleteReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getTrack(self):
+        track = self.reward[0]
+        if track == None:
+            track = 0
+        return track
+
+    def sendRewardAI(self, av):
+        av.addTrackAccess(self.getTrack())
+        av.clearTrackProgress()
+
+    def countReward(self, qrc):
+        qrc.addTrackAccess(self.getTrack())
+        qrc.clearTrackProgress()
+
+class ClothingTicketReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def sendRewardAI(self, av):
+        pass
+
+    def countReward(self, qrc):
+        pass
+
+class TIPClothingTicketReward(ClothingTicketReward):
+
+    def __init__(self, id, reward):
+        ClothingTicketReward.__init__(self, id, reward)
+
+class CheesyEffectReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getEffect(self):
+        return self.reward[0]
+
+    def getHoodId(self):
+        return self.reward[1]
+
+    def getDurationMinutes(self):
+        return self.reward[2]
+
+    def sendRewardAI(self, av):
+        expireTime = int(time.time() / 60 + 0.5) + self.getDurationMinutes()
+        av.b_setCheesyEffect(self.getEffect(), self.getHoodId(), expireTime)
+
+    def countReward(self, qrc):
+        pass
+
+class CogSuitPartReward(Reward):
+
+    def __init__(self, id, reward):
+        Reward.__init__(self, id, reward)
+
+    def getCogTrack(self):
+        return self.reward[0]
+
+    def getCogPart(self):
+        return self.reward[1]
+
+    def sendRewardAI(self, av):
+        dept = self.getCogTrack()
+        part = self.getCogPart()
+        av.giveCogPart(part, dept)
+
+    def countReward(self, qrc):
+        pass
+
+RewardDict = {
+    100: (MaxHpReward, 1),
+    101: (MaxHpReward, 2),
+    102: (MaxHpReward, 3),
+    103: (MaxHpReward, 4),
+    104: (MaxHpReward, 5),
+    105: (MaxHpReward, 6),
+    106: (MaxHpReward, 7),
+    107: (MaxHpReward, 8),
+    108: (MaxHpReward, 9),
+    109: (MaxHpReward, 10),
+    200: (MaxGagCarryReward, 25, None),
+    201: (MaxGagCarryReward, 30, None),
+    202: (MaxGagCarryReward, 35, None),
+    203: (MaxGagCarryReward, 40, None),
+    204: (MaxGagCarryReward, 50, None),
+    205: (MaxGagCarryReward, 60, None),
+    206: (MaxGagCarryReward, 70, None),
+    207: (MaxGagCarryReward, 80, None),
+    300: (TeleportReward, HoodGlobals.ToontownCentral),
+    301: (TeleportReward, HoodGlobals.DonaldsDock),
+    302: (TeleportReward, HoodGlobals.DaisyGardens),
+    303: (TeleportReward, HoodGlobals.MinniesMelodyland),
+    304: (TeleportReward, HoodGlobals.TheBrrrgh),
+    305: (TeleportReward, HoodGlobals.DonaldsDreamland),
+    400: (TrackTrainingReward, None),
+    401: (TrackTrainingReward, Tracks.HEAL),
+    402: (TrackTrainingReward, Tracks.TRAP),
+    403: (TrackTrainingReward, Tracks.LURE),
+    404: (TrackTrainingReward, Tracks.SOUND),
+    405: (TrackTrainingReward, Tracks.THROW),
+    406: (TrackTrainingReward, Tracks.SQUIRT),
+    407: (TrackTrainingReward, Tracks.DROP),
+    500: (MaxQuestCarryReward, 2),
+    501: (MaxQuestCarryReward, 3),
+    502: (MaxQuestCarryReward, 4),
+    600: (MoneyReward, 10),
+    601: (MoneyReward, 20),
+    602: (MoneyReward, 40),
+    603: (MoneyReward, 60),
+    604: (MoneyReward, 100),
+    605: (MoneyReward, 150),
+    606: (MoneyReward, 200),
+    607: (MoneyReward, 250),
+    608: (MoneyReward, 300),
+    609: (MoneyReward, 400),
+    610: (MoneyReward, 500),
+    611: (MoneyReward, 600),
+    612: (MoneyReward, 700),
+    613: (MoneyReward, 800),
+    614: (MoneyReward, 900),
+    615: (MoneyReward, 1000),
+    616: (MoneyReward, 1100),
+    617: (MoneyReward, 1200),
+    618: (MoneyReward, 1300),
+    619: (MoneyReward, 1400),
+    620: (MoneyReward, 1500),
+    621: (MoneyReward, 1750),
+    622: (MoneyReward, 2000),
+    623: (MoneyReward, 2500),
+    700: (MaxMoneyReward, 50),
+    701: (MaxMoneyReward, 60),
+    702: (MaxMoneyReward, 80),
+    703: (MaxMoneyReward, 100),
+    704: (MaxMoneyReward, 120),
+    705: (MaxMoneyReward, 150),
+    706: (MaxMoneyReward, 200),
+    707: (MaxMoneyReward, 250),
+    801: (TrackProgressReward, None, 1),
+    802: (TrackProgressReward, None, 2),
+    803: (TrackProgressReward, None, 3),
+    804: (TrackProgressReward, None, 4),
+    805: (TrackProgressReward, None, 5),
+    806: (TrackProgressReward, None, 6),
+    807: (TrackProgressReward, None, 7),
+    808: (TrackProgressReward, None, 8),
+    809: (TrackProgressReward, None, 9),
+    810: (TrackProgressReward, None, 10),
+    811: (TrackProgressReward, None, 11),
+    812: (TrackProgressReward, None, 12),
+    813: (TrackProgressReward, None, 13),
+    814: (TrackProgressReward, None, 14),
+    815: (TrackProgressReward, None, 15),
+    110: (TIPClothingTicketReward, ),
+    1000: (ClothingTicketReward, ),
+    1001: (TrackProgressReward, Tracks.HEAL, 1),
+    1002: (TrackProgressReward, Tracks.HEAL, 2),
+    1003: (TrackProgressReward, Tracks.HEAL, 3),
+    1004: (TrackProgressReward, Tracks.HEAL, 4),
+    1005: (TrackProgressReward, Tracks.HEAL, 5),
+    1006: (TrackProgressReward, Tracks.HEAL, 6),
+    1007: (TrackProgressReward, Tracks.HEAL, 7),
+    1008: (TrackProgressReward, Tracks.HEAL, 8),
+    1009: (TrackProgressReward, Tracks.HEAL, 9),
+    1010: (TrackProgressReward, Tracks.HEAL, 10),
+    1011: (TrackProgressReward, Tracks.HEAL, 11),
+    1012: (TrackProgressReward, Tracks.HEAL, 12),
+    1013: (TrackProgressReward, Tracks.HEAL, 13),
+    1014: (TrackProgressReward, Tracks.HEAL, 14),
+    1015: (TrackProgressReward, Tracks.HEAL, 15),
+    1101: (TrackProgressReward, Tracks.TRAP, 1),
+    1102: (TrackProgressReward, Tracks.TRAP, 2),
+    1103: (TrackProgressReward, Tracks.TRAP, 3),
+    1104: (TrackProgressReward, Tracks.TRAP, 4),
+    1105: (TrackProgressReward, Tracks.TRAP, 5),
+    1106: (TrackProgressReward, Tracks.TRAP, 6),
+    1107: (TrackProgressReward, Tracks.TRAP, 7),
+    1108: (TrackProgressReward, Tracks.TRAP, 8),
+    1109: (TrackProgressReward, Tracks.TRAP, 9),
+    1110: (TrackProgressReward, Tracks.TRAP, 10),
+    1111: (TrackProgressReward, Tracks.TRAP, 11),
+    1112: (TrackProgressReward, Tracks.TRAP, 12),
+    1113: (TrackProgressReward, Tracks.TRAP, 13),
+    1114: (TrackProgressReward, Tracks.TRAP, 14),
+    1115: (TrackProgressReward, Tracks.TRAP, 15),
+    1201: (TrackProgressReward, Tracks.LURE, 1),
+    1202: (TrackProgressReward, Tracks.LURE, 2),
+    1203: (TrackProgressReward, Tracks.LURE, 3),
+    1204: (TrackProgressReward, Tracks.LURE, 4),
+    1205: (TrackProgressReward, Tracks.LURE, 5),
+    1206: (TrackProgressReward, Tracks.LURE, 6),
+    1207: (TrackProgressReward, Tracks.LURE, 7),
+    1208: (TrackProgressReward, Tracks.LURE, 8),
+    1209: (TrackProgressReward, Tracks.LURE, 9),
+    1210: (TrackProgressReward, Tracks.LURE, 10),
+    1211: (TrackProgressReward, Tracks.LURE, 11),
+    1212: (TrackProgressReward, Tracks.LURE, 12),
+    1213: (TrackProgressReward, Tracks.LURE, 13),
+    1214: (TrackProgressReward, Tracks.LURE, 14),
+    1215: (TrackProgressReward, Tracks.LURE, 15),
+    1301: (TrackProgressReward, Tracks.SOUND, 1),
+    1302: (TrackProgressReward, Tracks.SOUND, 2),
+    1303: (TrackProgressReward, Tracks.SOUND, 3),
+    1304: (TrackProgressReward, Tracks.SOUND, 4),
+    1305: (TrackProgressReward, Tracks.SOUND, 5),
+    1306: (TrackProgressReward, Tracks.SOUND, 6),
+    1307: (TrackProgressReward, Tracks.SOUND, 7),
+    1308: (TrackProgressReward, Tracks.SOUND, 8),
+    1309: (TrackProgressReward, Tracks.SOUND, 9),
+    1310: (TrackProgressReward, Tracks.SOUND, 10),
+    1311: (TrackProgressReward, Tracks.SOUND, 11),
+    1312: (TrackProgressReward, Tracks.SOUND, 12),
+    1313: (TrackProgressReward, Tracks.SOUND, 13),
+    1314: (TrackProgressReward, Tracks.SOUND, 14),
+    1315: (TrackProgressReward, Tracks.SOUND, 15),
+    1601: (TrackProgressReward, Tracks.DROP, 1),
+    1602: (TrackProgressReward, Tracks.DROP, 2),
+    1603: (TrackProgressReward, Tracks.DROP, 3),
+    1604: (TrackProgressReward, Tracks.DROP, 4),
+    1605: (TrackProgressReward, Tracks.DROP, 5),
+    1606: (TrackProgressReward, Tracks.DROP, 6),
+    1607: (TrackProgressReward, Tracks.DROP, 7),
+    1608: (TrackProgressReward, Tracks.DROP, 8),
+    1609: (TrackProgressReward, Tracks.DROP, 9),
+    1610: (TrackProgressReward, Tracks.DROP, 10),
+    1611: (TrackProgressReward, Tracks.DROP, 11),
+    1612: (TrackProgressReward, Tracks.DROP, 12),
+    1613: (TrackProgressReward, Tracks.DROP, 13),
+    1614: (TrackProgressReward, Tracks.DROP, 14),
+    1615: (TrackProgressReward, Tracks.DROP, 15),
+    900: (TrackCompleteReward, None),
+    901: (TrackCompleteReward, Tracks.HEAL),
+    902: (TrackCompleteReward, Tracks.TRAP),
+    903: (TrackCompleteReward, Tracks.LURE),
+    904: (TrackCompleteReward, Tracks.SOUND),
+    905: (TrackCompleteReward, Tracks.THROW),
+    906: (TrackCompleteReward, Tracks.SQUIRT),
+    907: (TrackCompleteReward, Tracks.DROP),
+    2205: (CheesyEffectReward, CheesyEffects.CEBigToon, 2000, 10),
+    2206: (CheesyEffectReward, CheesyEffects.CESmallToon, 2000, 10),
+    2101: (CheesyEffectReward, CheesyEffects.CEBigHead, 1000, 10),
+    2102: (CheesyEffectReward, CheesyEffects.CESmallHead, 1000, 10),
+    2105: (CheesyEffectReward, CheesyEffects.CEBigToon, 0, 20),
+    2106: (CheesyEffectReward, CheesyEffects.CESmallToon, 0, 20),
+    2501: (CheesyEffectReward, CheesyEffects.CEBigHead, 5000, 60),
+    2502: (CheesyEffectReward, CheesyEffects.CESmallHead, 5000, 60),
+    2503: (CheesyEffectReward, CheesyEffects.CEBigLegs, 5000, 20),
+    2504: (CheesyEffectReward, CheesyEffects.CESmallLegs, 5000, 20),
+    2505: (CheesyEffectReward, CheesyEffects.CEBigToon, 0, 60),
+    2506: (CheesyEffectReward, CheesyEffects.CESmallToon, 0, 60),
+    2401: (CheesyEffectReward, CheesyEffects.CEBigHead, 1, 120),
+    2402: (CheesyEffectReward, CheesyEffects.CESmallHead, 1, 120),
+    2403: (CheesyEffectReward, CheesyEffects.CEBigLegs, 4000, 60),
+    2404: (CheesyEffectReward, CheesyEffects.CESmallLegs, 4000, 60),
+    2405: (CheesyEffectReward, CheesyEffects.CEBigToon, 0, 120),
+    2406: (CheesyEffectReward, CheesyEffects.CESmallToon, 0, 120),
+    2407: (CheesyEffectReward, CheesyEffects.CEFlatPortrait, 4000, 30),
+    2408: (CheesyEffectReward, CheesyEffects.CEFlatProfile, 4000, 30),
+    2409: (CheesyEffectReward, CheesyEffects.CETransparent, 4000, 30),
+    2410: (CheesyEffectReward, CheesyEffects.CENoColor, 4000, 30),
+    2301: (CheesyEffectReward, CheesyEffects.CEBigHead, 1, 360),
+    2302: (CheesyEffectReward, CheesyEffects.CESmallHead, 1, 360),
+    2303: (CheesyEffectReward, CheesyEffects.CEBigLegs, 1, 360),
+    2304: (CheesyEffectReward, CheesyEffects.CESmallLegs, 1, 360),
+    2305: (CheesyEffectReward, CheesyEffects.CEBigToon, 0, 1440),
+    2306: (CheesyEffectReward, CheesyEffects.CESmallToon, 0, 1440),
+    2307: (CheesyEffectReward, CheesyEffects.CEFlatPortrait, 3000, 240),
+    2308: (CheesyEffectReward, CheesyEffects.CEFlatProfile, 3000, 240),
+    2309: (CheesyEffectReward, CheesyEffects.CETransparent, 1, 120),
+    2310: (CheesyEffectReward, CheesyEffects.CENoColor, 1, 120),
+    2311: (CheesyEffectReward, CheesyEffects.CEInvisible, 3000, 120),
+    2900: (CheesyEffectReward, CheesyEffects.CENormal, 0, 0),
+    2901: (CheesyEffectReward, CheesyEffects.CEBigHead, 1, 1440),
+    2902: (CheesyEffectReward, CheesyEffects.CESmallHead, 1, 1440),
+    2903: (CheesyEffectReward, CheesyEffects.CEBigLegs, 1, 1440),
+    2904: (CheesyEffectReward, CheesyEffects.CESmallLegs, 1, 1440),
+    2905: (CheesyEffectReward, CheesyEffects.CEBigToon, 0, 1440),
+    2906: (CheesyEffectReward, CheesyEffects.CESmallToon, 0, 1440),
+    2907: (CheesyEffectReward, CheesyEffects.CEFlatPortrait, 1, 1440),
+    2908: (CheesyEffectReward, CheesyEffects.CEFlatProfile, 1, 1440),
+    2909: (CheesyEffectReward, CheesyEffects.CETransparent, 1, 1440),
+    2910: (CheesyEffectReward, CheesyEffects.CENoColor, 1, 1440),
+    2911: (CheesyEffectReward, CheesyEffects.CEInvisible, 1, 1440),
+    2920: (CheesyEffectReward, CheesyEffects.CENormal, 0, 0),
+    2921: (CheesyEffectReward, CheesyEffects.CEBigHead, 1, 2880),
+    2922: (CheesyEffectReward, CheesyEffects.CESmallHead, 1, 2880),
+    2923: (CheesyEffectReward, CheesyEffects.CEBigLegs, 1, 2880),
+    2924: (CheesyEffectReward, CheesyEffects.CESmallLegs, 1, 2880),
+    2925: (CheesyEffectReward, CheesyEffects.CEBigToon, 0, 2880),
+    2926: (CheesyEffectReward, CheesyEffects.CESmallToon, 0, 2880),
+    2927: (CheesyEffectReward, CheesyEffects.CEFlatPortrait, 1, 2880),
+    2928: (CheesyEffectReward, CheesyEffects.CEFlatProfile, 1, 2880),
+    2929: (CheesyEffectReward, CheesyEffects.CETransparent, 1, 2880),
+    2930: (CheesyEffectReward, CheesyEffects.CENoColor, 1, 2880),
+    2931: (CheesyEffectReward, CheesyEffects.CEInvisible, 1, 2880),
+    2940: (CheesyEffectReward, CheesyEffects.CENormal, 0, 0),
+    2941: (CheesyEffectReward, CheesyEffects.CEBigHead, 1, 10080),
+    2942: (CheesyEffectReward, CheesyEffects.CESmallHead, 1, 10080),
+    2943: (CheesyEffectReward, CheesyEffects.CEBigLegs, 1, 10080),
+    2944: (CheesyEffectReward, CheesyEffects.CESmallLegs, 1, 10080),
+    2945: (CheesyEffectReward, CheesyEffects.CEBigToon, 0, 10080),
+    2946: (CheesyEffectReward, CheesyEffects.CESmallToon, 0, 10080),
+    2947: (CheesyEffectReward, CheesyEffects.CEFlatPortrait, 1, 10080),
+    2948: (CheesyEffectReward, CheesyEffects.CEFlatProfile, 1, 10080),
+    2949: (CheesyEffectReward, CheesyEffects.CETransparent, 1, 10080),
+    2950: (CheesyEffectReward, CheesyEffects.CENoColor, 1, 10080),
+    2951: (CheesyEffectReward, CheesyEffects.CEInvisible, 1, 10080),
+    2960: (CheesyEffectReward, CheesyEffects.CENormal, 0, 0),
+    2961: (CheesyEffectReward, CheesyEffects.CEBigHead, 1, 43200),
+    2962: (CheesyEffectReward, CheesyEffects.CESmallHead, 1, 43200),
+    2963: (CheesyEffectReward, CheesyEffects.CEBigLegs, 1, 43200),
+    2964: (CheesyEffectReward, CheesyEffects.CESmallLegs, 1, 43200),
+    2965: (CheesyEffectReward, CheesyEffects.CEBigToon, 0, 43200),
+    2966: (CheesyEffectReward, CheesyEffects.CESmallToon, 0, 43200),
+    2967: (CheesyEffectReward, CheesyEffects.CEFlatPortrait, 1, 43200),
+    2968: (CheesyEffectReward, CheesyEffects.CEFlatProfile, 1, 43200),
+    2969: (CheesyEffectReward, CheesyEffects.CETransparent, 1, 43200),
+    2970: (CheesyEffectReward, CheesyEffects.CENoColor, 1, 43200),
+    2971: (CheesyEffectReward, CheesyEffects.CEInvisible, 1, 43200),
+    4000: (CogSuitPartReward, 'm', CogDisguiseGlobals.leftLegUpper),
+    4001: (CogSuitPartReward, 'm', CogDisguiseGlobals.leftLegLower),
+    4002: (CogSuitPartReward, 'm', CogDisguiseGlobals.leftLegFoot),
+    4003: (CogSuitPartReward, 'm', CogDisguiseGlobals.rightLegUpper),
+    4004: (CogSuitPartReward, 'm', CogDisguiseGlobals.rightLegLower),
+    4005: (CogSuitPartReward, 'm', CogDisguiseGlobals.rightLegFoot),
+    4006: (CogSuitPartReward, 'm', CogDisguiseGlobals.upperTorso),
+    4007: (CogSuitPartReward, 'm', CogDisguiseGlobals.torsoPelvis),
+    4008: (CogSuitPartReward, 'm', CogDisguiseGlobals.leftArmUpper),
+    4009: (CogSuitPartReward, 'm', CogDisguiseGlobals.leftArmLower),
+    4010: (CogSuitPartReward, 'm', CogDisguiseGlobals.rightArmUpper),
+    4011: (CogSuitPartReward, 'm', CogDisguiseGlobals.rightArmLower),
+    4100: (CogSuitPartReward, 'l', CogDisguiseGlobals.leftLegUpper),
+    4101: (CogSuitPartReward, 'l', CogDisguiseGlobals.leftLegLower),
+    4102: (CogSuitPartReward, 'l', CogDisguiseGlobals.leftLegFoot),
+    4103: (CogSuitPartReward, 'l', CogDisguiseGlobals.rightLegUpper),
+    4104: (CogSuitPartReward, 'l', CogDisguiseGlobals.rightLegLower),
+    4105: (CogSuitPartReward, 'l', CogDisguiseGlobals.rightLegFoot),
+    4106: (CogSuitPartReward, 'l', CogDisguiseGlobals.upperTorso),
+    4107: (CogSuitPartReward, 'l', CogDisguiseGlobals.torsoPelvis),
+    4108: (CogSuitPartReward, 'l', CogDisguiseGlobals.leftArmUpper),
+    4109: (CogSuitPartReward, 'l', CogDisguiseGlobals.leftArmLower),
+    4110: (CogSuitPartReward, 'l', CogDisguiseGlobals.leftArmHand),
+    4111: (CogSuitPartReward, 'l', CogDisguiseGlobals.rightArmUpper),
+    4112: (CogSuitPartReward, 'l', CogDisguiseGlobals.rightArmLower),
+    4113: (CogSuitPartReward, 'l', CogDisguiseGlobals.rightArmHand),
+    4200: (CogSuitPartReward, 'c', CogDisguiseGlobals.leftLegUpper),
+    4201: (CogSuitPartReward, 'c', CogDisguiseGlobals.leftLegLower),
+    4202: (CogSuitPartReward, 'c', CogDisguiseGlobals.leftLegFoot),
+    4203: (CogSuitPartReward, 'c', CogDisguiseGlobals.rightLegUpper),
+    4204: (CogSuitPartReward, 'c', CogDisguiseGlobals.rightLegLower),
+    4205: (CogSuitPartReward, 'c', CogDisguiseGlobals.rightLegFoot),
+    4206: (CogSuitPartReward, 'c', CogDisguiseGlobals.torsoLeftShoulder),
+    4207: (CogSuitPartReward, 'c', CogDisguiseGlobals.torsoRightShoulder),
+    4208: (CogSuitPartReward, 'c', CogDisguiseGlobals.torsoChest),
+    4209: (CogSuitPartReward, 'c', CogDisguiseGlobals.torsoHealthMeter),
+    4210: (CogSuitPartReward, 'c', CogDisguiseGlobals.torsoPelvis),
+    4211: (CogSuitPartReward, 'c', CogDisguiseGlobals.leftArmUpper),
+    4212: (CogSuitPartReward, 'c', CogDisguiseGlobals.leftArmLower),
+    4213: (CogSuitPartReward, 'c', CogDisguiseGlobals.leftArmHand),
+    4214: (CogSuitPartReward, 'c', CogDisguiseGlobals.rightArmUpper),
+    4215: (CogSuitPartReward, 'c', CogDisguiseGlobals.rightArmLower),
+    4216: (CogSuitPartReward, 'c', CogDisguiseGlobals.rightArmHand)
+}
+
+def isLoopingFinalTier(tier):
+    return tier == LOOPING_FINAL_TIER
+
+def getNumChoices(tier):
+    if tier in (0, ):
+        return 0
+    if tier in (1, ):
+        return 2
+    else:
+        return 3
+
+def chooseBestQuests(tier, currentNpc, av):
+    if isLoopingFinalTier(tier):
+        rewardHistory = [questDesc[3] for questDesc in av.quests]
+    else:
+        rewardHistory = av.getRewardHistory()[1]
+    seedRandomGen(currentNpc.getNpcId(), av.getDoId(), tier, rewardHistory)
+    numChoices = getNumChoices(tier)
+    rewards = getNextRewards(numChoices, tier, av)
+    if not rewards:
+        return []
+    possibleQuests = []
+    possibleRewards = list(rewards)
+    if Any not in possibleRewards:
+        possibleRewards.append(Any)
+    for rewardId in possibleRewards:
+        possibleQuests.extend(Tier2Reward2QuestsDict[tier].get(rewardId, []))
+
+    validQuestPool = filterQuests(possibleQuests, currentNpc, av)
+    if not validQuestPool:
+        return []
+    if numChoices == 0:
+        numChoices = 1
+    bestQuests = []
+    for i in range(numChoices):
+        if len(validQuestPool) == 0:
+            break
+        if len(rewards) == 0:
+            break
+        rewardId = rewards.pop(0)
+        bestQuestId = chooseMatchingQuest(tier, validQuestPool, rewardId, currentNpc, av)
+        if bestQuestId is None:
+            continue
+        validQuestPool.remove(bestQuestId)
+        bestQuestToNpcId = getQuestToNpcId(bestQuestId)
+        if bestQuestToNpcId == Any:
+            bestQuestToNpcId = 2003
+        elif bestQuestToNpcId == Same:
+            if currentNpc.getHq():
+                bestQuestToNpcId = ToonHQ
+            else:
+                bestQuestToNpcId = currentNpc.getNpcId()
+        elif bestQuestToNpcId == ToonHQ:
+            bestQuestToNpcId = ToonHQ
+        bestQuests.append([bestQuestId, rewardId, bestQuestToNpcId])
+
+    for quest in bestQuests:
+        quest[1] = transformReward(quest[1], av)
+
+    return bestQuests
