@@ -1,16 +1,90 @@
 from ai.toon import NPCToons
 from ai.DistributedObjectAI import DistributedObjectAI
+
 from direct.fsm.FSM import FSM
+from direct.directnotify.DirectNotifyGlobal import directNotify
+
 from typing import Dict
+
 from ai.battle.BattleGlobals import Tracks
-from ai.building.DistributedDoorAI import TALK_TO_TOM, DistributedDoorAI
+
+from ai.building.DistributedDoorAI import TALK_TO_TOM, UNLOCKED
+from ai.building.DistributedDoorAI import DEFEAT_FLUNKY_TOM, DEFEAT_FLUNKY_HQ
+from ai.building.DistributedDoorAI import GO_TO_PLAYGROUND, WRONG_DOOR_HQ
+
+from ai.building.DistributedDoorAI import DistributedDoorAI
+
+from ai.battle import DistributedBattleAI, DistributedSuitBaseAI
+
+from ai.building.HQBuildingAI import HQBuildingAI
 from ai.building import DoorTypes
 
-class TutorialBattleManager:
-    pass
+from ai.LocalizerEnglish import TutorialHQOfficerName
+from ai.quest import Quests
 
-class DistributedBattleTutorialAI:
-    pass
+from ai.suit.DistributedSuitAI import SuitDNA
+from ai.suit.SuitGlobals import SuitHeads
+
+from panda3d.core import Point3, Vec3
+
+class TutorialBattleManager:
+    def __init__(self, avId):
+        self.avId = avId
+
+    def destroy(self, battle):
+        if battle.suitsKilledThisBattle:
+            if self.avId in simbase.air.tutorialManager.tutorials:
+                simbase.air.tutorialManager.tutorials[self.avId].preparePlayerForHQ()
+        battle.requestDelete()
+
+class DistributedTutorialSuitAI(DistributedSuitBaseAI):
+    notify = directNotify.newCategory('DistributedTutorialSuitAI')
+
+    def __init__(self, air):
+        DistributedSuitBaseAI.__init__(self, air)
+
+    def destroy(self):
+        del self.dna
+
+    def createSuit(self, name, level):
+        suitDNA = SuitDNA()
+        suitDNA.head = name
+
+        self.dna = suitDNA
+        self.actualLevel = level
+
+    def requestBattle(self, x, y, z, h, p, r):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+
+        if not av:
+            return
+
+        self.confrontPos = Point3(x, y, z)
+        self.confrontHpr = Vec3(h, p, r)
+
+        if av.getBattleId() > 0:
+            self.notify.warning(f'Avatar {avId} tried to request a battle, but is already in one.')
+            self.b_setBrushOff(SuitDialog.getBrushOffIndex(self.getStyleName()))
+            self.d_denyBattle(avId)
+            return
+
+        battle = DistributedBattleTutorialAI(self.air, TutorialBattleManager(avId), Vec3(35, 20, 0), self, avId, 20001)
+        battle.tutorial = True
+        battle.generateWithRequired(self.zoneId)
+
+    def getConfrontPosHpr(self):
+        return (self.confrontPos, self.confrontHpr)
+
+class DistributedBattleTutorialAI(DistributedBattleAI):
+    notify = directNotify.newCategory('DistributedBattleTutorialAI')
+
+    def __init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback = None, maxSuits = 1):
+        DistributedBattleAI.__init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback = finishCallback, maxSuits = maxSuits)
+
+    def startRewardTimer(self):
+        # There is no timer in the tutorial... The reward movie is random length.
+        pass
 
 class DistributedTutorialInteriorAI(DistributedObjectAI):
 
@@ -52,6 +126,14 @@ class TutorialInstance(FSM):
         self.interiorShopDoor.requestDelete()
         del self.interiorShopDoor
 
+        if self.hqHarry:
+            self.hqHarry.requestDelete()
+
+        del self.hqHarry
+
+        self.hqBuilding.cleanup()
+        del self.hqBuilding
+
         for zoneId in self.getZones():
             self.air.deallocateZone(zoneId)
 
@@ -61,7 +143,7 @@ class TutorialInstance(FSM):
         self.shopZone = self.air.allocateZone()
         self.hqZone = self.air.allocateZone()
 
-        self.tutorialTom = NPCToons.createNPC(self.air, 20000, self.shopZone, 0)
+        self.tutorialTom = NPCToons.createNPC(self.air, 20000, None, self.shopZone, 0, self.preparePlayerForBattle)
         self.tutorialTom.tutorial = True
 
         self.interior = DistributedTutorialInteriorAI(self.air, self.shopZone, self.tutorialTom.doId)
@@ -75,12 +157,20 @@ class TutorialInstance(FSM):
         self.exteriorShopDoor.setOtherDoor(self.interiorShopDoor)
         self.interiorShopDoor.setOtherDoor(self.exteriorShopDoor)
 
-        hq = None
+        # Generate our HQ.
+        hqHarryDesc = (self.hqZone, TutorialHQOfficerName, ('dls', 'ms', 'm', 'm', 6, 0, 6, 6, 0, 10, 0, 10, 2, 9), 'm', 1, 0)
+        self.hqHarry = NPCToons.createNPC(self.air, 20002, hqHarryDesc, self.hqZone, 0, self.preparePlayerForTunnel)
+        self.hqHarry.tutorial = True
 
-        suitPlanner = None
+        self.hqBuilding = HQBuildingAI(self.air, self.streetZone, self.hqZone, 1)
 
+        # Leave our suit variable here.
+        self.suit = None
+
+        # Leave our flippy variable here.
         self.flippy = None
 
+        # Leave our black cat manager variable here.
         self.blackCatMgr = None
 
         self.manager.d_enterTutorial(
@@ -90,6 +180,40 @@ class TutorialInstance(FSM):
             self.shopZone,
             self.hqZone
         )
+
+    def preparePlayerForBattle(self):
+        self.interiorShopDoor.setDoorLock(UNLOCKED)
+
+        # Generate our suit
+        self.suit = DistributedTutorialSuitAI(self.air)
+        self.suit.createSuit(SuitHeads.FLUNKY, 1)
+        self.suit.generateWithRequired(self.streetZone)
+
+        # Lock our doors
+        self.exteriorShopDoor.setDoorLock(DEFEAT_FLUNKY_TOM)
+        self.hqBuilding.door0.setDoorLock(DEFEAT_FLUNKY_HQ)
+
+    def preparePlayerForHQ(self):
+        if self.suit:
+            self.suit.requestDelete()
+
+        self.suit = None
+
+        self.tutorialTom.requestDelete()
+        self.tutorialTom = None
+
+        self.exteriorShopDoor.setDoorLock(TALK_TO_HQ_TOM)
+
+        self.hqBuilding.door0.setDoorLock(UNLOCKED)
+        self.hqBuilding.insideDoor0.setDoorLock(TALK_TO_HQ)
+        self.hqBuilding.insideDoor1.setDoorLock(TALK_TO_HQ)
+
+    def preparePlayerForTunnel(self):
+        self.flippy = NPCToons.createNPC(self.air, 20001, None, self.streetZone, 0)
+
+        self.hqBuilding.insideDoor1.setDoorLock(UNLOCKED)
+        self.hqBuilding.door1.setDoorLock(GO_TO_PLAYGROUND)
+        self.hqBuilding.insideDoor0.setDoorLock(WRONG_DOOR_HQ)
 
     def getZones(self):
         return (

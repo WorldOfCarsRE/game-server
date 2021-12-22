@@ -16,17 +16,17 @@ from .SuitTimings import victoryDance, fromSky, toSky, fromSuitBuilding, toSuitB
 @with_slots
 @dataclass
 class SuitDNA:
-    type: str = 's'
+    suitType: str = 's'
     head: SuitHeads = SuitHeads.FLUNKY
     dept: str = 'c'
 
     def makeNetString(self) -> bytes:
-        if self.type == 's':
-            return ''.join((self.type, self.head.value.ljust(3, '\x00'), self.dept)).encode('ascii')
-        elif self.type == 'b':
-            return ''.join((self.type, self.dept)).encode('ascii')
+        if self.suitType == 's':
+            return ''.join((self.suitType, self.head.value.ljust(3, '\x00'), self.dept)).encode('ascii')
+        elif self.suitType == 'b':
+            return ''.join((self.suitType, self.dept)).encode('ascii')
         else:
-            raise ValueError(f'Unknown suit dna type: {self.type}')
+            raise ValueError(f'Unknown suit dna type: {self.suitType}')
 
 class DistributedSuitBaseAI(DistributedObjectAI):
     def __init__(self, air):

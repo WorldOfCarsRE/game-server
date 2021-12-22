@@ -1,4 +1,4 @@
-from ai.LocalizerEnglish import NPCToonNames
+from ai.LocalizerEnglish import NPCToonNames, TutorialHQOfficerName
 
 QUEST_MOVIE_CLEAR = 0
 QUEST_MOVIE_REJECT = 1
@@ -717,13 +717,13 @@ for npcId, desc in NPCToonDict.items():
 from .DistributedNPCToonAI import *
 from .ToonDNA import ToonDNA
 
-def createNPC(air, npcId, zoneId, posIndex = 0):
-    npcZone, name, dna, gender, protected, npcType = NPCToonDict[npcId]
+def createNPC(air, npcId, desc = None, zoneId = 0, posIndex = 0, questCallback = None):
+    npcZone, name, dna, gender, protected, npcType = desc if desc else NPCToonDict[npcId]
 
     if npcType == NPC_REGULAR:
-        npc = DistributedNPCToonAI(air, npcId, name)
+        npc = DistributedNPCToonAI(air, npcId, name, questCallback)
     elif npcType == NPC_HQ:
-        npc = DistributedNPCToonAI(air, npcId, name)
+        npc = DistributedNPCToonAI(air, npcId, name, questCallback)
         npc.hq = True
     elif npcType == NPC_CLERK:
         npc = DistributedNPCClerkAI(air, npcId, name)
@@ -750,7 +750,7 @@ def createNPC(air, npcId, zoneId, posIndex = 0):
         raise Exception(f'unknown npc type: {npcType}')
 
     if dna == 'r':
-        dna = ToonDNA.randomDNA(seed=npcId, gender=gender)
+        dna = ToonDNA.randomDNA(seed = npcId, gender = gender)
     else:
         dna = ToonDNA('t', *dna)
 
@@ -769,7 +769,7 @@ def createNpcsInZone(air, zoneId):
     if zoneId not in zone2NpcId:
         return ()
 
-    return tuple(createNPC(air, npcId, zoneId, posIndex = i) for i, npcId in enumerate(zone2NpcId[zoneId]))
+    return tuple(createNPC(air, npcId, None, zoneId, posIndex = i) for i, npcId in enumerate(zone2NpcId[zoneId]))
 
 from ai.battle.BattleGlobals import *
 from ai import ToontownGlobals

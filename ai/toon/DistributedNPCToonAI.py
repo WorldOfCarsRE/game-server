@@ -11,7 +11,7 @@ SHORTS = 0x2
 TAILOR_COUNTDOWN_TIME = 300
 
 class DistributedNPCToonBaseAI(DistributedNodeAI):
-    def __init__(self, air, npcId, name = None):
+    def __init__(self, air, npcId, name = None, questCallback = None):
         DistributedNodeAI.__init__(self, air, name)
 
         self.npcId = npcId
@@ -20,6 +20,7 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
         self.dna = ''
         self.index = 0
         self.occupier = 0
+        self.questCallback = questCallback
 
     def d_setMovie(self, movie, args = []):
         self.sendUpdate('setMovie', [movie, self.npcId, self.occupier, args, globalClockDelta.getRealNetworkTime()])
@@ -59,11 +60,11 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
 class DistributedNPCToonAI(DistributedNPCToonBaseAI):
     FourthGagVelvetRopeBan = False
 
-    def __init__(self, air, npcId, name):
-        DistributedNPCToonBaseAI.__init__(self, air, npcId, name)
+    def __init__(self, air, npcId, name, questCallback = None):
+        DistributedNPCToonBaseAI.__init__(self, air, npcId, name, questCallback)
 
         self.tutorial = False
-        self.questCallback = None
+        self.questCallback = questCallback
         self.pendingAvId = None
         self.pendingQuests = None
         self.pendingTracks = None

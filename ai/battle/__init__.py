@@ -1192,17 +1192,17 @@ class BattleCalculator:
 
 MAX_JOIN_T = 20.0
 
-from direct.directnotify import DirectNotifyGlobal
+from direct.directnotify.DirectNotifyGlobal import directNotify
 
 def test():
     yield 5
     yield from ToonAttack(-1)(None)
 
 class DistributedBattleBaseAI(DistributedObjectAI, FSM):
-    notify = DirectNotifyGlobal.directNotify.newCategory('DistributedBattleBaseAI')
+    notify = directNotify.newCategory('DistributedBattleBaseAI')
     notify.setDebug(1)
 
-    def __init__(self, air, finishCallback=None):
+    def __init__(self, air, finishCallback = None, maxSuits = 4):
         DistributedObjectAI.__init__(self, air)
         FSM.__init__(self, self.__class__.__name__)
         self.finishCallback = finishCallback
@@ -1247,7 +1247,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         self.bossBattle = False
 
-        self.maxSuits = 4
+        self.maxSuits = maxSuits
 
         self.battleCalc = BattleCalculator(self)
 
@@ -1992,8 +1992,8 @@ from direct.task import Task
 
 class DistributedBattleAI(DistributedBattleBaseAI):
 
-    def __init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback = None):
-        DistributedBattleBaseAI.__init__(self, air, finishCallback)
+    def __init__(self, air, battleMgr, pos, suit, toonId, zoneId, finishCallback = None, maxSuits = 4):
+        DistributedBattleBaseAI.__init__(self, air, finishCallback, maxSuits = maxSuits)
         self.battleMgr = battleMgr
         self.zoneId = zoneId
 

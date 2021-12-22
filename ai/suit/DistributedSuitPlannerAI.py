@@ -165,7 +165,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         tier = random.choice([tierMin, tierMax])
         department = pickFromFreqList(self.info.deptChances)
         head = SuitHeads.at(department * 8 + tier)
-        suit.dna = SuitDNA(type='s', head=head, dept=SuitDept(department).char)
+        suit.dna = SuitDNA(suitType = 's', head = head, dept = SuitDept(department).char)
         suit.actualLevel = level
         suit.initializePath()
         suit.generateWithRequired(suit.zoneId)

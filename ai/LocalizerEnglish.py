@@ -3,6 +3,7 @@ lHQOfficerF = 'HQ Officer'
 lHQOfficerM = 'HQ Officer'
 lToonHQ = 'Toon HQ'
 Flippy = 'Flippy'
+TutorialHQOfficerName = 'HQ Harry'
 
 NPCToonNames = {
     20000: 'Tutorial Tom',
