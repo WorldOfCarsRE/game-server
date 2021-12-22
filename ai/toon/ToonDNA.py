@@ -1355,7 +1355,7 @@ class ToonDNA(object):
         self.headColor = dgi.getUint8()
 
     @staticmethod
-    def randomDNA(seed=None, gender='m'):
+    def randomDNA(seed = None, gender = 'm'):
         generator = random.Random(seed) if seed is not None else random
         legs = generator.choice(toonLegTypes + ['m', 'l', 'l', 'l'])
         gender = gender

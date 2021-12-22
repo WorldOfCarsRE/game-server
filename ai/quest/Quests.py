@@ -1,9 +1,13 @@
 from typing import NamedTuple
 from ai.globals import HoodGlobals
 from ai.battle.BattleGlobals import Tracks
-from ai.globals import CheesyEffects
-from ai.globals import CogDisguiseGlobals
-import random
+from ai.globals import CheesyEffects, CogDisguiseGlobals, MembershipTypes
+from ai import ToontownGlobals
+from libsunrise import random
+
+from direct.directnotify.DirectNotifyGlobal import directNotify
+
+notify = directNotify.newCategory('Quests')
 
 Any = 1
 OBSOLETE = 'OBSOLETE'
@@ -121,11 +125,10 @@ class NewbieQuest:
         newbieHp = self.getNewbieLevel()
         num = 0
         for av in avList:
-            if av.getDoId() != avId and av.getMaxHp() <= newbieHp:
+            if av.doId != avId and av.getMaxHp() <= newbieHp:
                 num += 1
 
         return num
-
 
 class CogQuest(LocationBasedQuest):
     def __init__(self, id, quest):
@@ -258,12 +261,10 @@ class SkelecogLevelQuest(CogLevelQuest, SkelecogQBase):
     def doesCogCount(self, avId, cogDict, zoneId, avList):
         return SkelecogQBase.doesCogCount(self, avId, cogDict, zoneId, avList) and self.getCogLevel() <= cogDict['level']
 
-
 class SkeleReviveQBase:
 
     def doesCogCount(self, avId, cogDict, zoneId, avList):
         return cogDict['hasRevives'] and avId in cogDict['activeToons'] and self.isLocationMatch(zoneId)
-
 
 class SkeleReviveQuest(CogQuest, SkeleReviveQBase):
     def __init__(self, id, quest):
@@ -15109,6 +15110,21 @@ QuestDict = {
                          nextQuest = NA)
 }
 
+Tier2QuestsDict = {}
+
+for (questId, questDesc) in list(QuestDict.items()):
+    if questDesc.start == Start:
+        tier = questDesc.tier
+
+        if tier in Tier2QuestsDict:
+            Tier2QuestsDict[tier].append(questId)
+        else:
+            Tier2QuestsDict[tier] = [questId]
+
+Quest2RewardDict = {}
+Tier2Reward2QuestsDict = {}
+Quest2RemainingStepsDict = {}
+
 class Reward:
 
     def __init__(self, id, reward):
@@ -15344,6 +15360,90 @@ class CogSuitPartReward(Reward):
 
     def countReward(self, qrc):
         pass
+
+def getRewardClass(id):
+    reward = RewardDict.get(id)
+    if reward:
+        return reward[0]
+    else:
+        return
+    return
+
+def getNextRewards(numChoices, tier, av):
+    rewardTier = list(getRewardsInTier(tier))
+    optRewards = list(getOptionalRewardsInTier(tier))
+    if av.getAccess() == MembershipTypes.AccessFull and tier == TT_TIER + 3:
+        optRewards = []
+    if isLoopingFinalTier(tier):
+        rewardHistory = [questDesc[3] for questDesc in av.quests]
+        if notify.getDebug():
+            notify.debug('getNextRewards: current rewards (history): %s' % rewardHistory)
+    else:
+        rewardHistory = av.getRewardHistory()[1]
+        if notify.getDebug():
+            notify.debug('getNextRewards: rewardHistory: %s' % rewardHistory)
+    if notify.getDebug():
+        notify.debug('getNextRewards: rewardTier: %s' % rewardTier)
+        notify.debug('getNextRewards: numChoices: %s' % numChoices)
+    for rewardId in getRewardsInTier(tier):
+        if getRewardClass(rewardId) == CogSuitPartReward:
+            deptStr = RewardDict.get(rewardId)[1]
+            cogPart = RewardDict.get(rewardId)[2]
+            dept = ToontownGlobals.cogDept2index[deptStr]
+            if av.hasCogPart(cogPart, dept):
+                notify.debug('getNextRewards: already has cog part: %s dept: %s' % (cogPart, dept))
+                rewardTier.remove(rewardId)
+            else:
+                notify.debug('getNextRewards: keeping quest for cog part: %s dept: %s' % (cogPart, dept))
+
+    for rewardId in rewardHistory:
+        if rewardId in rewardTier:
+            rewardTier.remove(rewardId)
+        elif rewardId in optRewards:
+            optRewards.remove(rewardId)
+        elif rewardId in (901, 902, 903, 904, 905, 906, 907):
+            genericRewardId = 900
+            if genericRewardId in rewardTier:
+                rewardTier.remove(genericRewardId)
+        elif rewardId > 1000 and rewardId < 1699:
+            index = rewardId % 100
+            genericRewardId = 800 + index
+            if genericRewardId in rewardTier:
+                rewardTier.remove(genericRewardId)
+
+    if numChoices == 0:
+        if len(rewardTier) == 0:
+            return []
+        else:
+            return [
+             rewardTier[0]]
+    rewardPool = rewardTier[:numChoices]
+    for i in range(len(rewardPool), numChoices * 2):
+        if optRewards:
+            optionalReward = seededRandomChoice(optRewards)
+            optRewards.remove(optionalReward)
+            rewardPool.append(optionalReward)
+        else:
+            break
+
+    if notify.getDebug():
+        notify.debug('getNextRewards: starting reward pool: %s' % rewardPool)
+    if len(rewardPool) == 0:
+        if notify.getDebug():
+            notify.debug('getNextRewards: no rewards left at all')
+        return []
+    finalRewardPool = [
+     rewardPool.pop(0)]
+    for i in range(numChoices - 1):
+        if len(rewardPool) == 0:
+            break
+        selectedReward = seededRandomChoice(rewardPool)
+        rewardPool.remove(selectedReward)
+        finalRewardPool.append(selectedReward)
+
+    if notify.getDebug():
+        notify.debug('getNextRewards: final reward pool: %s' % finalRewardPool)
+    return finalRewardPool
 
 RewardDict = {
     100: (MaxHpReward, 1),
@@ -15639,8 +15739,522 @@ RewardDict = {
     4216: (CogSuitPartReward, 'c', CogDisguiseGlobals.rightArmHand)
 }
 
+RequiredRewardTrackDict = {
+    TT_TIER: (100, ),
+    TT_TIER + 1: (400, ),
+    TT_TIER + 2: (
+        100,
+        801,
+        200,
+        802,
+        803,
+        101,
+        804,
+        805,
+        102,
+        806,
+        807,
+        100,
+        808,
+        809,
+        101,
+        810,
+        811,
+        500,
+        812,
+        813,
+        700,
+        814,
+        815,
+        300,
+        ),
+    TT_TIER + 3: (900, ),
+    DD_TIER: (400, ),
+    DD_TIER + 1: (
+        100,
+        801,
+        802,
+        201,
+        803,
+        804,
+        101,
+        805,
+        806,
+        102,
+        807,
+        808,
+        100,
+        809,
+        810,
+        101,
+        811,
+        812,
+        701,
+        813,
+        814,
+        815,
+        301,
+        ),
+    DD_TIER + 2: (900, ),
+    DG_TIER: (
+        100,
+        202,
+        101,
+        102,
+        100,
+        101,
+        501,
+        702,
+        302,
+        ),
+    MM_TIER: (400, ),
+    MM_TIER + 1: (
+        100,
+        801,
+        802,
+        203,
+        803,
+        804,
+        101,
+        805,
+        806,
+        102,
+        807,
+        808,
+        100,
+        809,
+        810,
+        101,
+        811,
+        812,
+        703,
+        813,
+        814,
+        815,
+        303,
+        ),
+    MM_TIER + 2: (900, ),
+    BR_TIER: (400, ),
+    BR_TIER + 1: (
+        100,
+        801,
+        802,
+        704,
+        803,
+        804,
+        101,
+        805,
+        806,
+        502,
+        807,
+        808,
+        102,
+        809,
+        810,
+        204,
+        811,
+        812,
+        100,
+        813,
+        814,
+        101,
+        815,
+        304,
+        ),
+    BR_TIER + 2: (900, ),
+    DL_TIER: (
+        4000,
+        100,
+        205,
+        101,
+        102,
+        705,
+        103,
+        305,
+        4001,
+        4002,
+        ),
+    DL_TIER + 1: (
+        100,
+        206,
+        101,
+        4003,
+        4004,
+        4005,
+        102,
+        4006,
+        4007,
+        4008,
+        706,
+        103,
+        4009,
+        4010,
+        4011,
+        4000,
+        4001,
+        4002,
+        ),
+    DL_TIER + 2: (
+        4006,
+        4007,
+        4008,
+        100,
+        4000,
+        4001,
+        4002,
+        4003,
+        101,
+        4004,
+        4005,
+        4009,
+        102,
+        103,
+        4010,
+        4011,
+        ),
+    DL_TIER + 3: (
+        4009,
+        4010,
+        4011,
+        100,
+        4000,
+        4001,
+        101,
+        4002,
+        4003,
+        102,
+        4004,
+        4005,
+        102,
+        4006,
+        4007,
+        707,
+        207,
+        4008,
+        ),
+    LAWBOT_HQ_TIER: (4100, ),
+    LAWBOT_HQ_TIER + 1: (4101, ),
+    LAWBOT_HQ_TIER + 2: (4102, ),
+    LAWBOT_HQ_TIER + 3: (4103, ),
+    LAWBOT_HQ_TIER + 4: (4104, ),
+    LAWBOT_HQ_TIER + 5: (4105, ),
+    LAWBOT_HQ_TIER + 6: (4106, ),
+    LAWBOT_HQ_TIER + 7: (4107, ),
+    LAWBOT_HQ_TIER + 8: (4108, ),
+    LAWBOT_HQ_TIER + 9: (4109, ),
+    LAWBOT_HQ_TIER + 10: (4110, ),
+    LAWBOT_HQ_TIER + 11: (4111, ),
+    LAWBOT_HQ_TIER + 12: (4112, ),
+    LAWBOT_HQ_TIER + 13: (4113, ),
+    BOSSBOT_HQ_TIER: (4200, ),
+    BOSSBOT_HQ_TIER + 1: (4201, ),
+    BOSSBOT_HQ_TIER + 2: (4202, ),
+    BOSSBOT_HQ_TIER + 3: (4203, ),
+    BOSSBOT_HQ_TIER + 4: (4204, ),
+    BOSSBOT_HQ_TIER + 5: (4205, ),
+    BOSSBOT_HQ_TIER + 6: (4206, ),
+    BOSSBOT_HQ_TIER + 7: (4207, ),
+    BOSSBOT_HQ_TIER + 8: (4208, ),
+    BOSSBOT_HQ_TIER + 9: (4209, ),
+    BOSSBOT_HQ_TIER + 10: (4210, ),
+    BOSSBOT_HQ_TIER + 11: (4211, ),
+    BOSSBOT_HQ_TIER + 12: (4212, ),
+    BOSSBOT_HQ_TIER + 13: (4213, ),
+    BOSSBOT_HQ_TIER + 14: (4214, ),
+    BOSSBOT_HQ_TIER + 15: (4215, ),
+    BOSSBOT_HQ_TIER + 16: (4216, ),
+    ELDER_TIER: (
+        4000,
+        4001,
+        4002,
+        4003,
+        4004,
+        4005,
+        4006,
+        4007,
+        4008,
+        4009,
+        4010,
+        4011,
+        ),
+    }
+OptionalRewardTrackDict = {
+    TT_TIER: (),
+    TT_TIER + 1: (),
+    TT_TIER + 2: (
+        1000,
+        601,
+        601,
+        602,
+        602,
+        2205,
+        2206,
+        2205,
+        2206,
+        ),
+    TT_TIER + 3: (
+        601,
+        601,
+        602,
+        602,
+        2205,
+        2206,
+        2205,
+        2206,
+        ),
+    DD_TIER: (
+        1000,
+        602,
+        602,
+        603,
+        603,
+        2101,
+        2102,
+        2105,
+        2106,
+        ),
+    DD_TIER + 1: (
+        1000,
+        602,
+        602,
+        603,
+        603,
+        2101,
+        2102,
+        2105,
+        2106,
+        ),
+    DD_TIER + 2: (
+        1000,
+        602,
+        602,
+        603,
+        603,
+        2101,
+        2102,
+        2105,
+        2106,
+        ),
+    DG_TIER: (
+        1000,
+        603,
+        603,
+        604,
+        604,
+        2501,
+        2502,
+        2503,
+        2504,
+        2505,
+        2506,
+        ),
+    MM_TIER: (
+        1000,
+        604,
+        604,
+        605,
+        605,
+        2403,
+        2404,
+        2405,
+        2406,
+        2407,
+        2408,
+        2409,
+        ),
+    MM_TIER + 1: (
+        1000,
+        604,
+        604,
+        605,
+        605,
+        2403,
+        2404,
+        2405,
+        2406,
+        2407,
+        2408,
+        2409,
+        ),
+    MM_TIER + 2: (
+        1000,
+        604,
+        604,
+        605,
+        605,
+        2403,
+        2404,
+        2405,
+        2406,
+        2407,
+        2408,
+        2409,
+        ),
+    BR_TIER: (
+        1000,
+        606,
+        606,
+        606,
+        606,
+        606,
+        607,
+        607,
+        607,
+        607,
+        607,
+        2305,
+        2306,
+        2307,
+        2308,
+        2309,
+        2310,
+        2311,
+        ),
+    BR_TIER + 1: (
+        1000,
+        606,
+        606,
+        606,
+        606,
+        606,
+        607,
+        607,
+        607,
+        607,
+        607,
+        2305,
+        2306,
+        2307,
+        2308,
+        2309,
+        2310,
+        2311,
+        ),
+    BR_TIER + 2: (
+        1000,
+        606,
+        606,
+        606,
+        606,
+        606,
+        607,
+        607,
+        607,
+        607,
+        607,
+        2305,
+        2306,
+        2307,
+        2308,
+        2309,
+        2310,
+        2311,
+        ),
+    DL_TIER: (
+        607,
+        607,
+        607,
+        607,
+        608,
+        608,
+        608,
+        608,
+        2901,
+        2902,
+        2907,
+        2908,
+        2909,
+        2910,
+        2911,
+        ),
+    DL_TIER + 1: (
+        1000,
+        607,
+        607,
+        607,
+        607,
+        608,
+        608,
+        608,
+        608,
+        2923,
+        2924,
+        2927,
+        2928,
+        2929,
+        2930,
+        2931,
+        ),
+    DL_TIER + 2: (
+        608,
+        608,
+        608,
+        608,
+        609,
+        609,
+        609,
+        609,
+        2941,
+        2942,
+        2943,
+        2944,
+        2947,
+        2948,
+        2949,
+        2950,
+        2951,
+        ),
+    DL_TIER + 3: (
+        1000,
+        609,
+        609,
+        609,
+        609,
+        609,
+        609,
+        2961,
+        2962,
+        2963,
+        2964,
+        2965,
+        2966,
+        2967,
+        2968,
+        2969,
+        2970,
+        2971,
+        ),
+    ELDER_TIER: (
+        1000,
+        1000,
+        610,
+        611,
+        612,
+        613,
+        614,
+        615,
+        616,
+        617,
+        618,
+        2961,
+        2962,
+        2963,
+        2964,
+        2965,
+        2966,
+        2967,
+        2968,
+        2969,
+        2970,
+        2971,
+        ),
+    }
+
 def isLoopingFinalTier(tier):
     return tier == LOOPING_FINAL_TIER
+
+def getRewardsInTier(tier):
+    return RequiredRewardTrackDict.get(tier, [])
 
 def getNumChoices(tier):
     if tier in (0, ):
@@ -15650,12 +16264,15 @@ def getNumChoices(tier):
     else:
         return 3
 
+def getOptionalRewardsInTier(tier):
+    return OptionalRewardTrackDict.get(tier, [])
+
 def chooseBestQuests(tier, currentNpc, av):
     if isLoopingFinalTier(tier):
         rewardHistory = [questDesc[3] for questDesc in av.quests]
     else:
         rewardHistory = av.getRewardHistory()[1]
-    seedRandomGen(currentNpc.getNpcId(), av.getDoId(), tier, rewardHistory)
+    seedRandomGen(currentNpc.getNpcId(), av.doId, tier, rewardHistory)
     numChoices = getNumChoices(tier)
     rewards = getNextRewards(numChoices, tier, av)
     if not rewards:

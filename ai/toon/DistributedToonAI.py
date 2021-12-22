@@ -5,7 +5,7 @@ from panda3d.core import Datagram, DatagramIterator
 
 from typing import NamedTuple, List, Dict
 from ai.battle.BattleGlobals import *
-from ai.globals import HoodGlobals
+from ai.globals import HoodGlobals, MembershipTypes
 from ai.fishing.FishBase import FishBase
 from ai.fishing.FishCollectionEnum import *
 from ai.toon.Inventory import Inventory
@@ -108,8 +108,7 @@ class DistributedPlayerAI(DistributedAvatarAI):
         return self.DISLid
 
     def getPreviousAccess(self):
-        # AccessFull = 2
-        return 2
+        return MembershipTypes.AccessFull
 
     def setAccess(self, access):
         self.access = access
@@ -1218,6 +1217,9 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getRewardHistory(self):
         return (self.rewardTier, self.rewardHistory)
+
+    def getRewardTier(self):
+        return self.rewardTier
 
     def b_setQuestCarryLimit(self, limit):
         self.setQuestCarryLimit(limit)
