@@ -195,6 +195,8 @@ class DistributedToonAI(DistributedPlayerAI):
         self.rewardTier = 0
         self.rewardHistory = []
         self.questCarryLimit = 1
+        self.cogs = []
+        self.cogCounts = []
 
     def delete(self):
         # Stop our tasks too.
@@ -1112,11 +1114,31 @@ class DistributedToonAI(DistributedPlayerAI):
     def getTeleportAccess(self):
         return []
 
+    def b_setCogStatus(self, cogStatusList):
+        self.setCogStatus(cogStatusList)
+        self.d_setCogStatus(cogStatusList)
+
+    def setCogStatus(self, cogStatusList):
+        self.cogs = cogStatusList
+
+    def d_setCogStatus(self, cogStatusList):
+        self.sendUpdate('setCogStatus', [cogStatusList])
+
     def getCogStatus(self):
-        return [0] * 32
+        return self.cogs
+
+    def b_setCogCount(self, cogCountList):
+        self.setCogCount(cogCountList)
+        self.d_setCogCount(cogCountList)
+
+    def setCogCount(self, cogCountList):
+        self.cogCounts = cogCountList
+
+    def d_setCogCount(self, cogCountList):
+        self.sendUpdate('setCogCount', [cogCountList])
 
     def getCogCount(self):
-        return [0] * 32
+        return self.cogCounts
 
     def getCogRadar(self):
         return [0] * 4
