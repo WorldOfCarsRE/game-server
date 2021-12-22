@@ -15146,7 +15146,7 @@ def findFinalRewardId(questId):
             print('findFinalRewardId: Quest ID: %d not found' % questId)
             return -1
 
-        nextQuestId = questDesc.reward
+        nextQuestId = questDesc.nextQuest
         if nextQuestId == NA:
             finalRewardId = questDesc.reward
             remainingSteps = 1
