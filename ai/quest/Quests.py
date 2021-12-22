@@ -4,6 +4,7 @@ from ai.battle.BattleGlobals import Tracks
 from ai.globals import CheesyEffects, CogDisguiseGlobals, MembershipTypes
 from ai import ToontownGlobals
 from libsunrise import random
+from direct.showbase import PythonUtil
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
@@ -56,9 +57,13 @@ def seededRandomChoice(seq):
     return QuestRandGen.choice(seq)
 
 def npcMatches(toNpcId, npc):
-    return toNpcId == npc.getNpcId() or toNpcId == Any or toNpcId == ToonHQ and npc.getHq() or toNpcId == ToonTailor and npc.getTailor()
+    return toNpcId == npc.getNpcId() or toNpcId == Any or toNpcId == ToonHQ and npc.hq or toNpcId == ToonTailor and npc.getTailor()
 
 class Quest:
+    def filterFunc(avatar):
+        return 1
+
+    filterFunc = staticmethod(filterFunc)
 
     def __init__(self, id, quest):
         self.id = id
@@ -157,7 +162,6 @@ class CogQuest(LocationBasedQuest):
         questCogType = self.getCogType()
         return (questCogType is Any or questCogType is cogDict['type']) and avId in cogDict['activeToons'] and self.isLocationMatch(zoneId)
 
-
 class CogNewbieQuest(CogQuest, NewbieQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
@@ -174,7 +178,6 @@ class CogNewbieQuest(CogQuest, NewbieQuest):
             return self.getNumNewbies(avId, avList)
         else:
             return 0
-
 
 class CogTrackQuest(CogQuest):
     def __init__(self, id, quest):
@@ -15176,6 +15179,14 @@ def findFinalRewardId(questId):
 for questId in list(QuestDict.keys()):
     findFinalRewardId(questId)
 
+def isStartingQuest(questId):
+    try:
+        return QuestDict[questId].start == Start
+    except KeyError:
+        return
+
+    return
+
 class Reward:
 
     def __init__(self, id, reward):
@@ -16324,13 +16335,33 @@ def getQuestFromNpcId(questId):
 def getQuestToNpcId(questId):
     return QuestDict.get(questId).toNpc
 
-def getQuestClass(id):
-    questEntry = QuestDict.get(id)
+def getQuestClass(questId):
+    questEntry = QuestDict.get(questId)
     if questEntry:
         return questEntry.desc[0]
     else:
         return
     return
+
+def transformReward(baseRewardId, av):
+    if baseRewardId == 900:
+        (trackId, progress) = av.getTrackProgress()
+        if trackId == -1:
+            notify.warning('transformReward: asked to transform 900 but av is not training')
+            actualRewardId = baseRewardId
+        else:
+            actualRewardId = 900 + 1 + trackId
+        return actualRewardId
+    elif baseRewardId > 800 and baseRewardId < 900:
+        (trackId, progress) = av.getTrackProgress()
+        if trackId < 0:
+            notify.warning('transformReward: av: %s is training a track with none chosen!' % av.doId)
+            return 601
+        else:
+            actualRewardId = baseRewardId + 200 + trackId * 100
+            return actualRewardId
+    else:
+        return baseRewardId
 
 def chooseBestQuests(tier, currentNpc, av):
     if isLoopingFinalTier(tier):
@@ -16369,7 +16400,7 @@ def chooseBestQuests(tier, currentNpc, av):
         if bestQuestToNpcId == Any:
             bestQuestToNpcId = 2003
         elif bestQuestToNpcId == Same:
-            if currentNpc.getHq():
+            if currentNpc.hq:
                 bestQuestToNpcId = ToonHQ
             else:
                 bestQuestToNpcId = currentNpc.getNpcId()
@@ -16429,3 +16460,108 @@ def filterQuests(entireQuestPool, currentNpc, av):
     if notify.getDebug():
         notify.debug('filterQuests: finalQuestPool: %s' % finalQuestPool)
     return finalQuestPool
+
+def chooseTrackChoiceQuest(tier, av, fixed = 0):
+
+    def fixAndCallAgain():
+        if not fixed and av.fixTrackAccess():
+            notify.info('av %s trackAccess fixed: %s' % (av.doId, trackAccess))
+            return chooseTrackChoiceQuest(tier, av, fixed = 1)
+        else:
+            return
+        return
+
+    bestQuest = None
+    trackAccess = av.getTrackAccess()
+    if tier == MM_TIER:
+        if trackAccess[Tracks.HEAL] == 1:
+            bestQuest = 4002
+        elif trackAccess[Tracks.SOUND] == 1:
+            bestQuest = 4001
+        else:
+            notify.warning('av %s has bogus trackAccess: %s' % (av.doId, trackAccess))
+            return fixAndCallAgain()
+    elif tier == BR_TIER:
+        if trackAccess[Tracks.TRAP] == 1:
+            if trackAccess[Tracks.SOUND] == 1:
+                if trackAccess[Tracks.DROP] == 1:
+                    bestQuest = 5004
+                elif trackAccess[Tracks.LURE] == 1:
+                    bestQuest = 5003
+                else:
+                    notify.warning('av %s has bogus trackAccess: %s' % (av.doId, trackAccess))
+                    return fixAndCallAgain()
+            elif trackAccess[Tracks.HEAL] == 1:
+                if trackAccess[Tracks.DROP] == 1:
+                    bestQuest = 5002
+                elif trackAccess[Tracks.LURE] == 1:
+                    bestQuest = 5001
+                else:
+                    notify.warning('av %s has bogus trackAccess: %s' % (av.doId, trackAccess))
+                    return fixAndCallAgain()
+        elif trackAccess[Tracks.SOUND] == 0:
+            bestQuest = 5005
+        elif trackAccess[Tracks.HEAL] == 0:
+            bestQuest = 5006
+        elif trackAccess[Tracks.DROP] == 0:
+            bestQuest = 5007
+        elif trackAccess[Tracks.LURE] == 0:
+            bestQuest = 5008
+        else:
+            notify.warning('av %s has bogus trackAccess: %s' % (av.doId, trackAccess))
+            return fixAndCallAgain()
+    else:
+        if notify.getDebug():
+            notify.debug('questPool for reward 400 had no dynamic choice, tier: %s' % tier)
+        bestQuest = seededRandomChoice(Tier2Reward2QuestsDict[tier][400])
+    if notify.getDebug():
+        notify.debug('chooseTrackChoiceQuest: avId: %s trackAccess: %s tier: %s bestQuest: %s' % (av.doId, trackAccess, tier, bestQuest))
+    return bestQuest
+
+def chooseMatchingQuest(tier, validQuestPool, rewardId, npc, av):
+    questsMatchingReward = Tier2Reward2QuestsDict[tier].get(rewardId, [])
+    if notify.getDebug():
+        notify.debug('questsMatchingReward: %s tier: %s = %s' % (rewardId, tier, questsMatchingReward))
+    if rewardId == 400 and QuestDict[questsMatchingReward[0]].nextQuest == NA:
+        bestQuest = chooseTrackChoiceQuest(tier, av)
+        if notify.getDebug():
+            notify.debug('single part track choice quest: %s tier: %s avId: %s trackAccess: %s bestQuest: %s' % (rewardId, tier, av.doId, av.getTrackAccess(), bestQuest))
+    else:
+        validQuestsMatchingReward = PythonUtil.intersection(questsMatchingReward, validQuestPool)
+        if notify.getDebug():
+            notify.debug('validQuestsMatchingReward: %s tier: %s = %s' % (rewardId, tier, validQuestsMatchingReward))
+        if validQuestsMatchingReward:
+            bestQuest = seededRandomChoice(validQuestsMatchingReward)
+        else:
+            questsMatchingReward = Tier2Reward2QuestsDict[tier].get(AnyCashbotSuitPart, [])
+            if notify.getDebug():
+                notify.debug('questsMatchingReward: AnyCashbotSuitPart tier: %s = %s' % (tier, questsMatchingReward))
+            validQuestsMatchingReward = PythonUtil.intersection(questsMatchingReward, validQuestPool)
+            if validQuestsMatchingReward:
+                if notify.getDebug():
+                    notify.debug('validQuestsMatchingReward: AnyCashbotSuitPart tier: %s = %s' % (tier, validQuestsMatchingReward))
+                bestQuest = seededRandomChoice(validQuestsMatchingReward)
+            else:
+                questsMatchingReward = Tier2Reward2QuestsDict[tier].get(AnyLawbotSuitPart, [])
+                if notify.getDebug():
+                    notify.debug('questsMatchingReward: AnyLawbotSuitPart tier: %s = %s' % (tier, questsMatchingReward))
+                validQuestsMatchingReward = PythonUtil.intersection(questsMatchingReward, validQuestPool)
+                if validQuestsMatchingReward:
+                    if notify.getDebug():
+                        notify.debug('validQuestsMatchingReward: AnyLawbotSuitPart tier: %s = %s' % (tier, validQuestsMatchingReward))
+                    bestQuest = seededRandomChoice(validQuestsMatchingReward)
+                else:
+                    questsMatchingReward = Tier2Reward2QuestsDict[tier].get(Any, [])
+                    if notify.getDebug():
+                        notify.debug('questsMatchingReward: Any tier: %s = %s' % (tier, questsMatchingReward))
+                    if not questsMatchingReward:
+                        notify.warning('chooseMatchingQuests, no questsMatchingReward')
+                        return
+                    validQuestsMatchingReward = PythonUtil.intersection(questsMatchingReward, validQuestPool)
+                    if not validQuestsMatchingReward:
+                        notify.warning('chooseMatchingQuests, no validQuestsMatchingReward')
+                        return
+                    if notify.getDebug():
+                        notify.debug('validQuestsMatchingReward: Any tier: %s = %s' % (tier, validQuestsMatchingReward))
+                    bestQuest = seededRandomChoice(validQuestsMatchingReward)
+    return bestQuest

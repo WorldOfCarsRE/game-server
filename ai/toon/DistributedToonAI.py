@@ -15,6 +15,7 @@ from ai import ToontownGlobals
 from ai.catalog.CatalogItemList import CatalogItemList
 from ai.catalog import CatalogAccessoryItem
 from ai.catalog import CatalogItem
+from ai.quest import Quests
 import time
 
 from direct.task import Task
@@ -1190,6 +1191,61 @@ class DistributedToonAI(DistributedPlayerAI):
             flattenedQuests.extend(quest)
 
         return flattenedQuests
+
+    def getQuest(self, questId, visitNpcId = None, rewardId = None):
+        for quest in self.quests:
+            if quest[0] != questId:
+                continue
+            if visitNpcId != None:
+                if visitNpcId != quest[1] and visitNpcId != quest[2]:
+                    continue
+            if rewardId != None:
+                if rewardId != quest[3]:
+                    continue
+            return quest
+
+        return
+
+    def hasQuest(self, questId, visitNpcId = None, rewardId = None):
+        if self.getQuest(questId, visitNpcId = visitNpcId, rewardId = rewardId) == None:
+            return False
+        else:
+            return True
+        return
+
+    def removeQuest(self, id, visitNpcId = None):
+        index = -1
+        for i in range(len(self.quests)):
+            if self.quests[i][0] == id:
+                if visitNpcId:
+                    otherId = self.quests[i][2]
+                    if visitNpcId == otherId:
+                        index = i
+                        break
+                else:
+                    index = i
+                    break
+
+        if index >= 0:
+            del self.quests[i]
+            self.b_setQuests(self.quests)
+            return 1
+        else:
+            return 0
+
+    def addQuest(self, quest, finalReward, recordHistory = 1):
+        self.quests.append(quest)
+        self.b_setQuests(self.quests)
+        if recordHistory:
+            if quest[0] != Quests.VISIT_QUEST_ID:
+                newQuestHistory = self.questHistory + [quest[0]]
+                while newQuestHistory.count(Quests.VISIT_QUEST_ID) != 0:
+                    newQuestHistory.remove(Quests.VISIT_QUEST_ID)
+
+                self.b_setQuestHistory(newQuestHistory)
+                if finalReward:
+                    newRewardHistory = self.rewardHistory + [finalReward]
+                    self.b_setRewardHistory(self.rewardTier, newRewardHistory)
 
     def b_setQuestHistory(self, questList):
         self.setQuestHistory(questList)

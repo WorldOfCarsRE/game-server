@@ -101,7 +101,7 @@ class QuestManagerAI:
             if quests:
                 if (Quests.getNumChoices(av.getRewardTier()) == 0):
                     assert(len(quests) == 1) # There should only be one
-                    if npc.getHq():
+                    if npc.hq:
                         fromNpcId = Quests.ToonHQ
                     else:
                         fromNpcId = npc.getNpcId()
@@ -152,7 +152,7 @@ class QuestManagerAI:
                         if quests:
                             if (Quests.getNumChoices(av.getRewardTier()) == 0):
                                 assert(len(quests) == 1) # There should only be one
-                                if npc.getHq():
+                                if npc.hq:
                                     fromNpcId = Quests.ToonHQ
                                 else:
                                     fromNpcId = npc.getNpcId()
@@ -227,7 +227,7 @@ class QuestManagerAI:
                 self.notify.debug("hasQuest: found quest with any toNpc: %s avId: %s toNpcId: %s" %
                                   (questId, av.doId, toNpcId))
                 return questDesc
-            elif ((toNpcId == Quests.ToonHQ) and (npc.getHq())):
+            elif ((toNpcId == Quests.ToonHQ) and (npc.hq)):
                 # If the quest is for the HQ, and this toon has HQ powers, its a match
                 self.notify.debug("hasQuest: found quest with HQ toNpc: %s avId: %s toNpcId: %s" %
                                   (questId, av.doId, toNpcId))
@@ -321,7 +321,7 @@ class QuestManagerAI:
             # The user is not presented with a choice here
             av.removeQuest(questId)
             nextRewardId = Quests.getQuestReward(nextQuestId, av)
-            if npc.getHq():
+            if npc.hq:
                 fromNpcId = Quests.ToonHQ
             else:
                 fromNpcId = npc.getNpcId()
@@ -448,7 +448,7 @@ class QuestManagerAI:
         self.notify.debug("avatarChooseQuest: avId: %s questId: %s" % (avId, questId))
         av = self.air.doTable.get(avId)
         if av:
-            if npc.getHq():
+            if npc.hq:
                 fromNpcId = Quests.ToonHQ
             else:
                 fromNpcId = npc.getNpcId()

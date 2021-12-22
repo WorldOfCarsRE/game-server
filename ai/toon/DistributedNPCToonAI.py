@@ -3,6 +3,7 @@ from ai.toon import NPCToons
 from ai.toon.Inventory import Inventory
 from ai.toon.ToonDNA import ToonDNA
 from direct.task.Task import Task
+from ai.globals import MembershipTypes
 
 SHIRT = 0x1
 SHORTS = 0x2
@@ -56,11 +57,17 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
         return self.npcId
 
 class DistributedNPCToonAI(DistributedNPCToonBaseAI):
+    FourthGagVelvetRopeBan = config.GetBool('want-ban-fourth-gag-velvet-rope', 0)
 
     def __init__(self, air, npcId, name):
         DistributedNPCToonBaseAI.__init__(self, air, npcId, name)
 
         self.tutorial = False
+        self.questCallback = None
+        self.pendingAvId = None
+        self.pendingQuests = None
+        self.pendingTracks = None
+        self.pendingTrackQuest = None
 
     def getTutorial(self):
         return self.tutorial
@@ -69,7 +76,46 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
         pass
 
     def chooseQuest(self, questId):
-        print('chooseQuest', questId)
+        avId = self.air.currentAvatarSender
+        self.notify.debug('chooseQuest: avatar %s choseQuest %s' % (avId, questId))
+        if not self.pendingAvId:
+            self.notify.warning('chooseQuest: not expecting an answer from any avatar: %s' % avId)
+            return
+        if self.pendingAvId != avId:
+            self.notify.warning('chooseQuest: not expecting an answer from this avatar: %s' % avId)
+            return
+        if self.pendingQuests is None:
+            self.notify.warning('chooseQuest: not expecting a quest choice from this avatar: %s' % avId)
+            self.air.writeServerEvent('suspicious', avId, 'unexpected chooseQuest')
+            return
+        if questId == 0:
+            self.pendingAvId = None
+            self.pendingQuests = None
+            self.air.questManager.avatarCancelled(avId)
+            self.cancelChoseQuest(avId)
+            return
+        if questId == 401:
+            av = self.air.doTable[avId]
+            if not av:
+                self.notify.warning('chooseQuest: av not present: %s' % avId)
+                return
+            if av.getGameAccess() != MembershipTypes.AccessFull:
+                simbase.air.writeServerEvent('suspicious', avId, 'NPCToonAI.chooseQuest: non-paid player choosing task beyond velvet rope')
+                self.sendTimeoutMovie(None)
+                if self.FourthGagVelvetRopeBan:
+                    av.ban('fourth gag track velvet rope hacking')
+                return
+        for quest in self.pendingQuests:
+            if questId == quest[0]:
+                self.pendingAvId = None
+                self.pendingQuests = None
+                self.air.questManager.avatarChoseQuest(avId, self, *quest)
+                return
+
+        self.notify.warning('chooseQuest: avatar: %s chose a quest not offered: %s' % (avId, questId))
+        self.pendingAvId = None
+        self.pendingQuests = None
+        return)
 
     def chooseTrack(self, choice):
         pass
@@ -77,6 +123,55 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
     def avatarEnter(self):
         avId = self.air.currentAvatarSender
         self.air.questManager.requestInteract(avId, self)
+
+    def cancelChoseQuest(self, avId):
+        self.busy = avId
+        self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_QUEST_CHOICE_CANCEL,
+         self.npcId,
+         avId,
+         [],
+         globalClockDelta.getRealNetworkTime()])
+        if not self.tutorial:
+            taskMgr.doMethodLater(60.0, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+
+    def assignQuest(self, avId, questId, rewardId, toNpcId):
+        self.occupied = avId
+        if self.questCallback:
+            self.questCallback()
+        self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_ASSIGN,
+         self.npcId,
+         avId,
+         [questId, rewardId, toNpcId],
+         globalClockDelta.getRealNetworkTime()])
+        if not self.tutorial:
+            taskMgr.doMethodLater(60.0, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+
+    def sendTimeoutMovie(self, task):
+        self.pendingAvId = None
+        self.pendingQuests = None
+        self.pendingTracks = None
+        self.pendingTrackQuest = None
+        self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_TIMEOUT,
+         self.npcId,
+         self.occupied,
+         [],
+         globalClockDelta.getRealNetworkTime()])
+        self.sendClearMovie(None)
+        self.occupied = 0
+        return Task.done
+
+    def sendClearMovie(self, task):
+        self.pendingAvId = None
+        self.pendingQuests = None
+        self.pendingTracks = None
+        self.pendingTrackQuest = None
+        self.occupied = 0
+        self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_CLEAR,
+         self.npcId,
+         0,
+         [],
+         globalClockDelta.getRealNetworkTime()])
+        return Task.done
 
 class DistributedNPCSpecialQuestGiverAI(DistributedNPCToonBaseAI):
     def setMovieDone(self):
