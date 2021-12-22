@@ -42,7 +42,6 @@ class ToonAttack(object):
     suitsRevivedFlag: int = 0
     _battle: Optional['DistributedBattleBaseAI'] = None
 
-
     @property
     def affectsGroup(self) -> bool:
         track, level = self.track, self.level
@@ -1258,6 +1257,8 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.battleExperience: List[BattleExperience] = []
         self.taskNames: List[str] = []
 
+        self.suitsKilledThisBattle: List[int] = []
+
     def enterOff(self):
         pass
 
@@ -1663,6 +1664,21 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.exitedToons = []
 
         for suit in deadSuits:
+            encounter = {
+                'type': suit.dna.suitType,
+                'level': suit.actualLevel,
+                'track': suit.dna.dept,
+                'isSkelecog': suit.getSkelecog(),
+                'isForeman': suit.isForeman(),
+                'isVP': 0,
+                'isCFO': 0,
+                'isSupervisor': suit.supervisor,
+                'isVirtual': suit.virtual,
+                'hasRevives': suit.getSkeleRevives(),
+                'activeToons': self.activeToons[:]
+            }
+
+            self.suitsKilledThisBattle.append(encounter)
             self._removeSuit(suit)
             suit.resume()
 
@@ -1699,12 +1715,12 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             deltaHp = deltaHps[toonId]
 
             if deltaHp > 0:
-                toon.toonUp(deltaHp, quietly=True)
+                toon.toonUp(deltaHp, quietly = True)
             else:
-                toon.takeDamage(abs(deltaHp), quietly=True)
+                toon.takeDamage(abs(deltaHp), quietly = True)
 
             if toon.hp <= 0:
-                toon.inventory.zero(killUber=True)
+                toon.inventory.zero(killUber = True)
                 deadToons.append(toon)
 
         for toon in deadToons:
@@ -2084,4 +2100,4 @@ class DistributedBattleAI(DistributedBattleBaseAI):
         if self.finishCallback:
             self.finishCallback(self.zoneId)
 
-        self.battleMgr.removeBattle(self.battleCellId)
+        self.battleMgr.removeBattle(self)

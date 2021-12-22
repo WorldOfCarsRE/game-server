@@ -310,9 +310,11 @@ class BattleManagerAI:
 
         return battle
 
-    def removeBattle(self, cellId):
+    def removeBattle(self, battle):
+        cellId = battle.battleCellId
+
         if cellId in self.cell2Battle:
-            self.cell2Battle[cellId].requestDelete()
+            battle.requestDelete()
             del self.cell2Battle[cellId]
 
     def requestBattleAddSuit(self, cellId, suit):

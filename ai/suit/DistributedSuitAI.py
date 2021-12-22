@@ -39,6 +39,8 @@ class DistributedSuitBaseAI(DistributedObjectAI):
         self.revivedFlag = 0
         self.hp = 6
         self.maxHP = 6
+        self.virtual = 0
+        self.supervisor = 0
 
     def getDNAString(self):
         return self.dna.makeNetString()
@@ -238,7 +240,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
     def resync(self):
         self.b_setPathPosition(self.currentLeg, self.pathStartTime + self.legList.getStartTime(self.currentLeg))
 
-    def moveToNextLeg(self, task=None):
+    def moveToNextLeg(self, task = None):
         now = globalClock.getFrameTime()
         elapsed = now - self.pathStartTime
         nextLeg = self.legList.getLegIndexAtTime(elapsed, self.currentLeg)

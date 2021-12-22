@@ -31,7 +31,7 @@ class TutorialBattleManager:
     def __init__(self, avId):
         self.avId = avId
 
-    def destroy(self, battle):
+    def removeBattle(self, battle):
         if battle.suitsKilledThisBattle:
             if self.avId in simbase.air.tutorialManager.tutorials:
                 simbase.air.tutorialManager.tutorials[self.avId].preparePlayerForHQ()
