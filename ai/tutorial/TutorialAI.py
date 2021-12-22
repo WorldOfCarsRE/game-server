@@ -3,6 +3,8 @@ from ai.DistributedObjectAI import DistributedObjectAI
 from direct.fsm.FSM import FSM
 from typing import Dict
 from ai.battle.BattleGlobals import Tracks
+from ai.building.DistributedDoorAI import TALK_TO_TOM, DistributedDoorAI
+from ai.building import DoorTypes
 
 class TutorialBattleManager:
     pass
@@ -44,6 +46,12 @@ class TutorialInstance(FSM):
         self.interior.requestDelete()
         del self.interior
 
+        self.exteriorShopDoor.requestDelete()
+        del self.exteriorShopDoor
+
+        self.interiorShopDoor.requestDelete()
+        del self.interiorShopDoor
+
         for zoneId in self.getZones():
             self.air.deallocateZone(zoneId)
 
@@ -58,6 +66,14 @@ class TutorialInstance(FSM):
 
         self.interior = DistributedTutorialInteriorAI(self.air, self.shopZone, self.tutorialTom.doId)
         self.interior.generateWithRequired(self.shopZone)
+
+        self.exteriorShopDoor = DistributedDoorAI(self.air, 2, DoorTypes.EXT_STANDARD, doorIndex = 0)
+        self.exteriorShopDoor.generateWithRequired(self.streetZone)
+        self.interiorShopDoor = DistributedDoorAI(self.air, 0, DoorTypes.INT_STANDARD, doorIndex = 0)
+        self.interiorShopDoor.setDoorLock(TALK_TO_TOM)
+        self.interiorShopDoor.generateWithRequired(self.shopZone)
+        self.exteriorShopDoor.setOtherDoor(self.interiorShopDoor)
+        self.interiorShopDoor.setOtherDoor(self.exteriorShopDoor)
 
         hq = None
 

@@ -57,7 +57,7 @@ class DistributedNPCToonBaseAI(DistributedNodeAI):
         return self.npcId
 
 class DistributedNPCToonAI(DistributedNPCToonBaseAI):
-    FourthGagVelvetRopeBan = config.GetBool('want-ban-fourth-gag-velvet-rope', 0)
+    FourthGagVelvetRopeBan = False
 
     def __init__(self, air, npcId, name):
         DistributedNPCToonBaseAI.__init__(self, air, npcId, name)
@@ -99,7 +99,7 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
             if not av:
                 self.notify.warning('chooseQuest: av not present: %s' % avId)
                 return
-            if av.getGameAccess() != MembershipTypes.AccessFull:
+            if av.getAccess() != MembershipTypes.AccessFull:
                 simbase.air.writeServerEvent('suspicious', avId, 'NPCToonAI.chooseQuest: non-paid player choosing task beyond velvet rope')
                 self.sendTimeoutMovie(None)
                 if self.FourthGagVelvetRopeBan:
@@ -115,7 +115,7 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
         self.notify.warning('chooseQuest: avatar: %s chose a quest not offered: %s' % (avId, questId))
         self.pendingAvId = None
         self.pendingQuests = None
-        return)
+        return
 
     def chooseTrack(self, choice):
         pass

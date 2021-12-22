@@ -16343,6 +16343,19 @@ def getQuestClass(questId):
         return
     return
 
+def questExists(questId):
+    return questId in QuestDict
+
+def getQuest(questId):
+    questEntry = QuestDict.get(questId)
+    if questEntry:
+        questDesc = questEntry.desc
+        questClass = questDesc[0]
+        return questClass(questId, questDesc[1:])
+    else:
+        return
+    return
+
 def transformReward(baseRewardId, av):
     if baseRewardId == 900:
         (trackId, progress) = av.getTrackProgress()

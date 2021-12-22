@@ -26,7 +26,7 @@ LB_DISGUISE_INCOMPLETE = 12
 BB_DISGUISE_INCOMPLETE = 13
 
 class DistributedDoorAI(DistributedObjectAI):
-    def __init__(self, air, block, doorType, doorIndex=0, swing=DEFAULT_SWING):
+    def __init__(self, air, block, doorType, doorIndex = 0, swing = DEFAULT_SWING):
         DistributedObjectAI.__init__(self, air)
 
         self.block = block
@@ -37,8 +37,8 @@ class DistributedDoorAI(DistributedObjectAI):
 
         self.otherDoor = None
 
-        self.doorFSM = DoorFSM(self.air, self, field='setState')
-        self.exitDoorFSM = DoorFSM(self.air, self, field='setExitDoorState')
+        self.doorFSM = DoorFSM(self.air, self, field = 'setState')
+        self.exitDoorFSM = DoorFSM(self.air, self, field = 'setExitDoorState')
 
     def setZoneIdAndBlock(self, zoneId, block):
         self.zoneId = zoneId
@@ -47,13 +47,13 @@ class DistributedDoorAI(DistributedObjectAI):
     def getZoneIdAndBlock(self):
         return [self.zoneId, self.block]
 
-    def setState(self, state, ts=0):
+    def setState(self, state, ts = 0):
         self.doorFSM.request(state)
 
     def getState(self):
         return [self.doorFSM.state.lower(), globalClockDelta.getRealNetworkTime()]
 
-    def setExitDoorState(self, state, ts=0):
+    def setExitDoorState(self, state, ts = 0):
         self.exitDoorFSM.request(state)
 
     def getExitDoorState(self):
