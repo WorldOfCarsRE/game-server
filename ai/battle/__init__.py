@@ -1669,7 +1669,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 'level': suit.actualLevel,
                 'track': suit.dna.dept,
                 'isSkelecog': suit.getSkelecog(),
-                'isForeman': suit.isForeman(),
+                'isForeman': suit.foreman,
                 'isVP': 0,
                 'isCFO': 0,
                 'isSupervisor': suit.supervisor,

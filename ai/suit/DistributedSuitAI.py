@@ -41,6 +41,7 @@ class DistributedSuitBaseAI(DistributedObjectAI):
         self.maxHP = 6
         self.virtual = 0
         self.supervisor = 0
+        self.foreman = 0
 
     def getDNAString(self):
         return self.dna.makeNetString()
