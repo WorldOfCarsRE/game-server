@@ -15125,6 +15125,59 @@ Quest2RewardDict = {}
 Tier2Reward2QuestsDict = {}
 Quest2RemainingStepsDict = {}
 
+def getAllRewardIdsForReward(rewardId):
+    if rewardId is AnyCashbotSuitPart:
+        return list(range(4000, 4011 + 1))
+    if rewardId is AnyLawbotSuitPart:
+        return list(range(4100, 4113 + 1))
+    if rewardId is AnyBossbotSuitPart:
+        return list(range(4200, 4216 + 1))
+    return (
+     rewardId,)
+
+def findFinalRewardId(questId):
+    finalRewardId = Quest2RewardDict.get(questId)
+    if finalRewardId:
+        remainingSteps = Quest2RemainingStepsDict.get(questId)
+    else:
+        try:
+            questDesc = QuestDict[questId]
+        except KeyError:
+            print('findFinalRewardId: Quest ID: %d not found' % questId)
+            return -1
+
+        nextQuestId = questDesc.reward
+        if nextQuestId == NA:
+            finalRewardId = questDesc.reward
+            remainingSteps = 1
+        else:
+            if type(nextQuestId) == type(()):
+                (finalRewardId, remainingSteps) = findFinalRewardId(nextQuestId[0])
+                for id in nextQuestId[1:]:
+                    findFinalRewardId(id)
+
+            else:
+                (finalRewardId, remainingSteps) = findFinalRewardId(nextQuestId)
+            remainingSteps += 1
+        if finalRewardId != OBSOLETE:
+            if questDesc.start == Start:
+                tier = questDesc.tier
+                tier2RewardDict = Tier2Reward2QuestsDict.setdefault(tier, {})
+                rewardIds = getAllRewardIdsForReward(finalRewardId)
+                for rewardId in rewardIds:
+                    questList = tier2RewardDict.setdefault(rewardId, [])
+                    questList.append(questId)
+
+        else:
+            finalRewardId = None
+        Quest2RewardDict[questId] = finalRewardId
+        Quest2RemainingStepsDict[questId] = remainingSteps
+    return (
+     finalRewardId, remainingSteps)
+
+for questId in list(QuestDict.keys()):
+    findFinalRewardId(questId)
+
 class Reward:
 
     def __init__(self, id, reward):
