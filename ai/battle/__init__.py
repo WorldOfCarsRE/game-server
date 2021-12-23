@@ -1614,6 +1614,10 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             elif self.toonAttacks[toonId].track == Tracks.PASS or self.toonAttacks[toonId].track == Tracks.UN_ATTACK:
                 self.toonAttacks[toonId] = ToonAttack(toonId, Tracks.NO_ATTACK)
 
+            if self.toonAttacks[toonId].track != Tracks.NO_ATTACK:
+                if toonId not in self.helpfulToons:
+                    self.helpfulToons.append(toonId)
+
         self.battleCalc.calculateRound()
 
         for toonId in self.activeToons:
