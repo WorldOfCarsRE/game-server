@@ -2168,12 +2168,12 @@ class DistributedBattleAI(DistributedBattleBaseAI):
             self.demand('Resume')
         else:
             if not self.suits:
-                 for toonId in self.activeToons:
-                     toon = self.getToon(toonId)
-                     if toon:
-                         self.toonItems[toonId] = self.air.questManager.recoverItems(toon, self.suitsKilled, self.zoneId)
-                         if toonId in self.helpfulToons:
-                             self.toonMerits[toonId] = self.air.promotionMgr.recoverMerits(toon, self.suitsKilled, self.zoneId)
+                for toonId in self.activeToons:
+                    toon = self.getToon(toonId)
+                    if toon:
+                        self.toonItems[toonId] = self.air.questManager.recoverItems(toon, self.suitsKilled, self.zoneId)
+                        if toonId in self.helpfulToons:
+                            self.toonMerits[toonId] = self.air.promotionMgr.recoverMerits(toon, self.suitsKilled, self.zoneId)
 
                 self.d_setMembers()
                 self.d_setBattleExperience()
