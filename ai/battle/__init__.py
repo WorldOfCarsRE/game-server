@@ -2179,6 +2179,7 @@ class DistributedBattleAI(DistributedBattleBaseAI):
 
                 self.d_setMembers()
                 self.d_setBattleExperience()
+                self.d_setState('Reward')
                 self.demand('Reward')
             else:
                 self.d_setMembers()
