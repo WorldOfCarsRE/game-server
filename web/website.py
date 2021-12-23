@@ -172,7 +172,7 @@ def getAccountDays(createdTime):
 
     return accountDays
 
-async def generateObjectId(genRange: GenerateRange, cursor: MongoClient):
+def generateObjectId(genRange: GenerateRange, cursor: MongoClient):
     currentId = genRange.getCurrent()
     genRange.setCurrent(currentId + 1)
     cursor.objects.update_one({'type': 'objectId'}, {'$set': {'nextId': currentId + 1}})
@@ -185,7 +185,7 @@ async def createNewAccount(username: str, password: str, cursor: MongoClient, ge
     try:
         data = {}
         data['className'] = 'Account'
-        data['_id'] = await generateObjectId(genRange, cursor)
+        data['_id'] = generateObjectId(genRange, cursor)
         cursor.objects.insert_one(data)
         print('inserted')
 
