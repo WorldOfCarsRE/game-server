@@ -1280,6 +1280,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         self.helpfulToons: List[int] = []
 
+        self.toonItems: Dict[int] = {}
+        self.toonMerits: Dict[int] = {}
+
     def enterOff(self):
         pass
 
