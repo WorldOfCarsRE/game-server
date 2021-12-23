@@ -1718,7 +1718,7 @@ class Experience:
     def getNextExpValue(self, track, curSkill = None):
         if curSkill == None:
             curSkill = self[track]
-        retVal = getGagTrack(track).levels[len(Levels[track]) - 1]
+        retVal = getGagTrack(track).levels[len(getGagTrack(track)).levels - 1]
         for amount in getGagTrack(track).levels:
             if curSkill < amount:
                 retVal = amount
