@@ -1388,7 +1388,6 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     def getBattleExperienceData(self):
         deathList = []
         uberList = []
-        helpfulToonsList = []
 
         for i in range(4):
             if i > len(self.battleExperience) - 1:
@@ -1398,7 +1397,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         yield deathList
         yield uberList
-        yield helpfulToonsList
+        yield self.helpfulToons
 
     def getBattleExperience(self):
         # TODO: Read the getMovie() comment.
@@ -1676,7 +1675,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                         if exp > 0:
                             newGagList = toon.experience.getNewGagIndexList(i, exp)
                             toon.experience.addExp(i, amount = exp)
-        
+
                             for level in newGagList:
                                 toon.inventory.addItems(i, level, 1)
 
@@ -1684,9 +1683,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 toon.d_setInventory(toon.inventory.makeNetString())
                 toon.b_setAnimState('victory', 1)
 
-                if self.helpfulToons and toon.doId in self.helpfulToons:
-                        simbase.air.questManager.toonKilledCogs(toon, self.suitsKilled, zoneId, self.helpfulToons)
-                        simbase.air.cogPageManager.toonKilledCogs(toon, self.suitsKilled, zoneId)
+                if toon.doId in self.helpfulToons:
+                    simbase.air.questManager.toonKilledCogs(toon, self.suitsKilled, zoneId, self.helpfulToons)
+                    simbase.air.cogPageManager.toonKilledCogs(toon, self.suitsKilled, zoneId)
                 else:
                     self.notify.debug(f'toon={toon.doId} unhelpful not getting killed cog quest credit')
 
