@@ -1,3 +1,4 @@
+cd ..
 screen -dmS OTP python3 -m otp.otp
 sleep 5
 screen -dmS UberDOG python3 -m otp.uberdog
