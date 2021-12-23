@@ -10,3 +10,4 @@ lark-parser
 numpy
 pymongo
 coloredlogs
+git+https://git.sunrise.games/SunriseGames/libsunrise
