@@ -70,20 +70,17 @@ class SuitHeads(Enum):
     MINGLER = 'm'
     MR_HOLLYWOOD = 'mh'
 
-
 class SuitAttackInfo(NamedTuple):
     name: str
     damages: Tuple[int, ...]
     accuracies: Tuple[int, ...]
     frequencies: Tuple[int, ...]
 
-
 class SuitAttribute(NamedTuple):
     level: int
     hps: Tuple[int, ...]
     defenses: Tuple[int, ...]
     attacks: Tuple[SuitAttackInfo, ...]
-
 
 SuitAttributes = {
     SuitHeads.FLUNKY: SuitAttribute(

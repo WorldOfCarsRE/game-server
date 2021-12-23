@@ -255,3 +255,6 @@ AvLureBonusAccuracy = (60, 60, 70, 70, 80, 80, 100)
 ExperienceCap = 200
 
 LAST_REGULAR_GAG_LEVEL = 5
+
+def getInvasionMultiplier():
+    return 2.0

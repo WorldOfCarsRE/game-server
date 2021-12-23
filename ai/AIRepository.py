@@ -372,6 +372,8 @@ class AIRepository:
         from ai.catalog.CatalogManagerAI import CatalogManagerAI
         from .Objects import DistributedDeliveryManagerAI
         from ai.tutorial.TutorialAI import TutorialManagerAI
+        from ai.coghq.PromotionManagerAI import PromotionManagerAI
+        from ai.suit.SuitInvasionManagerAI import SuitInvasionManagerAI
 
         self.district = ToontownDistrictAI(self)
         self.district.name = 'Sillyville'
@@ -435,6 +437,10 @@ class AIRepository:
 
         self.tutorialManager = TutorialManagerAI(self)
         self.tutorialManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
+
+        self.promotionMgr = PromotionManagerAI(self)
+
+        self.suitInvasionManager = SuitInvasionManagerAI(self)
 
         self.loadZones()
 

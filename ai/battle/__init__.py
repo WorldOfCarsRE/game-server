@@ -1648,6 +1648,10 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         if self._barrier is not None and self._barrier.active:
             self._barrier.clear(senderId)
 
+    def rewardDone(self):
+        # TODO: Fully complete this.
+        self.d_setState('Resume')
+
     def assignRewards(self):
         activeToonList = []
 
