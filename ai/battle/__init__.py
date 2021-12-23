@@ -1278,6 +1278,8 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.suitsKilled: List[int] = []
         self.suitsKilledThisBattle: List[int] = []
 
+        self.helpfulToons: List[int] = []
+
     def enterOff(self):
         pass
 
@@ -1679,15 +1681,11 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 toon.d_setInventory(toon.inventory.makeNetString())
                 toon.b_setAnimState('victory', 1)
 
-                if simbase.air.config.GetBool('battle-passing-no-credit', True):
-                    if self.helpfulToons and toon.doId in self.helpfulToons:
+                if self.helpfulToons and toon.doId in self.helpfulToons:
                         simbase.air.questManager.toonKilledCogs(toon, self.suitsKilled, zoneId, self.helpfulToons)
                         simbase.air.cogPageManager.toonKilledCogs(toon, self.suitsKilled, zoneId)
-                    else:
-                        self.notify.debug(f'toon={toon.doId} unhelpful not getting killed cog quest credit')
                 else:
-                    simbase.air.questManager.toonKilledCogs(toon, self.suitsKilled, zoneId, self.helpfulToons)
-                    simbase.air.cogPageManager.toonKilledCogs(toon, self.suitsKilled, zoneId)
+                    self.notify.debug(f'toon={toon.doId} unhelpful not getting killed cog quest credit')
 
     def _serverMovieDone(self, avIds):
         deltaHps: Dict[int, int] = {toonId: 0 for toonId in self.activeToons}
@@ -2170,12 +2168,12 @@ class DistributedBattleAI(DistributedBattleBaseAI):
             self.demand('Resume')
         else:
             if not self.suits:
-                # for toonId in self.activeToons:
-                #     toon = self.getToon(toonId)
-                #     if toon:
-                #         self.toonItems[toonId] = self.air.questManager.recoverItems(toon, self.suitsKilled, self.zoneId)
-                #         if toonId in self.helpfulToons:
-                #             self.toonMerits[toonId] = self.air.promotionMgr.recoverMerits(toon, self.suitsKilled, self.zoneId)
+                 for toonId in self.activeToons:
+                     toon = self.getToon(toonId)
+                     if toon:
+                         self.toonItems[toonId] = self.air.questManager.recoverItems(toon, self.suitsKilled, self.zoneId)
+                         if toonId in self.helpfulToons:
+                             self.toonMerits[toonId] = self.air.promotionMgr.recoverMerits(toon, self.suitsKilled, self.zoneId)
 
                 self.d_setMembers()
                 self.d_setBattleExperience()

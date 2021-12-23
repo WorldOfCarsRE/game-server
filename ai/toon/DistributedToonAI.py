@@ -199,6 +199,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.cogCounts = []
         self.animName = ''
         self.animMultiplier = 0
+        self.tutorialAck = 0
 
     def delete(self):
         # Stop our tasks too.
@@ -606,8 +607,18 @@ class DistributedToonAI(DistributedPlayerAI):
         self.animName = animName
         self.animMultiplier = animMultiplier
 
+    def b_setTutorialAck(self, tutorialAck):
+        self.d_setTutorialAck(tutorialAck)
+        self.setTutorialAck(tutorialAck)
+
+    def d_setTutorialAck(self, tutorialAck):
+        self.sendUpdate('setTutorialAck', [tutorialAck])
+
+    def setTutorialAck(self, tutorialAck):
+        self.tutorialAck = tutorialAck
+
     def getTutorialAck(self):
-        return 1
+        return self.tutorialAck
 
     def setClothesTopsList(self, clothesList):
         self.clothesTopsList = clothesList
