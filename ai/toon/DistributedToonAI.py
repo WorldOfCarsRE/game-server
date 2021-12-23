@@ -197,6 +197,8 @@ class DistributedToonAI(DistributedPlayerAI):
         self.questCarryLimit = 1
         self.cogs = []
         self.cogCounts = []
+        self.animName = ''
+        self.animMultiplier = 0
 
     def delete(self):
         # Stop our tasks too.
@@ -590,6 +592,19 @@ class DistributedToonAI(DistributedPlayerAI):
 
     def getLastHood(self):
         return self.lastHood
+
+    def b_setAnimState(self, animName, animMultiplier):
+        self.setAnimState(animName, animMultiplier)
+        self.d_setAnimState(animName, animMultiplier)
+
+    def d_setAnimState(self, animName, animMultiplier):
+        timestamp = globalClockDelta.getRealNetworkTime()
+        self.sendUpdate('setAnimState', [animName, animMultiplier, timestamp])
+
+    def setAnimState(self, animName, animMultiplier, timestamp = 0):
+        # TODO: Missing Disney's security checks.
+        self.animName = animName
+        self.animMultiplier = animMultiplier
 
     def getTutorialAck(self):
         return 1
@@ -1718,7 +1733,8 @@ class Experience:
     def getNextExpValue(self, track, curSkill = None):
         if curSkill == None:
             curSkill = self[track]
-        retVal = getGagTrack(track).levels[len(getGagTrack(track)).levels - 1]
+        levels = getGagTrack(track).levels
+        retVal = levels[len(levels) - 1]
         for amount in getGagTrack(track).levels:
             if curSkill < amount:
                 retVal = amount

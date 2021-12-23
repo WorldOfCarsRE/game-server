@@ -1671,7 +1671,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                         if exp > 0:
                             newGagList = toon.experience.getNewGagIndexList(i, exp)
                             toon.experience.addExp(i, amount = exp)
-                            toon.inventory.addItemWithList(i, newGagList)
+        
+                            for level in newGagList:
+                                toon.inventory.addItems(i, level, 1)
 
                 toon.b_setExperience(toon.experience.makeNetString())
                 toon.d_setInventory(toon.inventory.makeNetString())
