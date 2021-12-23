@@ -27,10 +27,9 @@ from dataclasses import dataclass, field
 NO_ID = -1
 NO_ATTACK = -1
 
-
 def getSkillGained(toonSkillPtsGained, toonId, track):
     exp = 0
-    expList = self.toonSkillPtsGained.get(toonId, None)
+    expList = toonSkillPtsGained.get(toonId, None)
 
     if expList is not None:
         exp = expList[track]
@@ -1654,9 +1653,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 for i in range(NUM_TRACKS):
                     uberIndex = LAST_REGULAR_GAG_LEVEL + 1
                     exp = getSkillGained(self.battleCalc.toonSkillPtsGained, toon.doId, i)
-                    needed = Levels[i][LAST_REGULAR_GAG_LEVEL + 1] + UberSkill
+                    needed = getGagTrack(i).levels[LAST_REGULAR_GAG_LEVEL + 1] + UberSkill
                     hasUber = 0
-                    totalExp = exp + toon.experience.getExp(i)
+                    totalExp = exp + toon.experience[i]
 
                     if toon.inventory.numItem(i, uberIndex) > 0:
                         hasUber = 1
@@ -1664,8 +1663,8 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                     if totalExp >= needed or totalExp >= MaxSkill:
                         if toon.inventory.totalProps < toon.getMaxCarry() and not hasUber:
                             uberLevel = LAST_REGULAR_GAG_LEVEL + 1
-                            toon.inventory.addItem(i, uberLevel)
-                            toon.experience.setExp(i, Levels[i][LAST_REGULAR_GAG_LEVEL + 1])
+                            toon.inventory.addItems(i, uberLevel, 1)
+                            toon.experience.setExp(i, getGagTrack(i).levels[LAST_REGULAR_GAG_LEVEL + 1])
                         else:
                             toon.experience.setExp(i, MaxSkill)
                     else:

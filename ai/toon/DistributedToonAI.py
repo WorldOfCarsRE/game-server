@@ -1714,3 +1714,29 @@ class Experience:
                 return max(xpLevels.index(amount) - 1, 0)
         else:
             return len(xpLevels) - 1
+
+    def getNextExpValue(self, track, curSkill = None):
+        if curSkill == None:
+            curSkill = self[track]
+        retVal = getGagTrack(track).levels[len(Levels[track]) - 1]
+        for amount in getGagTrack(track).levels:
+            if curSkill < amount:
+                retVal = amount
+                return retVal
+
+        return retVal
+
+    def getNewGagIndexList(self, track, extraSkill):
+        retList = []
+        curSkill = self[track]
+        nextExpValue = self.getNextExpValue(track, curSkill)
+        finalGagFlag = 0
+        while curSkill + extraSkill >= nextExpValue and curSkill < nextExpValue and not finalGagFlag:
+            retList.append(getGagTrack(track).levels.index(nextExpValue))
+            newNextExpValue = self.getNextExpValue(track, nextExpValue)
+            if newNextExpValue == nextExpValue:
+                finalGagFlag = 1
+            else:
+                nextExpValue = newNextExpValue
+
+        return retList
