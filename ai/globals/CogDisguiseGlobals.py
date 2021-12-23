@@ -16,3 +16,36 @@ rightArmUpper = 16384
 rightArmLower = 32768
 rightArmHand = 65536
 upperTorso = torsoLeftShoulder
+
+PartsPerSuitBitmasks = (131071,
+ 130175,
+ 56447,
+ 56411)
+
+PartsQueryMasks = (leftLegFoot + leftLegLower + leftLegUpper,
+ rightLegFoot + rightLegLower + rightLegUpper,
+ torsoPelvis + torsoHealthMeter + torsoChest + torsoRightShoulder + torsoLeftShoulder,
+ leftArmHand + leftArmLower + leftArmUpper,
+ rightArmHand + rightArmLower + rightArmUpper)
+
+def getNextPart(parts, partIndex, dept):
+    dept = dept2deptIndex(dept)
+    needMask = PartsPerSuitBitmasks[dept] & PartsQueryMasks[partIndex]
+    haveMask = parts[dept] & PartsQueryMasks[partIndex]
+    nextPart = ~needMask | haveMask
+    nextPart = nextPart ^ nextPart + 1
+    nextPart = nextPart + 1 >> 1
+    return nextPart
+
+def isSuitComplete(parts, dept):
+    dept = dept2deptIndex(dept)
+    for p in range(len(PartsQueryMasks)):
+        if getNextPart(parts, p, dept):
+            return 0
+
+    return 1
+
+def dept2deptIndex(dept):
+    if type(dept) == str:
+        dept = SuitDNA.SuitDept(department).char
+    return dept
