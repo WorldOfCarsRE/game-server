@@ -1657,7 +1657,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                     hasUber = 0
                     totalExp = exp + toon.experience[i]
 
-                    if toon.inventory.numItem(i, uberIndex) > 0:
+                    if toon.inventory.get(i, uberIndex) > 0:
                         hasUber = 1
 
                     if totalExp >= needed or totalExp >= MaxSkill:
