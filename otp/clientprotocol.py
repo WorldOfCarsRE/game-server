@@ -103,6 +103,7 @@ class DISLAccount:
     createFriendsWithChat: str
     chatCodeCreationRule: str
     whitelistChatEnabled: str
+    accountDays: int
 
 class ClientProtocol(ToontownProtocol, MDParticipant):
     def __init__(self, service):
@@ -823,8 +824,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         lastLoggedIn = time.strftime('%c') # time.strftime('%c')
         resp.addString(lastLoggedIn)
 
-        accountDays = 0
-        resp.add_int32(accountDays)
+        resp.addInt32(self.account.accountDays)
 
         resp.addString(self.account.accountType)
         resp.addString(self.account.username)

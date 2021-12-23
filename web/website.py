@@ -6,6 +6,8 @@ from pymongo import MongoClient
 
 from Crypto.Cipher import AES
 
+from datetime import datetime
+
 import asyncio, hashlib, logging, json, os, time, binascii
 
 SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
@@ -21,7 +23,7 @@ DEFAULT_ACCOUNT = {
     'PLAYED_MINUTES': 0,
     'PLAYED_MINUTES_PERIOD': 0,
     'CREATED': time.ctime(),
-    'LAST_LOGIN': time.ctime(),
+    'LAST_LOGIN': time.ctime()
 }
 
 DIR = config['WebServer.CONTENT_DIR']
@@ -120,12 +122,12 @@ async def handle_login(request):
     if not info:
         print(f'Creating new account for {username}...')
         genRange = request.app['generateRange']
-        info = await create_new_account(username, password, pool, genRange)
+        info = await createNewAccount(username, password, pool, genRange)
 
-    cmp_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'].encode(), 10000)
+    cmpHash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'].encode(), 10000)
 
-    if cmp_hash != binascii.a2b_base64(info['hash']):
-        print('hashes dont match', cmp_hash, info['hash'], len(info['hash']))
+    if cmpHash != binascii.a2b_base64(info['hash']):
+        print('hashes dont match', cmpHash, info['hash'], len(info['hash']))
         data = {
             'message': 'Incorrect password.'
         }
@@ -135,22 +137,16 @@ async def handle_login(request):
     del info['salt']
     del info['_id']
 
-    # Now make the token.
+    account = pool.Account.find_one({'_id': info['dislId']})
 
+    info['accountDays'] = getAccountDays(account['CREATED'])
+
+    # Now make the token.
     cipher = AES.new(SECRET, AES.MODE_EAX)
     ciphertext, tag = cipher.encrypt_and_digest(json.dumps(info).encode('utf-8'))
     token = b''.join([cipher.nonce, tag, ciphertext])
 
-    action = 'LOGIN_ACTION=PLAY'
     token = f'{token.hex()}'
-    username = f'{username}'
-    dislid = f'GAME_DISL_ID={info["dislId"]}'
-    download_url = f'PANDA_DOWNLOAD_URL=http://{HOST}:{PORT}/'
-    account_url = f'ACCOUNT_SERVER=http://{HOST}:{PORT}/'
-    is_test_svr = 'IS_TEST_SERVER=0'
-    game_url = f'GAME_SERVER={config["ClientAgent.HOST"]}'
-    acc_params = f'webAccountParams=&chatEligible=1&secretsNeedsParentPassword=0'
-    whitelist_url = f'GAME_WHITELIST_URL=http://{HOST}:{PORT}'
 
     response = {
         'token': token,
@@ -161,13 +157,28 @@ async def handle_login(request):
 
     return web.json_response(response)
 
+def getAccountDays(createdTime):
+    # Retrieve the creation date.
+    try:
+        creationDate = datetime.fromtimestamp(time.mktime(time.strptime(createdTime)))
+    except ValueError:
+        creationDate = ''
+
+    accountDays = -1
+
+    if creationDate:
+        now = datetime.fromtimestamp(time.mktime(time.strptime(time.ctime())))
+        accountDays = abs((now - creationDate).days)
+
+    return accountDays
+
 async def generateObjectId(genRange: GenerateRange, cursor: MongoClient):
     currentId = genRange.getCurrent()
     genRange.setCurrent(currentId + 1)
     cursor.objects.update_one({'type': 'objectId'}, {'$set': {'nextId': currentId + 1}})
     return currentId
 
-async def create_new_account(username: str, password: str, cursor: MongoClient, genRange: GenerateRange):
+async def createNewAccount(username: str, password: str, cursor: MongoClient, genRange: GenerateRange):
     salt = binascii.b2a_base64(hashlib.sha256(os.urandom(60)).digest()).strip()
     accHash = binascii.b2a_base64(hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 10000)).strip().decode()
 
@@ -178,10 +189,8 @@ async def create_new_account(username: str, password: str, cursor: MongoClient, 
         cursor.objects.insert_one(data)
         print('inserted')
 
-        print('CREATED NEW ACCOUNT WITH ID: %s' % data['_id'])
-
-        array = (0).to_bytes(4, 'little') * 6
-        av_set = len(array).to_bytes(2, 'little') + array
+        dislId = data['_id']
+        print(f'CREATED NEW ACCOUNT WITH ID: {dislId}')
 
         fields = list(DEFAULT_ACCOUNT.items())
 
