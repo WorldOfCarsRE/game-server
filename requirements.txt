@@ -1,4 +1,4 @@
-aiohttp
+git+https://github.com/rocketprogrammer/aiomysql.git
 aiomysql
 Cython
 dataslots
