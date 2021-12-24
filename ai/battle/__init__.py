@@ -1654,6 +1654,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     def rewardDone(self):
         # TODO: Fully complete this.
         self.d_setState('Resume')
+        self.demand('Resume')
 
     def assignRewards(self):
         activeToonList = []
@@ -1744,9 +1745,10 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         for suit in deadSuits:
             encounter = {
-                'type': int(suit.head),
+                'type': suit.head.value,
                 'level': suit.actualLevel,
                 'track': suit.dna.dept,
+                'index': int(suit.head),
                 'isSkelecog': suit.getSkelecog(),
                 'isForeman': suit.foreman,
                 'isVP': 0,

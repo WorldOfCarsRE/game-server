@@ -15,7 +15,7 @@ class CogPageManagerAI:
                 if toon.getBuildingRadar()[deptIndex] == 1:
                     continue
 
-                cogIndex = cog['type']
+                cogIndex = cog['index']
                 buildingQuota = CogPageGlobals.COG_QUOTAS[1][cogIndex % suitsPerDept]
                 cogQuota = CogPageGlobals.COG_QUOTAS[0][cogIndex % suitsPerDept]
                 if cogCounts[cogIndex] >= buildingQuota:
@@ -56,7 +56,7 @@ class CogPageManagerAI:
 
         for cog in encounteredCogs:
             if toon.doId in cog['activeToons']:
-                cogIndex = cog['type']
+                cogIndex = cog['index']
                 if cogs[cogIndex] == CogPageGlobals.COG_UNSEEN:
                     cogs[cogIndex] = CogPageGlobals.COG_BATTLED
 

@@ -11,6 +11,7 @@ from ai.battle.BattleGlobals import Tracks
 from ai.building.DistributedDoorAI import TALK_TO_TOM, UNLOCKED
 from ai.building.DistributedDoorAI import DEFEAT_FLUNKY_TOM, DEFEAT_FLUNKY_HQ
 from ai.building.DistributedDoorAI import GO_TO_PLAYGROUND, WRONG_DOOR_HQ
+from ai.building.DistributedDoorAI import TALK_TO_HQ, TALK_TO_HQ_TOM
 
 from ai.building.DistributedDoorAI import DistributedDoorAI
 

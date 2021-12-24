@@ -10,6 +10,13 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 
 notify = directNotify.newCategory('Quests')
 
+GREETING = 0
+QUEST = 1
+INCOMPLETE = 2
+INCOMPLETE_PROGRESS = 3
+INCOMPLETE_WRONG_NPC = 4
+COMPLETE = 5
+LEAVING = 6
 Any = 1
 OBSOLETE = 'OBSOLETE'
 Start = 1
@@ -55,6 +62,19 @@ def seedRandomGen(npcId, avId, tier, rewardHistory):
 
 def seededRandomChoice(seq):
     return QuestRandGen.choice(seq)
+
+def getCompleteStatusWithNpc(questComplete, toNpcId, npc):
+    if questComplete:
+        if npc:
+            if npcMatches(toNpcId, npc):
+                return COMPLETE
+            return INCOMPLETE_WRONG_NPC
+        return COMPLETE
+    elif npc:
+        if npcMatches(toNpcId, npc):
+            return INCOMPLETE_PROGRESS
+        return INCOMPLETE
+    return INCOMPLETE
 
 def npcMatches(toNpcId, npc):
     return toNpcId == npc.getNpcId() or toNpcId == Any or toNpcId == ToonHQ and npc.hq or toNpcId == ToonTailor and npc.getTailor()
