@@ -859,24 +859,24 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 
-        previous_interest = None
+        previousInterest = None
 
         for _interest in self.interests:
             if _interest.handle == handle:
-                previous_interest = _interest
+                previousInterest = _interest
                 break
 
-        if previous_interest is None:
+        if previousInterest is None:
             interest = Interest(self.channel, handle, contextId, parentId, zones)
             self.interests.append(interest)
         else:
-            self.service.log.debug(f'Altering interest {handle} (done: {previous_interest.done}): {previous_interest.zones} -> {zones}')
-            self.interests.remove(previous_interest)
+            self.service.log.debug(f'Altering interest {handle} (done: {previousInterest.done}): {previousInterest.zones} -> {zones}')
+            self.interests.remove(previousInterest)
 
-            if previous_interest.parentId != parentId:
-                killedZones = previous_interest.zones
+            if previousInterest.parentId != parentId:
+                killedZones = previousInterest.zones
             else:
-                killedZones = set(previous_interest.zones).difference(set(zones))
+                killedZones = set(previousInterest.zones).difference(set(zones))
 
             for _interest in self.interests:
                 killedZones = killedZones.difference(set(_interest.zones))
@@ -894,7 +894,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
                         del self.visibleObjects[doId]
 
             for zone in killedZones:
-                self.unsubscribeChannel(locationAsChannel(previous_interest.parentId, zone))
+                self.unsubscribeChannel(locationAsChannel(previousInterest.parentId, zone))
 
             interest = Interest(self.channel, handle, contextId, parentId, zones)
             self.interests.append(interest)

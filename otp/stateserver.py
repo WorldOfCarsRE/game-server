@@ -370,11 +370,11 @@ class DistributedObject(MDParticipant):
                 if not len(children):
                     del self.zoneObjects[oldZone]
         elif msgtype == STATESERVER_QUERY_ZONE_OBJECT_ALL:
-            self.handle_query_zone(dgi, sender)
+            self.handleQueryZone(dgi, sender)
         elif msgtype == STATESERVER_QUERY_OBJECT_ALL:
-            self.handle_query_all(dgi, sender)
+            self.handleQueryAll(dgi, sender)
 
-    def handle_query_all(self, dgi, sender):
+    def handleQueryAll(self, dgi, sender):
         other = dgi.getUint8()
         context = dgi.getUint32()
 
@@ -385,9 +385,9 @@ class DistributedObject(MDParticipant):
         self.appendRequiredData(resp, False, True)
         self.service.sendDatagram(resp)
 
-    def handle_query_zone(self, dgi, sender):
+    def handleQueryZone(self, dgi, sender):
         # STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE
-        handle = dgi.get_uint16()
+        handle = dgi.getUint16()
         contextId = dgi.getUint32()
         parentId = dgi.getUint32()
 
