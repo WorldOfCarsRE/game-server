@@ -1744,7 +1744,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         for suit in deadSuits:
             encounter = {
-                'type': suit.dna.suitType,
+                'type': int(suit.head),
                 'level': suit.actualLevel,
                 'track': suit.dna.dept,
                 'isSkelecog': suit.getSkelecog(),
