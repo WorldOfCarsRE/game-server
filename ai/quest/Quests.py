@@ -103,7 +103,6 @@ class Quest:
 class LocationBasedQuest(Quest):
     def __init__(self, id, quest):
         Quest.__init__(self, id, quest)
-        self.checkLocation(self.quest[0])
 
     def getLocation(self):
         return self.quest[0]
@@ -140,9 +139,6 @@ class NewbieQuest:
 class CogQuest(LocationBasedQuest):
     def __init__(self, id, quest):
         LocationBasedQuest.__init__(self, id, quest)
-        if self.__class__ == CogQuest:
-            self.checkNumCogs(self.quest[1])
-            self.checkCogType(self.quest[2])
 
     def getCogType(self):
         return self.quest[2]
@@ -165,10 +161,6 @@ class CogQuest(LocationBasedQuest):
 class CogNewbieQuest(CogQuest, NewbieQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        if self.__class__ == CogNewbieQuest:
-            self.checkNumCogs(self.quest[1])
-            self.checkCogType(self.quest[2])
-            self.checkNewbieLevel(self.quest[3])
 
     def getNewbieLevel(self):
         return self.quest[3]
@@ -182,9 +174,6 @@ class CogNewbieQuest(CogQuest, NewbieQuest):
 class CogTrackQuest(CogQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        if self.__class__ == CogTrackQuest:
-            self.checkNumCogs(self.quest[1])
-            self.checkCogTrack(self.quest[2])
 
     def getCogTrack(self):
         return self.quest[2]
@@ -197,8 +186,6 @@ class CogTrackQuest(CogQuest):
 class CogLevelQuest(CogQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        self.checkNumCogs(self.quest[1])
-        self.checkCogLevel(self.quest[2])
 
     def getCogType(self):
         return Any
@@ -219,7 +206,6 @@ class SkelecogQBase:
 class SkelecogQuest(CogQuest, SkelecogQBase):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        self.checkNumSkelecogs(self.quest[1])
 
     def getCogType(self):
         return Any
@@ -231,7 +217,6 @@ class SkelecogQuest(CogQuest, SkelecogQBase):
 class SkelecogNewbieQuest(SkelecogQuest, NewbieQuest):
     def __init__(self, id, quest):
         SkelecogQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -247,8 +232,6 @@ class SkelecogTrackQuest(CogTrackQuest, SkelecogQBase):
 
     def __init__(self, id, quest):
         CogTrackQuest.__init__(self, id, quest)
-        self.checkNumSkelecogs(self.quest[1])
-        self.checkSkelecogTrack(self.quest[2])
 
     def doesCogCount(self, avId, cogDict, zoneId, avList):
         return SkelecogQBase.doesCogCount(self, avId, cogDict, zoneId, avList) and self.getCogTrack() == cogDict['track']
@@ -257,8 +240,6 @@ class SkelecogTrackQuest(CogTrackQuest, SkelecogQBase):
 class SkelecogLevelQuest(CogLevelQuest, SkelecogQBase):
     def __init__(self, id, quest):
         CogLevelQuest.__init__(self, id, quest)
-        self.checkNumSkelecogs(self.quest[1])
-        self.checkSkelecogLevel(self.quest[2])
 
     def getCogType(self):
         return Any
@@ -274,7 +255,6 @@ class SkeleReviveQBase:
 class SkeleReviveQuest(CogQuest, SkeleReviveQBase):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        self.checkNumSkeleRevives(self.quest[1])
 
     def getCogType(self):
         return Any
@@ -285,7 +265,6 @@ class SkeleReviveQuest(CogQuest, SkeleReviveQBase):
 class ForemanQuest(CogQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        self.checkNumForemen(self.quest[1])
 
     def getCogType(self):
         return Any
@@ -296,7 +275,6 @@ class ForemanQuest(CogQuest):
 class ForemanNewbieQuest(ForemanQuest, NewbieQuest):
     def __init__(self, id, quest):
         ForemanQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -310,7 +288,6 @@ class ForemanNewbieQuest(ForemanQuest, NewbieQuest):
 class VPQuest(CogQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        self.checkNumVPs(self.quest[1])
 
     def getCogType(self):
         return Any
@@ -324,7 +301,6 @@ class VPQuest(CogQuest):
 class VPNewbieQuest(VPQuest, NewbieQuest):
     def __init__(self, id, quest):
         VPQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -338,7 +314,6 @@ class VPNewbieQuest(VPQuest, NewbieQuest):
 class SupervisorQuest(CogQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        self.checkNumSupervisors(self.quest[1])
 
     def getCogType(self):
         return Any
@@ -350,7 +325,6 @@ class SupervisorQuest(CogQuest):
 class SupervisorNewbieQuest(SupervisorQuest, NewbieQuest):
     def __init__(self, id, quest):
         SupervisorQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -364,7 +338,6 @@ class SupervisorNewbieQuest(SupervisorQuest, NewbieQuest):
 class CFOQuest(CogQuest):
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        self.checkNumCFOs(self.quest[1])
 
     def getCogType(self):
         return Any
@@ -379,7 +352,6 @@ class CFOQuest(CogQuest):
 class CFONewbieQuest(CFOQuest, NewbieQuest):
     def __init__(self, id, quest):
         CFOQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -400,7 +372,6 @@ class RescueQuest(VPQuest):
 class RescueNewbieQuest(RescueQuest, NewbieQuest):
     def __init__(self, id, quest):
         RescueQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -415,9 +386,6 @@ class BuildingQuest(CogQuest):
 
     def __init__(self, id, quest):
         CogQuest.__init__(self, id, quest)
-        self.checkNumBuildings(self.quest[1])
-        self.checkBuildingTrack(self.quest[2])
-        self.checkBuildingFloors(self.quest[3])
 
     def getNumFloors(self):
         return self.quest[3]
@@ -445,7 +413,6 @@ class BuildingQuest(CogQuest):
 class BuildingNewbieQuest(BuildingQuest, NewbieQuest):
     def __init__(self, id, quest):
         BuildingQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[4])
 
     def getNewbieLevel(self):
         return self.quest[4]
@@ -457,7 +424,6 @@ class FactoryQuest(LocationBasedQuest):
 
     def __init__(self, id, quest):
         LocationBasedQuest.__init__(self, id, quest)
-        self.checkNumFactories(self.quest[1])
 
     def getNumQuestItems(self):
         return self.getNumFactories()
@@ -483,7 +449,6 @@ class FactoryQuest(LocationBasedQuest):
 class FactoryNewbieQuest(FactoryQuest, NewbieQuest):
     def __init__(self, id, quest):
         FactoryQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -497,7 +462,6 @@ class FactoryNewbieQuest(FactoryQuest, NewbieQuest):
 class MintQuest(LocationBasedQuest):
     def __init__(self, id, quest):
         LocationBasedQuest.__init__(self, id, quest)
-        self.checkNumMints(self.quest[1])
 
     def getNumQuestItems(self):
         return self.getNumMints()
@@ -517,7 +481,6 @@ class MintQuest(LocationBasedQuest):
 class MintNewbieQuest(MintQuest, NewbieQuest):
     def __init__(self, id, quest):
         MintQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -531,7 +494,6 @@ class MintNewbieQuest(MintQuest, NewbieQuest):
 class CogPartQuest(LocationBasedQuest):
     def __init__(self, id, quest):
         LocationBasedQuest.__init__(self, id, quest)
-        self.checkNumCogParts(self.quest[1])
 
     def getNumQuestItems(self):
         return self.getNumParts()
@@ -550,7 +512,6 @@ class CogPartQuest(LocationBasedQuest):
 class CogPartNewbieQuest(CogPartQuest, NewbieQuest):
     def __init__(self, id, quest):
         CogPartQuest.__init__(self, id, quest)
-        self.checkNewbieLevel(self.quest[2])
 
     def getNewbieLevel(self):
         return self.quest[2]
@@ -564,9 +525,6 @@ class CogPartNewbieQuest(CogPartQuest, NewbieQuest):
 class DeliverGagQuest(Quest):
     def __init__(self, id, quest):
         Quest.__init__(self, id, quest)
-        self.checkNumGags(self.quest[0])
-        self.checkGagTrack(self.quest[1])
-        self.checkGagItem(self.quest[2])
 
     def getGagType(self):
         return (self.quest[1], self.quest[2])
@@ -589,7 +547,6 @@ class DeliverGagQuest(Quest):
 class DeliverItemQuest(Quest):
     def __init__(self, id, quest):
         Quest.__init__(self, id, quest)
-        self.checkDeliveryItem(self.quest[0])
 
     def getItem(self):
         return self.quest[0]
@@ -615,13 +572,6 @@ class VisitQuest(Quest):
 class RecoverItemQuest(LocationBasedQuest):
     def __init__(self, id, quest):
         LocationBasedQuest.__init__(self, id, quest)
-        self.checkNumItems(self.quest[1])
-        self.checkRecoveryItem(self.quest[2])
-        self.checkPercentChance(self.quest[3])
-        if len(self.quest) > 5:
-            self.checkRecoveryItemHolderAndType(self.quest[4], self.quest[5])
-        else:
-            self.checkRecoveryItemHolderAndType(self.quest[4])
 
     def getNumQuestItems(self):
         return self.getNumItems()
@@ -653,8 +603,6 @@ class RecoverItemQuest(LocationBasedQuest):
 class TrackChoiceQuest(Quest):
     def __init__(self, id, quest):
         Quest.__init__(self, id, quest)
-        self.checkTrackChoice(self.quest[0])
-        self.checkTrackChoice(self.quest[1])
 
     def getChoices(self):
         return (self.quest[0], self.quest[1])
@@ -694,8 +642,6 @@ class FriendNewbieQuest(FriendQuest, NewbieQuest):
 
     def __init__(self, id, quest):
         FriendQuest.__init__(self, id, quest)
-        self.checkNumFriends(self.quest[0])
-        self.checkNewbieLevel(self.quest[1])
 
     def getNumQuestItems(self):
         return self.getNumFriends()
@@ -746,8 +692,6 @@ class PhoneQuest(Quest):
 class MinigameNewbieQuest(Quest, NewbieQuest):
     def __init__(self, id, quest):
         Quest.__init__(self, id, quest)
-        self.checkNumMinigames(self.quest[0])
-        self.checkNewbieLevel(self.quest[1])
 
     def getNumQuestItems(self):
         return self.getNumMinigames()

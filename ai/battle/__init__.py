@@ -1308,6 +1308,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     def getZoneId(self):
         return self.zoneId
 
+    def getTaskZoneId(self):
+        return self.zoneId
+
     def getInitialSuitPos(self):
         return self.initialSuitPos
 
@@ -1692,8 +1695,8 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 toon.b_setAnimState('victory', 1)
 
                 if toon.doId in self.helpfulToons:
-                    simbase.air.questManager.toonKilledCogs(toon, self.suitsKilled, zoneId, self.helpfulToons)
-                    simbase.air.cogPageManager.toonKilledCogs(toon, self.suitsKilled, zoneId)
+                    simbase.air.questManager.toonKilledCogs(toon, self.suitsKilled, self.getTaskZoneId(), self.helpfulToons)
+                    simbase.air.cogPageManager.toonKilledCogs(toon, self.suitsKilled, self.getTaskZoneId())
                 else:
                     self.notify.debug(f'toon={toon.doId} unhelpful not getting killed cog quest credit')
 
