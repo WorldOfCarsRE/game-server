@@ -1,3 +1,5 @@
+from ai.suit.SuitGlobals import suitDepts
+
 leftLegUpper = 1
 leftLegLower = 2
 leftLegFoot = 4
@@ -47,5 +49,5 @@ def isSuitComplete(parts, dept):
 
 def dept2deptIndex(dept):
     if type(dept) == str:
-        dept = SuitDNA.SuitDept(department).char
+        dept = suitDepts.index(dept)
     return dept

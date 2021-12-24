@@ -1,8 +1,8 @@
 from direct.directnotify.DirectNotifyGlobal import directNotify
 import random
-from ai.suit.DistributedSuitAI import SuitDNA
 from ai.globals import CogDisguiseGlobals
 from ai.battle.BattleGlobals import getInvasionMultiplier
+from ai.suit.SuitGlobals import suitDepts
 MeritMultiplier = 0.5
 
 class PromotionManagerAI:
@@ -34,9 +34,9 @@ class PromotionManagerAI:
 
         self.notify.debug(f'recoverMerits: multiplier = {multiplier}')
         for cogDict in cogList:
-            dept = SuitDNA.suitDepts.index(cogDict['track'])
+            dept = suitDepts.index(cogDict['track'])
             if avId in cogDict['activeToons']:
-                if CogDisguiseGlobals.isSuitComplete(av.getCogParts(), SuitDNA.suitDepts.index(cogDict['track'])):
+                if CogDisguiseGlobals.isSuitComplete(av.getCogParts(), dept):
                     self.notify.debug(f'recoverMerits: checking against cogDict: {cogDict}')
                     rand = random.random() * 100
                     if rand <= self.getPercentChance() and not cogDict['isVirtual']:

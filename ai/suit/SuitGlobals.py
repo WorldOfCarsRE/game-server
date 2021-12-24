@@ -16,6 +16,11 @@ class SuitDept(IntEnum):
     MONEY = 2, 'm'
     SELL = 3, 's'
 
+suitDepts = ['c',
+ 'l',
+ 'm',
+ 's']
+
 class SuitHeads(Enum):
     def __new__(cls, value):
         index = len(cls.__members__)
