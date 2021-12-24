@@ -1,4 +1,4 @@
-from ai.suit.SuitGlobals import suitDepts, suitsPerDept
+from ai.suit.SuitGlobals import suitDepts, suitsPerDept, SuitHeads
 from ai.suit import CogPageGlobals
 
 class CogPageManagerAI:
@@ -11,7 +11,7 @@ class CogPageManagerAI:
 
         for cog in killedCogs:
             if toon.doId in cog['activeToons']:
-                deptIndex = suitDepts.index(cogDict['track'])
+                deptIndex = suitDepts.index(cog['track'])
                 if toon.getBuildingRadar()[deptIndex] == 1:
                     continue
 

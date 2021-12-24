@@ -202,6 +202,9 @@ class DistributedToonAI(DistributedPlayerAI):
         self.tutorialAck = 0
         self.buildingRadar = [0, 0, 0, 0]
         self.cogRadar = [0, 0, 0, 0]
+        self.maxCarry = 0
+        self.speedChatStyleIndex = 1
+        self.teleportZoneArray = []
 
     def delete(self):
         # Stop our tasks too.
@@ -363,8 +366,18 @@ class DistributedToonAI(DistributedPlayerAI):
     def getExperience(self):
         return self.experience.makeNetString()
 
+    def b_setMaxCarry(self, maxCarry):
+        self.setMaxCarry(maxCarry)
+        self.d_setMaxCarry(maxCarry)
+
+    def d_setMaxCarry(self, maxCarry):
+        self.sendUpdate('setMaxCarry', [maxCarry])
+
+    def setMaxCarry(self, maxCarry):
+        self.maxCarry = maxCarry
+
     def getMaxCarry(self):
-        return 20
+        return self.maxCarry
 
     def setTrackAccess(self, trackAccess):
         self.trackAccess = trackAccess
@@ -1136,11 +1149,31 @@ class DistributedToonAI(DistributedPlayerAI):
     def setDeliverySchedule(self, onOrder, doUpdateLater = True):
         self.setBothSchedules(onOrder, None)
 
+    def b_setSpeedChatStyleIndex(self, index):
+        self.setSpeedChatStyleIndex(index)
+        self.d_setSpeedChatStyleIndex(index)
+
+    def d_setSpeedChatStyleIndex(self, index):
+        self.sendUpdate('setSpeedChatStyleIndex', [index])
+
+    def setSpeedChatStyleIndex(self, index):
+        self.speedChatStyleIndex = index
+
     def getSpeedChatStyleIndex(self):
-        return 1
+        return self.speedChatStyleIndex
+
+    def b_setTeleportAccess(self, teleportZoneArray):
+        self.setTeleportAccess(teleportZoneArray)
+        self.d_setTeleportAccess(teleportZoneArray)
+
+    def d_setTeleportAccess(self, teleportZoneArray):
+        self.sendUpdate('setTeleportAccess', [teleportZoneArray])
+
+    def setTeleportAccess(self, teleportZoneArray):
+        self.teleportZoneArray = teleportZoneArray
 
     def getTeleportAccess(self):
-        return []
+        return self.teleportZoneArray
 
     def b_setCogStatus(self, cogStatusList):
         self.setCogStatus(cogStatusList)
