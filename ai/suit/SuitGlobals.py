@@ -438,10 +438,8 @@ SuitAttributes = {
     ),
 }
 
-
 def getActualFromRelativeLevel(head: SuitHeads, relLevel: int):
     return SuitAttributes[head].level + relLevel
-
 
 def pickFromFreqList(freqList):
     randNum = random.randint(0, 99)
@@ -457,7 +455,6 @@ def pickFromFreqList(freqList):
 
     return level
 
-
 GROUP_ATTACKS = {
     'GuiltTrip',
     'ParadigmShift',
@@ -470,3 +467,5 @@ GROUP_ATTACKS = {
 
 def suitAttackAffectsGroup(attackName):
     return attackName in GROUP_ATTACKS
+
+suitsPerDept = 8

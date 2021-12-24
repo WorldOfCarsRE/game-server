@@ -200,6 +200,8 @@ class DistributedToonAI(DistributedPlayerAI):
         self.animName = ''
         self.animMultiplier = 0
         self.tutorialAck = 0
+        self.buildingRadar = [0, 0, 0, 0]
+        self.cogRadar = [0, 0, 0, 0]
 
     def delete(self):
         # Stop our tasks too.
@@ -1166,11 +1168,31 @@ class DistributedToonAI(DistributedPlayerAI):
     def getCogCount(self):
         return self.cogCounts
 
+    def b_setCogRadar(self, radar):
+        self.setCogRadar(radar)
+        self.d_setCogRadar(radar)
+
+    def setCogRadar(self, radar):
+        self.cogRadar = radar
+
+    def d_setCogRadar(self, radar):
+        self.sendUpdate('setCogRadar', [radar])
+
     def getCogRadar(self):
-        return [0] * 4
+        return self.cogRadar
+
+    def b_setBuildingRadar(self, radar):
+        self.setBuildingRadar(radar)
+        self.d_setBuildingRadar(radar)
+
+    def setBuildingRadar(self, radar):
+        self.buildingRadar = radar
+
+    def d_setBuildingRadar(self, radar):
+        self.sendUpdate('setBuildingRadar', [radar])
 
     def getBuildingRadar(self):
-        return [0] * 4
+        return self.buildingRadar
 
     def getCogLevels(self):
         return [0] * 4
