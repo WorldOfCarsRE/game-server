@@ -167,7 +167,7 @@ NPCToonNames = {
     1214: 'Gusty Kate',
     1215: 'Dinah Down',
     1216: 'Rod Reel',
-    1217: 'CC Weed',
+    1217: 'CC Shells',
     1218: 'Pacific Tim',
     1219: 'Brian Beachead',
     1220: 'Carla Canal',

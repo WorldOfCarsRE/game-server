@@ -6465,7 +6465,7 @@ group "donaldsDock" [
   ]
   landmark_building "tb21:toon_landmark_DD_B2_DNARoot" [
    code [ "toon_landmark_DD_B2" ]
-   title [ "Poop Deck Gym" ]
+   title [ "Stern Deck Gym" ]
    pos [ 245 75 0 ]
    nhpr [ -90 0 -0 ]
    door [
@@ -6478,21 +6478,24 @@ group "donaldsDock" [
      code [ "DD_Portago" ]
      color [ 0 0.317647 0.156863 1 ]
      pos [ 0 0 -0.73 ]
-     scale [ 1.8 1 1.8 ]
+     scale [ 1.7 1 1.7 ]
      kern [ 0.020009 ]
      wiggle [ 2.71389 ]
      stomp [ 0.03 ]
      text [
-      letters [ "P" ]
+      letters [ "S" ]
      ]
      text [
-      letters [ "O" ]
+      letters [ "T" ]
      ]
      text [
-      letters [ "O" ]
+      letters [ "E" ]
      ]
      text [
-      letters [ "P" ]
+      letters [ "R" ]
+     ]
+     text [
+      letters [ "N" ]
      ]
      text [
       letters [ " " ]
