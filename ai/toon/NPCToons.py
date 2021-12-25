@@ -730,8 +730,7 @@ def createNPC(air, npcId, desc = None, zoneId = 0, posIndex = 0, questCallback =
     elif npcType == NPC_TAILOR:
         npc = DistributedNPCTailorAI(air, npcId, name)
     elif npcType == NPC_BLOCKER:
-        # TODO
-        return None
+        npc = DistributedNPCBlockerAI(air, npcId, name)
     elif npcType == NPC_FISHERMAN:
         npc = DistributedNPCFishermanAI(air, npcId, name)
     elif npcType == NPC_PETCLERK:

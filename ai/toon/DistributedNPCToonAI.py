@@ -131,12 +131,22 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
     def chooseTrack(self, choice):
         pass
 
+    def incompleteQuest(self, avId, questId, completeStatus, toNpcId):
+        self.occupier = avId
+        self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_INCOMPLETE,
+         self.npcId,
+         avId,
+         [questId, completeStatus, toNpcId],
+         globalClockDelta.getRealNetworkTime()])
+        if not self.tutorial:
+            taskMgr.doMethodLater(60.0, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+
     def avatarEnter(self):
         avId = self.air.currentAvatarSender
         self.air.questManager.requestInteract(avId, self)
 
     def cancelChoseQuest(self, avId):
-        self.busy = avId
+        self.occupier = avId
         self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_QUEST_CHOICE_CANCEL,
          self.npcId,
          avId,
@@ -146,7 +156,7 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
             taskMgr.doMethodLater(60.0, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
 
     def assignQuest(self, avId, questId, rewardId, toNpcId):
-        self.occupied = avId
+        self.occupier = avId
         if self.questCallback:
             self.questCallback()
         self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_ASSIGN,
@@ -164,11 +174,11 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
         self.pendingTrackQuest = None
         self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_TIMEOUT,
          self.npcId,
-         self.occupied,
+         self.occupier,
          [],
          globalClockDelta.getRealNetworkTime()])
         self.sendClearMovie(None)
-        self.occupied = 0
+        self.occupier = 0
         return Task.done
 
     def sendClearMovie(self, task):
@@ -176,7 +186,7 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
         self.pendingQuests = None
         self.pendingTracks = None
         self.pendingTrackQuest = None
-        self.occupied = 0
+        self.occupier = 0
         self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_CLEAR,
          self.npcId,
          0,
@@ -557,3 +567,52 @@ class DistributedNPCFlippyInToonHallAI(DistributedNPCToonAI):
 
 class DistributedNPCScientistAI(DistributedNPCToonBaseAI):
     pass
+
+class DistributedNPCBlockerAI(DistributedNPCToonBaseAI):
+    def __init__(self, air, npcId, name):
+        DistributedNPCToonBaseAI.__init__(self, air, npcId, name)
+
+        self.tutorial = False
+
+    def avatarEnter(self):
+        avId = self.air.currentAvatarSender
+        av = self.air.doTable.get(avId)
+        if av is None:
+            self.notify.warning(f'toon isnt there! toon: {avId}')
+            return
+        self.acceptOnce(self.air.getDeleteDoIdEvent(avId), self.__handleUnexpectedExit, extraArgs = [avId])
+        self.sendStartMovie(avId)
+        return
+
+    def sendStartMovie(self, avId):
+        self.occupier = avId
+        self.sendUpdate('setMovie', [NPCToons.BLOCKER_MOVIE_START,
+         self.npcId,
+         avId,
+         globalClockDelta.getRealNetworkTime()])
+        if not self.tutorial:
+            taskMgr.doMethodLater(NPCToons.CLERK_COUNTDOWN_TIME, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+
+    def sendTimeoutMovie(self, task):
+        self.timedOut = 1
+        self.sendUpdate('setMovie', [NPCToons.BLOCKER_MOVIE_TIMEOUT,
+         self.npcId,
+         self.occupier,
+         globalClockDelta.getRealNetworkTime()])
+        self.sendClearMovie(None)
+        return Task.done
+
+    def sendClearMovie(self, task):
+        self.occupier = 0
+        self.timedOut = 0
+        self.sendUpdate('setMovie', [NPCToons.BLOCKER_MOVIE_CLEAR,
+         self.npcId,
+         0,
+         globalClockDelta.getRealNetworkTime()])
+        return Task.done
+
+    def __handleUnexpectedExit(self, avId):
+        self.notify.warning('avatar:' + str(avId) + ' has exited unexpectedly')
+        if not self.tutorial:
+            self.sendTimeoutMovie(None)
+        return
