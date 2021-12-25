@@ -127,6 +127,11 @@ class TutorialInstance(FSM):
         self.interiorShopDoor.requestDelete()
         del self.interiorShopDoor
 
+        if self.suit:
+            self.suit.requestDelete()
+
+        del self.suit
+
         if self.hqHarry:
             self.hqHarry.requestDelete()
 
@@ -134,6 +139,11 @@ class TutorialInstance(FSM):
 
         self.hqBuilding.cleanup()
         del self.hqBuilding
+
+        if self.flippy:
+            self.flippy.requestDelete()
+
+        del self.flippy
 
         for zoneId in self.getZones():
             self.air.deallocateZone(zoneId)
@@ -270,7 +280,7 @@ class TutorialManagerAI(DistributedObjectAI):
             av.b_setTutorialAck(1)
 
         self.cleanup(avId)
-        self.ignore(self.air.getAvatarExitEvent(avId))
+        self.ignore(self.air.getDeleteDoIdEvent(avId))
 
     def toonArrived(self):
         avId = self.air.currentAvatarSender
