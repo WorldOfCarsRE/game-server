@@ -159,7 +159,7 @@ class TutorialInstance(FSM):
         self.interiorShopDoor.setOtherDoor(self.exteriorShopDoor)
 
         # Generate our HQ.
-        hqHarryDesc = (self.hqZone, TutorialHQOfficerName, ('dls', 'ms', 'm', 'm', 6, 0, 6, 6, 0, 10, 0, 10, 2, 9), 'm', 1, 0)
+        hqHarryDesc = (self.hqZone, TutorialHQOfficerName, ('dls', 'ms', 'm', 'm', 6, 0, 6, 6, 0, 10, 0, 10, 2, 9), 'm', 1, NPCToons.NPC_HQ)
         self.hqHarry = NPCToons.createNPC(self.air, 20002, hqHarryDesc, self.hqZone, 0, self.preparePlayerForTunnel)
         self.hqHarry.tutorial = True
 

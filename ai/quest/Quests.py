@@ -16299,6 +16299,10 @@ def getQuestFromNpcId(questId):
 def getQuestToNpcId(questId):
     return QuestDict.get(questId).toNpc
 
+def getQuestReward(questId, av):
+    baseRewardId = QuestDict.get(questId).reward
+    return transformReward(baseRewardId, av)
+
 def getQuestClass(questId):
     questEntry = QuestDict.get(questId)
     if questEntry:
@@ -16389,6 +16393,31 @@ def chooseBestQuests(tier, currentNpc, av):
         quest[1] = transformReward(quest[1], av)
 
     return bestQuests
+
+def getNextQuest(questId, currentNpc, av):
+    nextQuest = QuestDict[questId].nextQuest
+    if nextQuest == NA:
+        return (NA, NA)
+    elif type(nextQuest) == type(()):
+        nextReward = QuestDict[nextQuest[0]].reward
+        (nextNextQuest, nextNextToNpcId) = getNextQuest(nextQuest[0], currentNpc, av)
+        if nextReward == 400 and nextNextQuest == NA:
+            nextQuest = chooseTrackChoiceQuest(av.getRewardTier(), av)
+        else:
+            nextQuest = random.choice(nextQuest)
+    if not getQuestClass(nextQuest).filterFunc(av):
+        return getNextQuest(nextQuest, currentNpc, av)
+    nextToNpcId = getQuestToNpcId(nextQuest)
+    if nextToNpcId == Any:
+        nextToNpcId = 2004
+    elif nextToNpcId == Same:
+        if currentNpc.hq:
+            nextToNpcId = ToonHQ
+        else:
+            nextToNpcId = currentNpc.getNpcId()
+    elif nextToNpcId == ToonHQ:
+        nextToNpcId = ToonHQ
+    return (nextQuest, nextToNpcId)
 
 def filterQuests(entireQuestPool, currentNpc, av):
     if notify.getDebug():
