@@ -76,6 +76,16 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
     def setMovieDone(self):
         pass
 
+    def rejectAvatar(self, avId):
+        self.occupier = avId
+        self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_REJECT,
+         self.npcId,
+         avId,
+         [],
+         globalClockDelta.getRealNetworkTime()])
+        if not self.tutorial:
+            taskMgr.doMethodLater(5.5, self.sendClearMovie, self.uniqueName('clearMovie'))
+
     def chooseQuest(self, questId):
         avId = self.air.currentAvatarSender
         self.notify.debug('chooseQuest: avatar %s choseQuest %s' % (avId, questId))
