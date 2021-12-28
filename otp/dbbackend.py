@@ -254,7 +254,7 @@ class MongoBackend(DatabaseBackend):
             # Update our generate range current id.
             self.generateRange.setCurrent(entry['nextId'])
 
-    async def generateObjectId(self):
+    def generateObjectId(self):
         currentId = self.generateRange.getCurrent()
         self.generateRange.setCurrent(currentId + 1)
         self.mongodb.objects.update_one({'type': 'objectId'}, {'$set': {'nextId': currentId + 1}})
@@ -275,7 +275,7 @@ class MongoBackend(DatabaseBackend):
                 if field.getName() not in columns:
                     raise OTPCreateFailed(f'Missing required db field: {field.getName()}')
 
-        objectId = await self.generateObjectId()
+        objectId = self.generateObjectId()
 
         data = {}
         data['_id'] = objectId
