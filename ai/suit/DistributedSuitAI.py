@@ -292,8 +292,8 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             #self.suitPlanner.zoneChange(self, self.zoneId, zoneId)
             self.sendSetZone(zoneId)
             self.zoneId = zoneId
-            # if self.pathState == 1:
-            #     self.suitPlanner.checkForBattle(zoneId, self)
+            if self.pathState == 1:
+                self.suitPlanner.checkForBattle(zoneId, self)
 
     def resume(self):
         if self.hp <= 0:
@@ -321,14 +321,14 @@ class DistributedSuitAI(DistributedSuitBaseAI):
         self.stopPathNow()
         name = self.uniqueName('flyAwayNow')
         taskMgr.remove(name)
-        taskMgr.doMethodLater(TO_SKY, self.finishFlyAwayNow, name)
+        taskMgr.doMethodLater(toSky, self.finishFlyAwayNow, name)
 
     def danceNowFlyAwayLater(self):
         self.b_setPathState(PathState.VICTORY_FLYAWAY)
         self.stopPathNow()
         name = self.uniqueName('danceNowFlyAwayLater')
         taskMgr.remove(name)
-        taskMgr.doMethodLater(VICTORY_DANCE + TO_SKY, self.finishFlyAwayNow, name)
+        taskMgr.doMethodLater(victoryDance + toSky, self.finishFlyAwayNow, name)
 
     def finishFlyAwayNow(self, task):
         self.requestRemoval()

@@ -285,6 +285,30 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
     def __battleFinished(self):
         pass
 
+    def __suitCanJoinBattle(self, zoneId):
+        return 0 # TODO: battles need to support joining suits
+        battle = self.battleMgr.getBattle(zoneId)
+        if len(battle.suits) >= self.info.maxBattleSuits:
+            return 0
+        jChanceList = self.info.joinChances
+        ratioIdX = len(battle.toons) - battle.numSuitsEver + 2
+        if ratioIdX >= 0:
+            if ratioIdX < len(jChanceList):
+                if random.randint(0, 99) < jChanceList[ratioIdX]:
+                    return 1
+            return 1
+        return 0
+
+    def checkForBattle(self, zoneId, suit):
+        if self.battleMgr.cellHasBattle(zoneId):
+            if self.__suitCanJoinBattle(zoneId) and \
+               self.battleMgr.requestBattleAddSuit(zoneId, suit):
+                pass
+            else:
+                suit.flyAwayNow()
+            return 1
+        return 0
+
 class BattleManagerAI:
     BATTLE_CONSTRUCTOR = None
     __slots__ = 'air', 'cell2Battle'
@@ -309,6 +333,9 @@ class BattleManagerAI:
             self.cell2Battle[cellId] = battle
 
         return battle
+
+    def getBattle(self, zoneId):
+        return self.cell2Battle.get(zoneId)
 
     def removeBattle(self, battle):
         cellId = battle.battleCellId
