@@ -475,10 +475,10 @@ class DBServer(DownstreamMessageDirector):
         for i in friendData:
             friend = friendData[i]
 
-            dg.add_uint32(friend[0]) # friendId
-            dg.add_string16(friend[1].encode()) # setName
-            dg.add_string16(friend[2]) # setDNAString
-            dg.add_uint32(friend[3]) # setPetId
+            dg.addUint32(friend[0]) # friendId
+            dg.addString(friend[1]) # setName
+            dg.addString(friend[2]) # setDNAString
+            dg.addUint32(friend[3]) # setPetId
 
         # Send the response to the client.
         self.sendDatagram(dg)
