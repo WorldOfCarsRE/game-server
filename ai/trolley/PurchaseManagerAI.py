@@ -90,7 +90,11 @@ class PurchaseManagerAI(DistributedObjectAI):
 
     def requestExit(self):
         avId = self.air.currentAvatarSender
+        self.handlePlayerExit(avId)
         self.requestState(avId, PurchaseState.EXIT)
+
+    def handlePlayerExit(self, avId):
+        pass
 
     def requestPlayAgain(self):
         avId = self.air.currentAvatarSender
@@ -209,3 +213,8 @@ class NewbiePurchaseManagerAI(PurchaseManagerAI):
 
     def getOwnedNewbieId(self):
         return self.ownedNewbieId
+
+    def handlePlayerExit(self, avId):
+        av = self.air.doTable.get(avId)
+        if av:
+            self.air.questManager.toonRodeTrolleyFirstTime(av)
