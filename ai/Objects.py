@@ -16,7 +16,7 @@ from dataslots import with_slots
 from dataclasses import dataclass
 
 from panda3d.core import Datagram
-from otp.util import getPuppetChannel
+from otp.util import getPuppetChannel, addServerHeader
 from otp.messagetypes import CLIENT_FRIEND_ONLINE
 
 from ai.catalog import CatalogItem
@@ -444,8 +444,8 @@ class FriendManagerAI(DistributedObjectGlobalAI):
         # Need this delay so that `setFriendsList` is set first to avoid
         # the online whisper message.
         dg = Datagram()
-        dg.add_server_header([getPuppetChannel(avId)], self.air.ourChannel, CLIENT_FRIEND_ONLINE)
-        dg.add_uint32(otherAvId)
+        addServerHeader([getPuppetChannel(avId)], self.air.ourChannel, CLIENT_FRIEND_ONLINE)
+        dg.addUint32(otherAvId)
         self.air.send(dg)
 
 class FishingRod(NamedTuple):
