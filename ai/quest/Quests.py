@@ -16282,6 +16282,13 @@ def isLoopingFinalTier(tier):
 def getRewardsInTier(tier):
     return RequiredRewardTrackDict.get(tier, [])
 
+def avatarHasTrolleyQuest(av):
+    return ((len(av.quests) == 1) and
+            (av.quests[0][0] == TROLLEY_QUEST_ID))
+
+def avatarHasCompletedTrolleyQuest(av):
+    return av.quests[0][4] > 0
+
 def getNumChoices(tier):
     if tier in (0, ):
         return 0

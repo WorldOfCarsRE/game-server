@@ -37,7 +37,6 @@ class DistributedMinigameAI(DistributedObjectAI, FSM):
         FSM.__init__(self, self.__class__.__name__)
 
         self.participants: List[int] = participants
-        # TODO
         self.newbies: List[int] = []
         self.trolleyZone: int = trolleyZone
         self.startingVotes: List[int] = [0 for _ in range(len(participants))]
@@ -199,8 +198,13 @@ class DistributedMinigameAI(DistributedObjectAI, FSM):
         while len(purchasers) < 4:
             purchasers.append(Purchaser(avId=0, state=PurchaseState.NO_CLIENT))
 
+        for newbie in self.newbies:
+            pm = PurchaseManagerAI.NewbiePurchaseManagerAI(self.air, newbie, purchasers, self.MINIGAME_ID, self.trolleyZone, self.metagameRound)
+            incZoneRef(self.zoneId)
+            pm.generateWithRequired(self.zoneId)
+
         if len(self.participants) > len(self.newbies):
-            pm = PurchaseManagerAI.PurchaseManagerAI(self.air, purchasers, self.MINIGAME_ID, self.trolleyZone, self.metagameRound)
+            pm = PurchaseManagerAI.PurchaseManagerAI(self.air, purchasers, self.MINIGAME_ID, self.trolleyZone, self.metagameRound, self.newbies)
             pm.generateWithRequired(self.zoneId)
 
         self.requestDelete()

@@ -8,13 +8,14 @@ from . import createMinigame, Purchaser, PurchaseState, INVENTORY_PENDING, INVEN
 PURCHASE_COUNTDOWN_TIME = 120
 
 class PurchaseManagerAI(DistributedObjectAI):
-    def __init__(self, air, purchasers, minigameId, trolleyZone, metagameRound):
+    def __init__(self, air, purchasers, minigameId, trolleyZone, metagameRound, newbies):
         DistributedObjectAI.__init__(self, air)
 
         self.purchasers: List[Purchaser] = purchasers
         self.minigameId = minigameId
         self.trolleyZone = trolleyZone
         self.metagameRound = metagameRound
+        self.newbies = newbies[:]
 
         self.receivingButtons = True
         self.shuttingDown = False
@@ -193,6 +194,8 @@ class PurchaseManagerAI(DistributedObjectAI):
 
         if players:
             newbies = []
+            if self.metagameRound > -1:
+                newbies = self.newbies
             createMinigame(self.air, players, newbies, self.trolleyZone, zone=self.zoneId)
         else:
             # TODO: release zone if not ref count == 0 (newbie purchase managers may continue to hold zone)
@@ -207,7 +210,7 @@ class PurchaseManagerAI(DistributedObjectAI):
 
 class NewbiePurchaseManagerAI(PurchaseManagerAI):
     def __init__(self, air, ownedNewbieId, purchasers, minigameId, trolleyZone, metagameRound):
-        PurchaseManagerAI.__init__(self, air, purchasers, minigameId, trolleyZone, metagameRound)
+        PurchaseManagerAI.__init__(self, air, purchasers, minigameId, trolleyZone, metagameRound, [])
 
         self.ownedNewbieId = ownedNewbieId
 

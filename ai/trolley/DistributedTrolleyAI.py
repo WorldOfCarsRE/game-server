@@ -2,6 +2,7 @@ from ai.DistributedObjectAI import DistributedObjectAI
 from direct.fsm.FSM import FSM
 
 from . import createMinigame
+from ai.quest import Quests
 
 TROLLEY_ENTER_TIME = 2.0
 TROLLEY_EXIT_TIME = 5.0
@@ -105,7 +106,15 @@ class DistributedTrolleyAI(DistributedObjectAI, FSM):
         print('trolleyLeft', players)
 
         if players:
-            minigameZone, minigameId = createMinigame(self.air, players, [], self.zoneId)
+            noobs = []
+            for avId in self.seats:
+                if avId:
+                    av = self.air.doTable.get(avId)
+                    if av:
+                        if Quests.avatarHasTrolleyQuest(av):
+                            if not Quests.avatarHasCompletedTrolleyQuest(av):
+                                noobs.append(avId)
+            minigameZone, minigameId = createMinigame(self.air, players, noobs, self.zoneId)
 
             for player in players:
                 self.sendUpdateToAvatar(player, 'setMinigameZone', [minigameZone, minigameId])
