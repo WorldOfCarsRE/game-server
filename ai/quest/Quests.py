@@ -2,6 +2,7 @@ from typing import NamedTuple
 from ai.globals import HoodGlobals
 from ai.battle.BattleGlobals import Tracks
 from ai.globals import CheesyEffects, CogDisguiseGlobals, MembershipTypes
+from ai.hood import ZoneUtil
 from ai import ToontownGlobals
 from libsunrise import random
 from direct.showbase import PythonUtil
@@ -619,6 +620,37 @@ class RecoverItemQuest(LocationBasedQuest):
         forwardProgress = toonProgress & pow(2, 16) - 1
         questComplete = forwardProgress >= self.getNumItems()
         return getCompleteStatusWithNpc(questComplete, toNpcId, npc)
+
+    def testRecover(self, progress):
+        test = random.random() * 100
+        chance = self.getPercentChance()
+        numberDone = progress & pow(2, 16) - 1
+        numberNotDone = progress >> 16
+        returnTest = None
+        avgNum2Kill = 1.0 / (chance / 100.0)
+        if numberNotDone >= avgNum2Kill * 1.5:
+            chance = 100
+        elif numberNotDone > avgNum2Kill * 0.5:
+            diff = float(numberNotDone - avgNum2Kill * 0.5)
+            luck = 1.0 + abs(diff / (avgNum2Kill * 0.5))
+            chance *= luck
+        if test <= chance:
+            returnTest = 1
+            numberNotDone = 0
+            numberDone += 1
+        else:
+            returnTest = 0
+            numberNotDone += 1
+            numberDone += 0
+        returnCount = numberNotDone << 16
+        returnCount += numberDone
+        return (returnTest, returnCount)
+
+    def testDone(self, progress):
+        numberDone = progress & pow(2, 16) - 1
+        if numberDone >= self.getNumItems():
+            return 1
+        return 0
 
 class TrackChoiceQuest(Quest):
     def __init__(self, id, quest):
