@@ -15419,11 +15419,21 @@ class CogSuitPartReward(Reward):
     def countReward(self, qrc):
         pass
 
-def getRewardClass(id):
-    reward = RewardDict.get(id)
+def getRewardClass(classId):
+    reward = RewardDict.get(classId)
     if reward:
         return reward[0]
     else:
+        return
+    return
+
+def getReward(rewardId):
+    reward = RewardDict.get(rewardId)
+    if reward:
+        rewardClass = reward[0]
+        return rewardClass(rewardId, reward[1:])
+    else:
+        notify.warning(f'getReward(): id {rewardId} not found.')
         return
     return
 
@@ -15435,24 +15445,24 @@ def getNextRewards(numChoices, tier, av):
     if isLoopingFinalTier(tier):
         rewardHistory = [questDesc[3] for questDesc in av.quests]
         if notify.getDebug():
-            notify.debug('getNextRewards: current rewards (history): %s' % rewardHistory)
+            notify.debug(f'getNextRewards: current rewards (history): {rewardHistory}')
     else:
         rewardHistory = av.getRewardHistory()[1]
         if notify.getDebug():
-            notify.debug('getNextRewards: rewardHistory: %s' % rewardHistory)
+            notify.debug(f'getNextRewards: rewardHistory: {rewardHistory}')
     if notify.getDebug():
-        notify.debug('getNextRewards: rewardTier: %s' % rewardTier)
-        notify.debug('getNextRewards: numChoices: %s' % numChoices)
+        notify.debug(f'getNextRewards: rewardTier: {rewardTier}')
+        notify.debug(f'getNextRewards: numChoices: {numChoices}')
     for rewardId in getRewardsInTier(tier):
         if getRewardClass(rewardId) == CogSuitPartReward:
             deptStr = RewardDict.get(rewardId)[1]
             cogPart = RewardDict.get(rewardId)[2]
             dept = ToontownGlobals.cogDept2index[deptStr]
             if av.hasCogPart(cogPart, dept):
-                notify.debug('getNextRewards: already has cog part: %s dept: %s' % (cogPart, dept))
+                notify.debug(f'getNextRewards: already has cog part: {cogPart} dept: {dept}')
                 rewardTier.remove(rewardId)
             else:
-                notify.debug('getNextRewards: keeping quest for cog part: %s dept: %s' % (cogPart, dept))
+                notify.debug(f'getNextRewards: keeping quest for cog part: {cogPart} dept: {dept}')
 
     for rewardId in rewardHistory:
         if rewardId in rewardTier:
@@ -15485,7 +15495,7 @@ def getNextRewards(numChoices, tier, av):
             break
 
     if notify.getDebug():
-        notify.debug('getNextRewards: starting reward pool: %s' % rewardPool)
+        notify.debug(f'getNextRewards: starting reward pool: {rewardPool}')
     if len(rewardPool) == 0:
         if notify.getDebug():
             notify.debug('getNextRewards: no rewards left at all')
@@ -15500,7 +15510,7 @@ def getNextRewards(numChoices, tier, av):
         finalRewardPool.append(selectedReward)
 
     if notify.getDebug():
-        notify.debug('getNextRewards: final reward pool: %s' % finalRewardPool)
+        notify.debug(f'getNextRewards: final reward pool: {finalRewardPool}')
     return finalRewardPool
 
 RewardDict = {
@@ -16433,6 +16443,14 @@ def chooseBestQuests(tier, currentNpc, av):
 
     return bestQuests
 
+def getAvatarRewardId(av, questId):
+    for quest in av.quests:
+        if questId == quest[0]:
+            return quest[3]
+
+    notify.warning('getAvatarRewardId(): quest not found on avatar')
+    return
+
 def getNextQuest(questId, currentNpc, av):
     nextQuest = QuestDict[questId].nextQuest
     if nextQuest == NA:
@@ -16503,14 +16521,14 @@ def filterQuests(entireQuestPool, currentNpc, av):
 
     finalQuestPool = [key for key in list(validQuestPool.keys()) if validQuestPool[key]]
     if notify.getDebug():
-        notify.debug('filterQuests: finalQuestPool: %s' % finalQuestPool)
+        notify.debug(f'filterQuests: finalQuestPool: {finalQuestPool}')
     return finalQuestPool
 
 def chooseTrackChoiceQuest(tier, av, fixed = 0):
 
     def fixAndCallAgain():
         if not fixed and av.fixTrackAccess():
-            notify.info('av %s trackAccess fixed: %s' % (av.doId, trackAccess))
+            notify.info(f'av {av.doId} trackAccess fixed: {trackAccess}')
             return chooseTrackChoiceQuest(tier, av, fixed = 1)
         else:
             return
@@ -16610,3 +16628,72 @@ def chooseMatchingQuest(tier, validQuestPool, rewardId, npc, av):
                         notify.debug('validQuestsMatchingReward: Any tier: %s = %s' % (tier, validQuestsMatchingReward))
                     bestQuest = seededRandomChoice(validQuestsMatchingReward)
     return bestQuest
+
+def avatarWorkingOnRequiredRewards(av):
+    tier = av.getRewardTier()
+    rewardList = list(getRewardsInTier(tier))
+    for i in range(len(rewardList)):
+        actualRewardId = transformReward(rewardList[i], av)
+        rewardList[i] = actualRewardId
+
+    for questDesc in av.quests:
+        questId = questDesc[0]
+        rewardId = questDesc[3]
+        if rewardId in rewardList:
+            return 1
+        elif rewardId == NA:
+            rewardId = transformReward(getFinalRewardId(questId, fAll = 1), av)
+            if rewardId in rewardList:
+                return 1
+
+    return 0
+
+def avatarHasAllRequiredRewards(av, tier):
+    rewardHistory = list(av.getRewardHistory()[1])
+    rewardList = getRewardsInTier(tier)
+    notify.debug(f'checking avatarHasAllRequiredRewards: history: {rewardHistory}, tier: {rewardList}')
+    for rewardId in rewardList:
+        if rewardId == 900:
+            found = 0
+            for actualRewardId in (901, 902, 903, 904, 905, 906, 907):
+                if actualRewardId in rewardHistory:
+                    found = 1
+                    rewardHistory.remove(actualRewardId)
+                    if notify.getDebug():
+                        notify.debug(f'avatarHasAllRequiredRewards: rewardId 900 found as: {actualRewardId}')
+                    break
+
+            if not found:
+                if notify.getDebug():
+                    notify.debug('avatarHasAllRequiredRewards: rewardId 900 not found')
+                return 0
+        else:
+            actualRewardId = transformReward(rewardId, av)
+            if actualRewardId in rewardHistory:
+                rewardHistory.remove(actualRewardId)
+            elif getRewardClass(rewardId) == CogSuitPartReward:
+                deptStr = RewardDict.get(rewardId)[1]
+                cogPart = RewardDict.get(rewardId)[2]
+                dept = ToontownGlobals.cogDept2index[deptStr]
+                if av.hasCogPart(cogPart, dept):
+                    if notify.getDebug():
+                        notify.debug(f'avatarHasAllRequiredRewards: rewardId: {actualRewardId} counts, avatar has cog part: {cogPart} dept: {dept}')
+                else:
+                    if notify.getDebug():
+                        notify.debug('avatarHasAllRequiredRewards: CogSuitPartReward: %s not found' % actualRewardId)
+                    return 0
+            else:
+                if notify.getDebug():
+                    notify.debug('avatarHasAllRequiredRewards: rewardId %s not found' % actualRewardId)
+                return 0
+
+    if notify.getDebug():
+        notify.debug('avatarHasAllRequiredRewards: remaining rewards: %s' % rewardHistory)
+        for rewardId in rewardHistory:
+            if not isRewardOptional(tier, rewardId):
+                notify.warning('required reward found, expected only optional: %s' % rewardId)
+
+    return 1
+
+def rewardTierExists(tier):
+    return tier in RequiredRewardTrackDict

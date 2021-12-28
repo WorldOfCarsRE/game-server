@@ -4,6 +4,7 @@ from ai.toon.Inventory import Inventory
 from ai.toon.ToonDNA import ToonDNA
 from direct.task.Task import Task
 from ai.globals import MembershipTypes
+from direct.directnotify.DirectNotifyGlobal import directNotify
 
 SHIRT = 0x1
 SHORTS = 0x2
@@ -13,6 +14,8 @@ TAILOR_COUNTDOWN_TIME = 300
 class DistributedNPCToonBaseAI(DistributedNodeAI):
     def __init__(self, air, npcId, name = None, questCallback = None):
         DistributedNodeAI.__init__(self, air, name)
+
+        self.notify = directNotify.newCategory(self.__class__.__name__)
 
         self.npcId = npcId
         self.hq = False
@@ -88,7 +91,7 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
 
     def chooseQuest(self, questId):
         avId = self.air.currentAvatarSender
-        self.notify.debug('chooseQuest: avatar %s choseQuest %s' % (avId, questId))
+        self.notify.debug(f'chooseQuest: avatar {avId} choseQuest {questId}')
         if not self.pendingAvId:
             self.notify.warning('chooseQuest: not expecting an answer from any avatar: %s' % avId)
             return
@@ -131,6 +134,16 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
     def chooseTrack(self, choice):
         pass
 
+    def completeQuest(self, avId, questId, rewardId):
+        self.occupier = avId
+        self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_COMPLETE,
+         self.npcId,
+         avId,
+         [questId, rewardId, 0],
+         globalClockDelta.getRealNetworkTime()])
+        if not self.tutorial:
+            taskMgr.doMethodLater(60.0, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+
     def incompleteQuest(self, avId, questId, completeStatus, toNpcId):
         self.occupier = avId
         self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_INCOMPLETE,
@@ -163,6 +176,22 @@ class DistributedNPCToonAI(DistributedNPCToonBaseAI):
          self.npcId,
          avId,
          [questId, rewardId, toNpcId],
+         globalClockDelta.getRealNetworkTime()])
+        if not self.tutorial:
+            taskMgr.doMethodLater(60.0, self.sendTimeoutMovie, self.uniqueName('clearMovie'))
+
+    def presentQuestChoice(self, avId, quests):
+        self.occupier = avId
+        self.pendingAvId = avId
+        self.pendingQuests = quests
+        flatQuests = []
+        for quest in quests:
+            flatQuests.extend(quest)
+
+        self.sendUpdate('setMovie', [NPCToons.QUEST_MOVIE_QUEST_CHOICE,
+         self.npcId,
+         avId,
+         flatQuests,
          globalClockDelta.getRealNetworkTime()])
         if not self.tutorial:
             taskMgr.doMethodLater(60.0, self.sendTimeoutMovie, self.uniqueName('clearMovie'))

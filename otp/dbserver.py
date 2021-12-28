@@ -477,7 +477,7 @@ class DBServer(DownstreamMessageDirector):
 
             dg.addUint32(friend[0]) # friendId
             dg.addString(friend[1]) # setName
-            dg.addString(friend[2]) # setDNAString
+            dg.addBlob(friend[2]) # setDNAString
             dg.addUint32(friend[3]) # setPetId
 
         # Send the response to the client.
