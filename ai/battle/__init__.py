@@ -232,7 +232,6 @@ UBER_INDEX = 6
 
 KBBONUS_TGT_LURED = 1
 
-
 def calcFaceoffTime(center: Point3, suitpos: Point3) -> float:
     facing = Vec3(center - suitpos)
     facing.normalize()
@@ -252,7 +251,6 @@ def calcToonMoveTime(pos0: Point3, pos1: Point3) -> float:
 
 
 from ai.suit.SuitGlobals import SuitAttributes, pickFromFreqList, suitAttackAffectsGroup
-
 
 NO_TRAP = -1
 TRAP_CONFLICT = -2
@@ -274,7 +272,6 @@ class LurerInfo(object):
     availLureId: int
     credit: int
 
-
 @dataclass
 class LuredSuitInfo(object):
     currRounds: int
@@ -295,6 +292,27 @@ NumRoundsLured = [2, 2, 3, 3, 4, 4, 15]
 DamageBonuses = [0, 20, 20, 20]
 
 from ai.toon import NPCToons
+
+def getToonUberStatus(toons, numToons):
+    fieldList = []
+    uberIndex = LAST_REGULAR_GAG_LEVEL + 1
+    for toonId in toons:
+        toonList = []
+        toon = simbase.air.doTable.get(toonId)
+        if toon == None:
+            fieldList.append(-1)
+        else:
+            for trackIndex in range(MAX_TRACK_INDEX + 1):
+                toonList.append(toon.inventory.get(trackIndex, uberIndex))
+
+            fieldList.append(encodeUber(toonList))
+
+    lenDif = numToons - len(toons)
+    if lenDif > 0:
+        for index in range(lenDif):
+            fieldList.append(-1)
+
+    return fieldList
 
 class BattleCalculator:
     def __init__(self, battle: 'DistributedBattleBaseAI'):
@@ -1390,7 +1408,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
     def getBattleExperienceData(self):
         deathList = []
-        uberList = []
+        uberList = getToonUberStatus(self.activeToons, 4)
 
         for i in range(4):
             if i > len(self.battleExperience) - 1:

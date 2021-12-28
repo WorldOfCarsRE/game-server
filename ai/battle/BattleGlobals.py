@@ -258,3 +258,11 @@ LAST_REGULAR_GAG_LEVEL = 5
 
 def getInvasionMultiplier():
     return 2.0
+
+def encodeUber(trackList):
+    bitField = 0
+    for trackIndex in range(len(trackList)):
+        if trackList[trackIndex] > 0:
+            bitField += pow(2, trackIndex)
+
+    return bitField
