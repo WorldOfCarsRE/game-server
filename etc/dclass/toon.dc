@@ -624,7 +624,6 @@ from toontown.toon import DistributedNPCPartyPerson/AI
 from toontown.toon import DistributedNPCPetclerk/AI
 from toontown.toon import DistributedNPCKartClerk/AI
 from toontown.building import DistributedKnockKnockDoor/AI
-from toontown.building import DistributedElevator/AI
 from toontown.building import DistributedElevatorFSM/AI
 from toontown.building import DistributedElevatorExt/AI
 from toontown.building import DistributedElevatorInt/AI
@@ -2405,33 +2404,6 @@ dclass DistributedNPCKartClerk : DistributedNPCToonBase {
 dclass DistributedKnockKnockDoor : DistributedAnimatedProp {
 };
 
-dclass DistributedElevator : DistributedObject {
-  setBldgDoId(uint32) required broadcast ram;
-  setState(string, int16) broadcast ram;
-  fillSlot0(uint32, uint8) broadcast ram;
-  fillSlot1(uint32, uint8) broadcast ram;
-  fillSlot2(uint32, uint8) broadcast ram;
-  fillSlot3(uint32, uint8) broadcast ram;
-  fillSlot4(uint32, uint8) broadcast ram;
-  fillSlot5(uint32, uint8) broadcast ram;
-  fillSlot6(uint32, uint8) broadcast ram;
-  fillSlot7(uint32, uint8) broadcast ram;
-  emptySlot0(uint32, int8, int16, int16) broadcast ram;
-  emptySlot1(uint32, int8, int16, int16) broadcast ram;
-  emptySlot2(uint32, int8, int16, int16) broadcast ram;
-  emptySlot3(uint32, int8, int16, int16) broadcast ram;
-  emptySlot4(uint32, int8, int16, int16) broadcast ram;
-  emptySlot5(uint32, int8, int16, int16) broadcast ram;
-  emptySlot6(uint32, int8, int16, int16) broadcast ram;
-  emptySlot7(uint32, int8, int16, int16) broadcast ram;
-  requestBoard() airecv clsend;
-  rejectBoard(uint32, uint8);
-  requestExit() airecv clsend;
-  setElevatorTripId(uint32) required broadcast ram;
-  setAntiShuffle(uint8) required broadcast ram;
-  setMinLaff(uint8) required broadcast ram;
-};
-
 dclass DistributedElevatorFSM : DistributedObject {
   setBldgDoId(uint32) required broadcast ram;
   setState(string, int16) broadcast ram;
@@ -2467,7 +2439,7 @@ dclass DistributedElevatorFloor : DistributedElevatorFSM {
   setLatch(uint32) required broadcast ram;
 };
 
-dclass DistributedElevatorExt : DistributedElevator {
+dclass DistributedElevatorExt : DistributedElevatorFSM {
   setFloor(int8) broadcast ram;
 };
 
@@ -2477,7 +2449,7 @@ dclass DistributedLawOfficeElevatorExt : DistributedElevatorExt {
   setLawOfficeInteriorZoneForce(uint32);
 };
 
-dclass DistributedElevatorInt : DistributedElevator {
+dclass DistributedElevatorInt : DistributedElevatorFSM {
   requestBuildingExit() airecv clsend;
   forcedExit(uint32);
 };

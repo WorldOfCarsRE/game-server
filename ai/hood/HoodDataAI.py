@@ -7,7 +7,9 @@ from ai.safezone import ButterflyGlobals
 from ai.safezone.DistributedButterflyAI import DistributedButterflyAI
 from ai.trolley.DistributedTrolleyAI import DistributedTrolleyAI
 from ai.suit.DistributedSuitPlannerAI import DistributedSuitPlannerAI
+from ai.coghq.DistributedFactoryElevatorExtAI import DistributedFactoryElevatorExtAI
 from .Treasures import *
+from ai.building.ElevatorLaffMinimums import *
 from typing import Type
 
 # TODO: maybe add dist obj stuff
@@ -280,6 +282,8 @@ class CogHQAI(PlaceAI):
                 suitPlanner.startup()
                 self.suitPlanners.append(suitPlanner)
 
+        self.createElevators()
+
         extDoors = []
 
         for i in range(self.numExtDoors):
@@ -301,6 +305,9 @@ class CogHQAI(PlaceAI):
         intDoor.generateWithRequired(self.lobbyZone)
         intDoor.sendUpdate('setDoorIndex', [intDoor.getDoorIndex()])
 
+    def createElevators(self):
+        pass
+
 class SBHQHoodAI(CogHQAI):
     zoneId = SellbotHQ
     lobbyZone = SellbotLobby
@@ -309,6 +316,15 @@ class SBHQHoodAI(CogHQAI):
 
     def __init__(self, air, facilityMgr):
         CogHQAI.__init__(self, air, self.zoneId, facilityMgr)
+
+    def createElevators(self):
+        elevator0 = DistributedFactoryElevatorExtAI(self.air, self.air.factoryMgr, SellbotFactoryInt,
+                      0, antiShuffle = 0, minLaff = FactoryLaffMinimums[0])
+        elevator0.generateWithRequired(SellbotFactoryExt)
+
+        elevator1 = DistributedFactoryElevatorExtAI(self.air, self.air.factoryMgr, SellbotFactoryInt,
+                      1, antiShuffle = 0, minLaff = FactoryLaffMinimums[1])
+        elevator1.generateWithRequired(SellbotFactoryExt)
 
 class CBHQHoodAI(CogHQAI):
     zoneId = CashbotHQ

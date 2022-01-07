@@ -372,6 +372,7 @@ class AIRepository:
         from ai.catalog.CatalogManagerAI import CatalogManagerAI
         from .Objects import DistributedDeliveryManagerAI
         from ai.tutorial.TutorialAI import TutorialManagerAI
+        from ai.coghq.FactoryManagerAI import FactoryManagerAI
         from ai.coghq.PromotionManagerAI import PromotionManagerAI
         from ai.suit.SuitInvasionManagerAI import SuitInvasionManagerAI
         from ai.suit.CogPageManagerAI import CogPageManagerAI
@@ -444,6 +445,8 @@ class AIRepository:
         self.suitInvasionManager = SuitInvasionManagerAI(self)
 
         self.cogPageManager = CogPageManagerAI(self)
+
+        self.factoryMgr = FactoryManagerAI(self)
 
         self.loadZones()
 

@@ -27,7 +27,7 @@ ElevatorData = {
                         },
     ELEVATOR_VP     : { "openTime"  : 4.0,
                         "closeTime" : 4.0,
-                        "countdown" : 30.0),
+                        "countdown" : 30.0,
                         },
     ELEVATOR_MINT   : { "openTime"  : 2.0,
                         "closeTime" : 2.0,

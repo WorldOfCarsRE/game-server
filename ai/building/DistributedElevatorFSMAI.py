@@ -1,4 +1,4 @@
-from ElevatorConstants import *
+from .ElevatorConstants import *
 
 from ai.DistributedObjectAI import DistributedObjectAI
 from direct.directnotify import DirectNotifyGlobal
@@ -93,12 +93,13 @@ class DistributedElevatorFSMAI(DistributedObjectAI, FSM):
             self.acceptBoarder(avId, seatIndex)
         return None
 
-    def acceptBoarder(self, avId, seatIndex):
+    def acceptBoarder(self, avId, seatIndex, wantBoardingShow = 0):
         self.notify.debug("acceptBoarder")
         if (self.findAvatar(avId) != None):
             return        
         self.seats[seatIndex] = avId
-        self.timeOfBoarding = globalClock.getRealTime()
+        if wantBoardingShow:
+            self.timeOfBoarding = globalClock.getRealTime()
         self.sendUpdate("fillSlot" + str(seatIndex),
                         [avId])
 
@@ -124,7 +125,7 @@ class DistributedElevatorFSMAI(DistributedObjectAI, FSM):
             self.seats[seatIndex] = None
             self.sendUpdate("fillSlot" + str(seatIndex),
                             [0])
-            self.ignore(self.air.getAvatarExitEvent(avId))
+            self.ignore(self.air.getDeleteDoIdEvent(avId))
 
     def d_setState(self, state):
         self.sendUpdate('setState', [state, globalClockDelta.getRealNetworkTime()])
@@ -142,12 +143,12 @@ class DistributedElevatorFSMAI(DistributedObjectAI, FSM):
 
     def requestBoard(self, *args):
         self.notify.debug("requestBoard")
-        avId = self.air.getAvatarIdFromSender()
+        avId = self.air.currentAvatarSender
         if (self.findAvatar(avId) != None):
             self.notify.warning("Ignoring multiple requests from %s to board." % (avId))
             return        
 
-        av = self.air.doId2do.get(avId)
+        av = self.air.doTable.get(avId)
         if av:
             newArgs = (avId,) + args
             boardResponse = self.checkBoard(av)
@@ -165,8 +166,8 @@ class DistributedElevatorFSMAI(DistributedObjectAI, FSM):
     def requestExit(self, *args):
         if hasattr(self, 'air'):
             self.notify.debug("requestExit")
-            avId = self.air.getAvatarIdFromSender()
-            av = self.air.doId2do.get(avId)
+            avId = self.air.currentAvatarSender
+            av = self.air.doTable.get(avId)
             if av:
                 newArgs = (avId,) + args
                 if self.accepting:
@@ -229,8 +230,6 @@ class DistributedElevatorFSMAI(DistributedObjectAI, FSM):
         taskMgr.remove(self.uniqueName('closing-timer'))
 
     def enterClosed(self):
-        if hasattr(self, "doId"):
-            print self.doId
         self.d_setState('Closed')
 
     def exitClosed(self):
