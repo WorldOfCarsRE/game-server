@@ -23,7 +23,7 @@ class DistributedFactoryElevatorExtAI(DistributedElevatorExtAI):
             for seatIndex in range(len(self.seats)):
                 avId = self.seats[seatIndex]
                 if avId:
-                    self.sendUpdateToAvatarId(avId, "setFactoryInteriorZone", [factoryZone])
+                    self.sendUpdateToAvatar(avId, "setFactoryInteriorZone", [factoryZone])
                     self.clearFullNow(seatIndex)
         else:
             self.notify.warning("The elevator left, but was empty.")
@@ -39,5 +39,5 @@ class DistributedFactoryElevatorExtAI(DistributedElevatorExtAI):
                                                   self.entranceId, avIdList)
             for avId in avIdList:
                 if avId:
-                    self.sendUpdateToAvatarId(avId, 'setFactoryInteriorZoneForce', 
+                    self.sendUpdateToAvatar(avId, 'setFactoryInteriorZoneForce', 
                                         [factoryZone])

@@ -1,7 +1,7 @@
 from ai.DistributedObjectAI import DistributedObjectAI
 
 from .DistributedToonInteriorAI import DistributedToonInteriorAI, DistributedToonHallInteriorAI
-from .DistributedDoorAI import DistributedDoorAI
+from .DistributedDoorAI import DistributedDoorAI, BUILDING_TAKEOVER
 
 from ai.toon import NPCToons
 from ai.globals.HoodGlobals import ToonHall
@@ -9,7 +9,9 @@ from ai.globals.HoodGlobals import ToonHall
 from direct.fsm.FSM import FSM
 
 from . import DoorTypes
+from ai.building.DistributedElevatorExtAI import DistributedElevatorExtAI
 from ai.building.DistributedKnockKnockDoorAI import DistributedKnockKnockDoorAI
+import time
 
 class DistributedBuildingAI(DistributedObjectAI, FSM):
     defaultTransitions = {
@@ -36,7 +38,9 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
         self.door = None
         self.insideDoor = None
         self.interior = None
+        self.elevator = None
         self.npcs = []
+        self.becameSuitTime = 0
 
     def getBlock(self):
         return [self.block, self.interiorZoneId]
@@ -81,6 +85,27 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
 
         self.npcs = NPCToons.createNpcsInZone(self.air, self.interiorZoneId)
 
-        # self.becameSuitTime = 0
+        self.becameSuitTime = 0
         self.knockKnock = DistributedKnockKnockDoorAI(self.air, self.block)
         self.knockKnock.generateWithRequired(self.exteriorZoneId)
+
+    def exitToon(self):
+        self.door.setDoorLock(DoorTypes.BUILDING_TAKEOVER)
+
+    def enterSuit(self):
+        self.sendUpdate('setSuitData',
+            [ord(self.track), self.difficulty, self.numFloors])
+
+        # self.planner = SuitPlannerInteriorAI(self.numFloors, self.difficulty, self.track, self.interiorZoneId)
+
+        self.d_setState('suit')
+
+        self.elevator = DistributedElevatorExtAI(self.air, self)
+        self.elevator.generateWithRequired(self.exteriorZoneId)
+
+    def exitSuit(self):
+        # del self.planner
+        if self.elevator:
+            self.elevator.requestDelete()
+            del self.elevator
+        

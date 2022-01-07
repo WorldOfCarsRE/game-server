@@ -30,6 +30,8 @@ class DistributedElevatorFSMAI(DistributedObjectAI, FSM):
         for seat in range(numSeats):
             self.seats.append(None)
         self.accepting = 0
+        self.timeOfBoarding = None
+        self.timeOfGroupBoarding = None
         self.setAntiShuffle(antiShuffle)
         self.setMinLaff(minLaff)
         if self.antiShuffle:
@@ -98,8 +100,11 @@ class DistributedElevatorFSMAI(DistributedObjectAI, FSM):
         if (self.findAvatar(avId) != None):
             return        
         self.seats[seatIndex] = avId
+        self.timeOfBoarding = globalClock.getRealTime()
+
         if wantBoardingShow:
-            self.timeOfBoarding = globalClock.getRealTime()
+            self.timeOfGroupBoarding = globalClock.getRealTime()
+
         self.sendUpdate("fillSlot" + str(seatIndex),
                         [avId])
 
@@ -185,6 +190,7 @@ class DistributedElevatorFSMAI(DistributedObjectAI, FSM):
     def enterOff(self):
         self.accepting = 0
         self.timeOfBoarding = None
+        self.timeOfGroupBoarding = None
         if hasattr(self, "doId"):
             for seatIndex in range(len(self.seats)):
                 taskMgr.remove(self.uniqueName("clearEmpty-" + str(seatIndex)))

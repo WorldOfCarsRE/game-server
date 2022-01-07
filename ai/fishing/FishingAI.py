@@ -205,10 +205,10 @@ class DistributedFishingSpotAI(DistributedObjectAI):
         if self.avId == senderId:
             return
         # if not ToontownAccessAI.canAccess(avId, self.zoneId):
-        # self.sendUpdateToAvatarId(avId, 'rejectEnter', [])
+        # self.sendUpdateToAvatar(avId, 'rejectEnter', [])
         # return
         if self.avId:
-            self.sendUpdateToAvatarId(senderId, 'rejectEnter', [])
+            self.sendUpdateToAvatar(senderId, 'rejectEnter', [])
         else:
             self.avId = senderId
             self.pond.addSpot(senderId, self)
