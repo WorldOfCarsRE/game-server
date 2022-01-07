@@ -44,11 +44,6 @@ PASSWORD=root
 Host=mongodb://127.0.0.1:27017
 Name=Dialga
 
-[AI]
-# For support for stock Toontown Online clients.
-# This swaps the pickle protocol to be one supported by Python 2.4.
-LegacyProtocol=1
-
 # Immediately complete all quests and all visits are to ToonHQ
 QuestCheat=0
 

@@ -24,12 +24,7 @@ class DistributedHQInteriorAI(DistributedObjectAI):
         return [self.zoneId, self.block]
 
     def getLeaderBoard(self):
-        if builtins.legacyProtocol:
-            protocol = 1
-        else:
-            protocol = 5
-
-        return pickle.dumps([(), (), ()], protocol = protocol)
+        return pickle.dumps([(), (), ()], protocol = 5)
 
     def getTutorial(self):
         return self.tutorial

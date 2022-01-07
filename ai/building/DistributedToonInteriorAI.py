@@ -36,12 +36,7 @@ class DistributedToonInteriorAI(DistributedObjectAI, FSM):
         return [self.zoneId, self.block]
 
     def getToonData(self):
-        if builtins.legacyProtocol:
-            protocol = 1
-        else:
-            protocol = 5
-
-        return pickle.dumps({}, protocol = protocol)
+        return pickle.dumps({}, protocol = 5)
 
     def getState(self):
         state = self.state[0].lower() + self.state[1:]
