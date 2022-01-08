@@ -159,6 +159,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
         self.path: Optional[List[int]] = None
         self.currentLeg = 0
         self.legType = 0
+        self.attemptingTakeover = 0
 
         self.confrontPos = Point3()
         self.confrontHpr = Vec3()

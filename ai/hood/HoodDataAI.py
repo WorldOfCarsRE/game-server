@@ -173,6 +173,7 @@ class SafeZoneAI(PlaceAI):
     def __init__(self, air, zoneId):
         PlaceAI.__init__(self, air, zoneId)
         self.buildings: Dict[int, object] = {}
+        self.suitBlocks: List[int] = []
         self.hq: Union[HQBuildingAI, None] = None
         self.gagShop: Union[GagshopBuildingAI, None] = None
         self.dnaStore: DNAStorage = None
@@ -206,7 +207,7 @@ class SafeZoneAI(PlaceAI):
                 # TODO
                 pass
             else:
-                bldg = DistributedBuildingAI(self.air)
+                bldg = DistributedBuildingAI(self.air, self)
                 bldg.block = blockNumber
                 bldg.exteriorZoneId = exteriorZone
                 bldg.interiorZoneId = self.getInteriorZone(exteriorZone, blockNumber)
@@ -244,7 +245,7 @@ class StreetAI(SafeZoneAI):
 
         # TODO: suits
         if self.wantSuits:
-            self.suitPlanner = DistributedSuitPlannerAI(self.air, self.dnaStore, self.zoneId)
+            self.suitPlanner = DistributedSuitPlannerAI(self.air, self, self.dnaStore)
             self.suitPlanner.generateWithRequired(self.zoneId)
             self.suitPlanner.startup()
 
@@ -277,7 +278,7 @@ class CogHQAI(PlaceAI):
         self.active = True
         if self.wantSuits:
             for zoneId in self.suitZones:
-                suitPlanner = DistributedSuitPlannerAI(self.air, self.zone2Storage[zoneId], zoneId)
+                suitPlanner = DistributedSuitPlannerAI(self.air, self, self.zone2Storage[zoneId])
                 suitPlanner.generateWithRequired(zoneId)
                 suitPlanner.startup()
                 self.suitPlanners.append(suitPlanner)

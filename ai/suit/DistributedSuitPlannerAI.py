@@ -66,11 +66,12 @@ MAX_PATH_LEN = 300
 MAX_SUIT_TIER = 5
 
 class DistributedSuitPlannerAI(DistributedObjectAI):
-    def __init__(self, air, dnaStore, zoneId):
+    def __init__(self, air, hoodData, dnaStore):
         DistributedObjectAI.__init__(self, air)
+        self.hoodData = hoodData
         self.dnaStore = dnaStore
-        self.zoneId = zoneId
-        self.info: SuitHoodInfo = SUIT_HOOD_INFO[zoneId]
+        self.zoneId = hoodData.zoneId
+        self.info: SuitHoodInfo = SUIT_HOOD_INFO[self.zoneId]
         self.battleMgr: BattleManagerAI = BattleManagerAI(self.air)
 
         self.zone2battlePos: Dict[int, Point3] = {}
@@ -115,6 +116,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.baseNumSuits = (self.info.maxSuits + self.info.minSuits) // 2
         self.popAdjustment = 0
         self.numFlyInSuits = 0
+        self.numAttemptingTakeover = 0
         self.suitWalkSpeed = suitWalkSpeed
 
     def getZoneId(self):
@@ -173,6 +175,16 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.suits.append(suit)
         self.numFlyInSuits += 1
         return True
+
+    def countNumNeededBuildings(self):
+        return self.maxSuitBldgs - len(self.hoodData.suitBlocks)
+
+    def newSuitShouldAttemptTakeover(self):
+        numNeeded = self.countNumNeededBuildings()
+        
+        if self.numAttemptingTakeover >= numNeeded:
+            return 0
+        return 1
 
     def upkeep(self, task=None):
         desired = self.baseNumSuits + self.popAdjustment

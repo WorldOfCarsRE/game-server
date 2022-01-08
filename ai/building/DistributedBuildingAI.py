@@ -13,6 +13,9 @@ from ai.building.DistributedElevatorExtAI import DistributedElevatorExtAI
 from ai.building.DistributedKnockKnockDoorAI import DistributedKnockKnockDoorAI
 import time
 
+CLEAR_OUT_TOON_BLDG_TIME = 4
+TO_SUIT_BLDG_TIME = 8
+
 class DistributedBuildingAI(DistributedObjectAI, FSM):
     defaultTransitions = {
             'Off': ['WaitForVictors', 'BecomingToon', 'Toon', 'ClearOutToonInterior', 'BecomingSuit', 'Suit'],
@@ -24,9 +27,13 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
             'Suit': ['WaitForVictors', 'BecomingToon'],
     }
 
-    def __init__(self, air):
+    def __init__(self, air, hoodData):
         DistributedObjectAI.__init__(self, air)
         FSM.__init__(self, 'DistributedBuildingAI')
+
+        # hoodData appears both on here and suit planner.
+        # this is going to need a refactor...
+        self.hoodData = hoodData
 
         self.block = 0
         self.track = 'c'
@@ -92,6 +99,55 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
     def exitToon(self):
         self.door.setDoorLock(DoorTypes.BUILDING_TAKEOVER)
 
+    def enterClearOutToonInterior(self):
+        self.d_setState('clearOutToonInterior')
+        if hasattr(self, 'interior'):
+            self.interior.demand('BeingTakenOver')
+
+        taskMgr.doMethodLater(
+            SuitBuildingGlobals.CLEAR_OUT_TOON_BLDG_TIME,
+            self.clearOutToonInteriorTask,
+            f'{self.block}_clearOutToonInterior-timer')
+
+        self.trackSuitBlock()
+
+    def clearOutToonInteriorTask(self, task):
+        self.demand('BecomingSuit')
+        return task.done
+
+    def exitClearOutToonInterior(self):
+        taskMgr.remove(f'{self.block}_clearOutToonInterior-timer')
+        
+    def enterBecomingSuit(self):
+        self.sendUpdate('setSuitData',
+            [ord(self.track), self.difficulty, self.numFloors])
+
+        self.d_setState('becomingSuit')
+
+        taskMgr.doMethodLater(
+            TO_SUIT_BLDG_TIME,
+            self.becomingSuitTask,
+            f'{self.block}_becomingSuit-timer')
+
+    def becomingSuitTask(self, task):
+        self.demand('Suit')
+
+        # save goes here
+
+        return task.done
+
+    def exitBecomingSuit(self):
+        taskMgr.remove(f'{self.block}_becomingSuit-timer')
+        if hasattr(self, 'interior'):
+            self.interior.requestDelete()
+            del self.interior
+            self.door.requestDelete()
+            del self.door
+            self.insideDoor.requestDelete()
+            del self.insideDoor
+            self.knockKnock.requestDelete()
+            del self.knockKnock
+
     def enterSuit(self):
         self.sendUpdate('setSuitData',
             [ord(self.track), self.difficulty, self.numFloors])
@@ -103,9 +159,17 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
         self.elevator = DistributedElevatorExtAI(self.air, self)
         self.elevator.generateWithRequired(self.exteriorZoneId)
 
+    def trackSuitBlock(self):
+        if self.block not in self.hoodData.suitBlocks:
+            self.hoodData.suitBlocks.append(self.block)
+
+    def detrackSuitBlock(self):
+        if self.block in self.hoodData.suitBlocks:
+            self.hoodData.suitBlocks.remove(self.block)
+
     def exitSuit(self):
         # del self.planner
-        if self.elevator:
+        if hasattr(self, 'elevator'):
             self.elevator.requestDelete()
             del self.elevator
-        
+        self.detrackSuitBlock()
