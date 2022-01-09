@@ -248,13 +248,12 @@ class StreetAI(SafeZoneAI):
     def __init__(self, air, zoneId):
         SafeZoneAI.__init__(self, air, zoneId)
 
-        self.wantSuits = False
+        self.wantSuits = True
         self.suitPlanner: Optional[DistributedSuitPlannerAI] = None
 
     def create(self):
         super().create()
 
-        # TODO: suits
         if self.wantSuits:
             self.suitPlanner = DistributedSuitPlannerAI(self.air, self, self.dnaStore)
             self.suitPlanner.generateWithRequired(self.zoneId)
@@ -415,8 +414,6 @@ class DDHoodAI(HoodAI):
 
     def startup(self):
         self.playground.treasurePlannerClass = DDTreasurePlanner
-        for street in self.streets: # TEMP
-            street.wantSuits = True
         super().startup()
 
 class TTHoodAI(HoodAI):
@@ -425,8 +422,6 @@ class TTHoodAI(HoodAI):
     def startup(self):
         self.playground.treasurePlannerClass = TTTreasurePlanner
         self.playground.createButterflies(ButterflyGlobals.TTC)
-        for street in self.streets: # TEMP
-            street.wantSuits = True
         super().startup()
 
 class BRHoodAI(HoodAI):

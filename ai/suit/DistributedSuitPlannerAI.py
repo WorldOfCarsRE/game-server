@@ -10,6 +10,8 @@ from panda3d.core import Point3
 
 from direct.task import Task
 
+import time
+
 @with_slots
 @dataclass
 class SuitHoodInfo:
@@ -29,7 +31,7 @@ SUIT_HOOD_INFO = {
     SillyStreet: SuitHoodInfo(zoneId=SillyStreet, minSuits=5, maxSuits=15, minSuitBldgs=0, maxSuitBldgs=5, buildingWeight=20,
                               maxBattleSuits=3, joinChances=(1, 5, 10, 40, 60, 80), deptChances=(25, 25, 25, 25),
                               levels=(1, 2, 3), buildingDifficulties=()),
-    LoopyLane: SuitHoodInfo(zoneId=SillyStreet, minSuits=3, maxSuits=10, minSuitBldgs=0, maxSuitBldgs=5,
+    LoopyLane: SuitHoodInfo(zoneId=LoopyLane, minSuits=3, maxSuits=10, minSuitBldgs=0, maxSuitBldgs=5,
                             buildingWeight=15, maxBattleSuits=3, joinChances=(1, 5, 10, 40, 60, 80),
                             deptChances=(10, 70, 10, 10), levels=(1, 2, 3), buildingDifficulties=()),
     PunchlinePlace: SuitHoodInfo(zoneId=PunchlinePlace, minSuits=3, maxSuits=10, minSuitBldgs=0, maxSuitBldgs=5,
@@ -41,9 +43,42 @@ SUIT_HOOD_INFO = {
     SeaweedStreet: SuitHoodInfo(zoneId=SeaweedStreet, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
                             buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
                             deptChances=(0, 0, 90, 10), levels=(3, 4, 5, 6), buildingDifficulties=()),
-    LighthouseLane: SuitHoodInfo(zoneId=PunchlinePlace, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+    LighthouseLane: SuitHoodInfo(zoneId=LighthouseLane, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
                                  buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
-                                 deptChances=(40, 40, 10, 10), levels=(3, 4, 5, 6), buildingDifficulties=()),                        
+                                 deptChances=(40, 40, 10, 10), levels=(3, 4, 5, 6), buildingDifficulties=()),
+    ElmStreet: SuitHoodInfo(zoneId=ElmStreet, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99, buildingWeight=100,
+                              maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80), deptChances=(0, 20, 10, 70),
+                              levels=(2, 3, 4), buildingDifficulties=()),
+    MapleStreet: SuitHoodInfo(zoneId=MapleStreet, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                            buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                            deptChances=(10, 70, 0, 20), levels=(3, 4, 5, 6), buildingDifficulties=()),
+    OakStreet: SuitHoodInfo(zoneId=OakStreet, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                                 buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                                 deptChances=(5, 5, 5, 85), levels=(3, 4, 5, 6), buildingDifficulties=()),
+    AltoAvenue: SuitHoodInfo(zoneId=AltoAvenue, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99, buildingWeight=100,
+                              maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80), deptChances=(0, 0, 50, 50),
+                              levels=(2, 3, 4), buildingDifficulties=()),
+    BaritoneBoulevard: SuitHoodInfo(zoneId=BaritoneBoulevard, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                            buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                            deptChances=(0, 0, 90, 10), levels=(3, 4, 5, 6), buildingDifficulties=()),
+    TenorTerrace: SuitHoodInfo(zoneId=TenorTerrace, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                                 buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                                 deptChances=(50, 50, 0, 0), levels=(3, 4, 5, 6), buildingDifficulties=()),
+    WalrusWay: SuitHoodInfo(zoneId=WalrusWay, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99, buildingWeight=100,
+                              maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80), deptChances=(90, 10, 0, 0),
+                              levels=(5, 6, 7), buildingDifficulties=()),
+    SleetStreet: SuitHoodInfo(zoneId=SleetStreet, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                            buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                            deptChances=(10, 20, 30, 40), levels=(5, 6, 7), buildingDifficulties=()),
+    PolarPlace: SuitHoodInfo(zoneId=PolarPlace, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                                 buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                                 deptChances=(5, 85, 5, 5), levels=(7, 8, 9), buildingDifficulties=()),
+    LullabyLane: SuitHoodInfo(zoneId=LullabyLane, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                            buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                            deptChances=(25, 25, 25, 25), levels=(6, 7, 8, 9), buildingDifficulties=()),
+    PajamaPlace: SuitHoodInfo(zoneId=PajamaPlace, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                                 buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                                 deptChances=(5, 5, 85, 5), levels=(6, 7, 8, 9), buildingDifficulties=()),                                 
     SellbotHQ: SuitHoodInfo(zoneId=SellbotHQ, minSuits=3, maxSuits=15, minSuitBldgs=0, maxSuitBldgs=0, buildingWeight=0,
                             maxBattleSuits=4, joinChances= (1, 5, 10, 40, 60, 80), deptChances=(0, 0, 0, 100),
                             levels=(4, 5, 6), buildingDifficulties=()),
@@ -75,6 +110,22 @@ MIN_TAKEOVER_PATH_LEN = 2
 MIN_PATH_LEN = 40
 MAX_PATH_LEN = 300
 SUIT_BUILDING_NUM_SUITS = 1.5
+SUIT_BUILDING_TIMEOUT = [None,
+ None,
+ None,
+ None,
+ None,
+ None,
+ 72,
+ 60,
+ 48,
+ 36,
+ 24,
+ 12,
+ 6,
+ 3,
+ 1,
+ 0.5]
 MAX_SUIT_TIER = 5
 
 class DistributedSuitPlannerAI(DistributedObjectAI):
@@ -306,6 +357,27 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
                 break
             buildingDeficit -= 1
 
+        timeoutIndex = min(len(suitBuildings), len(SUIT_BUILDING_TIMEOUT) - 1)
+        timeout = SUIT_BUILDING_TIMEOUT[timeoutIndex]
+        if timeout != None:
+            timeout *= 3600.0
+            oldest = None
+            oldestAge = 0
+            now = time.time()
+            for b in suitBuildings:
+                building = self.hoodData.buildings[suitBlock]
+                if hasattr(building, 'elevator'):
+                    if building.elevator.getState() == 'WaitEmpty':
+                        age = now - building.becameSuitTime
+                        if age > oldestAge:
+                            oldest = building
+                            oldestAge = age
+
+            if oldestAge > timeout:
+                #oldest.b_setVictorList([0] * 4)
+                #oldest.updateSavedBy(None)
+                oldest.toonTakeOver()
+
         t = random.random() * 2.0 + UPKEEP_DELAY
         taskMgr.doMethodLater(t, self.upkeep, self.uniqueName('upkeep-suits'))
 
@@ -397,6 +469,9 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         if not possiblePoints:
             possiblePoints = backup
             backup = []
+            if suit.attemptingTakeover:
+                suit.attemptingTakeover = False
+                self.numAttemptingTakeover -= 1
             
         if suit.attemptingTakeover:
             minPathLen = MIN_TAKEOVER_PATH_LEN

@@ -16,6 +16,7 @@ import time, random
 
 CLEAR_OUT_TOON_BLDG_TIME = 4
 TO_SUIT_BLDG_TIME = 8
+VICTORY_SEQUENCE_TIME = 11
 
 class BuildingBase(object):
 
@@ -74,6 +75,25 @@ class DistributedBuildingAI(DistributedObjectAI, FSM, BuildingBase):
 
     def isSuitState(self):
         return self.getState()[0] == 'suit'
+
+    def enterBecomingToon(self):
+        self.d_setState('becomingToon')
+
+        taskMgr.doMethodLater(
+            VICTORY_SEQUENCE_TIME,
+            self.becomingToonTask,
+            str(self.block)+'_becomingToon-timer')
+
+    def becomingToonTask(self, task):
+        self.demand('Toon')
+
+        # save bldg state
+        return task.done
+    
+    def exitBecomingToon(self):
+        taskMgr.remove(str(self.block)+'_becomingToon-timer')
+        self.trackToonBlock()
+        self.detrackSuitBlock()
 
     def enterToon(self):
         self.d_setState('toon')
@@ -157,6 +177,14 @@ class DistributedBuildingAI(DistributedObjectAI, FSM, BuildingBase):
         self.becameSuitTime = time.time()
         print(f'hot tub at {self.zoneId}')
         self.demand('ClearOutToonInterior')
+
+    def toonTakeOver(self):
+        # self.demand('BecomingToonFromCogdo')
+        self.demand('BecomingToon')
+        #self.hoodData.suitPlanner.recycleBuilding()
+        if hasattr(self, "interior"):
+            self.interior.requestDelete()
+            del self.interior
         
     def enterBecomingSuit(self):
         self.sendUpdate('setSuitData',
