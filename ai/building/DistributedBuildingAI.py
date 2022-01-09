@@ -52,7 +52,6 @@ class DistributedBuildingAI(DistributedObjectAI, FSM, BuildingBase):
         self.door = None
         self.insideDoor = None
         self.interior = None
-        self.elevator = None
         self.npcs = []
         self.becameSuitTime = 0
 
