@@ -58,6 +58,9 @@ class DistributedBuildingAI(DistributedObjectAI, FSM, BuildingBase):
     def getBlock(self):
         return [self.block, self.interiorZoneId]
 
+    def getTrack(self):
+        return self.track
+
     def getSuitData(self):
         return ord(self.track), self.difficulty, self.numFloors
 
@@ -68,6 +71,9 @@ class DistributedBuildingAI(DistributedObjectAI, FSM, BuildingBase):
     def getState(self):
         state = self.state[0].lower() + self.state[1:]
         return [state, globalClockDelta.getRealNetworkTime()]
+
+    def isSuitState(self):
+        return self.getState()[0] == 'suit'
 
     def enterToon(self):
         self.d_setState('toon')

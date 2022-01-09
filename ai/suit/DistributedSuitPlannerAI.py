@@ -59,13 +59,13 @@ SUIT_HOOD_INFO = {
 }
 
 from panda3d.toontown import DNASuitPoint
-from .SuitTimings import fromSky, suitWalkSpeed
+from .SuitTimings import fromSky, fromSuitBuilding, suitWalkSpeed
 
 import random
 from typing import Optional
 
 from ai.suit.DistributedSuitAI import DistributedSuitAI, SuitDNA
-from ai.suit.SuitGlobals import SuitDept, SuitHeads, pickFromFreqList
+from ai.suit.SuitGlobals import suitDepts, SuitDept, SuitHeads, pickFromFreqList
 
 UPKEEP_DELAY = 10
 ADJUST_DELAY = 300
@@ -74,6 +74,7 @@ PATH_COLLISION_BUFFER = 5
 MIN_TAKEOVER_PATH_LEN = 2
 MIN_PATH_LEN = 40
 MAX_PATH_LEN = 300
+SUIT_BUILDING_NUM_SUITS = 1.5
 MAX_SUIT_TIER = 5
 
 class DistributedSuitPlannerAI(DistributedObjectAI):
@@ -127,6 +128,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.baseNumSuits = (self.info.maxSuits + self.info.minSuits) // 2
         self.popAdjustment = 0
         self.numFlyInSuits = 0
+        self.numBuildingSuits = 0
         self.numAttemptingTakeover = 0
         self.suitWalkSpeed = suitWalkSpeed
         self.initBuildingsAndPoints()
@@ -175,12 +177,36 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.upkeep()
         self.adjust()
 
-    def createNewSuit(self):
-        streetPoints = list(range(len(self.streetPoints)))
+    def createNewSuit(self, blockNumbers, streetPoints):
         random.shuffle(streetPoints)
 
         startPoint = None
-        blockNumber = None # TODO
+        blockNumber = None
+        dept = None
+
+        while startPoint == None and len(blockNumbers) > 0:
+            bn = random.choice(blockNumbers)
+            blockNumbers.remove(bn)
+
+            if bn in self.buildingSideDoors:
+                for doorPoint in self.buildingSideDoors[bn]:
+                    points = self.dnaStore.getAdjacentPoints(doorPoint)
+
+                    i = points.getNumPoints() - 1
+                    while blockNumber == None and i >= 0:
+                        pi = points.getPointIndex(i)
+                        p = self.pointIndexes[pi]
+                        i -= 1
+
+                        startTime = fromSuitBuilding
+                        startTime += self.dnaStore.getSuitEdgeTravelTime(
+                            doorPoint.getIndex(), pi,
+                            self.suitWalkSpeed)
+
+                        if not self.pointCollision(p, doorPoint, startTime):
+                            startTime = fromSuitBuilding
+                            startPoint = doorPoint
+                            blockNumber = bn
 
         while startPoint is None and streetPoints:
             point = self.streetPoints[streetPoints.pop()]
@@ -194,8 +220,14 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
         suit = DistributedSuitAI(self.air, self)
         suit.startPoint = startPoint
-        suit.flyInSuit = 1
-        suit.attemptingTakeover = self.newSuitShouldAttemptTakeover()
+
+        if blockNumber != None:
+            suit.buildingSuit = 1
+            # if suitTrack == None:
+            dept = self.hoodData.buildings[blockNumber].getTrack()
+        else:
+            suit.flyInSuit = 1
+            suit.attemptingTakeover = self.newSuitShouldAttemptTakeover()
 
         if not self.chooseDestination(suit, fromSky):
             print(f'({self.zoneId}) failed to choose destination')
@@ -213,15 +245,24 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             tierMax = MAX_SUIT_TIER
 
         tier = random.choice([tierMin, tierMax])
-        department = pickFromFreqList(self.info.deptChances)
+        if not dept:
+            department = pickFromFreqList(self.info.deptChances)
+            dept = SuitDept(department).char
+        else:
+            department = suitDepts.index(dept)
+
         head = SuitHeads.at(department * 8 + tier)
-        suit.dna = SuitDNA(suitType = 's', head = head, dept = SuitDept(department).char)
+
+        suit.dna = SuitDNA(suitType = 's', head = head, dept = dept)
         suit.actualLevel = level
         suit.initializePath()
         suit.generateWithRequired(suit.zoneId)
         suit.moveToNextLeg(None)
         self.suits.append(suit)
-        self.numFlyInSuits += 1
+        if suit.buildingSuit:
+            self.numBuildingSuits += 1
+        if suit.flyInSuit:
+            self.numFlyInSuits += 1
 
         if suit.attemptingTakeover:
             self.numAttemptingTakeover += 1
@@ -240,12 +281,30 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
     def upkeep(self, task=None):
         desired = self.baseNumSuits + self.popAdjustment
-        desired = min(desired, self.info.maxSuits)
-        deficit = (desired - self.numFlyInSuits + 3) / 4
+        desired = min(desired, self.info.maxSuits - self.numBuildingSuits)
+        deficit = (desired - self.numFlyInSuits + 3) // 4
+        
+        streetPoints = list(range(len(self.streetPoints)))
+        
         while deficit > 0:
-            if not self.createNewSuit():
+            if not self.createNewSuit([], streetPoints):
                 break
             deficit -= 1
+
+        suitBuildings = []
+        for suitBlock in self.hoodData.suitBlocks:
+            building = self.hoodData.buildings[suitBlock]
+            if building.isSuitState():
+                suitBuildings.append(suitBlock)
+        targetBuildingNum = int(len(suitBuildings) * SUIT_BUILDING_NUM_SUITS)
+        targetBuildingNum += deficit
+        targetBuildingNum = min(targetBuildingNum, self.info.maxSuits - self.numFlyInSuits)
+        buildingDeficit = (targetBuildingNum-self.numBuildingSuits + 3) // 4
+
+        while buildingDeficit > 0:
+            if not self.createNewSuit(suitBuildings, streetPoints):
+                break
+            buildingDeficit -= 1
 
         t = random.random() * 2.0 + UPKEEP_DELAY
         taskMgr.doMethodLater(t, self.upkeep, self.uniqueName('upkeep-suits'))
@@ -370,6 +429,8 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
     def removeSuit(self, suit: DistributedSuitAI):
         suit.requestDelete()
         self.suits.remove(suit)
+        if suit.buildingSuit:
+           self.numBuildingSuits -= 1
         if suit.flyInSuit:
             self.numFlyInSuits -= 1
         if suit.attemptingTakeover:

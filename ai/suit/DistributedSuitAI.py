@@ -159,6 +159,10 @@ class DistributedSuitAI(DistributedSuitBaseAI):
         self.path: Optional[List[int]] = None
         self.currentLeg = 0
         self.legType = 0
+
+        self.flyInSuit = 0
+        self.buildingSuit = 0
+
         self.attemptingTakeover = 0
         self.buildingHeight = None
         self.buildingDestination = None
