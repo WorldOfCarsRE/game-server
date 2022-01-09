@@ -415,6 +415,8 @@ class DDHoodAI(HoodAI):
 
     def startup(self):
         self.playground.treasurePlannerClass = DDTreasurePlanner
+        for street in self.streets: # TEMP
+            street.wantSuits = True
         super().startup()
 
 class TTHoodAI(HoodAI):
@@ -423,7 +425,7 @@ class TTHoodAI(HoodAI):
     def startup(self):
         self.playground.treasurePlannerClass = TTTreasurePlanner
         self.playground.createButterflies(ButterflyGlobals.TTC)
-        for street in self.streets:
+        for street in self.streets: # TEMP
             street.wantSuits = True
         super().startup()
 
