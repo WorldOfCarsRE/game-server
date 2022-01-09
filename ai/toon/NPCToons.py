@@ -764,6 +764,15 @@ def createNPC(air, npcId, desc = None, zoneId = 0, posIndex = 0, questCallback =
 
     return npc
 
+def isZoneProtected(zoneId):
+    npcs = []
+    npcIdList = zone2NpcId.get(zoneId, [])
+    for npcId in npcIdList:
+        npcDesc = NPCToonDict.get(npcId)
+        if npcDesc[4]:
+            return 1
+    return 0
+
 def createNpcsInZone(air, zoneId):
     if zoneId not in zone2NpcId:
         return ()

@@ -9,14 +9,20 @@ from ai.globals.HoodGlobals import ToonHall
 from direct.fsm.FSM import FSM
 
 from . import DoorTypes
+from . import CogBuildingGlobalsAI
 from ai.building.DistributedElevatorExtAI import DistributedElevatorExtAI
 from ai.building.DistributedKnockKnockDoorAI import DistributedKnockKnockDoorAI
-import time
+import time, random
 
 CLEAR_OUT_TOON_BLDG_TIME = 4
 TO_SUIT_BLDG_TIME = 8
 
-class DistributedBuildingAI(DistributedObjectAI, FSM):
+class BuildingBase(object):
+
+    def isHQ(self):
+        return 0
+
+class DistributedBuildingAI(DistributedObjectAI, FSM, BuildingBase):
     defaultTransitions = {
             'Off': ['WaitForVictors', 'BecomingToon', 'Toon', 'ClearOutToonInterior', 'BecomingSuit', 'Suit'],
             'WaitForVictors': ['BecomingToon'],
@@ -97,7 +103,7 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
         self.knockKnock.generateWithRequired(self.exteriorZoneId)
 
     def exitToon(self):
-        self.door.setDoorLock(DoorTypes.BUILDING_TAKEOVER)
+        self.door.setDoorLock(BUILDING_TAKEOVER)
 
     def enterClearOutToonInterior(self):
         self.d_setState('clearOutToonInterior')
@@ -105,10 +111,11 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
             self.interior.demand('BeingTakenOver')
 
         taskMgr.doMethodLater(
-            SuitBuildingGlobals.CLEAR_OUT_TOON_BLDG_TIME,
+            CLEAR_OUT_TOON_BLDG_TIME,
             self.clearOutToonInteriorTask,
             f'{self.block}_clearOutToonInterior-timer')
 
+        self.detrackToonBlock()
         self.trackSuitBlock()
 
     def clearOutToonInteriorTask(self, task):
@@ -117,6 +124,33 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
 
     def exitClearOutToonInterior(self):
         taskMgr.remove(f'{self.block}_clearOutToonInterior-timer')
+
+    def getMinMaxFloors(self, difficulty):
+        return CogBuildingGlobalsAI.CogBuildingInfo[difficulty].floors
+
+    def suitTakeOver(self, track, difficulty, buildingHeight):
+        # not toon block check here
+        # update saved by
+        maxDifficulty = len(CogBuildingGlobalsAI.CogBuildingInfo) - 1
+        if difficulty > maxDifficulty:
+            difficulty = maxDifficulty
+
+        minFloors, maxFloors = self.getMinMaxFloors(difficulty)
+
+        if buildingHeight == None:
+            numFloors = random.randint(minFloors, maxFloors)
+        else:
+            numFloors = buildingHeight + 1
+ 
+            if (numFloors < minFloors or numFloors > maxFloors):
+                numFloors = random.randint(minFloors, maxFloors)
+
+        self.track = track
+        self.difficulty = difficulty
+        self.numFloors = numFloors
+        self.becameSuitTime = time.time()
+        print(f'hot tub at {self.zoneId}')
+        self.demand('ClearOutToonInterior')
         
     def enterBecomingSuit(self):
         self.sendUpdate('setSuitData',
@@ -158,6 +192,14 @@ class DistributedBuildingAI(DistributedObjectAI, FSM):
 
         self.elevator = DistributedElevatorExtAI(self.air, self)
         self.elevator.generateWithRequired(self.exteriorZoneId)
+        
+    def trackToonBlock(self):
+        if self.block not in self.hoodData.toonBlocks:
+            self.hoodData.toonBlocks.append(self.block)
+
+    def detrackToonBlock(self):
+        if self.block in self.hoodData.toonBlocks:
+            self.hoodData.toonBlocks.remove(self.block)
 
     def trackSuitBlock(self):
         if self.block not in self.hoodData.suitBlocks:

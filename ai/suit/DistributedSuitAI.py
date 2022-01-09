@@ -160,6 +160,11 @@ class DistributedSuitAI(DistributedSuitBaseAI):
         self.currentLeg = 0
         self.legType = 0
         self.attemptingTakeover = 0
+        self.buildingHeight = None
+        self.buildingDestination = None
+
+        self.minPathLen = None
+        self.maxPathLen = None
 
         self.confrontPos = Point3()
         self.confrontHpr = Vec3()
@@ -171,10 +176,8 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             return 0
 
     def getPathEndpoints(self):
-        from ai.suit.DistributedSuitPlannerAI import MIN_PATH_LEN, MAX_PATH_LEN
-
         return self.startPoint.getIndex(), self.endPoint.getIndex(), \
-               MIN_PATH_LEN, MAX_PATH_LEN
+               self.minPathLen, self.maxPathLen
 
     def getPathState(self):
         return self.pathState
@@ -269,8 +272,8 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             delay = nextTime - elapsed
             taskMgr.doMethodLater(delay, self.moveToNextLeg, self.uniqueName('move'))
         else:
-            # if self.attemptingTakeover:
-            #     self.startTakeOver()
+            if self.attemptingTakeover:
+                self.startTakeOver()
             self.requestRemoval()
         return Task.done
 
@@ -341,3 +344,13 @@ class DistributedSuitAI(DistributedSuitBaseAI):
     def b_setPathState(self, pathState):
         self.pathState = pathState
         self.sendUpdate('setPathState', [self.pathState])
+        
+    def startTakeOver(self):
+        blockNumber = self.buildingDestination
+
+        if blockNumber not in self.suitPlanner.hoodData.suitBlocks: # YUCK, REFACTOR ME
+            difficulty = self.actualLevel - 1
+            dept = self.dna.dept
+            self.suitPlanner.suitTakeOver(blockNumber, dept, difficulty, self.buildingHeight)
+            
+            

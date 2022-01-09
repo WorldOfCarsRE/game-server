@@ -5,6 +5,7 @@ from dataslots import with_slots
 from typing import List, Tuple, Dict
 
 from ai.globals.HoodGlobals import *
+from ai.toon import NPCToons
 from panda3d.core import Point3
 
 from direct.task import Task
@@ -34,6 +35,15 @@ SUIT_HOOD_INFO = {
     PunchlinePlace: SuitHoodInfo(zoneId=PunchlinePlace, minSuits=3, maxSuits=10, minSuitBldgs=0, maxSuitBldgs=5,
                                  buildingWeight=15, maxBattleSuits=3, joinChances=(1, 5, 10, 40, 60, 80),
                                  deptChances=(10, 10, 40, 40), levels=(1, 2, 3), buildingDifficulties=()),
+    BarnacleBoulevard: SuitHoodInfo(zoneId=BarnacleBoulevard, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99, buildingWeight=100,
+                              maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80), deptChances=(90, 10, 0, 0),
+                              levels=(2, 3, 4), buildingDifficulties=()),
+    SeaweedStreet: SuitHoodInfo(zoneId=SeaweedStreet, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                            buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                            deptChances=(0, 0, 90, 10), levels=(3, 4, 5, 6), buildingDifficulties=()),
+    LighthouseLane: SuitHoodInfo(zoneId=PunchlinePlace, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
+                                 buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
+                                 deptChances=(40, 40, 10, 10), levels=(3, 4, 5, 6), buildingDifficulties=()),                        
     SellbotHQ: SuitHoodInfo(zoneId=SellbotHQ, minSuits=3, maxSuits=15, minSuitBldgs=0, maxSuitBldgs=0, buildingWeight=0,
                             maxBattleSuits=4, joinChances= (1, 5, 10, 40, 60, 80), deptChances=(0, 0, 0, 100),
                             levels=(4, 5, 6), buildingDifficulties=()),
@@ -61,6 +71,7 @@ UPKEEP_DELAY = 10
 ADJUST_DELAY = 300
 PATH_COLLISION_BUFFER = 5
 
+MIN_TAKEOVER_PATH_LEN = 2
 MIN_PATH_LEN = 40
 MAX_PATH_LEN = 300
 MAX_SUIT_TIER = 5
@@ -118,6 +129,41 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.numFlyInSuits = 0
         self.numAttemptingTakeover = 0
         self.suitWalkSpeed = suitWalkSpeed
+        self.initBuildingsAndPoints()
+
+    def initBuildingsAndPoints(self):
+        self.buildingFrontDoors = {}
+        self.buildingSideDoors = {}
+
+        for point in self.frontDoorPoints:
+            blockNumber = point.getLandmarkBuildingIndex()
+            if point < 0:
+                print(f'No landmark building for {repr(point)} in zone {self.zoneId}')
+            elif blockNumber in self.buildingFrontDoors:
+                print(f'Multiple front doors for building {blockNumber} in zone {self.zoneId}')
+            else:
+                self.buildingFrontDoors[blockNumber] = point
+
+        for point in self.sideDoorPoints:
+            blockNumber = point.getLandmarkBuildingIndex()
+            if point < 0:
+                print(f'No landmark building for {repr(point)} in zone {self.zoneId}')
+            elif blockNumber in self.buildingSideDoors:
+                self.buildingSideDoors[blockNumber].append(point)
+            else:
+                self.buildingSideDoors[blockNumber] = [point]
+
+        """
+        for blockNumber, bldg in self.hoodData.buildings.items():
+            if bldg.isHQ():
+                continue
+            if blockNumber not in self.buildingFrontDoors:
+                print(f'hot tubs')
+            if blockNumber not in self.buildingSideDoors:
+                print(f'hot tubs')
+        """
+            
+            
 
     def getZoneId(self):
         return self.zoneId
@@ -134,6 +180,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         random.shuffle(streetPoints)
 
         startPoint = None
+        blockNumber = None # TODO
 
         while startPoint is None and streetPoints:
             point = self.streetPoints[streetPoints.pop()]
@@ -148,6 +195,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         suit = DistributedSuitAI(self.air, self)
         suit.startPoint = startPoint
         suit.flyInSuit = 1
+        suit.attemptingTakeover = self.newSuitShouldAttemptTakeover()
 
         if not self.chooseDestination(suit, fromSky):
             print(f'({self.zoneId}) failed to choose destination')
@@ -174,10 +222,14 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         suit.moveToNextLeg(None)
         self.suits.append(suit)
         self.numFlyInSuits += 1
+
+        if suit.attemptingTakeover:
+            self.numAttemptingTakeover += 1
+
         return True
 
     def countNumNeededBuildings(self):
-        return self.maxSuitBldgs - len(self.hoodData.suitBlocks)
+        return self.info.maxSuitBldgs - len(self.hoodData.suitBlocks)
 
     def newSuitShouldAttemptTakeover(self):
         numNeeded = self.countNumNeededBuildings()
@@ -214,6 +266,10 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
         t = random.random() * 2.0 + ADJUST_DELAY
         taskMgr.doMethodLater(t, self.upkeep, self.uniqueName('adjust-suits'))
+
+    def suitTakeOver(self, blockNumber, dept, difficulty, buildingHeight):
+        building = self.hoodData.buildings[blockNumber]
+        building.suitTakeOver(dept, difficulty, buildingHeight)
 
     def pointCollision(self, point, adjacentPoint, elapsedTime):
         for suit in self.suits:
@@ -265,17 +321,46 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         return self.pointCollision(point, adjacentPoint, elapsedTime)
 
     def chooseDestination(self, suit: DistributedSuitAI, startTime):
-        streetPoints = list(range(len(self.streetPoints)))
-        random.shuffle(streetPoints)
+        possiblePoints = []
+        backup = []
+
+        if suit.attemptingTakeover:
+            for blockNumber in self.hoodData.toonBlocks:
+                bldg = self.hoodData.buildings[blockNumber]
+
+                if not NPCToons.isZoneProtected(bldg.interiorZoneId):
+                    if blockNumber in self.buildingFrontDoors:
+                        possiblePoints.append((blockNumber, self.buildingFrontDoors[blockNumber]))
+
+        for point in self.streetPoints:
+            backup.append((None, point))
+
+        if not possiblePoints:
+            possiblePoints = backup
+            backup = []
+            
+        if suit.attemptingTakeover:
+            minPathLen = MIN_TAKEOVER_PATH_LEN
+        else:
+            minPathLen = MIN_PATH_LEN
 
         retries = 0
-        while streetPoints and retries < 50:
-            endPoint = self.streetPoints[streetPoints.pop()]
+        
+        while len(possiblePoints) > 0 and retries < 50:
+            point = random.choice(possiblePoints)
+            possiblePoints.remove(point)
+            
+            if not possiblePoints:
+                possiblePoints = backup
+                backup = []
 
-            path = self.genPath(suit.startPoint, endPoint, MIN_PATH_LEN, MAX_PATH_LEN)
+            path = self.genPath(suit.startPoint, point[1], minPathLen, MAX_PATH_LEN)
 
             if path and not self.pathCollision(path, startTime):
-                suit.endPoint = endPoint
+                suit.endPoint = point[1]
+                suit.minPathLen = minPathLen
+                suit.maxPathLen = MAX_PATH_LEN
+                suit.buildingDestination = point[0]
                 # print('CHOSEN PATH:', suit.startPoint, endPoint, path)
                 suit.path = path
                 return 1
@@ -287,6 +372,8 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.suits.remove(suit)
         if suit.flyInSuit:
             self.numFlyInSuits -= 1
+        if suit.attemptingTakeover:
+            self.numAttemptingTakeover -= 1
 
     def requestBattle(self, zoneId, suit: DistributedSuitAI, toonId) -> bool:
         pos = self.zone2battlePos[zoneId]

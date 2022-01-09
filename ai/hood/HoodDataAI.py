@@ -52,6 +52,10 @@ class PlaceAI:
         self._active = False
         # self.doTable: Dict[int, DistributedObjectAI] = {}
         self.storage: Tuple[DNAStorage] = {}
+        
+        self.toonBlocks: List[int] = []
+        self.suitBlocks: List[int] = []
+
         self.dna: Tuple[DNAGroup] = {}
 
     @property
@@ -80,7 +84,9 @@ from ai.building.DistributedHQInteriorAI import DistributedHQInteriorAI
 from ai.building.DistributedDoorAI import DistributedDoorAI, DistributedCogHQDoorAI
 from ai.building import DoorTypes
 
-class HQBuildingAI(object):
+from ai.building.DistributedBuildingAI import BuildingBase, DistributedBuildingAI
+
+class HQBuildingAI(BuildingBase):
     __slots__ = 'interior', 'door0', 'door1', 'insideDoor0', 'insideDoor1', 'npcs'
 
     def __init__(self, air, exteriorZone, interiorZone, block):
@@ -126,7 +132,10 @@ class HQBuildingAI(object):
         self.insideDoor1.requestDelete()
         self.interior.requestDelete()
 
-class GagshopBuildingAI(object):
+    def isHQ(self):
+        return 1
+
+class GagshopBuildingAI(BuildingBase):
     __slots__ = 'interior', 'door', 'insideDoor', 'npcs'
 
     def __init__(self, air, exteriorZone, interiorZone, block):
@@ -166,14 +175,11 @@ class DistributedGagshopInteriorAI(DistributedObjectAI):
     def getZoneIdAndBlock(self):
         return self.zoneId, self.block
 
-from ai.building.DistributedBuildingAI import DistributedBuildingAI
-
 class SafeZoneAI(PlaceAI):
 
     def __init__(self, air, zoneId):
         PlaceAI.__init__(self, air, zoneId)
         self.buildings: Dict[int, object] = {}
-        self.suitBlocks: List[int] = []
         self.hq: Union[HQBuildingAI, None] = None
         self.gagShop: Union[GagshopBuildingAI, None] = None
         self.dnaStore: DNAStorage = None
@@ -212,7 +218,12 @@ class SafeZoneAI(PlaceAI):
                 bldg.exteriorZoneId = exteriorZone
                 bldg.interiorZoneId = self.getInteriorZone(exteriorZone, blockNumber)
                 bldg.generateWithRequired(self.zoneId)
+                
+                # backup stuff
+                # bldg.request('Suit')
+                # self.suitBlocks.append(blockNumber)
                 bldg.request('Toon')
+                self.toonBlocks.append(blockNumber)
                 self.buildings[blockNumber] = bldg
 
         for i in range(self.dnaStore.getNumDNAVisGroupsAI()):
