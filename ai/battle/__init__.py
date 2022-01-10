@@ -1300,6 +1300,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         self.toonItems: Dict[int] = {}
         self.toonMerits: Dict[int] = {}
+        self.toonExp: Dict[int] = {}
 
     def enterOff(self):
         pass
@@ -1412,13 +1413,31 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
         for i in range(4):
             if i > len(self.battleExperience) - 1:
-                yield from BattleExperience(-1, [], [], [], [], [], [], [], [])
+                originalExp, earnedExp = [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]
+                yield from BattleExperience(-1, originalExp, earnedExp, [], [], [], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0])
             else:
-                yield from self.battleExperience[i]
+                battleExp = self.battleExperience[i]
+                battleExp.toonId = self.activeToons[i]
+                battleExp.originalExp = self.origExp[i]
+
+                earnedExp = []
+
+                for i in range(NUM_TRACKS):
+                    earnedExp.append(getSkillGained(self.battleCalc.toonSkillPtsGained, toon.doId, i))
+
+                battleExp.earnedExp = earnedExp
+
+                yield from battleExp
 
         yield deathList
         yield uberList
         yield self.helpfulToons
+
+    def b_setState(self, state):
+        self.notify.debug(f'network:setState({state})')
+        stime = globalClock.getRealTime() + SERVER_BUFFER_TIME
+        self.d_setState(state, globalClockDelta.localToNetworkTime(stime))
+        self.demand(state)
 
     def getBattleExperience(self):
         # TODO: Read the getMovie() comment.
@@ -1430,8 +1449,8 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     def d_setMembers(self):
         self.sendUpdate('setMembers', self.getMembers())
 
-    def d_setState(self, state):
-        self.sendUpdate('setState', [state, globalClockDelta.getRealNetworkTime()])
+    def d_setState(self, state, ts = globalClockDelta.getRealNetworkTime()):
+        self.sendUpdate('setState', [state, ts])
 
     def d_adjust(self):
         self.sendUpdate('adjust', [globalClockDelta.getRealNetworkTime()])
@@ -1671,8 +1690,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
     def rewardDone(self):
         # TODO: Fully complete this.
-        self.d_setState('Resume')
-        self.demand('Resume')
+        self.b_setState('Resume')
 
     def assignRewards(self):
         activeToonList = []
@@ -1869,12 +1887,12 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         else:
             self.sendUpdateToAvatar(toonId, 'denyLocalToonJoin', [])
 
-    def addToon(self, toon, joining=True):
+    def addToon(self, toon, joining = True):
         # toon.stopToonUp()
         toonId = toon.doId
         event = self.air.getDeleteDoIdEvent(toonId)
         self.avatarExitEvents.append(event)
-        self.accept(event, self.__handleUnexpectedExit, extraArgs=[toonId])
+        self.accept(event, self.__handleUnexpectedExit, extraArgs = [toonId])
         if self.doId is not None:
             toon.b_setBattleId(self.doId)
 
@@ -1884,7 +1902,16 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
 
             toPendingTime = MAX_JOIN_T + SERVER_BUFFER_TIME
             self.joinBarriers[toonId] = ToonBarrier('to-pending-av-%d' % toonId, self.toons, toPendingTime, self._serverToonJoinDone,
-                                                    extraArgs=[toonId, ])
+                                                    extraArgs = [toonId, ])
+
+        # Initialize experience per track
+        if toonId not in self.toonExp:
+            p = []
+
+            for t in range(NUM_TRACKS):
+                p.append(toon.experience[t])
+
+            self.toonExp[toonId] = p
 
     def _serverToonJoinDone(self, avIds, joinedToonId):
         barrier = self.joinBarriers[joinedToonId]
@@ -2210,8 +2237,7 @@ class DistributedBattleAI(DistributedBattleBaseAI):
 
                 self.d_setMembers()
                 self.d_setBattleExperience()
-                self.d_setState('Reward')
-                self.demand('Reward')
+                self.b_setState('Reward')
             else:
                 self.d_setMembers()
                 if len(deadSuits) and not lastActiveSuitDied or len(deadToons):
