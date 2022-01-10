@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from dataslots import with_slots
 from typing import List, Tuple, Dict
 
+from ai.building import CogBuildingGlobalsAI
 from ai.globals.HoodGlobals import *
 from ai.toon import NPCToons
 from panda3d.core import Point3
@@ -126,7 +127,10 @@ SUIT_BUILDING_TIMEOUT = [None,
  3,
  1,
  0.5]
+BUILDING_HEIGHT_DISTRIBUTION = [14, 18, 25, 23, 20]
+TOTAL_SUIT_BUILDING_PCT = 18 # * CogDoPopFactor
 MAX_SUIT_TIER = 5
+MAX_BLDG_HEIGHT = 5
 
 class DistributedSuitPlannerAI(DistributedObjectAI):
     def __init__(self, air, hoodData, dnaStore):
@@ -134,6 +138,11 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.hoodData = hoodData
         self.dnaStore = dnaStore
         self.zoneId = hoodData.zoneId
+        
+        self.air.suitPlanners[hoodData.zoneId] = self
+        
+        self.initBweight()        
+
         self.info: SuitHoodInfo = SUIT_HOOD_INFO[self.zoneId]
         self.battleMgr: BattleManagerAI = BattleManagerAI(self.air)
 
@@ -182,7 +191,39 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.numBuildingSuits = 0
         self.numAttemptingTakeover = 0
         self.suitWalkSpeed = suitWalkSpeed
+        self.targetNumSuitBuildings = self.info.maxSuitBldgs
+        self.pendingBuildingTracks = []
+        self.pendingBuildingHeights = []
         self.initBuildingsAndPoints()
+        
+    def initBweight(self):
+        self.totalBweight = 0
+        self.totalBweightPerTrack = [0] * 4
+        self.totalBweightPerHeight = [0] * MAX_BLDG_HEIGHT
+
+        for hoodId in SUIT_HOOD_INFO:
+            currHoodInfo = SUIT_HOOD_INFO[hoodId]
+            
+            if currHoodInfo.maxSuitBldgs == 0:
+                continue
+            
+            weight = currHoodInfo.buildingWeight
+            tracks = currHoodInfo.deptChances
+            levels = currHoodInfo.levels
+
+            heights = [0] * MAX_BLDG_HEIGHT
+            for level in levels:
+                minFloors, maxFloors = CogBuildingGlobalsAI.CogBuildingInfo[level-1].floors
+                for i in range(minFloors -1, maxFloors):
+                    heights[i] += 1
+            
+            currHoodInfo.buildingDifficulties = heights
+
+            self.totalBweight += weight
+            for i in range(len(tracks)):
+                self.totalBweightPerTrack[i] = weight * tracks[i]
+            for i in range(len(heights)):
+                self.totalBweightPerHeight[i] = weight * heights[i]
 
     def initBuildingsAndPoints(self):
         self.buildingFrontDoors = {}
@@ -321,7 +362,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         return True
 
     def countNumNeededBuildings(self):
-        return self.info.maxSuitBldgs - len(self.hoodData.suitBlocks)
+        return self.targetNumSuitBuildings - len(self.hoodData.suitBlocks)
 
     def newSuitShouldAttemptTakeover(self):
         numNeeded = self.countNumNeededBuildings()
@@ -401,6 +442,215 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
     def suitTakeOver(self, blockNumber, dept, difficulty, buildingHeight):
         building = self.hoodData.buildings[blockNumber]
         building.suitTakeOver(dept, difficulty, buildingHeight)
+
+    def recycleBuilding(self):
+        bmin = self.info.minSuitBldgs
+        current = len(self.hoodData.suitBlocks)
+
+        if self.targetNumSuitBuildings > bmin and \
+            current <= self.targetNumSuitBuildings:
+            self.targetNumSuitBuildings -= 1
+            self.assignSuitBuildings(1)
+
+    def assignInitialSuitBuildings(self):
+        totalBuildings = 0
+        targetSuitBuildings = 0
+        actualSuitBuildings = 0
+        for sp in self.air.suitPlanners.values():
+            totalBuildings += len(sp.frontDoorPoints)
+            targetSuitBuildings += sp.targetNumSuitBuildings
+            actualSuitBuildings += len(sp.hoodData.suitBlocks)
+        wantedSuitBuildings = \
+          int(totalBuildings * TOTAL_SUIT_BUILDING_PCT / 100)
+
+        if actualSuitBuildings > 0:
+            numReassigned = 0
+                
+            for sp in self.air.suitPlanners.values():
+                numBuildings = len(sp.hoodData.suitBlocks)
+                if numBuildings > sp.targetNumSuitBuildings:
+                    more = numBuildings - sp.targetNumSuitBuildings
+                    sp.targetNumSuitBuildings += more
+                    targetSuitBuildings += more
+                    numReassigned += more
+
+        if wantedSuitBuildings > targetSuitBuildings:
+            additionalBuildings = wantedSuitBuildings - targetSuitBuildings
+            self.assignSuitBuildings(additionalBuildings)
+                        
+        elif wantedSuitBuildings < targetSuitBuildings:
+            extraBuildings = targetSuitBuildings - wantedSuitBuildings
+            self.unassignSuitBuildings(extraBuildings)
+
+    def assignSuitBuildings(self, numToAssign):
+        hoodInfo = SUIT_HOOD_INFO.copy()
+        totalWeight = self.totalBweight
+        totalWeightPerTrack = self.totalBweightPerTrack[:]
+        totalWeightPerHeight = self.totalBweightPerTrack[:]
+
+        numPerTrack = {'c': 0, 'l': 0, 'm': 0, 's':0}
+        for sp in self.air.suitPlanners.values():
+            sp.countNumBuildingsPerTrack(numPerTrack)
+            numPerTrack['c'] += sp.pendingBuildingTracks.count('c')
+            numPerTrack['l'] += sp.pendingBuildingTracks.count('l')
+            numPerTrack['m'] += sp.pendingBuildingTracks.count('m')
+            numPerTrack['s'] += sp.pendingBuildingTracks.count('s')
+
+        numPerHeight = {0:0, 1: 0 , 2: 0, 3: 0, 4: 0,}
+        for sp in self.air.suitPlanners.values():
+            sp.countNumBuildingsPerHeight(numPerHeight)
+            for i in range(len(numPerHeight)):
+                numPerHeight[i] += sp.pendingBuildingHeights.count(i)
+
+        while numToAssign > 0:
+            smallestCount = None
+            smallestTracks = []
+            for trackIndex in range(4):
+                if totalWeightPerTrack[trackIndex]:
+                    track = SuitDNA.suitDepts[trackIndex]
+                    count = numPerTrack[track]
+                    if smallestCount == None or count < smallestCount:
+                        smallestTracks = [track]
+                        smallestCount = count
+                    elif count == smallestCount:
+                        smallestTracks.append(track)
+
+            if not smallestTracks:
+                return
+
+            buildingTrack = random.choice(smallestTracks)
+            buildingTrackIndex = SuitDNA.suitDepts.index(buildingTrack)
+
+            smallestCount = None
+            smallestHeights = []
+            for height in range(MAX_BLDG_HEIGHT):
+                if totalWeightPerHeight[height]:
+                    count = float(numPerHeight[height]) / float(BUILDING_HEIGHT_DISTRIBUTION[height])
+                    if smallestCount == None or count < smallestCount:
+                        smallestHeights = [height]
+                        smallestCount = count
+                    elif count == smallestCount:
+                        smallestHeights.append(height)
+
+            if not smallestHeights:
+                return
+
+            buildingHeight = random.choice(smallestHeights)
+            
+            repeat = 1
+            while repeat and buildingTrack != None and buildingHeight != None:
+                if len(hoodInfo) == 0:
+                    return
+                    
+                repeat = 0
+                
+                currHoodInfo = self.chooseStreetWithPreference(hoodInfo, buildingTrackIndex, buildingHeight)
+
+                zoneId = currHoodInfo.zoneId
+
+                if zoneId in self.air.suitPlanners:
+                    sp = self.air.suitPlanners[zoneId]
+                
+                    numTarget = sp.targetNumSuitBuildings
+                    numTotalBuildings = len(sp.frontDoorPoints)
+                else:
+                    numTarget = 0
+                    numTotalBuildings = 0
+                
+                if numTarget >= currHoodInfo.maxSuitBldgs or \
+                   numTarget >= numTotalBuildings:
+                    del hoodInfo[zoneId]
+                    weight = currHoodInfo.buildingWeight
+                    tracks = currHoodInfo.deptChances
+                    heights = currHoodInfo.buildingDifficulties
+                    totalWeight -= weight
+
+                    for track in totalWeightPerTrack:
+                        totalWeightPerTrack[track] -= weight * tracks[track]
+                    for height in totalWeightPerHeight:
+                        totalWeightPerHeight[height] -= weight * heights[height]
+
+                    if totalWeightPerTrack[buildingTrackIndex] <= 0:
+                        buildingTrack = None
+
+                    if totalWeightPerHeight[buildingHeight] <= 0:
+                        buildingHeight = None
+                    
+                    repeat = 1
+
+            if buildingTrack != None and buildingHeight != None:
+                sp.targetNumSuitBuildings += 1
+                sp.pendingBuildingTracks.append(buildingTrack)
+                sp.pendingBuildingHeights.append(buildingHeight)
+                numPerTrack[buildingTrack] += 1
+                numPerHeight[buildingHeight] += 1
+                numToAssign -= 1
+
+    def unassignSuitBuildings(self, numToAssign):
+        hoodInfo = SUIT_HOOD_INFO.copy()
+        totalWeight = self.totalBweight
+
+        while numToAssign > 0:
+            repeat = 1
+            while repeat:
+                if len(hoodInfo) == 0:
+                    return
+                    
+                repeat = 0
+                currHoodInfo = self.chooseStreetNoPreference(hoodInfo, totalWeight)
+
+                zoneId = currHoodInfo.zoneId
+
+                if zoneId in self.air.suitPlanners:
+                    sp = self.air.suitPlanners[zoneId]
+                
+                    numTarget = sp.targetNumSuitBuildings
+                    numTotalBuildings = len(sp.frontDoorPoints)
+                else:
+                    numTarget = 0
+                    numTotalBuildings = 0
+                
+                if numTarget <= currHoodInfo.minSuitBldgs:
+                    del hoodInfo[zoneId]
+                    totalWeight -= currHoodInfo.buildingWeight
+                    repeat = 1
+
+            sp.targetNumSuitBuildings -= 1
+            numToAssign -= 1
+
+    def chooseStreetNoPreference(self, hoodInfo, totalWeight):
+        c = random.random() * totalWeight
+
+        t = 0
+        for i in hoodInfo:
+            currHoodInfo = hoodInfo[i]
+            weight = currHoodInfo.buildingWeight
+            t += weight
+            if c < t:
+                return currHoodInfo
+
+        return random.choice(hoodInfo)
+
+    def chooseStreetWithPreference(self, hoodInfo, buildingTrackIndex,
+                                   buildingHeight):
+        dist = []
+        for i in hoodInfo:
+            currHoodInfo = hoodInfo[i]
+            weight = currHoodInfo.buildingWeight
+            thisValue = weight * currHoodInfo.deptChances[buildingTrackIndex] * currHoodInfo.buildingDifficulties[buildingHeight]
+            dist.append(thisValue)
+            
+        totalWeight = sum(dist)
+        
+        c = random.random() * totalWeight
+
+        t = 0
+        for i in range(len(hoodInfo)):
+            t += dist[i]
+            if c < t:
+                return hoodInfo[i]
+
+        return random.choice(hoodInfo)
 
     def pointCollision(self, point, adjacentPoint, elapsedTime):
         for suit in self.suits:

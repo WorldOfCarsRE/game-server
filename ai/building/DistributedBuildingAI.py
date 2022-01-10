@@ -180,7 +180,7 @@ class DistributedBuildingAI(DistributedObjectAI, FSM, BuildingBase):
     def toonTakeOver(self):
         # self.demand('BecomingToonFromCogdo')
         self.demand('BecomingToon')
-        #self.hoodData.suitPlanner.recycleBuilding()
+        self.hoodData.suitPlanner.recycleBuilding()
         if hasattr(self, "interior"):
             self.interior.requestDelete()
             del self.interior

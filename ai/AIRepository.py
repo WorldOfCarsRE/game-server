@@ -74,6 +74,7 @@ class AIRepository:
         self.loop = None
         self.net_thread = None
         self.hoods = None
+        self.suitPlanners = {}
 
         self.zoneDataStore = AIZoneData.AIZoneDataStore()
 
@@ -449,6 +450,9 @@ class AIRepository:
         self.factoryMgr = FactoryManagerAI(self)
 
         self.loadZones()
+
+        if self.suitPlanners:
+            list(self.suitPlanners.values())[0].assignInitialSuitBuildings()
 
         self.district.b_setAvailable(True)
 
