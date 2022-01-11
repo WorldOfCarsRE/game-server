@@ -771,7 +771,6 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         pass
 
     def __suitCanJoinBattle(self, zoneId):
-        return 0 # TODO: battles need to support joining suits
         battle = self.battleMgr.getBattle(zoneId)
         if len(battle.suits) >= self.info.maxBattleSuits:
             return 0
@@ -781,7 +780,8 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             if ratioIdX < len(jChanceList):
                 if random.randint(0, 99) < jChanceList[ratioIdX]:
                     return 1
-            return 1
+            else:
+                return 1
         return 0
 
     def checkForBattle(self, zoneId, suit):
