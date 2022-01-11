@@ -257,7 +257,26 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
                 print(f'hot tubs')
         """
             
-            
+    def countNumBuildingsPerTrack(self, count):
+        for block in self.hoodData.suitBlocks:
+            building = self.hoodData.buildings[block]
+            if building:
+                if building.isSuitState():
+                    if building.track in count:
+                        count[building.track] += 1
+                    else:
+                        count[building.track] = 1
+
+    def countNumBuildingsPerHeight(self, count):
+        for block in self.hoodData.suitBlocks:
+            building = self.hoodData.buildings[block]
+            if building:
+                if building.isSuitState():
+                    height = building.numFloors - 1
+                    if height in count:
+                        count[height] += 1
+                    else:
+                        count[height] = 1
 
     def getZoneId(self):
         return self.zoneId
