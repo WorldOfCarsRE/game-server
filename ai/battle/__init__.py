@@ -1301,6 +1301,8 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         self.toonItems: Dict[int] = {}
         self.toonMerits: Dict[int] = {}
         self.toonExp: Dict[int] = {}
+        self.toonOrigMerits: Dict[int] = {}
+        self.toonOrigQuests: Dict[int] = {}
 
     def enterOff(self):
         pass
@@ -1416,32 +1418,20 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 originalExp, earnedExp = [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]
                 yield from BattleExperience(-1, originalExp, earnedExp, [], [], [], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0])
             else:
-                battleExp = self.battleExperience[i]
-                battleExp.toonId = self.activeToons[i]
-                battleExp.originalExp = self.toonExp[i]
-
-                earnedExp = []
-
-                for i in range(NUM_TRACKS):
-                    earnedExp.append(getSkillGained(self.battleCalc.toonSkillPtsGained, toon.doId, i))
-
-                battleExp.earnedExp = earnedExp
-
-                yield from battleExp
+                yield from self.battleExperience[i]
 
         yield deathList
         yield uberList
         yield self.helpfulToons
 
-    def b_setState(self, state):
-        self.notify.debug(f'network:setState({state})')
-        stime = globalClock.getRealTime() + SERVER_BUFFER_TIME
-        self.d_setState(state, globalClockDelta.localToNetworkTime(stime))
-        self.demand(state)
-
     def getBattleExperience(self):
         # TODO: Read the getMovie() comment.
         return list(self.getBattleExperienceData())
+
+    def b_setState(self, state):
+        self.notify.debug(f'network:setState({state})')
+        self.d_setState(state)
+        self.demand(state)
 
     def d_setMovie(self):
         self.sendUpdate('setMovie', self.getMovie())
@@ -1449,10 +1439,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     def d_setMembers(self):
         self.sendUpdate('setMembers', self.getMembers())
 
-    def d_setState(self, state, ts = None):
-        if ts == None:
-            ts = globalClockDelta.getRealNetworkTime()
-        self.sendUpdate('setState', [state, ts])
+    def d_setState(self, state):
+        stime = globalClock.getRealTime() + SERVER_BUFFER_TIME
+        self.sendUpdate('setState', [state, globalClockDelta.localToNetworkTime(stime)])
 
     def d_adjust(self):
         self.sendUpdate('adjust', [globalClockDelta.getRealNetworkTime()])
@@ -1665,7 +1654,25 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
         for toonId in self.activeToons:
             self.sendEarnedExperience(toonId)
             toon = self.air.doTable.get(toonId)
-            # TODO
+
+            earnedExp = []
+
+            for i in range(NUM_TRACKS):
+                earnedExp.append(getSkillGained(self.battleCalc.toonSkillPtsGained, toon.doId, i))
+
+            battleExp = BattleExperience(
+                toonId,
+                originalExp = self.toonExp[toonId],
+                earnedExp = earnedExp,
+                origQuests = self.toonOrigQuests[toonId],
+                recoveredItems = self.toonItems[toonId][0],
+                missedItems = [],
+                origMerits = self.origMerits[toonId],
+                earnedMerits = self.toonMerits[toonId],
+                suitParts = self.toonItems[toonId][1]
+            )
+
+            self.battleExperience.append(battleExp)
 
         self.movieActive = True
         self.d_setMovie()
@@ -1914,6 +1921,26 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 p.append(toon.experience[t])
 
             self.toonExp[toonId] = p
+
+        # Initialize original merits
+        if avId not in self.toonOrigMerits:
+            self.toonOrigMerits[avId] = toon.cogMerits[:]
+
+        # Initialize merits earned
+        if avId not in self.toonMerits:
+            self.toonMerits[avId] = [0, 0, 0, 0]
+
+        # Initialize parts found
+        if avId not in self.toonOrigQuests:
+            # we need to flatten the quests to send them over the wire
+            flattenedQuests = []
+            for quest in toon.quests:
+                flattenedQuests.extend(quest)
+            self.toonOrigQuests[avId] = flattenedQuests
+
+        # Initialize parts found
+        if avId not in self.toonItems:
+            self.toonItems[avId] = ([], [])
 
     def _serverToonJoinDone(self, avIds, joinedToonId):
         barrier = self.joinBarriers[joinedToonId]
@@ -2239,6 +2266,7 @@ class DistributedBattleAI(DistributedBattleBaseAI):
 
                 self.d_setMembers()
                 self.d_setBattleExperience()
+                print('setting reward state')
                 self.b_setState('Reward')
             else:
                 self.d_setMembers()
