@@ -205,6 +205,7 @@ class DistributedToonAI(DistributedPlayerAI):
         self.maxCarry = 0
         self.speedChatStyleIndex = 1
         self.teleportZoneArray = []
+        self.cogMerits = [0] * 4
 
     def delete(self):
         # Stop our tasks too.
@@ -1236,8 +1237,18 @@ class DistributedToonAI(DistributedPlayerAI):
     def getCogParts(self):
         return [0] * 4
 
+    def b_setCogMerits(self, merits):
+        self.setCogMerits(merits)
+        self.d_setCogMerits(merits)
+
+    def setCogMerits(self, merits):
+        self.cogMerits = merits
+
+    def d_setCogMerits(self, merits):
+        self.sendUpdate('setCogMerits', [merits])
+
     def getCogMerits(self):
-        return [0] * 4
+        return self.cogMerits
 
     def setHouseId(self, houseId):
         self.houseId = houseId

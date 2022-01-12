@@ -1923,24 +1923,24 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             self.toonExp[toonId] = p
 
         # Initialize original merits
-        if avId not in self.toonOrigMerits:
-            self.toonOrigMerits[avId] = toon.cogMerits[:]
+        if toonId not in self.toonOrigMerits:
+            self.toonOrigMerits[toonId] = toon.cogMerits[:]
 
         # Initialize merits earned
-        if avId not in self.toonMerits:
-            self.toonMerits[avId] = [0, 0, 0, 0]
+        if toonId not in self.toonMerits:
+            self.toonMerits[toonId] = [0, 0, 0, 0]
 
         # Initialize parts found
-        if avId not in self.toonOrigQuests:
+        if toonId not in self.toonOrigQuests:
             # we need to flatten the quests to send them over the wire
             flattenedQuests = []
             for quest in toon.quests:
                 flattenedQuests.extend(quest)
-            self.toonOrigQuests[avId] = flattenedQuests
+            self.toonOrigQuests[toonId] = flattenedQuests
 
         # Initialize parts found
-        if avId not in self.toonItems:
-            self.toonItems[avId] = ([], [])
+        if toonId not in self.toonItems:
+            self.toonItems[toonId] = ([], [])
 
     def _serverToonJoinDone(self, avIds, joinedToonId):
         barrier = self.joinBarriers[joinedToonId]
