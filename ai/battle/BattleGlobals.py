@@ -34,6 +34,9 @@ class Tracks(IntEnum):
 
 NUM_TRACKS = 7
 UBER_INDEX = 6
+UBER_LEVELS = []
+for i in range(NUM_TRACKS):
+    UBER_LEVELS.append(UBER_INDEX + ((UBER_INDEX + 1) * i))
 NUM_PROPS = 7
 
 regMaxSkill = 10000

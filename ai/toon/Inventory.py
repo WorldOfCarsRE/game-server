@@ -70,7 +70,7 @@ class Inventory:
             print('more than max carry')
             return False
 
-        for i in range(0, NUM_TRACKS * NUM_PROPS, UBER_INDEX):
+        for i in UBER_LEVELS:
             if newInventory[i] > self[i]:
                 # Can't buy level 7 gags.
                 print('tried buying uber')
