@@ -1667,7 +1667,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
                 origQuests = self.toonOrigQuests[toonId],
                 recoveredItems = self.toonItems[toonId][0],
                 missedItems = [],
-                origMerits = self.origMerits[toonId],
+                origMerits = self.toonOrigMerits[toonId],
                 earnedMerits = self.toonMerits[toonId],
                 suitParts = self.toonItems[toonId][1]
             )
@@ -2266,7 +2266,6 @@ class DistributedBattleAI(DistributedBattleBaseAI):
 
                 self.d_setMembers()
                 self.d_setBattleExperience()
-                print('setting reward state')
                 self.b_setState('Reward')
             else:
                 self.d_setMembers()
