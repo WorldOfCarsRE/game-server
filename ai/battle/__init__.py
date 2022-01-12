@@ -1418,7 +1418,7 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
             else:
                 battleExp = self.battleExperience[i]
                 battleExp.toonId = self.activeToons[i]
-                battleExp.originalExp = self.origExp[i]
+                battleExp.originalExp = self.toonExp[i]
 
                 earnedExp = []
 
@@ -1449,7 +1449,9 @@ class DistributedBattleBaseAI(DistributedObjectAI, FSM):
     def d_setMembers(self):
         self.sendUpdate('setMembers', self.getMembers())
 
-    def d_setState(self, state, ts = globalClockDelta.getRealNetworkTime()):
+    def d_setState(self, state, ts = None):
+        if ts == None:
+            ts = globalClockDelta.getRealNetworkTime()
         self.sendUpdate('setState', [state, ts])
 
     def d_adjust(self):
