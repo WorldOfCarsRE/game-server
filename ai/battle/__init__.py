@@ -2285,3 +2285,82 @@ class DistributedBattleAI(DistributedBattleBaseAI):
             self.finishCallback(self.zoneId)
 
         self.battleMgr.removeBattle(self)
+        
+class DistributedBattleBldgAI(DistributedBattleBaseAI):
+
+    def __init__(self, air, zoneId, roundCallback = None, finishCallback = None, maxSuits = 4, bossBattle = 0):
+        DistributedBattleBaseAI.__init__(self, air, finishCallback, maxSuits = maxSuits)
+        self.streetBattle = 0
+        self.roundCallback = roundCallback
+
+        # TODO: add allowed transition to BuildingReward
+
+        self.elevatorPos = Point3(0, -30, 0)
+        self.resumeNeedUpdate = 0
+
+    def delete(self):
+        del self.roundCallback
+        DistributedBattleBaseAI.delete(self)
+
+    def setInitialMembers(self, toonIds, suits):
+        for suit in suits:
+            self.addSuit(suit)
+        for toonId in toonIds:
+            self.addToon(toonId)
+
+        self.demand('FaceOff')
+
+    def enterFaceOff(self):
+        self.joinable = True
+        self.runnable = False
+        self.suits[0].prepareToJoinBattle()
+
+        timeForFaceoff = calcToonMoveTime(self.pos, self.elevatorPos) + FACEOFF_TAUNT_T + SERVER_BUFFER_TIME
+
+        taskMgr.doMethodLater(timeForFaceoff, self.handleFaceOffDone, self.faceoffTask)
+
+    def exitFaceOff(self):
+        taskMgr.remove(self.faceoffTask)
+
+    def faceOffDone(self):
+        avId = self.air.currentAvatarSender
+
+        if avId not in self.toons:
+            return
+
+        if self.state != 'FaceOff':
+            return
+
+        taskMgr.remove(self.faceoffTask)
+
+        self.handleFaceOffDone()
+
+    def handleFaceOffDone(self, task = None):
+        for suit in self.suits:
+            self.activeSuits.append(suit)
+        for toon in self.toons:
+            self.activeToons.append(toon)
+            self.sendEarnedExperience(toon)
+        self.d_setMembers()
+        self.demand('WaitForInput')
+
+        return Task.done
+
+    def localMovieDone(self, deadToons, deadSuits, lastActiveSuitDied):
+        if not self.toons:
+            self.d_setMembers()
+            self.demand('Resume')
+        else:
+            totalHp = 0
+            for suit in self.suits:
+                if suit.getHp() > 0:
+                    totalHp += suit.getHp()
+
+            self.roundCallback(self.activeToons, totalHp, deadSuits)
+
+    def enterBuildingReward(self):
+        self.assignRewards()
+
+    def enterResume(self):
+        DistributedBattleBaseAI.enterResume(self)
+        self.finishCallback(self.zoneId, self.activeToons)
