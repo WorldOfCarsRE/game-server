@@ -1403,6 +1403,12 @@ class ToonDNA(object):
         return ToonDNA('t', head, torso, legs, gender, color, gloveColor, color, color, top, topColor,
                        sleeve, sleeveColor, bottom, bottomColor)
 
+    def asTuple(self):
+        return (self.head, self.torso, self.legs, self.gender,
+                self.armColor, self.gloveColor, self.legColor, self.headColor,
+                self.topTex, self.topTexColor, self.sleeveTex, 
+                self.sleeveTexColor, self.botTex, self.botTexColor)
+
     def getAnimal(self):
         if self.head[0] == 'd':
             return 'dog'

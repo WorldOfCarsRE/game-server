@@ -2,7 +2,16 @@ from ai.DistributedObjectAI import DistributedObjectAI
 
 # from ai.battle import DistributedBattleBldgAI
 
+from ai.ToonBarrier import ToonBarrier
+
 from direct.fsm.FSM import FSM
+from typing import Optional
+
+# This allows plenty of time for clients to load building assets.
+# Adjust if needed.
+JOIN_TIMEOUT = 30
+ELEVATOR_JOIN_TIMEOUT = 8
+RESERVES_JOIN_TIMEOUT = 7
 
 class DistributedSuitInteriorAI(DistributedObjectAI, FSM):
     defaultTransitions = {
@@ -24,6 +33,16 @@ class DistributedSuitInteriorAI(DistributedObjectAI, FSM):
         self.zoneId = elevator.bldg.zoneId
         self.numFloors = elevator.bldg.numFloors
 
+        self._barrier: Optional[ToonBarrier] = None
+
+        self.toons = []
+        self.toonIds = elevator.seats[:]
+        for toonId in self.toonIds:
+            if toonId != None:
+                self.addToon(toonId)
+
+        self.savedByMap = {}
+
         self.bldg = elevator.bldg
 
         self.demand('WaitForAllToonsInside')
@@ -32,6 +51,38 @@ class DistributedSuitInteriorAI(DistributedObjectAI, FSM):
         self.ignoreAll()
 
         DistributedObjectAI.delete(self)
+
+    def handleUnexpectedExit(self, toonId):
+        self.removeToon(toonId)
+        if len(self.toons) == 0:
+            if self.state == 'Resting':
+                pass
+            elif self.battle == None:
+                self.bldg.deleteSuitInterior() #
+
+    def addToon(self, toonId):
+        if toonId not in self.air.doTable:
+            return
+
+        event = self.air.getDeleteDoIdEvent()
+        self.avatarExitEvents.append(event)
+        self.accept(event, self.handleUnexpectedExit, extraArgs=[toonId])
+
+        self.toons.append(toonId)
+
+    def removeToon(self, toonId):
+        if self.toons.count(toonId):
+            self.toons.remove(toonId)
+        if self.toonIds.count(toonId):
+            self.toonIds[self.toonIds.index(toonId)] = None
+
+        if self._barrier is not None and self._barrier.active:
+            self._barrier.clear(toonId)
+
+        event = self.air.getDeleteDoIdEvent(toonId)
+        if event in self.avatarExitEvents:
+            self.avatarExitEvents.remove(event)
+        self.ignore(event)
 
     def getZoneId(self):
         return self.zoneId
@@ -46,11 +97,18 @@ class DistributedSuitInteriorAI(DistributedObjectAI, FSM):
         return self.numFloors
 
     def d_setToons(self):
-        pass
+        self.sendUpdate('setToons', self.getToons())
 
     def getToons(self):
-        pass
-        
+        toonIds = []
+        for toonId in self.toonIds:
+            if toonId == None:
+                toonIds.append(0)
+            else:
+                toonIds.append(toonId)
+
+        return [toonIds, 0]
+       
     def d_setSuits(self):
         pass
 
@@ -71,21 +129,48 @@ class DistributedSuitInteriorAI(DistributedObjectAI, FSM):
 
     def setAvatarJoined(self):
         avId = self.air.currentAvatarSender
+        if self.toons.count(avId) == 0:
+            return
+
+        toon = self.air.doTable.get(avId)
+        if toon != None:
+            self.savedByMap[avId] = (avatar.getName(), avatar.dna.asTuple())
+
+        if self._barrier is not None and self._barrier.active:
+            self._barrier.clear(avId)
         
     def elevatorDone(self):
         avId = self.air.currentAvatarSender
-        
+        if self.toons.count(avId) == 0:
+            return
+        if self.state != 'Elevator':
+            return
+        if self._barrier is not None and self._barrier.active:
+            self._barrier.clear(senderId)
+       
     def reserveJoinDone(self):
         avId = self.air.currentAvatarSender
+        if self.toons.count(avId) == 0:
+            return
+        if self.state != 'ReservesJoining':
+            return
+        if self._barrier is not None and self._barrier.active:
+            self._barrier.clear(senderId)
 
     def enterWaitForAllToonsInside(self):
-        pass
+        self._barrier = ToonBarrier(self.uniqueName('wait-all-toons'), self.toons, JOIN_TIMEOUT, self._waitForAllToonsDone)
+
+    def _waitForAllToonsDone(self):
+        self.b_setState('Elevator')
 
     def exitWaitForAllToonsInside(self):
         pass
 
     def enterElevator(self):
-        pass
+        self._barrier = ToonBarrier(self.uniqueName('enter-elevator'), self.toons, ELEVATOR_JOIN_TIMEOUT, self._serverElevatorDone)
+
+    def _serverElevatorDone(self):
+        self.b_setState('Battle')
 
     def exitElevator(self):
         pass
@@ -97,7 +182,10 @@ class DistributedSuitInteriorAI(DistributedObjectAI, FSM):
         pass
 
     def enterReservesJoining(self):
-        pass
+        self._barrier = ToonBarrier(self.uniqueName('enter-reserves-joining'), self.toons, RESERVES_JOIN_TIMEOUT, self._serverReservesDone)
+
+    def _serverReservesDone(self):
+        self.b_setState('Battle')
 
     def exitReservesJoining(self):
         pass
@@ -115,7 +203,17 @@ class DistributedSuitInteriorAI(DistributedObjectAI, FSM):
         pass
 
     def enterReward(self):
-        pass
+        victors = self.toonIds[:]
+
+        savedBy = []
+        for v in victors:
+            tuple = self.savedByMap.get(v)
+            if tuple:
+                savedBy.append([v, tuple[0], tuple[1])
+
+        self.bldg.request('WaitForVictors', [victors, savedBy])
+
+        self.d_setState('Reward')
 
     def exitReward(self):
         pass
