@@ -122,7 +122,7 @@ class DistributedSuitBaseAI(DistributedObjectAI):
             return 0
 
     def getDeathEvent(self):
-        return 'cogDead-%s' % self.doId
+        return f'cogDead-{self.doId}'
 
     def resume(self):
         if self.hp <= 0:
@@ -221,7 +221,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             self.sendUpdateToAvatar(avId, 'denyBattle', [])
             return
 
-    def pointInMyPath(self, point, elapsed, collisionBuffer=5):
+    def pointInMyPath(self, point, elapsed, collisionBuffer = 5):
         if self.pathState != PathState.MOVE:
             return 0
         if not self.suitPlanner:
@@ -348,7 +348,7 @@ class DistributedSuitAI(DistributedSuitBaseAI):
     def b_setPathState(self, pathState):
         self.pathState = pathState
         self.sendUpdate('setPathState', [self.pathState])
-        
+
     def startTakeOver(self):
         blockNumber = self.buildingDestination
 
@@ -356,5 +356,3 @@ class DistributedSuitAI(DistributedSuitBaseAI):
             difficulty = self.actualLevel - 1
             dept = self.dna.dept
             self.suitPlanner.suitTakeOver(blockNumber, dept, difficulty, self.buildingHeight)
-            
-            

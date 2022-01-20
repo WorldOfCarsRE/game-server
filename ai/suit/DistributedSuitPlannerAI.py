@@ -79,7 +79,7 @@ SUIT_HOOD_INFO = {
                             deptChances=(25, 25, 25, 25), levels=(6, 7, 8, 9), buildingDifficulties=()),
     PajamaPlace: SuitHoodInfo(zoneId=PajamaPlace, minSuits=1, maxSuits=5, minSuitBldgs=0, maxSuitBldgs=99,
                                  buildingWeight=100, maxBattleSuits=4, joinChances=(1, 5, 10, 40, 60, 80),
-                                 deptChances=(5, 5, 85, 5), levels=(6, 7, 8, 9), buildingDifficulties=()),                                 
+                                 deptChances=(5, 5, 85, 5), levels=(6, 7, 8, 9), buildingDifficulties=()),
     SellbotHQ: SuitHoodInfo(zoneId=SellbotHQ, minSuits=3, maxSuits=15, minSuitBldgs=0, maxSuitBldgs=0, buildingWeight=0,
                             maxBattleSuits=4, joinChances= (1, 5, 10, 40, 60, 80), deptChances=(0, 0, 0, 100),
                             levels=(4, 5, 6), buildingDifficulties=()),
@@ -138,10 +138,10 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.hoodData = hoodData
         self.dnaStore = dnaStore
         self.zoneId = hoodData.zoneId
-        
+
         self.air.suitPlanners[hoodData.zoneId] = self
-        
-        self.initBweight()        
+
+        self.initBweight()
 
         self.info: SuitHoodInfo = SUIT_HOOD_INFO[self.zoneId]
         self.battleMgr: BattleManagerAI = BattleManagerAI(self.air)
@@ -195,7 +195,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         self.pendingBuildingTracks = []
         self.pendingBuildingHeights = []
         self.initBuildingsAndPoints()
-        
+
     def initBweight(self):
         self.totalBweight = 0
         self.totalBweightPerTrack = [0] * 4
@@ -203,10 +203,10 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
         for hoodId in SUIT_HOOD_INFO:
             currHoodInfo = SUIT_HOOD_INFO[hoodId]
-            
+
             if currHoodInfo.maxSuitBldgs == 0:
                 continue
-            
+
             weight = currHoodInfo.buildingWeight
             tracks = currHoodInfo.deptChances
             levels = currHoodInfo.levels
@@ -216,7 +216,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
                 minFloors, maxFloors = CogBuildingGlobalsAI.CogBuildingInfo[level-1].floors
                 for i in range(minFloors -1, maxFloors):
                     heights[i] += 1
-            
+
             currHoodInfo.buildingDifficulties = heights
 
             self.totalBweight += weight
@@ -256,7 +256,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             if blockNumber not in self.buildingSideDoors:
                 print(f'hot tubs')
         """
-            
+
     def countNumBuildingsPerTrack(self, count):
         for block in self.hoodData.suitBlocks:
             building = self.hoodData.buildings[block]
@@ -385,7 +385,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
     def newSuitShouldAttemptTakeover(self):
         numNeeded = self.countNumNeededBuildings()
-        
+
         if self.numAttemptingTakeover >= numNeeded:
             return 0
         return 1
@@ -394,9 +394,9 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         desired = self.baseNumSuits + self.popAdjustment
         desired = min(desired, self.info.maxSuits - self.numBuildingSuits)
         deficit = (desired - self.numFlyInSuits + 3) // 4
-        
+
         streetPoints = list(range(len(self.streetPoints)))
-        
+
         while deficit > 0:
             if not self.createNewSuit([], streetPoints):
                 break
@@ -484,7 +484,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
         if actualSuitBuildings > 0:
             numReassigned = 0
-                
+
             for sp in self.air.suitPlanners.values():
                 numBuildings = len(sp.hoodData.suitBlocks)
                 if numBuildings > sp.targetNumSuitBuildings:
@@ -496,7 +496,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
         if wantedSuitBuildings > targetSuitBuildings:
             additionalBuildings = wantedSuitBuildings - targetSuitBuildings
             self.assignSuitBuildings(additionalBuildings)
-                        
+
         elif wantedSuitBuildings < targetSuitBuildings:
             extraBuildings = targetSuitBuildings - wantedSuitBuildings
             self.unassignSuitBuildings(extraBuildings)
@@ -555,27 +555,27 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
                 return
 
             buildingHeight = random.choice(smallestHeights)
-            
+
             repeat = 1
             while repeat and buildingTrack != None and buildingHeight != None:
                 if len(hoodInfo) == 0:
                     return
-                    
+
                 repeat = 0
-                
+
                 currHoodInfo = self.chooseStreetWithPreference(hoodInfo, buildingTrackIndex, buildingHeight)
 
                 zoneId = currHoodInfo.zoneId
 
                 if zoneId in self.air.suitPlanners:
                     sp = self.air.suitPlanners[zoneId]
-                
+
                     numTarget = sp.targetNumSuitBuildings
                     numTotalBuildings = len(sp.frontDoorPoints)
                 else:
                     numTarget = 0
                     numTotalBuildings = 0
-                
+
                 if numTarget >= currHoodInfo.maxSuitBldgs or \
                    numTarget >= numTotalBuildings:
                     del hoodInfo[zoneId]
@@ -594,7 +594,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
                     if totalWeightPerHeight[buildingHeight] <= 0:
                         buildingHeight = None
-                    
+
                     repeat = 1
 
             if buildingTrack != None and buildingHeight != None:
@@ -614,7 +614,7 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             while repeat:
                 if len(hoodInfo) == 0:
                     return
-                    
+
                 repeat = 0
                 currHoodInfo = self.chooseStreetNoPreference(hoodInfo, totalWeight)
 
@@ -622,13 +622,13 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
 
                 if zoneId in self.air.suitPlanners:
                     sp = self.air.suitPlanners[zoneId]
-                
+
                     numTarget = sp.targetNumSuitBuildings
                     numTotalBuildings = len(sp.frontDoorPoints)
                 else:
                     numTarget = 0
                     numTotalBuildings = 0
-                
+
                 if numTarget <= currHoodInfo.minSuitBldgs:
                     del hoodInfo[zoneId]
                     totalWeight -= currHoodInfo.buildingWeight
@@ -658,9 +658,9 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             weight = currHoodInfo.buildingWeight
             thisValue = weight * currHoodInfo.deptChances[buildingTrackIndex] * currHoodInfo.buildingDifficulties[buildingHeight]
             dist.append(thisValue)
-            
+
         totalWeight = sum(dist)
-        
+
         c = random.random() * totalWeight
 
         t = 0
@@ -741,18 +741,18 @@ class DistributedSuitPlannerAI(DistributedObjectAI):
             if suit.attemptingTakeover:
                 suit.attemptingTakeover = False
                 self.numAttemptingTakeover -= 1
-            
+
         if suit.attemptingTakeover:
             minPathLen = MIN_TAKEOVER_PATH_LEN
         else:
             minPathLen = MIN_PATH_LEN
 
         retries = 0
-        
+
         while len(possiblePoints) > 0 and retries < 50:
             point = random.choice(possiblePoints)
             possiblePoints.remove(point)
-            
+
             if not possiblePoints:
                 possiblePoints = backup
                 backup = []
