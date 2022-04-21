@@ -71,6 +71,11 @@ class AIRepository:
         self.dcFile.read('etc/dclass/otp.dc')
         self.dcFile.read('etc/dclass/cars.dc')
 
+        klass = self.dcFile.getClassByName('ShardManager')
+
+        print(klass.getNumber())
+        print(klass.getFieldByName('getAllShardsResponse').getNumber())
+
         self.currentSender = None
         self.loop = None
         self.net_thread = None

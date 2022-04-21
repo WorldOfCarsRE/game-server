@@ -192,6 +192,14 @@ class FriendManagerUD(Uberdog):
     def submitSecret(self, todo0):
         pass
 
+class ShardManagerUD(Uberdog):
+    GLOBAL_ID = OTP_DO_ID_CARS_SHARD_MANAGER
+
+    def getAllShardsRequest(self, context):
+        print(context)
+
+        self.sendUpdateToChannel(self.lastSender, 'getAllShardsResponse', [context, []])
+
 async def main():
     import builtins
 
@@ -202,10 +210,12 @@ async def main():
     loop = asyncio.get_running_loop()
     centralLogger = CentralLoggerUD(loop)
     friendManager = FriendManagerUD(loop)
+    shardMgr = ShardManagerUD(loop)
 
     uberdogTasks = [
         asyncio.create_task(centralLogger.run()),
-        asyncio.create_task(friendManager.run())
+        asyncio.create_task(friendManager.run()),
+        asyncio.create_task(shardMgr.run())
     ]
 
     await asyncio.gather(*uberdogTasks)

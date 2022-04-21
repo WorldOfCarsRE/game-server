@@ -845,7 +845,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {contextId} '
                                f'for location {parentId} {zones}')
 
-        if self.state <= ClientState.AUTHENTICATED and parentId != OTP_DO_ID_CARS:
+        if self.state <= ClientState.AUTHENTICATED and parentId not in (OTP_DO_ID_CARS, OTP_DO_ID_FAIRIES):
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 

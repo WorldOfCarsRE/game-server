@@ -9,16 +9,23 @@ dclass CarsDistrict : DistributedDistrict {
 dclass DungeonDistrict : CarsDistrict {
 };
 
-dclass UnknownTwo {
-};
+struct ShardStatus {
+  uint32 doId;
+  string shardName;
+  uint8 populationLevel;
+  uint16 avatarCount;
+  uint8 active;
+}
 
 dclass ShardManager : DistributedObject {
   setParentingRules(string, string) broadcast ram;
 
   getAllShardsRequest(int32) clsend;
+  getAllShardsResponse(int32 context, ShardStatus[]);
 
   getYardRequest(int32, int32) clsend;
   getYardResponse(int32, int32);
   getShardRequest(int32, int32) clsend;
+
   getShardResponse(int32, int32);
 };
