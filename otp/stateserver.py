@@ -680,7 +680,7 @@ from panda3d.direct import DCFile
 class StateServer(DownstreamMessageDirector, ChannelAllocator):
     upstreamProtocol = StateServerProtocol
     serviceChannels = []
-    rootObjectId = OTP_DO_ID_TOONTOWN
+    rootObjectId = OTP_DO_ID_CARS
 
     minChannel = 100000000
     maxChannel = 399999999
@@ -690,7 +690,8 @@ class StateServer(DownstreamMessageDirector, ChannelAllocator):
         ChannelAllocator.__init__(self)
 
         self.dcFile = DCFile()
-        self.dcFile.read('etc/dclass/toon.dc')
+        self.dcFile.read('etc/dclass/otp.dc')
+        self.dcFile.read('etc/dclass/cars.dc')
 
         self.loop.set_exception_handler(self.onException)
 

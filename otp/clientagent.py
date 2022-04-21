@@ -28,7 +28,8 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
         ChannelAllocator.__init__(self)
 
         self.dcFile = DCFile()
-        self.dcFile.read('etc/dclass/toon.dc')
+        self.dcFile.read('etc/dclass/otp.dc')
+        self.dcFile.read('etc/dclass/cars.dc')
 
         self.dcHash = self.dcFile.getHash()
 

@@ -79,8 +79,8 @@ class Uberdog(DownstreamMessageDirector):
         self.subscribeChannel(self._client, self.GLOBAL_ID)
         self.log.debug('Uberdog online')
 
-        dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_MANAGEMENT,
-                                            STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields=None)
+        dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_CARS, OTP_ZONE_ID_MANAGEMENT,
+                                            STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields = None)
         self.sendDatagram(dg)
 
         dg = PyDatagram()
@@ -119,7 +119,7 @@ class Uberdog(DownstreamMessageDirector):
         f = self.register_future(STATESERVER_OBJECT_LOCATE_RESP, avId, context)
 
         try:
-            sender, dgi = await asyncio.wait_for(f, timeout=10, loop=self.loop)
+            sender, dgi = await asyncio.wait_for(f, timeout = 10, loop = self.loop)
         except TimeoutError:
             return None, None
         dgi.get_uint32(), dgi.get_uint32()
@@ -192,32 +192,20 @@ class FriendManagerUD(Uberdog):
     def submitSecret(self, todo0):
         pass
 
-class DistributedDeliveryManagerUD(Uberdog):
-    GLOBAL_ID = OTP_DO_ID_TOONTOWN_DELIVERY_MANAGER
-
-    def requestAck(self):
-        avId = getAvatarIDFromChannel(self.lastSender)
-
-        if not avId:
-            return
-
-        self.sendUpdateToChannel(avId, 'returnAck', [])
-
 async def main():
     import builtins
 
     builtins.dc = DCFile()
-    dc.read('etc/dclass/toon.dc')
+    dc.read('etc/dclass/otp.dc')
+    dc.read('etc/dclass/cars.dc')
 
     loop = asyncio.get_running_loop()
     centralLogger = CentralLoggerUD(loop)
     friendManager = FriendManagerUD(loop)
-    deliveryManager = DistributedDeliveryManagerUD(loop)
 
     uberdogTasks = [
         asyncio.create_task(centralLogger.run()),
-        asyncio.create_task(friendManager.run()),
-        asyncio.create_task(deliveryManager.run())
+        asyncio.create_task(friendManager.run())
     ]
 
     await asyncio.gather(*uberdogTasks)

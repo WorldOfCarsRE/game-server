@@ -68,7 +68,8 @@ class AIRepository:
         self.parentTable: Dict[int, set] = {}
 
         self.dcFile = DCFile()
-        self.dcFile.read('etc/dclass/toon.dc')
+        self.dcFile.read('etc/dclass/otp.dc')
+        self.dcFile.read('etc/dclass/cars.dc')
 
         self.currentSender = None
         self.loop = None
@@ -365,22 +366,11 @@ class AIRepository:
     def createObjects(self):
         self.registerForChannel(self.ourChannel)
 
-        from .Objects import ToontownDistrictAI, ToontownDistrictStatsAI, DistributedInGameNewsMgrAI, NewsManagerAI, FriendManagerAI
-        from .Objects import FishManager, ToontownMagicWordManagerAI, TTCodeRedemptionMgrAI, SafeZoneManagerAI
-        from ai.estate.EstateManagerAI import EstateManagerAI
-        from .TimeManagerAI import TimeManagerAI
-        from ai.quest.QuestManagerAI import QuestManagerAI
-        from ai.catalog.CatalogManagerAI import CatalogManagerAI
-        from .Objects import DistributedDeliveryManagerAI
-        from ai.tutorial.TutorialAI import TutorialManagerAI
-        from ai.coghq.FactoryManagerAI import FactoryManagerAI
-        from ai.coghq.PromotionManagerAI import PromotionManagerAI
-        from ai.suit.SuitInvasionManagerAI import SuitInvasionManagerAI
-        from ai.suit.CogPageManagerAI import CogPageManagerAI
+        from .Objects import CarsDistrictAI, DistrictManagerAI
 
-        self.district = ToontownDistrictAI(self)
-        self.district.name = 'Sillyville'
-        self.generateWithRequired(self.district, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS)
+        self.district = CarsDistrictAI(self)
+        self.district.name = 'Vroom!'
+        self.generateWithRequired(self.district, OTP_DO_ID_CARS, OTP_ZONE_ID_DISTRICTS)
 
         postRemove = Datagram()
         addServerControlHeader(postRemove, CONTROL_ADD_POST_REMOVE)
@@ -394,9 +384,8 @@ class AIRepository:
         dg.addUint64(self.ourChannel)
         self.send(dg)
 
-        self.stats = ToontownDistrictStatsAI(self)
-        self.stats.settoontownDistrictId(self.district.doId)
-        self.generateWithRequired(self.stats, OTP_DO_ID_TOONTOWN, OTP_ZONE_ID_DISTRICTS_STATS)
+        self.stats = DistrictManagerAI(self)
+        self.districtManager.generateGlobalObject(OTP_ZONE_ID_DISTRICTS)
 
         dg = Datagram()
         addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
@@ -404,79 +393,7 @@ class AIRepository:
         dg.addUint64(self.ourChannel)
         self.send(dg)
 
-        self.timeManager = TimeManagerAI(self)
-        self.timeManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.ingameNewsMgr = DistributedInGameNewsMgrAI(self)
-        self.ingameNewsMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.newsManager = NewsManagerAI(self)
-        self.newsManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.friendManager = FriendManagerAI(self)
-        self.friendManager.generateGlobalObject(OTP_ZONE_ID_MANAGEMENT)
-
-        self.fishManager = FishManager()
-
-        self.magicWordMgr = ToontownMagicWordManagerAI(self)
-        self.magicWordMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.estateMgr = EstateManagerAI(self)
-        self.estateMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.codeRedemptionMgr = TTCodeRedemptionMgrAI(self)
-        self.codeRedemptionMgr.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.safeZoneManager = SafeZoneManagerAI(self)
-        self.safeZoneManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.questManager = QuestManagerAI(self)
-
-        self.catalogManager = CatalogManagerAI(self)
-        self.catalogManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.deliveryManager = DistributedDeliveryManagerAI(self)
-        self.deliveryManager.generateGlobalObject(OTP_ZONE_ID_MANAGEMENT)
-
-        self.tutorialManager = TutorialManagerAI(self)
-        self.tutorialManager.generateWithRequired(OTP_ZONE_ID_MANAGEMENT)
-
-        self.promotionMgr = PromotionManagerAI(self)
-
-        self.suitInvasionManager = SuitInvasionManagerAI(self)
-
-        self.cogPageManager = CogPageManagerAI(self)
-
-        self.factoryMgr = FactoryManagerAI(self)
-
-        self.loadZones()
-
-        if self.suitPlanners:
-            list(self.suitPlanners.values())[0].assignInitialSuitBuildings()
-
         self.district.b_setAvailable(True)
-
-    def loadZones(self):
-        from ai.hood.HoodDataAI import DDHoodAI, TTHoodAI, BRHoodAI, MMHoodAI, DGHoodAI, DLHoodAI, SBHQHoodAI, CBHQHoodAI, LBHQHoodAI, BBHQHoodAI
-
-        self.hoods = [
-            DDHoodAI(self),
-            TTHoodAI(self),
-            BRHoodAI(self),
-            MMHoodAI(self),
-            DGHoodAI(self),
-            DLHoodAI(self),
-            SBHQHoodAI(self, None), # TODO: facility mgrs
-            CBHQHoodAI(self, None),
-            LBHQHoodAI(self, None),
-            BBHQHoodAI(self, None)
-        ]
-
-        for hood in self.hoods:
-            print(f'{hood.__class__.__name__} starting up...')
-            hood.startup()
-
-        print('All zones loaded.')
 
     def requestDelete(self, do):
         dg = Datagram()

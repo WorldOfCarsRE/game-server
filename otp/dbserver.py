@@ -166,7 +166,8 @@ class DBServer(DownstreamMessageDirector):
         self.pool = None
 
         self.dc = DCFile()
-        self.dc.read('etc/dclass/toon.dc')
+        self.dc.read('etc/dclass/otp.dc')
+        self.dc.read('etc/dclass/cars.dc')
 
         self.wantSQL = config['DatabaseServer.SQL']
 

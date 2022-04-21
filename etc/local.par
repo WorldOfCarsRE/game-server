@@ -8,14 +8,14 @@ PORT=46668
 
 [ClientAgent]
 HOST=0.0.0.0
-PORT=6667
+PORT=8012
 SSL=0
 MIN_CHANNEL=2000000000
 MAX_CHANNEL=2000999999
 
 # The client/server version.
 # This is checked against the client's version to make sure they match.
-Version=dev
+Version=1.1
 
 [StateServer]
 HOST=127.0.0.1
@@ -32,7 +32,7 @@ MaxRange=200000000
 CONTENT_DIR=web/content/
 WRITE_PATCH_FILES=0
 HOST=0.0.0.0
-PORT=8080
+PORT=7969
 
 [SQL]
 HOST=127.0.0.1

@@ -1,0 +1,24 @@
+from cars.distributed import CarsDistrict/AI
+
+dclass CarsDistrict : DistributedDistrict {
+  setParentingRules(string, string) broadcast ram;
+  setServerTime(uint32);
+  setEnabled(uint8) broadcast required ram;
+};
+
+dclass DungeonDistrict : CarsDistrict {
+};
+
+dclass UnknownTwo {
+};
+
+dclass ShardManager : DistributedObject {
+  setParentingRules(string, string) broadcast ram;
+
+  getAllShardsRequest(int32) clsend;
+
+  getYardRequest(int32, int32) clsend;
+  getYardResponse(int32, int32);
+  getShardRequest(int32, int32) clsend;
+  getShardResponse(int32, int32);
+};

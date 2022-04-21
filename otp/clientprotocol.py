@@ -120,7 +120,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.ownedObjects: Dict[int, ObjectInfo] = {}
 
         # TODO: make this configurable
-        self.uberdogs: List[int] = [OTP_DO_ID_FRIEND_MANAGER]
+        self.uberdogs: List[int] = [OTP_DO_ID_FRIEND_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER]
 
         self.account: Union[DISLAccount, None] = None
         self.avatarId: int = 0
@@ -178,7 +178,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             return
 
         if self.state == ClientState.NEW:
-            if msgtype == CLIENT_LOGIN_TOONTOWN:
+            if msgtype == CLIENT_LOGIN_CARS:
                 self.receiveLogin(dgi)
                 self.state = ClientState.AUTHENTICATED
             else:
@@ -764,14 +764,16 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         playToken = dgi.getString()
         clientVersion = dgi.getString()
         hashVal = dgi.getUint32()
-        wantMagicWords = dgi.getString()
+        tokenType = dgi.getUint32()
+        _ = dgi.getString()
 
-        if clientVersion != self.service.version:
+        print(clientVersion, playToken, _)
+
+        if clientVersion != str(self.service.version):
             self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
             return
 
-        self.service.log.debug(f'playToken:{playToken}, clientVersion:{clientVersion}, hashVal:{hashVal}, '
-                               f'wantMagicWords:{wantMagicWords}')
+        self.service.log.debug(f'playToken:{playToken}, clientVersion:{clientVersion}, hashVal:{hashVal}')
 
         try:
             playToken = bytes.fromhex(playToken)
@@ -794,7 +796,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.subscribeChannel(getAccountChannel(self.account.dislId))
 
         resp = Datagram()
-        resp.addUint16(CLIENT_LOGIN_TOONTOWN_RESP)
+        resp.addUint16(CLIENT_LOGIN_CARS_RESP)
 
         returnCode = 0  # -13 == period expired
         resp.addUint8(returnCode)
@@ -802,7 +804,9 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         errorString = '' # 'Bad DC Version Compare'
         resp.addString(errorString)
 
+        resp.addUint32(0) # Avatar Id
         resp.addUint32(self.account.dislId)
+
         resp.addString(self.account.username)
 
         accountNameApproved = True
@@ -812,22 +816,8 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         resp.addString(self.account.createFriendsWithChat)
         resp.addString(self.account.chatCodeCreationRule)
 
-        t = time.time() * 10e6
-        usecs = int(t % 10e6)
-        secs = int(t / 10e6)
-        resp.addUint32(secs)
-        resp.addUint32(usecs)
-
         resp.addString(self.account.access)
         resp.addString(self.account.whitelistChatEnabled)
-
-        lastLoggedIn = time.strftime('%c') # time.strftime('%c')
-        resp.addString(lastLoggedIn)
-
-        resp.addInt32(self.account.accountDays)
-
-        resp.addString(self.account.accountType)
-        resp.addString(self.account.username)
 
         self.sendDatagram(resp)
 
@@ -855,7 +845,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {contextId} '
                                f'for location {parentId} {zones}')
 
-        if self.state <= ClientState.AUTHENTICATED and parentId != OTP_DO_ID_TOONTOWN:
+        if self.state <= ClientState.AUTHENTICATED and parentId != OTP_DO_ID_CARS:
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 
