@@ -94,15 +94,13 @@ dclass TimeManager : DistributedObject {
   requestServerTime(uint8) airecv clsend;
   serverTime(uint8, int32, uint32);
   setDisconnectReason(uint8) airecv clsend;
-  setExceptionInfo(string(0-1024)) airecv clsend;
-  setSignature(string(0-1024), char [16], char [16]) airecv clsend;
-  setFrameRate(uint16/10, uint16/1000, uint16, string(0-256), uint32/10, uint32/10, string(0-256), uint16, uint16, uint32/10, uint32/10, uint32/10, uint32, OSInfo, CPUSpeed, uint16, uint16, string(0-256)) airecv clsend;
-  setCpuInfo(string(0-1024), string) airecv clsend;
+  setExceptionInfo(string) airecv clsend;
+  setSignature(string, char [16], char [16]) airecv clsend;
+  setFrameRate(uint16/10, uint16/1000, uint16, string, uint32/10, uint32/10, string, uint16, uint16, uint32/10, uint32/10, uint32/10, uint32, OSInfo, CPUSpeed, uint16, uint16, string) airecv clsend;
+  setCpuInfo(string) airecv clsend;
   checkForGarbageLeaks(bool) airecv clsend;
   setNumAIGarbageLeaks(uint32);
-  setClientGarbageLeak(uint32, string(0-1024)) airecv clsend;
-  checkAvOnDistrict(uint32, DoId) clsend airecv;
-  checkAvOnDistrictResult(uint32, DoId, bool);
+  setClientGarbageLeak(uint32, string) airecv clsend;
 };
 
 dclass ObjectServer {
@@ -189,19 +187,19 @@ struct TalkModification {
 };
 
 dclass TalkPath_owner {
-  setTalk(uint32, uint32, string(0-256), string(0-400), TalkModification [], uint8) broadcast ownsend;
+  setTalk(uint32, uint32, string, string, TalkModification [], uint8) broadcast ownsend;
 };
 
 dclass TalkPath_whisper {
-  setTalkWhisper(uint32, uint32, string(0-256), string(0-400), TalkModification [], uint8) ownrecv clsend;
+  setTalkWhisper(uint32, uint32, string, string, TalkModification [], uint8) ownrecv clsend;
 };
 
 dclass TalkPath_group {
-  setTalkGroup(uint32, uint32, string(0-256), string(0-400), TalkModification [], uint8) clsend airecv;
+  setTalkGroup(uint32, uint32, string, string, TalkModification [], uint8) clsend airecv;
 };
 
 dclass TalkPath_account {
-  setTalkAccount(uint32, uint32, string(0-256), string(0-400), TalkModification [], uint8) airecv clsend;
+  setTalkAccount(uint32, uint32, string, string, TalkModification [], uint8) airecv clsend;
 };
 
 dclass AvatarHandle : TalkPath_whisper {
@@ -218,19 +216,19 @@ dclass DistributedAvatar : DistributedSmoothNode, TalkPath_owner, TalkPath_whisp
 dclass DistributedPlayer : DistributedAvatar {
   arrivedOnDistrict(uint32) ownrecv ram;
   setAccountName(string) required ownrecv db;
-  setWhisperFrom(uint32, string(0-256), uint32) ownrecv clsend;
-  setWhisperWLFrom(uint32, string(0-256), uint32) ownrecv clsend;
+  setWhisperFrom(uint32, string, uint32) ownrecv clsend;
+  setWhisperWLFrom(uint32, string, uint32) ownrecv clsend;
   setWhisperSCFrom(uint32, uint16) ownrecv clsend;
   setWhisperSCCustomFrom(uint32, uint16) ownrecv clsend;
   setWhisperSCEmoteFrom(uint32, uint16) ownrecv clsend;
-  setSystemMessage(uint32, string(0-256)) ownrecv;
+  setSystemMessage(uint32, string) ownrecv;
   setCommonChatFlags(uint8) broadcast ownrecv ram airecv;
   setWhitelistChatFlags(uint8) broadcast ownrecv ram airecv;
   setSC(uint16) broadcast ownsend airecv;
   setSCCustom(uint16) broadcast ownsend airecv;
   setFriendsList(uint32uint8array) ownrecv required db airecv;
   setDISLname(string) broadcast ownrecv ram;
-  setDISLid(uint32) broadcast ownrecv ram db airecv required;
+  setDISLid(uint32) broadcast ownrecv ram db;
   OwningAccount(uint32);
   WishName(string) db ram;
   WishNameState(string) db ram;
@@ -240,7 +238,7 @@ dclass DistributedPlayer : DistributedAvatar {
 };
 
 dclass MagicWordManager : DistributedObject {
-  setMagicWord(string, uint32, uint32, string(0-256)) airecv clsend;
+  setMagicWord(string, uint32, uint32, string) airecv clsend;
   setMagicWordResponse(string) airecv;
   setWho(uint32array) airecv clsend;
 };
@@ -258,7 +256,7 @@ dclass OtpAvatarManager : DistributedObject {
   playAvatarResponse(uint32, uint32, uint8, uint8);
   rejectCreateAvatar(uint32);
   createAvatarResponse(uint32, uint32, uint8, uint8);
-  requestRemoveAvatar(uint32, uint32, uint32, string(0-256)) airecv clsend;
+  requestRemoveAvatar(uint32, uint32, uint32, string) airecv clsend;
   rejectRemoveAvatar(uint32);
   removeAvatarResponse(uint32, uint32);
   requestShareAvatar(uint32, uint32, uint32, uint8) airecv clsend;
@@ -278,7 +276,7 @@ dclass DistributedChatManager : DistributedObject {
   chatEmote(uint16) airecv clsend;
   chatEmoteTarget(uint32) airecv clsend;
   chatIndex(uint16) airecv clsend;
-  chatString(string(0-256)) airecv clsend;
+  chatString(string) airecv clsend;
   chatToAvatarIndex : chatZoneId, chatIndex;
   chatParentZoneFaceEmoteWithTargetIndex : chatParentId, chatZoneId, chatFace, chatEmote, chatEmoteTarget, chatIndex;
   chatToAvatarString : chatZoneId, chatString;
@@ -308,7 +306,7 @@ dclass FriendManager : DistributedObject {
   inviteeCancelFriendQuery(int32);
   requestSecret() airecv clsend;
   requestSecretResponse(int8, string);
-  submitSecret(string(0-256)) airecv clsend;
+  submitSecret(string) airecv clsend;
   submitSecretResponse(int8, int32);
 };
 
@@ -381,13 +379,12 @@ dclass GuildManager : DistributedObject, LeaderBoardReceiver, TalkPath_group {
   createGuild() airecv clsend;
   acceptInvite() airecv clsend;
   declineInvite() airecv clsend;
-  setWantName(string(0-256)) airecv clsend;
+  setWantName(string) airecv clsend;
   removeMember(uint32) airecv clsend;
   changeRank(uint32, uint8) airecv clsend;
-  changeRankAvocate(uint32) airecv clsend;
   statusRequest() airecv clsend;
   requestLeaderboardTopTen() airecv clsend;
-  guildStatusUpdate(uint32, string(0-256), uint8);
+  guildStatusUpdate(uint32, string, uint8);
   guildNameReject(uint32);
   guildNameChange(string, uint8);
   receiveMember(MemberInfo);
@@ -398,8 +395,8 @@ dclass GuildManager : DistributedObject, LeaderBoardReceiver, TalkPath_group {
   leaderboardTopTen(leaderBoardRecord []);
   recvAvatarOnline(uint32, string, uint32, uint32);
   recvAvatarOffline(uint32, string);
-  sendChat(string(0-256), uint8, uint32) airecv clsend;
-  sendWLChat(string(0-256), uint8, uint32) airecv clsend;
+  sendChat(string, uint8, uint32) airecv clsend;
+  sendWLChat(string, uint8, uint32) airecv clsend;
   sendSC(uint16) airecv clsend;
   sendSCQuest(uint16, uint16, uint16) airecv clsend;
   recvChat(uint32, string, uint8, uint32);
@@ -409,21 +406,20 @@ dclass GuildManager : DistributedObject, LeaderBoardReceiver, TalkPath_group {
   sendTokenRequest() airecv clsend;
   recvTokenGenerated(string);
   recvTokenInviteValue(string, int8);
-  sendTokenForJoinRequest(string(0-256), string(0-256)) airecv clsend;
+  sendTokenForJoinRequest(string, string) airecv clsend;
   recvTokenRedeemMessage(string);
   recvTokenRedeemedByPlayerMessage(string);
-  sendTokenRValue(string(0-256), int8) airecv clsend;
+  sendTokenRValue(string, int8) airecv clsend;
   sendPermToken() airecv clsend;
   sendNonPermTokenCount() airecv clsend;
   recvPermToken(string);
   recvNonPermTokenCount(uint8);
   sendClearTokens(uint8) airecv clsend;
   sendAvatarBandId(uint32, uint32, uint32);
-  recvMemberAdded(MemberInfo, uint32, string);
-  notifyGuildKicksMaxed();
-  recvMemberRemoved(uint32, uint32, string, string);
+  recvMemberAdded(MemberInfo);
+  recvMemberRemoved(uint32);
   recvMemberUpdateName(uint32, string);
-  recvMemberUpdateRank(uint32, uint32, string, string, uint8, bool);
+  recvMemberUpdateRank(uint32, uint8);
   recvMemberUpdateBandId(uint32, uint32, uint32);
   avatarOnline(uint32, uint16);
   avatarOffline(uint32);
@@ -483,12 +479,11 @@ dclass SnapshotRenderer : DistributedObject {
 };
 
 dclass SpeedchatRelay : DistributedObject, TalkPath_account {
-  forwardSpeedchat(uint32, uint8, uint32 [], uint32, string(0-256), uint8) clsend;
+  forwardSpeedchat(uint32, uint8, uint32 [], uint32, string, uint8) clsend;
 };
 
 dclass CentralLogger : DistributedObject {
-  sendMessage(string(0-256), string(0-1024), uint32, uint32) clsend;
-  logAIGarbage() airecv;
+  sendMessage(string, string, uint32, uint32) clsend;
 };
 
 dclass SettingsMgr : DistributedObject {
@@ -503,20 +498,4 @@ dclass StatusDatabase : DistributedObject {
 
 dclass CallbackObject {
   callback(uint32, bool, uint8);
-};
-
-dclass DummyObject {
-  // YUCK: We need to get rid of this.
-  a();
-  b();
-  c();
-  d();
-  e();
-  f();
-  g();
-  h();
-  i();
-  j();
-  k();
-  l();
 };

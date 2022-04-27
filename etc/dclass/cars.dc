@@ -1,31 +1,513 @@
-from cars.distributed import CarsDistrict/AI
+// cars start at struct 45 and field 331
 
+// struct 45
+dclass unk_45 {
+};
+
+// struct 46
 dclass CarsDistrict : DistributedDistrict {
-  setParentingRules(string, string) broadcast ram;
-  setServerTime(uint32);
-  setEnabled(uint8) broadcast required ram;
+    setParentingRules(string, string); // 331
+    setServerTime(uint32) clsend;
+    unk_333();
+    setEnabled(uint8) required; // 334
 };
 
+// struct 47
 dclass DungeonDistrict : CarsDistrict {
+    // unknown fields could be in CarsDistrict!
+    unk_335();
+    unk_336();
+    unk_337();
+    unk_338();
 };
 
+// struct 48
 struct ShardStatus {
-  uint32 doId;
-  string shardName;
-  uint8 populationLevel;
-  uint16 avatarCount;
-  uint8 active;
-}
+    uint32 doid;
+    string name;
+    uint8 populationLevel;
+    uint16 avatarCount;
+    uint8 active;
+};
 
-dclass ShardManager : DistributedObject {
-  setParentingRules(string, string) broadcast ram;
+// struct 49
+dclass ShardManager {
+    // field 344 (ok)
+    setParentingRules;
+    unk_345();
+    getYardRequest(int32) clsend;
+    getYardResponse(int32, int32);
+    unk_348();
+    unk_349();
+    unk_350();
+    unk_351();
+    unk_352();
+    unk_353();
+    unk_354();
+    unk_355();
+    unk_356();
+    getAllShardsRequest(int32) clsend;
+    getAllShardsResponse(int32, ShardStatus[]);
+    getShardRequest(int32, int32) clsend;
+    getShardResponse(int32, ShardStatus);
+};
 
-  getAllShardsRequest(int32) clsend;
-  getAllShardsResponse(int32 context, ShardStatus[]);
+// struct 50
+dclass DistributedLobby {
+    setParentingRules(string, string); // 361
+    setDungeonItemId(int32) required;
+    setHotSpotName(string) required;
+    gotoLobbyContext(int32);
+    joinFail(int32);
+    join() clsend clrecv;
+    quit() clsend clrecv;
+};
 
-  getYardRequest(int32, int32) clsend;
-  getYardResponse(int32, int32);
-  getShardRequest(int32, int32) clsend;
+// struct 51
+dclass unk_51 {
+};
 
-  getShardResponse(int32, int32);
+// struct 52
+dclass DistributedCrossShardLobby : DistributedLobby {
+};
+
+// struct 53
+dclass DistributedFriendsLobby : DistributedLobby {
+    inviteFriendRequest(int32) clsend clrecv; // 368
+    friendResponse(int32, int8);
+    inviteResponse(int8) clsend clrecv;
+};
+
+// struct 54
+dclass DistributedSinglePlayerRacingLobby : DistributedLobby {
+};
+
+// struct 55
+dclass DistributedTutorialLobby : DistributedLobby {
+};
+
+// struct 56
+dclass DistributedLobbyContext {
+    setPlayersInDungeon(int32[]) required; // 371
+    setPlayersInContext(int32[]) required;
+    setOwner(int32) required;
+    gotoDungeon(int32, int32) required;
+    setPlayerJoin(int32);
+    setPlayerQuit(int32); // 376
+};
+
+// struct 57
+dclass unk_57 {
+    // might be in DistributedCrossShardLobbyContext
+    //          or DistributedLobbyContext
+    unk_377();
+};
+
+// struct 58
+dclass DistributedCrossShardLobbyContext : DistributedLobbyContext {
+    // field 378 (ok)
+    setTimeLeft(int8) required;
+};
+
+// struct 59
+dclass DistributedFriendsLobbyContext : DistributedLobbyContext {
+    setTimeLeft(int8) required; // 379
+    setPlayersGearingUp(int32[]) required;
+    setPlayersWaitingForReply(int32[]) required;
+    setPlayerGearingUp(int32);
+    setPlayerWaitingForReply(int32);
+    setGearUpTimeLeft(int8);
+    startRace() clsend clrecv;
+};
+
+// struct 60
+dclass DistributedSinglePlayerRacingLobbyContext : DistributedLobbyContext {
+};
+
+// struct 61
+dclass DistributedTutorialLobbyContext : DistributedLobbyContext {
+};
+
+// struct 62
+dclass CarMgr {
+    setParentingRules(string, string); // 386
+
+    // might be in Persistent
+    unk_387();
+    unk_388();
+};
+
+// struct 63
+dclass Persistent {
+    // field 389 (ok)
+    persistRequest(int32) clsend;
+    persistResponse(int32, int8); // 390
+};
+
+// struct 64
+struct Addon {
+    int32 itemId;
+    uint32 deformX;
+    uint32 deformY;
+    uint32 deformZ;
+};
+
+// struct 65
+struct Consumable {
+    int32 itemId;
+    uint16 quantity;
+};
+
+// struct 66
+struct CarDNA {
+    string carName;
+    int16 carNumber;
+    int32 logoBackgroundId;
+    int32 logoBackgroundColor;
+    int16 logoFontId;
+    int32 logoFontColor;
+    int8 gender;
+    int16 careerType;
+    int32 chassis;
+    int32 color;
+    int32 eyeColor;
+    int32 wheel;
+    int32 tire;
+    int32 detailing;
+    int32 profileBackgroundId;
+    int16[] stretches;
+    int32[] decalSlots;
+    Addon[] onAddons;
+    int32 costumeId;
+};
+
+// struct 67
+struct RuleState {
+    int32 ruleId;
+    int32 count;
+    int32 accumulator;
+    uint32 createTime;
+};
+
+// struct 68
+dclass DistributedCareerCar {
+    // field 420 (ok)
+    setCareerType(int16) ownrecv;
+    setPoints(uint32) ownrecv;
+    setOnAddons(Addon[]) ownrecv;
+    setOffAddons(Addon[]) ownrecv;
+    setConsumables(Consumable[]) ownrecv;
+    modifyAddon(int32[], int32[]) clsend;
+    deformAddons(Addon[]) clsend;
+    consume(Consumable) clsend;
+};
+
+// struct 69
+dclass DistributedRaceCar : Persistent {
+    setMiles(uint32) ownrecv; // 428
+    setRacingPoints(uint32) ownrecv;
+    setConsumableSlot(uint16) ownrecv;
+    setConsumableStack(uint16) ownrecv;
+    setDashboardTexture(int32) ownrecv;
+    setRaceSeries(int32) ownrecv;
+    setActiveSponsor(int32) ownrecv;
+    setActiveGear(int32) ownrecv;
+    setDNA(CarDNA) ownrecv;
+    setOffAddons(Addon[]) ownrecv;
+    setConsumables(Consumable[]) ownrecv;
+    setPaints(int32[]) ownrecv;
+    setEyeColors(int32[]) ownrecv;
+    setDecals(int32[]) ownrecv;
+    setWheels(int32[]) ownrecv;
+    setTires(int32[]) ownrecv;
+    setDetailings(int32[]) ownrecv;
+    setAnimations(int32[]) ownrecv;
+    setTrophies(int32[]) ownrecv;
+    setDashboardTextures(int32) ownrecv;
+    setProfileBackgrounds(int32[]) ownrecv;
+    setPrintableBackgrounds(int32[]) ownrecv;
+    setGears(int32[]) ownrecv;
+    setCostumes(int32[]) ownrecv;
+    modifyActiveSponsor(int32) clsend;
+    modifyDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[]) clsend;
+    modifyAddon(int32[], int32[]) clsend;
+    modifyAllDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[], int32[], int32[]) clsend;
+    modifyActiveGear(int32) clsend;
+    deformAddons(Addon[]) clsend;
+    consume(Consumable) clsend;
+    setDashboardTextureRequest(int32) clsend;
+};
+
+// struct 70
+dclass DistributedCarAvatar : TalkPath_owner, TalkPath_whisper {
+    setTelemetry(int16, int16, int16, int16, int16, int16, int16, int16) required clsend; // 460
+    setPhysics(int32[], int32[], int32[], int32[], int32[]) required clsend;
+    setState(uint32) required clsend;
+};
+
+// struct 71
+dclass DistributedRacer {
+    // !! type clash (uint8 or int8?)
+    setLap(uint8) clsend clrecv; // 463
+};
+
+// struct 72
+struct AnimationChoreography {
+    int32 animationId;
+    uint16 iterations;
+};
+
+// struct 73
+struct Choreography {
+    int32 catalogId;
+    uint16 duration;
+};
+
+// struct 74
+struct Reward {
+    int32 type;
+    int32 itemId;
+    int32 quantity;
+    int32 reasonId;
+};
+
+// struct 75
+struct Stock {
+    int32 catalogItemId;
+    int32 quantity;
+    int32 usedQuantity;
+};
+
+// struct 76
+struct Dialog {
+    int32 dialogId;
+    string[] args;
+};
+
+// struct 77
+dclass CarPlayerStatus {
+    // field 477 (ok)
+    setLocationType(int16) required clsend;
+    // !! uint8/int8 type clash
+    setPrivacySettings(uint8) required clsend;
+    hi();
+};
+
+// struct 78
+dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent {
+    setDNA(CarDNA) required ownrecv; // 480
+    setCarCoins(uint32) ownrecv;
+    setCars(int32, int32[]) ownrecv;
+    setBadges(int32[]) ownrecv;
+    setYardStocks(Stock[]) ownrecv;
+    setRuleStates(RuleState[]);
+    deleteRuleStates(int32[]);
+    setCurrentCar(int32);
+    buyItemRequest(int32, int32) clsend;
+    buyItemResponse(int32, int8);
+    invokeRuleRequest(int32, int32[], int32) clsend;
+    invokeRuleResponse(int32, int32[], int32);
+    teleportRequest(uint32) clsend clrecv;
+    teleportResponseToZone(uint32, uint32, uint32, int32, int32) clsend clrecv;
+    teleportResponseUnavailable(uint32) clsend clrecv;
+    teleportResponseToYard(uint32, uint32) clsend clrecv;
+    raceInviteRequest(int32, int32, int32, int32, int32);
+    gotoFriendsContext(int32, int32);
+    generateComplete();
+    setDISLname(string);
+    setDISLid(uint32) required ownrecv;
+    setAccess(uint8) ownrecv;
+    setActiveQuests(int32[]) ownrecv;
+    setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
+    broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
+    setReward(Reward[]);
+    updateYardPermissionMask(int32, int32) clsend;
+    sendEventLog(string, int32[], string[]) clsend;
+    setChatLevel(uint8) required ownrecv;
+    setMute(uint8) required ownrecv;
+    setSubscriptionStatus(uint8[]) ownrecv;
+    showDialogs(Dialog[]);
+    setCargo(int32[]) required ownrecv;
+    dropCargo(int32[]) clsend;
+    setAfk(int8) required ownrecv clsend;
+    setVisible(int8, int8, int8, int8) required ownrecv; // 515
+};
+
+// struct 79
+dclass DistributedCarGM : DistributedCarPlayer {
+    banPlayer(uint32, int8) clsend; // 516
+    kickPlayer(uint32, int8) clsend;
+    warnPlayer(uint32, int8) clsend;
+    whisperPlayer(uint32, int8) clsend;
+};
+
+// struct 80
+dclass DistributedCarPuppet : DistributedCarGM {
+    invokePeriodicRule(int32, int8, uint32, uint32) clsend; // 520
+    setPuppetId(int32) required ownrecv;
+};
+
+// struct 81
+dclass GameMasterController {
+    setMessage(string, uint32); // 522
+    requestSendMessage(string, uint32, uint32, uint32) clsend;
+};
+
+// struct 82
+dclass DistributedZone {
+    setParentingRules(string, string); // 524
+    setName(string) required;
+    setMapId(int32) required;
+    setCatalogItemId(int32) required;
+    setInteractiveObjectCount(uint16) required;
+    setPlayerCount(uint16) required;
+    setMute(uint8) required;
+    refreshInteractiveObjects(uint32[]) clsend;
+    onClientEnter() clsend; // 532
+};
+
+// struct 83
+struct Command {
+    uint8 action;
+    int32 catalogId;
+    uint8 type;
+};
+
+// struct 84
+dclass InteractiveObject : DistributedCarAvatar {
+    // field 536 (ok)
+    setName(string) required;
+    setAssetId(int32) required;
+    setType(int8) required;
+    setGlobalState(uint8[]) required;
+    setPrivateState(uint8);
+    setVisible(int8) required;
+    setClientScript(string) required;
+    setDialogTree(int32);
+    addDialogTree(int32, int32, int16);
+    removeDialogTree(int32, int32, int16);
+    triggerInteraction(int16, uint32[]) clsend;
+    setInteractiveCommands(uint16, Command[]);
+    broadcastInteractiveCommands(uint16, Command[]);
+    setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]);
+    broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]);
+    playAnimations(int32[]);
+};
+
+// struct 85
+dclass YardInteractiveObject : InteractiveObject {
+    setCatalogItemId(int32) required; // 552
+    setOffset(int32, int32) required;
+};
+
+// struct 86
+dclass DistributedDungeon {
+    setParentingRules(string, string); // 554
+    waitForObjects(uint32[]) required;
+    setDungeonItemId(int32) required;
+    setLobbyDoid(int32) required;
+    setContextDoid(int32) required;
+    syncReady() clsend;
+    setAiCommand(int32, int32[]) clsend;
+    setClientCommand(int32, int32[]);
+    broadcastClientCommand(int32, int32[]);
+    addHotspot(int32, int32, int32, int32);
+    addHotspotByName(string, int32);
+};
+
+// struct 87
+dclass DistributedRace : DistributedDungeon {
+    setCountDown(int8); // 565
+    setPlaces(int32[]);
+    onSegmentEnter(int16, int16, int8) clsend;
+    openSegment(int16);
+    closeSegment(int16);
+    gotoFrameInObject(string, string);
+    setRacerResult(int32, int8, int32, int32, int8, int32);
+};
+
+// struct 88
+dclass DistributedMPRace : DistributedRace {
+    dropHazard(int32, int32, uint32) clsend; // 572
+    broadcastSpeed(int32, int32) clsend;
+    setSpeeds(int32, int32, int32);
+    startPhotoFinish();
+    gotoDungeon(int32, int32);
+    setRaceSummary() clsend;
+    setAvailable() clsend;
+    setReady() clsend;
+    setGearedUp() clsend;
+    setQuit() clsend;
+    setPlayersRacing(int32[]);
+    setPlayersRaceSummary(int32[]);
+    setPlayersAvailable(int32[]);
+    setPlayersReady(int32[]);
+    setPlayerQuit(int32);
+    setPlayerRaceSummary(int32);
+    setPlayerAvailable(int32);
+    setPlayerReady(int32);
+    startGearUp();
+    setGearUpTimeLeft(int8);
+    setTimeLeft(int8);
+};
+
+// struct 89
+dclass DistributedSPRace : DistributedRace {
+    setOpponentNPCs(int32[]) clsend; // 593
+    onNpcSegmentEnter(int32, int16, int16, int8) clsend;
+};
+
+// struct 90
+dclass DistributedYard : DistributedDungeon {
+    setOwner(uint32) required; // 595
+    setItemPosition(int32, int32, int32) clsend;
+    addItemRequest(int32, int32, int32, int32) clsend;
+    addItemResponse(int8, int32);
+    removeItemRequest(int32, int32) clsend;
+    removeItemResponse(int8, int32);
+};
+
+// struct 91
+dclass YardAgent {
+    setParentingRules(string, string); // 601
+
+    // unknown fields, might be in YardManager
+    unk_602();
+    unk_603();
+    unk_604();
+};
+
+// struct 92
+dclass YardManager {
+    setYardCount(int16) required; // 605
+    yardRequest(uint32) clsend;
+    yardResponse(uint32, uint32);
+    setYardPermissionMask(uint32, int16) clsend;
+};
+
+// struct 93
+dclass DistributedYardItem {
+    setItemId(int32) required; // 609
+    setCatalogItemId(uint16) required;
+    setPosition(int32, int32) required clsend;
+};
+
+// struct 94
+struct HolidayEvent {
+    string name;
+    uint32 start;
+    uint32 end;
+};
+
+// struct 95
+dclass HolidayManager {
+    // field 615 (ok)
+    setHolidayEvents(HolidayEvent[]) required;
+
+    // might contain more unknown fields
+};
+
+// struct 96
+dclass AnalyticsAgent {
+    // unknown fields
 };

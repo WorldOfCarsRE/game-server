@@ -773,6 +773,10 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
             self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
             return
 
+        if tokenType != 4:
+            self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
+            return
+
         self.service.log.debug(f'playToken:{playToken}, clientVersion:{clientVersion}, hashVal:{hashVal}')
 
         try:
