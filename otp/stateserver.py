@@ -680,7 +680,7 @@ from panda3d.direct import DCFile
 class StateServer(DownstreamMessageDirector, ChannelAllocator):
     upstreamProtocol = StateServerProtocol
     serviceChannels = []
-    rootObjectId = OTP_DO_ID_CARS
+    rootObjectId = OTP_DO_ID_FAIRIES
 
     minChannel = 100000000
     maxChannel = 399999999

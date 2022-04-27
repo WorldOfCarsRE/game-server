@@ -67,7 +67,7 @@ class DBServerProtocol(MDUpstreamProtocol):
 
         coro = None
 
-        if dclass.getName() == 'DistributedToon':
+        if dclass.getName() == 'DistributedCarPlayer':
             dislId = dgi.getUint32()
             pos = dgi.getUint8()
             fieldCount = dgi.getUint16()
@@ -89,7 +89,7 @@ class DBServerProtocol(MDUpstreamProtocol):
 
                 fields.append((f.getName(), fieldArgs))
 
-            coro = self.service.createToon(sender, context, dclass, dislId, pos, fields)
+            coro = self.service.createPlayerCar(sender, context, dclass, dislId, pos, fields)
         else:
             print(f'Unhandled creation for dclass {dclass.getName()}')
             return
@@ -349,7 +349,7 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(doId)
         self.sendDatagram(dg)
 
-    async def createToon(self, sender, context, dclass, dislId, pos, fields):
+    async def createPlayerCar(self, sender, context, dclass, dislId, pos, fields):
         try:
             doId = await self.backend.createObject(dclass, fields)
             account = await self.backend.queryObjectFields(dislId, ['ACCOUNT_AV_SET'], 'Account')

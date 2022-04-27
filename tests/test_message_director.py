@@ -1,8 +1,8 @@
 import unittest
 
-from otp.networking import DownstreamClient, ToontownProtocol
+from otp.networking import DownstreamClient, CarsProtocol
 
-class TestProtocol(ToontownProtocol):
+class TestProtocol(CarsProtocol):
     pass
 
 class TestClient(DownstreamClient):

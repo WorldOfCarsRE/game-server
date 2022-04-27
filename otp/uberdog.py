@@ -79,7 +79,7 @@ class Uberdog(DownstreamMessageDirector):
         self.subscribeChannel(self._client, self.GLOBAL_ID)
         self.log.debug('Uberdog online')
 
-        dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_CARS, OTP_ZONE_ID_MANAGEMENT,
+        dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_FAIRIES, OTP_ZONE_ID_MANAGEMENT,
                                             STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields = None)
         self.sendDatagram(dg)
 

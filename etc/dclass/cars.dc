@@ -9,7 +9,7 @@ dclass CarsDistrict : DistributedDistrict {
     setParentingRules(string, string); // 331
     setServerTime(uint32) clsend;
     unk_333();
-    setEnabled(uint8) required; // 334
+    setEnabled(uint8) broadcast required ram; // 334
 };
 
 // struct 47
@@ -33,7 +33,7 @@ struct ShardStatus {
 // struct 49
 dclass ShardManager {
     // field 344 (ok)
-    setParentingRules;
+    setParentingRules();
     unk_345();
     getYardRequest(int32) clsend;
     getYardResponse(int32, int32);
@@ -160,25 +160,25 @@ struct Consumable {
 
 // struct 66
 struct CarDNA {
-    string carName;
-    int16 carNumber;
-    int32 logoBackgroundId;
-    int32 logoBackgroundColor;
-    int16 logoFontId;
-    int32 logoFontColor;
-    int8 gender;
-    int16 careerType;
-    int32 chassis;
-    int32 color;
-    int32 eyeColor;
-    int32 wheel;
-    int32 tire;
-    int32 detailing;
-    int32 profileBackgroundId;
-    int16[] stretches;
-    int32[] decalSlots;
-    Addon[] onAddons;
-    int32 costumeId;
+    string carName = "Car";
+    int16 carNumber = 0;
+    int32 logoBackgroundId = 0;
+    int32 logoBackgroundColor = 0;
+    int16 logoFontId = 0;
+    int32 logoFontColor = 0;
+    int8 gender = 0;
+    int16 careerType = 0;
+    int32 chassis = 0;
+    int32 color = 0;
+    int32 eyeColor = 0;
+    int32 wheel = 0;
+    int32 tire = 0;
+    int32 detailing = 0;
+    int32 profileBackgroundId = 0;
+    int16[] stretches = [];
+    int32[] decalSlots = [];
+    Addon[] onAddons = [];
+    int32 costumeId = 0;
 };
 
 // struct 67
@@ -240,9 +240,9 @@ dclass DistributedRaceCar : Persistent {
 
 // struct 70
 dclass DistributedCarAvatar : TalkPath_owner, TalkPath_whisper {
-    setTelemetry(int16, int16, int16, int16, int16, int16, int16, int16) required clsend; // 460
-    setPhysics(int32[], int32[], int32[], int32[], int32[]) required clsend;
-    setState(uint32) required clsend;
+    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0) required clsend; // 460
+    setPhysics(int32[] = [], int32[] = [], int32[] = [], int32[] = [], int32[] = []) required clsend;
+    setState(uint32 = 0) required clsend;
 };
 
 // struct 71
@@ -281,7 +281,7 @@ struct Stock {
 // struct 76
 struct Dialog {
     int32 dialogId;
-    string[] args;
+    string args[];
 };
 
 // struct 77
@@ -315,7 +315,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     gotoFriendsContext(int32, int32);
     generateComplete();
     setDISLname(string);
-    setDISLid(uint32) required ownrecv;
+    setDISLid(uint32 = 0) required ownrecv;
     setAccess(uint8) ownrecv;
     setActiveQuests(int32[]) ownrecv;
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
@@ -323,14 +323,14 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     setReward(Reward[]);
     updateYardPermissionMask(int32, int32) clsend;
     sendEventLog(string, int32[], string[]) clsend;
-    setChatLevel(uint8) required ownrecv;
-    setMute(uint8) required ownrecv;
+    setChatLevel(uint8 = 0) required ownrecv;
+    setMute(uint8 = 0) required ownrecv;
     setSubscriptionStatus(uint8[]) ownrecv;
     showDialogs(Dialog[]);
-    setCargo(int32[]) required ownrecv;
+    setCargo(int32[] = []) required ownrecv;
     dropCargo(int32[]) clsend;
-    setAfk(int8) required ownrecv clsend;
-    setVisible(int8, int8, int8, int8) required ownrecv; // 515
+    setAfk(int8 = 0) required ownrecv clsend;
+    setVisible(int8 = 0, int8 = 0, int8 = 0, int8 = 0) required ownrecv; // 515
 };
 
 // struct 79
@@ -502,7 +502,7 @@ struct HolidayEvent {
 // struct 95
 dclass HolidayManager {
     // field 615 (ok)
-    setHolidayEvents(HolidayEvent[]) required;
+    setHolidayEvents(HolidayEvent[]) broadcast required ram;
 
     // might contain more unknown fields
 };

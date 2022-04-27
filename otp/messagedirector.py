@@ -1,5 +1,5 @@
 from otp import config
-from otp.networking import ToontownProtocol, MDParticipant, Service, UpstreamServer, DownstreamClient
+from otp.networking import CarsProtocol, MDParticipant, Service, UpstreamServer, DownstreamClient
 from otp.messagetypes import *
 from panda3d.core import Datagram, DatagramIterator
 from asyncio import Queue
@@ -8,18 +8,18 @@ import par
 
 from typing import Dict, Set, List
 
-class MDProtocol(ToontownProtocol, MDParticipant):
+class MDProtocol(CarsProtocol, MDParticipant):
     def __init__(self, service):
-        ToontownProtocol.__init__(self, service)
+        CarsProtocol.__init__(self, service)
         MDParticipant.__init__(self, service)
 
         self.postRemoves: List[Datagram] = []
 
     def connection_made(self, transport):
-        ToontownProtocol.connection_made(self, transport)
+        CarsProtocol.connection_made(self, transport)
 
     def connection_lost(self, exc):
-        ToontownProtocol.connection_lost(self, exc)
+        CarsProtocol.connection_lost(self, exc)
         self.service.removeParticipant(self)
         self.postRemove()
 
@@ -144,17 +144,17 @@ class MasterMessageDirector(MessageDirector, UpstreamServer):
         self.loop.create_task(self.route())
         await self.listen(config['MessageDirector.HOST'], config['MessageDirector.PORT'])
 
-class MDUpstreamProtocol(ToontownProtocol, MDParticipant):
+class MDUpstreamProtocol(CarsProtocol, MDParticipant):
     def __init__(self, service):
-        ToontownProtocol.__init__(self, service)
+        CarsProtocol.__init__(self, service)
         MDParticipant.__init__(self, service)
 
     def connection_made(self, transport):
-        ToontownProtocol.connection_made(self, transport)
+        CarsProtocol.connection_made(self, transport)
         self.service.on_upstream_connect()
 
     def connection_lost(self, exc):
-        ToontownProtocol.connection_lost(self, exc)
+        CarsProtocol.connection_lost(self, exc)
         raise Exception('lost upsteam connection!', exc)
 
     def subscribeChannel(self, channel):

@@ -12,7 +12,7 @@ from panda3d.core import Datagram, DatagramIterator
 from otp import config
 from otp.messagedirector import MDParticipant
 from otp.messagetypes import *
-from otp.networking import ToontownProtocol, DatagramFuture
+from otp.networking import CarsProtocol, DatagramFuture
 from otp.zone import *
 from otp.constants import *
 from otp.util import *
@@ -105,9 +105,9 @@ class DISLAccount:
     whitelistChatEnabled: str
     accountDays: int
 
-class ClientProtocol(ToontownProtocol, MDParticipant):
+class ClientProtocol(CarsProtocol, MDParticipant):
     def __init__(self, service):
-        ToontownProtocol.__init__(self, service)
+        CarsProtocol.__init__(self, service)
         MDParticipant.__init__(self, service)
 
         self.state: int = ClientState.NEW
@@ -146,7 +146,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
 
     def connection_lost(self, exc):
         self.service.log.debug(f'Connection lost to client {self.channel}')
-        ToontownProtocol.connection_lost(self, exc)
+        CarsProtocol.connection_lost(self, exc)
 
         if self.avatarId:
             self.deleteAvatarRam()
@@ -154,7 +154,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.removeParticipant(self)
 
     def connection_made(self, transport):
-        ToontownProtocol.connection_made(self, transport)
+        CarsProtocol.connection_made(self, transport)
         self.subscribeChannel(CLIENTS_CHANNEL)
 
     def deleteAvatarRam(self):
@@ -849,7 +849,7 @@ class ClientProtocol(ToontownProtocol, MDParticipant):
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {contextId} '
                                f'for location {parentId} {zones}')
 
-        if self.state <= ClientState.AUTHENTICATED and parentId not in (OTP_DO_ID_CARS, OTP_DO_ID_FAIRIES):
+        if self.state <= ClientState.AUTHENTICATED and parentId != OTP_DO_ID_FAIRIES:
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 

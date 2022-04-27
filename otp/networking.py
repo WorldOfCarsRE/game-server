@@ -84,7 +84,7 @@ class DatagramFuture(Future):
         self.futureSender = sender
         self.context = context
 
-class ToontownProtocol(asyncio.Protocol):
+class CarsProtocol(asyncio.Protocol):
     def __init__(self, service):
         asyncio.Protocol.__init__(self)
         self.service = service

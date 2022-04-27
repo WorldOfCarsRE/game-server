@@ -26,45 +26,6 @@ DEFAULT_ACCOUNT = {
     'LAST_LOGIN': time.ctime()
 }
 
-DIR = config['WebServer.CONTENT_DIR']
-PATCHER_VER_FILE = os.path.join(DIR, 'patcher.ver')
-PATCHER_STARTSHOW_FILE = os.path.join(DIR, 'patcher.startshow')
-HOST = config['WebServer.HOST']
-PORT = config['WebServer.PORT']
-
-if config['WebServer.WRITE_PATCH_FILES']:
-    print('Writing patcher files...')
-    from . import patcher
-
-    with open(PATCHER_VER_FILE, 'w+') as f:
-        f.write(patcher.PATCHER_VER)
-    with open(PATCHER_STARTSHOW_FILE, 'w+') as f:
-        f.write(patcher.PATCHER_STARTSHOW)
-
-async def handle_patcher(request):
-    print(request.method, request.path, request.query_string)
-    return web.FileResponse(PATCHER_VER_FILE)
-
-async def handle_start_show(request):
-    print(request.method, request.path, request.query_string)
-
-    return web.FileResponse(PATCHER_STARTSHOW_FILE)
-
-with open(os.path.join(DIR, 'twhitelist.dat'), 'r', encoding='windows-1252') as f:
-    WHITELIST = f.read()
-
-async def handle_whitelist(request):
-    print(request.method, request.path, request.query_string)
-    return web.Response(text=WHITELIST)
-
-# BUTTON_2: TOP TOONS
-# BUTTON_3: PLAYER'S GUIDE
-# BUTTON_4: HOMEPAGE
-# BUTTON_5: MANAGE ACCOUNT
-# BUTTON_7: FORGOT PASSWORD
-# BUTTON_8: NEW ACCOUNT
-#
-
 import re
 
 username_pattern = re.compile(r'[A-Za-z0-9_]+')
@@ -263,16 +224,8 @@ async def handle_auth_delete(request):
 
 async def init_app():
     app = web.Application()
-    app.router.add_get('/patcher.ver', handle_patcher)
-    app.router.add_get('/launcher/current/patcher.ver', handle_patcher)
-    app.router.add_get('/twhitelist.dat', handle_whitelist)
 
-    app.router.add_get('/launcher/current/patcher.startshow', handle_start_show)
-
-    app.router.add_post('/login', handle_login)
-    app.router.add_static('/', path=config['WebServer.CONTENT_DIR'], name='releaseNotes.html')
-
-    app.router.add_post('/api/authDelete', handle_auth_delete)
+    app.router.add_post('/login', handleLogin)
 
     pool = MongoClient(config['MongoDB.Host'])[config['MongoDB.Name']]
     app['pool'] = pool
