@@ -2,9 +2,6 @@ from otp import config
 
 import asyncio
 
-import datetime
-
-from otp.networking import ChannelAllocator
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol
 from otp.messagetypes import *
 from otp.constants import *
@@ -12,12 +9,7 @@ from otp.util import addServerHeader
 from .exceptions import *
 
 from panda3d.direct import DCPacker
-
-class EstateInfo:
-    estateId: int
-    parentId: int
-    estateZone: int
-    houseIds = list
+import json
 
 class DBServerProtocol(MDUpstreamProtocol):
     def handleDatagram(self, dg, dgi):
@@ -36,28 +28,17 @@ class DBServerProtocol(MDUpstreamProtocol):
             self.handleClearWishName(dgi)
         elif msgId == DBSERVER_GET_FRIENDS:
             self.handleGetFriends(dgi)
-        elif msgId == DBSERVER_GET_ESTATE:
-            self.handleGetEstate(sender, dgi)
-        elif msgId == DBSERVER_UNLOAD_ESTATE:
-            self.handleUnloadEstate(dgi)
         elif msgId in (DBSERVER_GET_AVATAR_DETAILS, DBSERVER_GET_PET_DETAILS):
             self.handleGetObjectDetails(dgi)
+        elif msgId == DBSERVER_AUTH_REQUEST:
+            self.handleAuthRequest(sender, dgi)
         elif DBSERVER_ACCOUNT_QUERY:
             self.handle_account_query(sender, dgi)
 
-    def handleGetEstate(self, sender, dgi):
-        context = dgi.getUint32()
-        avId = dgi.getUint32()
-        parentId = dgi.getUint32()
-        zoneId = dgi.getUint32()
+    def handleAuthRequest(self, sender, dgi):
+        playToken = dgi.getString()
 
-        self.service.loop.create_task(self.service.queryEstate(sender, context, avId, parentId, zoneId))
-
-    def handleUnloadEstate(self, dgi):
-        avId = dgi.getUint32()
-        parentId = dgi.getUint32()
-
-        self.service.loop.create_task(self.service.unloadEstate(avId, parentId))
+        self.service.loop.create_task(self.service.authRequest(sender, playToken))
 
     def handleCreateObject(self, sender, dgi):
         context = dgi.getUint32()
@@ -178,9 +159,6 @@ class DBServer(DownstreamMessageDirector):
 
         self.operations = {}
 
-        # Avatar ID to Estate information.
-        self.estates: Dict[int] = {}
-
     async def run(self):
         await self.backend.setup()
         await self.connect(config['MessageDirector.HOST'], config['MessageDirector.PORT'])
@@ -198,127 +176,6 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(context)
         dg.addUint8(doId == 0)
         dg.addUint32(doId)
-        self.sendDatagram(dg)
-
-    async def unloadEstate(self, avId, parentId):
-        if avId in self.estates:
-            info = self.estates[avId]
-            del self.estates[avId]
-
-            # Delete the estate object.
-            await self.deleteDO(info.estateId)
-
-            # Delete each house in the list.
-            for doId in info.houseIds:
-                await self.deleteDO(doId)
-
-    async def queryEstate(self, sender, context, avId, parentId, zoneId):
-        toon = await self.backend.queryObjectFields(avId, ['setDISLid'], 'DistributedToon')
-        accountId = toon['setDISLid'][0]
-
-        account = await self.backend.queryObjectFields(accountId, ['ESTATE_ID', 'HOUSE_ID_SET', 'ACCOUNT_AV_SET'], 'Account')
-
-        houseIds, avatars, estateId = account['HOUSE_ID_SET'], account['ACCOUNT_AV_SET'], account['ESTATE_ID']
-
-        estateClass = self.dc.getClassByName('DistributedEstate')
-        houseClass = self.dc.getClassByName('DistributedHouse')
-
-        # These Fields are REQUIRED but not stored in db.
-        estateOther = [
-            (estateClass.getFieldByName('setDawnTime'), (0,)),
-            (estateClass.getFieldByName('setClouds'), (0,)),
-        ]
-
-        if estateId == 0:
-            defaultFields = [
-                ('setEstateType', [0]),
-                ('setDecorData', [[]]),
-                ('setLastEpochTimeStamp', [0]),
-                ('setRentalTimeStamp', [0]),
-                ('setRentalType', [0]),
-                ('setSlot0Items', [[]]),
-                ('setSlot1Items', [[]]),
-                ('setSlot2Items', [[]]),
-                ('setSlot3Items', [[]]),
-                ('setSlot4Items', [[]]),
-                ('setSlot5Items', [[]]),
-                ('setSlot0ToonId', [avatars[0]]),
-                ('setSlot1ToonId', [avatars[1]]),
-                ('setSlot2ToonId', [avatars[2]]),
-                ('setSlot3ToonId', [avatars[3]]),
-                ('setSlot4ToonId', [avatars[4]]),
-                ('setSlot5ToonId', [avatars[5]])
-            ]
-
-            estateId = await self.backend.createObject(estateClass, defaultFields)
-            await self.backend.setField(accountId, 'ESTATE_ID', estateId, 'Account')
-
-        # Generate the estate.
-        await self.activateObjectWithOther(estateId, parentId, zoneId, estateClass, estateOther)
-
-        for index, houseId in enumerate(houseIds):
-            avatarId = avatars[index]
-
-            # These Fields are REQUIRED but not stored in db.
-            houseOther = [
-                (houseClass.getFieldByName('setHousePos'), (index,)),
-                (houseClass.getFieldByName('setCannonEnabled'), (0,)),
-            ]
-
-            houseDefaults = [
-                ('setHouseType', [0]),
-                ('setGardenPos', [index]),
-                ('setAvatarId', [avatarId]),
-                ('setName', ['']),
-                ('setColor', [index]),
-                ('setAtticItems', ['']),
-                ('setInteriorItems', ['']),
-                ('setAtticWallpaper', ['']),
-                ('setInteriorWallpaper', ['']),
-                ('setAtticWindows', ['']),
-                ('setInteriorWindows', ['']),
-                ('setDeletedItems', [''])
-            ]
-
-            if houseId == 0:
-                # Create a house.
-                houseId = await self.backend.createObject(houseClass, houseDefaults)
-                houseIds[index] = houseId
-
-            if avatarId != 0:
-                # Update the toon with their new house.
-                await self.backend.setField(avatarId, 'setHouseId', [houseId], 'DistributedToon')
-
-                # Update the house with the toon's name & avatarId.
-                owner = await self.backend.queryObjectFields(avatarId, ['setName'], 'DistributedToon')
-                toonName = owner['setName'][0]
-
-                await self.backend.setField(houseId, 'setName', [toonName], 'DistributedHouse')
-                await self.backend.setField(houseId, 'setAvatarId', [avatarId], 'DistributedHouse')
-
-            # Generate the houses.
-            print('Activating', houseId)
-            await self.activateObjectWithOther(houseId, parentId, zoneId, houseClass, houseOther)
-
-        # Update the account's house list.
-        await self.backend.setField(accountId, 'HOUSE_ID_SET', houseIds, 'Account')
-
-        # Make a class containing estate data.
-        info = EstateInfo()
-        info.estateId = estateId
-        info.parentId = parentId
-        info.estateZone = zoneId
-        info.houseIds = houseIds
-
-        # Map this avatar to their estate info.
-        self.estates[avId] = info
-
-        # Let the AI know that we are done.
-        dg = Datagram()
-        addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_GET_ESTATE_RESP)
-        dg.addUint32(context)
-        dg.addUint32(avId)
-        dg.addUint32(estateId)
         self.sendDatagram(dg)
 
     async def activateObjectWithOther(self, doId: int, parentId: int, zoneId: int, dclass, other: list):
@@ -490,7 +347,7 @@ class DBServer(DownstreamMessageDirector):
         else:
             dcName = await self.backend.queryDC(doId)
 
-        if dcName in ['DistributedEstate', 'DistributedHouse', 'DistributedToon']:
+        if dcName in ['DistributeedCarPlayer']:
             # TODO
             return
 
@@ -594,6 +451,17 @@ class DBServer(DownstreamMessageDirector):
             fieldPacker.endPack()
 
         return fieldPacker.getBytes()
+
+    async def authRequest(self, sender: int, playToken: str):
+        data = await self.backend.queryAccount(playToken)
+
+        # Prepare our response.
+        dg = Datagram()
+        addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_AUTH_REQUEST_RESP)
+        dg.addString(json.dumps(data))
+
+        # Send the response to the CA.
+        self.sendDatagram(dg)
 
 async def main():
     loop = asyncio.get_running_loop()

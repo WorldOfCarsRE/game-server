@@ -96,8 +96,8 @@ CLIENTAGENT_SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 @with_slots
 @dataclass
 class DISLAccount:
-    username: str
-    dislId: int
+    playToken: str
+    _id: int
     access: str
     accountType: str
     createFriendsWithChat: str
@@ -329,9 +329,9 @@ class ClientProtocol(CarsProtocol, MDParticipant):
                 self.ownedObjects.clear()
                 self.visibleObjects.clear()
 
-                self.unsubscribeChannel(getClientSenderChannel(self.account.dislId, self.avatarId))
+                self.unsubscribeChannel(getClientSenderChannel(self.account._id, self.avatarId))
                 self.unsubscribeChannel(getPuppetChannel(self.avatarId))
-                self.channel = getClientSenderChannel(self.account.dislId, 0)
+                self.channel = getClientSenderChannel(self.account._id, 0)
                 self.subscribeChannel(self.channel)
 
                 self.state = ClientState.AUTHENTICATED
@@ -360,7 +360,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.state = ClientState.SETTING_AVATAR
 
-        self.channel = getClientSenderChannel(self.account.dislId, self.avatarId)
+        self.channel = getClientSenderChannel(self.account._id, self.avatarId)
         self.subscribeChannel(self.channel)
         self.subscribeChannel(getPuppetChannel(self.avatarId))
 
@@ -420,15 +420,15 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
         dg.addUint32(0)
         dg.addUint16(dclass.getNumber())
-        dg.addUint32(self.account.dislId)
+        dg.addUint32(self.account._id)
         dg.addUint8(pos)
 
         defaultToon = dict(DEFAULT_TOON)
         defaultToon['setDNAString'] = (dna,)
-        defaultToon['setDISLid'] = (self.account.dislId,)
+        defaultToon['setDISLid'] = (self.account._id,)
         defaultToon['WishName'] = ('',)
         defaultToon['WishNameState'] = ('CLOSED',)
-        defaultToon['setAccountName'] = (self.account.username,)
+        defaultToon['setAccountName'] = (self.account.playToken,)
 
         count = 0
         packer = DCPacker()
@@ -611,7 +611,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         dg = Datagram()
         addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
-        dg.addUint32(self.account.dislId)
+        dg.addUint32(self.account._id)
         dg.addUint16(2)
 
         dg.addUint16(field.getNumber())
@@ -709,8 +709,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         query = Datagram()
         addServerHeader(query, [DBSERVERS_CHANNEL], self.channel, DBSERVER_ACCOUNT_QUERY)
 
-        dislId = self.account.dislId
-        query.addUint32(dislId)
+        query.addUint32(self.account._id)
         fieldNumber = self.service.avatarsField.getNumber()
         query.addUint16(fieldNumber)
         self.service.sendDatagram(query)
@@ -737,7 +736,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             import traceback
             traceback.print_exc()
             return
-        self.service.log.debug(f'Avatars deleted list for {self.account.username}: {self.avsDeleted}')
+        self.service.log.debug(f'Avatars deleted list for {self.account.playToken}: {self.avsDeleted}')
 
         pos = dgi.getCurrentIndex()
 
@@ -779,25 +778,24 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.service.log.debug(f'playToken:{playToken}, clientVersion:{clientVersion}, hashVal:{hashVal}')
 
-        try:
-            playToken = bytes.fromhex(playToken)
-            nonce, tag, playToken = playToken[:16], playToken[16:32], playToken[32:]
-            cipher = AES.new(CLIENTAGENT_SECRET, AES.MODE_EAX, nonce)
-            data = cipher.decrypt_and_verify(playToken, tag)
-            self.service.log.debug(f'Login token data:{data}')
-            data = json.loads(data)
-            for key in list(data.keys()):
-                value = data[key]
-                if type(value) == str:
-                    data[key] = value
-            self.account = DISLAccount(**data)
-        except ValueError as e:
-            self.disconnect(ClientDisconnect.LOGIN_ERROR, 'Invalid token')
-            return
+        # Send this to the Database server.
+        resp = Datagram()
+        addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_AUTH_REQUEST)
+        resp.addString(playToken)
+        self.service.sendDatagram(resp)
 
-        self.channel = getClientSenderChannel(self.account.dislId, 0)
-        self.subscribeChannel(self.channel)
-        self.subscribeChannel(getAccountChannel(self.account.dislId))
+    def handleLoginResp(self, dgi):
+        data = json.loads(dgi.getString())
+
+        self.service.log.debug(f'Login token data:{data}')
+
+        for key in list(data.keys()):
+            value = data[key]
+
+            if type(value) == str:
+                data[key] = value
+
+        self.account = DISLAccount(**data)
 
         resp = Datagram()
         resp.addUint16(CLIENT_LOGIN_CARS_RESP)
@@ -809,7 +807,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         resp.addString(errorString)
 
         resp.addUint32(0) # Avatar Id
-        resp.addUint32(self.account.dislId)
+        resp.addUint32(self.account._id)
 
         resp.addString(self.account.username)
 
@@ -822,6 +820,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         resp.addString(self.account.access)
         resp.addString(self.account.whitelistChatEnabled)
+
+        self.channel = getClientSenderChannel(self.account._id, 0)
+        self.subscribeChannel(self.channel)
+        self.subscribeChannel(getAccountChannel(self.account._id))
 
         self.sendDatagram(resp)
 
@@ -962,7 +964,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             doId = dgi.getUint32()
 
             if doId == self.avatarId:
-                if sender == self.account.dislId << 32:
+                if sender == self.account._id << 32:
                     self.disconnect(ClientDisconnect.RELOGGED, 'redundant login')
                 else:
                     self.disconnect(ClientDisconnect.SHARD_DISCONNECT, 'district reset')
@@ -985,6 +987,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             dg.addUint16(msgtype)
             dg.appendData(dgi.getRemainingBytes())
             self.sendDatagram(dg)
+        elif msgtype == DBSERVER_AUTH_REQUEST_RESP:
+            self.handleLoginResp(dgi)
         else:
            self.service.log.debug(f'Client {self.channel} received unhandled upstream msg {msgtype}.')
 

@@ -5,6 +5,19 @@ import aiomysql
 from typing import Tuple, List
 import warnings
 from .exceptions import *
+import time
+
+DEFAULT_ACCOUNT = {
+    'ACCOUNT_AV_SET': [0] * 6,
+    'pirateAvatars': [0],
+    'HOUSE_ID_SET': [0] * 6,
+    'ESTATE_ID': 0,
+    'ACCOUNT_AV_SET_DEL': [],
+    'PLAYED_MINUTES': 0,
+    'PLAYED_MINUTES_PERIOD': 0,
+    'CREATED': time.ctime(),
+    'LAST_LOGIN': time.ctime()
+}
 
 class DatabaseBackend:
     def __init__(self, service):
@@ -237,6 +250,45 @@ class MongoBackend(DatabaseBackend):
         cursor = self.mongodb.objects
         fields = cursor.find_one({'_id': doId})
         return fields['className']
+
+    async def queryAccount(self, playToken: str) -> dict:
+        data = self.mongodb.accounts.find_one({'playToken': playToken})
+
+        if not data:
+            data = {}
+            data['className'] = 'Account'
+            data['_id'] = await self.generateObjectId()
+            self.mongodb.objects.insert_one(data)
+            print('inserted')
+
+            dislId = data['_id']
+            print(f'CREATED NEW ACCOUNT WITH ID: {dislId}')
+
+            fields = list(DEFAULT_ACCOUNT.items())
+
+            cmdData = {}
+
+            cmdData['_id'] = data['_id']
+            cmdData['DcObjectType'] = 'Account'
+
+            for field in fields:
+                fieldName = field[0]
+                cmdData[fieldName] = field[1]
+
+            self.mongodb.Account.insert_one(cmdData)
+
+            acc = {}
+            acc['playToken'] = playToken
+            acc['_id'] = data['_id']
+            acc['access'] = 'FULL'
+            acc['accountType'] = 'NO_PARENT_ACCOUNT'
+            acc['createFriendsWithChat'] = 'YES'
+            acc['chatCodeCreationRule'] = 'YES'
+            acc['whitelistChatEnabled'] = 'YES'
+
+            self.mongodb.accounts.insert_one(acc)
+
+        return data
 
     async def createObject(self, dclass, fields: List[Tuple[str, bytes]]):
         columns = [field[0] for field in fields]
