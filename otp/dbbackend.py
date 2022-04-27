@@ -213,31 +213,10 @@ class SQLBackend(DatabaseBackend):
         conn.close()
         self.pool.release(conn)
 
-class GenerateRange:
-    def __init__(self, minimum, maximum):
-        self.minimum = minimum
-        self.maximum = maximum
-        self.current = None
-
-    def getMin(self):
-        return self.minimum
-
-    def getMax(self):
-        return self.maximum
-
-    def setCurrent(self, current):
-        self.current = current
-
-    def getCurrent(self):
-        return self.current
-
 class MongoBackend(DatabaseBackend):
     def __init__(self, service):
         DatabaseBackend.__init__(self, service)
         self.mongodb = None
-
-        # Create our generate range.
-        self.generateRange = GenerateRange(self.service.minChannel, self.service.maxChannel)
 
     async def setup(self):
         client = MongoClient(config['MongoDB.Host'])
@@ -248,17 +227,11 @@ class MongoBackend(DatabaseBackend):
 
         if entry is None:
             # We need to create our initial entry.
-            self.mongodb.objects.insert_one({'type': 'objectId', 'nextId': self.generateRange.getMin()})
-            self.generateRange.setCurrent(self.generateRange.getMin())
-        else:
-            # Update our generate range current id.
-            self.generateRange.setCurrent(entry['nextId'])
+            self.mongodb.objects.insert_one({'type': 'objectId', 'nextId': self.service.minChannel})
 
-    def generateObjectId(self):
-        currentId = self.generateRange.getCurrent()
-        self.generateRange.setCurrent(currentId + 1)
-        self.mongodb.objects.update_one({'type': 'objectId'}, {'$set': {'nextId': currentId + 1}})
-        return currentId
+    async def generateObjectId(self):
+        returnDoc = self.mongodb.objects.find_one_and_update({'type': 'objectId'}, {'$inc': {'nextId': 1}})
+        return returnDoc['nextId']
 
     async def queryDC(self, doId: int) -> str:
         cursor = self.mongodb.objects
@@ -275,7 +248,7 @@ class MongoBackend(DatabaseBackend):
                 if field.getName() not in columns:
                     raise OTPCreateFailed(f'Missing required db field: {field.getName()}')
 
-        objectId = self.generateObjectId()
+        objectId = await self.generateObjectId()
 
         data = {}
         data['_id'] = objectId
@@ -302,7 +275,7 @@ class MongoBackend(DatabaseBackend):
         try:
             cursor = getattr(self.mongodb, dclassName)
         except:
-            raise OTPQueryFailed('Tried to query with invalid dclass name: %s' % dclassName)
+            raise OTPQueryFailed(f'Tried to query with invalid dclass name: {dclassName}')
 
         fields = cursor.find_one({'_id': doId})
         return fields

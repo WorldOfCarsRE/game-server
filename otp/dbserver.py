@@ -115,19 +115,19 @@ class DBServerProtocol(MDUpstreamProtocol):
         fields = []
 
         unpacker = DCPacker()
+        unpacker.setUnpackData(dgi.getRemainingBytes())
 
         for i in range(fieldCount):
-            f = self.service.dc.getFieldByIndex(dgi.getUint16())
-
-            unpacker.setUnpackData(dgi.getRemainingBytes())
+            f = self.service.dc.getFieldByIndex(unpacker.rawUnpackUint16())
 
             unpacker.beginUnpack(f)
+
             fieldArgs = f.unpackArgs(unpacker)
             unpacker.endUnpack()
 
             fields.append((f.getName(), fieldArgs))
 
-        self.service.loop.create_task(self.service.set_stored_values(doId, fields))
+        self.service.loop.create_task(self.service.setStoredValues(doId, fields))
 
     def handle_account_query(self, sender, dgi):
         do_id = dgi.getUint32()
@@ -423,9 +423,9 @@ class DBServer(DownstreamMessageDirector):
 
         self.sendDatagram(dg)
 
-    async def set_stored_values(self, do_id, fields):
-        self.log.debug(f'Setting stored values for {do_id}: {fields}')
-        await self.backend.setFields(do_id, fields)
+    async def setStoredValues(self, doId, fields):
+        self.log.debug(f'Setting stored values for {doId}: {fields}')
+        await self.backend.setFields(doId, fields)
 
     def on_upstream_connect(self):
         self.subscribeChannel(self._client, DBSERVERS_CHANNEL)
@@ -451,7 +451,7 @@ class DBServer(DownstreamMessageDirector):
             ]
 
         # Set the fields in the database.
-        await self.set_stored_values(avatarId, fields)
+        await self.setStoredValues(avatarId, fields)
 
     async def queryFriends(self, avatarId):
         fields = await self.backend.queryObjectFields(avatarId, ['setFriendsList'], 'DistributedToon')

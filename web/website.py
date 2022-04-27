@@ -1,5 +1,4 @@
 from otp import config
-from otp.dbbackend import GenerateRange
 
 from aiohttp import web
 from pymongo import MongoClient
@@ -12,7 +11,10 @@ import asyncio, hashlib, logging, json, os, time, binascii
 
 SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level = logging.DEBUG)
+
+HOST = config['WebServer.HOST']
+PORT = config['WebServer.PORT']
 
 DEFAULT_ACCOUNT = {
     'ACCOUNT_AV_SET': [0] * 6,
@@ -31,7 +33,7 @@ import re
 username_pattern = re.compile(r'[A-Za-z0-9_]+')
 password_pattern = re.compile(r'[A-Za-z0-9_!@#$%^&*]+')
 
-async def handle_login(request):
+async def handleLogin(request):
     print(request.method, request.path, request.query)
     args = await request.post()
 
@@ -82,8 +84,7 @@ async def handle_login(request):
 
     if not info:
         print(f'Creating new account for {username}...')
-        genRange = request.app['generateRange']
-        info = await createNewAccount(username, password, pool, genRange)
+        info = await createNewAccount(username, password, pool)
 
     cmpHash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), info['salt'].encode(), 10000)
 
@@ -133,20 +134,18 @@ def getAccountDays(createdTime):
 
     return accountDays
 
-def generateObjectId(genRange: GenerateRange, cursor: MongoClient):
-    currentId = genRange.getCurrent()
-    genRange.setCurrent(currentId + 1)
-    cursor.objects.update_one({'type': 'objectId'}, {'$set': {'nextId': currentId + 1}})
-    return currentId
+async def generateObjectId(cursor: MongoClient):
+    returnDoc = cursor.objects.find_one_and_update({'type': 'objectId'}, {'$inc': {'nextId': 1}})
+    return returnDoc['nextId']
 
-async def createNewAccount(username: str, password: str, cursor: MongoClient, genRange: GenerateRange):
+async def createNewAccount(username: str, password: str, cursor: MongoClient):
     salt = binascii.b2a_base64(hashlib.sha256(os.urandom(60)).digest()).strip()
     accHash = binascii.b2a_base64(hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 10000)).strip().decode()
 
     try:
         data = {}
         data['className'] = 'Account'
-        data['_id'] = generateObjectId(genRange, cursor)
+        data['_id'] = await generateObjectId(cursor)
         cursor.objects.insert_one(data)
         print('inserted')
 
@@ -230,19 +229,12 @@ async def init_app():
     pool = MongoClient(config['MongoDB.Host'])[config['MongoDB.Name']]
     app['pool'] = pool
 
-    # Create our generate range.
-    app['generateRange'] = GenerateRange(config['DatabaseServer.MinRange'], config['DatabaseServer.MaxRange'])
-
     # Check if we need to create our initial entries in the database.
     entry = pool.objects.find_one({'type': 'objectId'})
 
     if entry is None:
         # We need to create our initial entry.
-        pool.objects.insert_one({'type': 'objectId', 'nextId': app['generateRange'].getMin()})
-        app['generateRange'].setCurrent(app['generateRange'].getMin())
-    else:
-        # Update our generate range current id.
-        app['generateRange'].setCurrent(entry['nextId'])
+        pool.objects.insert_one({'type': 'objectId', 'nextId': config['DatabaseServer.MinRange']})
 
     print('init done')
 
