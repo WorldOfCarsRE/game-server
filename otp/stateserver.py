@@ -291,9 +291,9 @@ class DistributedObject(MDParticipant):
             addServerHeader(dg, [DBSERVERS_CHANNEL], self.doId, DBSERVER_SET_STORED_VALUES)
             dg.addUint32(self.doId)
             dg.addUint16(1)
-            dg.addUint16(field.getNumber())
 
             packer = DCPacker()
+            packer.rawPackUint16(field.getNumber())
             packer.beginPack(field)
             field.packArgs(packer, data)
             packer.endPack()
@@ -571,6 +571,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
             # Pack the data back up.
             packer = DCPacker()
+            packer.rawPackUint16(field.getNumber())
             packer.beginPack(field)
             field.packArgs(packer, data)
             packer.endPack()
@@ -580,7 +581,6 @@ class StateServerProtocol(MDUpstreamProtocol):
                 addServerHeader(dg, [DBSERVERS_CHANNEL], doId, DBSERVER_SET_STORED_VALUES)
                 dg.addUint32(doId)
                 dg.addUint16(1)
-                dg.addUint16(field.getNumber())
                 dg.appendData(packer.getBytes())
                 self.service.sendDatagram(dg)
 

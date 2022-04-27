@@ -69,11 +69,6 @@ class AIRepository:
         self.dcFile.read('etc/dclass/otp.dc')
         self.dcFile.read('etc/dclass/cars.dc')
 
-        klass = self.dcFile.getClassByName('ShardManager')
-
-        print(klass.getNumber())
-        print(klass.getFieldByName('getAllShardsResponse').getNumber())
-
         self.currentSender = None
         self.loop = None
         self.net_thread = None
@@ -369,7 +364,7 @@ class AIRepository:
     def createObjects(self):
         self.registerForChannel(self.ourChannel)
 
-        from .Objects import CarsDistrictAI, DistrictManagerAI
+        from .Objects import CarsDistrictAI, ShardManagerUD, HolidayManagerUD
 
         self.district = CarsDistrictAI(self)
         self.district.name = 'Kachow!'
@@ -387,14 +382,11 @@ class AIRepository:
         dg.addUint64(self.ourChannel)
         self.send(dg)
 
-        self.districtManager = DistrictManagerAI(self)
-        self.districtManager.generateGlobalObject(OTP_ZONE_ID_DISTRICTS)
+        self.shardManager = ShardManagerUD(self)
+        self.shardManager.generateGlobalObject(OTP_ZONE_ID_ELEMENTS)
 
-        dg = Datagram()
-        addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
-        dg.addUint32(self.districtManager.doId)
-        dg.addUint64(self.ourChannel)
-        self.send(dg)
+        self.holidayManager = HolidayManagerUD(self)
+        self.holidayManager.generateGlobalObject(OTP_ZONE_ID_ELEMENTS)
 
         self.district.b_setAvailable(True)
 
@@ -464,38 +456,3 @@ class AIRepository:
         dg.addUint16(eventDg.getLength())
         dg.appendData(eventDg.getMessage())
         self.eventSocket.Send(dg.getMessage())
-
-    def findFishingPonds(self, dnaGroup, zoneId, area, overrideDNAZone = 0):
-        fishingPonds = []
-        fishingPondGroups = []
-
-        if ((isinstance(dnaGroup, DNAGroup)) and
-            (dnaGroup.getName().find('fishing_pond') >= 0)):
-            fishingPondGroups.append(dnaGroup)
-            fp = DistributedFishingPondAI(self, area)
-            fp.generateWithRequired(zoneId)
-            fishingPonds.append(fp)
-        else:
-            if (isinstance(dnaGroup, DNAVisGroup) and not overrideDNAZone):
-                zoneId = int(dnaGroup.getName().split(':')[0])
-            for i in range(dnaGroup.getNumChildren()):
-                childFishingPonds, childFishingPondGroups = self.findFishingPonds(
-                        dnaGroup.at(i), zoneId, area, overrideDNAZone)
-                fishingPonds += childFishingPonds
-                fishingPondGroups += childFishingPondGroups
-        return fishingPonds, fishingPondGroups
-
-    def findFishingSpots(self, distPond, dnaPondGroup):
-        fishingSpots = []
-        for i in range(dnaPondGroup.getNumChildren()):
-            dnaGroup = dnaPondGroup.at(i)
-            if ((isinstance(dnaGroup, DNAProp)) and
-                (dnaGroup.getCode().find('fishing_spot') >= 0)):
-
-                pos = dnaGroup.getPos()
-                hpr = dnaGroup.getHpr()
-
-                spot = DistributedFishingSpotAI(self, distPond, (pos[0], pos[1], pos[2], hpr[0], hpr[1], hpr[2]))
-                spot.generateWithRequired(distPond.zoneId)
-                fishingSpots.append(spot)
-        return fishingSpots

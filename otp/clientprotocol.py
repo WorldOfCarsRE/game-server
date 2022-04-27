@@ -9,7 +9,7 @@ from dataslots import with_slots
 from panda3d.direct import DCPacker
 from panda3d.core import Datagram, DatagramIterator
 
-from otp import config
+from otp import config, uberdog
 from otp.messagedirector import MDParticipant
 from otp.messagetypes import *
 from otp.networking import CarsProtocol, DatagramFuture
@@ -103,7 +103,6 @@ class DISLAccount:
     createFriendsWithChat: str
     chatCodeCreationRule: str
     whitelistChatEnabled: str
-    accountDays: int
 
 class ClientProtocol(CarsProtocol, MDParticipant):
     def __init__(self, service):
@@ -120,7 +119,11 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.ownedObjects: Dict[int, ObjectInfo] = {}
 
         # TODO: make this configurable
-        self.uberdogs: List[int] = [OTP_DO_ID_FRIEND_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER]
+        self.uberdogs: List[int] = [
+            OTP_DO_ID_FRIEND_MANAGER,
+            OTP_DO_ID_CARS_SHARD_MANAGER,
+            OTP_DO_ID_CARS_HOLIDAY_MANAGER
+            ]
 
         self.account: Union[DISLAccount, None] = None
         self.avatarId: int = 0
@@ -513,16 +516,15 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             resp.addUint32(avId)
             resp.addUint16(2)
 
-            resp.addUint16(wishNameStateField.getNumber())
             resp.appendData(self.packFieldData(wishNameStateField, ('PENDING',)))
-
-            resp.addUint16(wishNameField.getNumber())
             resp.appendData(self.packFieldData(wishNameField, (name,)))
 
             self.service.sendDatagram(resp)
 
     def packFieldData(self, field, data):
         packer = DCPacker()
+        packer.rawPackUint16(field.getNumber())
+
         packer.beginPack(field)
 
         field.packArgs(packer, data)
@@ -611,13 +613,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         dg = Datagram()
         addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
-        dg.addUint32(self.account._id)
+        dg.addUint32(self.account.dislId)
         dg.addUint16(2)
 
-        dg.addUint16(field.getNumber())
         dg.appendData(self.packFieldData(field, avatars))
-
-        dg.addUint16(delField.getNumber())
         dg.appendData(self.packFieldData(delField, self.avsDeleted))
 
         self.service.sendDatagram(dg)
@@ -809,7 +808,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         resp.addUint32(0) # Avatar Id
         resp.addUint32(self.account._id)
 
-        resp.addString(self.account.username)
+        resp.addString(self.account.playToken)
 
         accountNameApproved = True
         resp.addUint8(accountNameApproved)
@@ -1002,6 +1001,9 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         fieldNumber = dgi.getUint16()
         field = self.service.dcFile.getFieldByIndex(fieldNumber)
 
+        print(field.getName())
+        print(fieldNumber)
+
         resp = Datagram()
         resp.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
         resp.addUint32(doId)
@@ -1146,8 +1148,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
                 interest.pendingObjects.append(doId)
             return
 
-        if self.objectExists(doId):
+        if doId not in self.uberdogs and self.objectExists(doId):
             return
+
+        print('!', doId)
 
         self.visibleObjects[doId] = ObjectInfo(doId, dcId, parentId, zoneId)
 

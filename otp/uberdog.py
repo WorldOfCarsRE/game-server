@@ -63,6 +63,7 @@ class UberdogProtocol(MDUpstreamProtocol):
 class Uberdog(DownstreamMessageDirector):
     upstreamProtocol = UberdogProtocol
     GLOBAL_ID = None
+    ZONE_ID = OTP_ZONE_ID_MANAGEMENT
 
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)
@@ -79,7 +80,7 @@ class Uberdog(DownstreamMessageDirector):
         self.subscribeChannel(self._client, self.GLOBAL_ID)
         self.log.debug('Uberdog online')
 
-        dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_FAIRIES, OTP_ZONE_ID_MANAGEMENT,
+        dg = self.dclass.aiFormatGenerate(self, self.GLOBAL_ID, OTP_DO_ID_FAIRIES, self.ZONE_ID,
                                             STATESERVERS_CHANNEL, self.GLOBAL_ID, optional_fields = None)
         self.sendDatagram(dg)
 
@@ -104,8 +105,8 @@ class Uberdog(DownstreamMessageDirector):
 
         unpacker.endUnpack()
 
-    def register_future(self, msg_type, sender, context):
-        f = DatagramFuture(self.loop, msg_type, sender, context)
+    def register_future(self, msgType, sender, context):
+        f = DatagramFuture(self.loop, msgType, sender, context)
         self._client.futures.append(f)
         return f
 
@@ -131,7 +132,7 @@ class Uberdog(DownstreamMessageDirector):
         return parent_id, zone_id
 
     def sendUpdateToChannel(self, channel, fieldName, args):
-        dg = self.dclass.ai_format_update(fieldName, self.GLOBAL_ID, channel, self.GLOBAL_ID, args)
+        dg = self.dclass.aiFormatUpdate(fieldName, self.GLOBAL_ID, channel, self.GLOBAL_ID, args)
         self.sendDatagram(dg)
 
 class CentralLoggerUD(Uberdog):
@@ -194,11 +195,17 @@ class FriendManagerUD(Uberdog):
 
 class ShardManagerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_CARS_SHARD_MANAGER
+    ZONE_ID = OTP_ZONE_ID_ELEMENTS
 
     def getAllShardsRequest(self, context):
-        print(context)
+        self.sendUpdateToChannel(self.lastSender, 'getAllShardsResponse', [context, [[1, 'test', 1, 0, 1]]])
 
-        self.sendUpdateToChannel(self.lastSender, 'getAllShardsResponse', [context, []])
+class HolidayManagerUD(Uberdog):
+    GLOBAL_ID = OTP_DO_ID_CARS_HOLIDAY_MANAGER
+    ZONE_ID = OTP_ZONE_ID_ELEMENTS
+
+    def getHolidayEvents(self):
+        return ([])
 
 async def main():
     import builtins
@@ -211,11 +218,13 @@ async def main():
     centralLogger = CentralLoggerUD(loop)
     friendManager = FriendManagerUD(loop)
     shardMgr = ShardManagerUD(loop)
+    holidayMgr = HolidayManagerUD(loop)
 
     uberdogTasks = [
         asyncio.create_task(centralLogger.run()),
         asyncio.create_task(friendManager.run()),
-        asyncio.create_task(shardMgr.run())
+        asyncio.create_task(shardMgr.run()),
+        asyncio.create_task(holidayMgr.run())
     ]
 
     await asyncio.gather(*uberdogTasks)

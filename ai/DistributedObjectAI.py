@@ -42,11 +42,11 @@ class DistributedObjectAI(DirectObject):
     def sendUpdateToSender(self, fieldName, args):
         self.sendUpdateToChannel(self.air.currentSender, fieldName, args)
 
-    def sendUpdateToAvatar(self, av_id, fieldName, args):
-        self.sendUpdateToChannel(getPuppetChannel(av_id), fieldName, args)
+    def sendUpdateToAvatar(self, avId, fieldName, args):
+        self.sendUpdateToChannel(getPuppetChannel(avId), fieldName, args)
 
-    def sendUpdateToAccount(self, disl_id, fieldName, args):
-        self.sendUpdateToChannel(getAccountChannel(disl_id), fieldName, args)
+    def sendUpdateToAccount(self, dislId, fieldName, args):
+        self.sendUpdateToChannel(getAccountChannel(dislId), fieldName, args)
 
     @property
     def location(self):
