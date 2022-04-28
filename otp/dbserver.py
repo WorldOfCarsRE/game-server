@@ -50,7 +50,6 @@ class DBServerProtocol(MDUpstreamProtocol):
 
         if dclass.getName() == 'DistributedCarPlayer':
             dislId = dgi.getUint32()
-            pos = dgi.getUint8()
             fieldCount = dgi.getUint16()
 
             fields = []
@@ -70,7 +69,7 @@ class DBServerProtocol(MDUpstreamProtocol):
 
                 fields.append((f.getName(), fieldArgs))
 
-            coro = self.service.createPlayerCar(sender, context, dclass, dislId, pos, fields)
+            coro = self.service.createAvatar(sender, context, dclass, dislId, fields)
         else:
             print(f'Unhandled creation for dclass {dclass.getName()}')
             return
@@ -206,23 +205,14 @@ class DBServer(DownstreamMessageDirector):
         dg.addUint32(doId)
         self.sendDatagram(dg)
 
-    async def createPlayerCar(self, sender, context, dclass, dislId, pos, fields):
+    async def createAvatar(self, dclass, accountId, fields) -> int:
         try:
             doId = await self.backend.createObject(dclass, fields)
-            account = await self.backend.queryObjectFields(dislId, ['ACCOUNT_AV_SET'], 'Account')
-            avSet = account['ACCOUNT_AV_SET']
-            avSet[pos] = doId
-            await self.backend.setField(dislId, 'ACCOUNT_AV_SET', avSet, 'Account')
         except OTPCreateFailed as e:
             print('creation failed', e)
             doId = 0
 
-        dg = Datagram()
-        addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_CREATE_STORED_OBJECT_RESP)
-        dg.addUint32(context)
-        dg.addUint8(doId == 0)
-        dg.addUint32(doId)
-        self.sendDatagram(dg)
+        return doId
 
     async def get_stored_values(self, sender, context, doId, fields):
         try:
@@ -453,12 +443,77 @@ class DBServer(DownstreamMessageDirector):
         return fieldPacker.getBytes()
 
     async def authRequest(self, sender: int, playToken: str):
-        data = await self.backend.queryAccount(playToken)
+        accountData = await self.backend.queryAccount(playToken)
+        accountId = accountData['_id']
+
+        if accountData['avatarId'] == 0:
+            carPlayer = self.dc.getClassByName('DistributedCarPlayer')
+
+            packer = DCPacker()
+
+            carDNA = [
+                'Test',
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 0,
+                 [],
+                 [],
+                 [],
+                 0,
+            ]
+
+            fields = []
+            fields.append(('setDISLname', [accountData['playToken']]))
+            fields.append(('setDISLid', [accountId]))
+
+            # Iterate through all of the fields.
+            fieldCount = carPlayer.getNumInheritedFields()
+
+            for i in range(fieldCount):
+                field = carPlayer.getInheritedField(i)
+
+                # Skip the field if it is molecular.
+                if field.asMolecularField() is not None:
+                    continue
+
+                # Check if the field is required.
+                if not field.isRequired():
+                    continue
+
+                # Check if the user set a value for this field already.
+                name = field.getName()
+
+                if name in fields:
+                    continue
+
+                # Get the default value of the field.
+                default = field.getDefaultValue()
+                packer.setUnpackData(default)
+                packer.beginUnpack(field)
+                value = field.unpackArgs(packer)
+                packer.endUnpack()
+
+                fields.append((name, value))
+
+
+            doId = await self.createAvatar(carPlayer, accountId, fields)
+            await self.backend.setField(doId, 'setDNA', carddna, 'DistributedCarPlayer')
+            await self.backend.setField(accountId, 'avatarId', doId, 'accounts')
 
         # Prepare our response.
         dg = Datagram()
         addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_AUTH_REQUEST_RESP)
-        dg.addString(json.dumps(data))
+        dg.addString(json.dumps(accountData))
 
         # Send the response to the CA.
         self.sendDatagram(dg)

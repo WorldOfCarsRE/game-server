@@ -198,7 +198,7 @@ class ShardManagerUD(Uberdog):
     ZONE_ID = OTP_ZONE_ID_ELEMENTS
 
     def getAllShardsRequest(self, context):
-        self.sendUpdateToChannel(self.lastSender, 'getAllShardsResponse', [context, [[1, 'test', 1, 0, 1]]])
+        pass
 
 class HolidayManagerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_CARS_HOLIDAY_MANAGER

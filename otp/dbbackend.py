@@ -8,7 +8,6 @@ from .exceptions import *
 import time
 
 DEFAULT_ACCOUNT = {
-    'ACCOUNT_AV_SET': [0] * 6,
     'pirateAvatars': [0],
     'HOUSE_ID_SET': [0] * 6,
     'ESTATE_ID': 0,
@@ -255,20 +254,20 @@ class MongoBackend(DatabaseBackend):
         data = self.mongodb.accounts.find_one({'playToken': playToken})
 
         if not data:
-            data = {}
-            data['className'] = 'Account'
-            data['_id'] = await self.generateObjectId()
-            self.mongodb.objects.insert_one(data)
+            acc = {}
+            acc['className'] = 'Account'
+            acc['_id'] = await self.generateObjectId()
+            self.mongodb.objects.insert_one(acc)
             print('inserted')
 
-            dislId = data['_id']
+            dislId = acc['_id']
             print(f'CREATED NEW ACCOUNT WITH ID: {dislId}')
 
             fields = list(DEFAULT_ACCOUNT.items())
 
             cmdData = {}
 
-            cmdData['_id'] = data['_id']
+            cmdData['_id'] = acc['_id']
             cmdData['DcObjectType'] = 'Account'
 
             for field in fields:
@@ -277,16 +276,18 @@ class MongoBackend(DatabaseBackend):
 
             self.mongodb.Account.insert_one(cmdData)
 
-            acc = {}
-            acc['playToken'] = playToken
-            acc['_id'] = data['_id']
-            acc['access'] = 'FULL'
-            acc['accountType'] = 'NO_PARENT_ACCOUNT'
-            acc['createFriendsWithChat'] = 'YES'
-            acc['chatCodeCreationRule'] = 'YES'
-            acc['whitelistChatEnabled'] = 'YES'
+            data = {}
+            data['playToken'] = playToken
+            data['_id'] = acc['_id']
+            data['access'] = 'FULL'
+            data['accountType'] = 'NO_PARENT_ACCOUNT'
+            data['createFriendsWithChat'] = 'YES'
+            data['chatCodeCreationRule'] = 'YES'
+            data['whitelistChatEnabled'] = 'YES'
+            data['avatarId'] = 0
+            data['racecarId'] = 0
 
-            self.mongodb.accounts.insert_one(acc)
+            self.mongodb.accounts.insert_one(data)
 
         return data
 

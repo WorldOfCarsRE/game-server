@@ -59,7 +59,10 @@ class ShardManagerUD(DistributedObjectGlobalAI):
     def getAllShardsRequest(self, context):
         print(f'getAllShardsRequest - {context}')
 
-        self.sendUpdateToChannel(getAccountIDFromChannel(self.air.currentSender), 'getAllShardsResponse', [context, [[self.air.district.doId, self.air.district.name, POPULATION_LEVEL_NONE, 0, 1]]])
+        response = []
+        response.append([self.air.district.doId, self.air.district.name, POPULATION_LEVEL_NONE, 0, 1])
+
+        self.sendUpdateToSender('getAllShardsResponse', [context, response])
 
 class HolidayManagerUD(DistributedObjectGlobalAI):
     doId = OTP_DO_ID_CARS_HOLIDAY_MANAGER

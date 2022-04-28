@@ -364,7 +364,8 @@ class AIRepository:
     def createObjects(self):
         self.registerForChannel(self.ourChannel)
 
-        from .Objects import CarsDistrictAI, ShardManagerUD, HolidayManagerUD
+        from .Objects import CarsDistrictAI, ShardManagerUD
+        from .Objects import HolidayManagerUD
 
         self.district = CarsDistrictAI(self)
         self.district.name = 'Kachow!'

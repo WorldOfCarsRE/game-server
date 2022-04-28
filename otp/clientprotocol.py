@@ -1,10 +1,8 @@
-import time
 import json
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import List, Union, Dict, Tuple
 
-from Crypto.Cipher import AES
 from dataslots import with_slots
 from panda3d.direct import DCPacker
 from panda3d.core import Datagram, DatagramIterator
@@ -16,7 +14,6 @@ from otp.networking import CarsProtocol, DatagramFuture
 from otp.zone import *
 from otp.constants import *
 from otp.util import *
-from otp.zoneutil import VIS_ZONES, getCanonicalZoneId, getTrueZoneId
 
 class NamePart(IntEnum):
     BOY_TITLE = 0
@@ -28,18 +25,6 @@ class NamePart(IntEnum):
     CAP_PREFIX = 6
     LAST_PREFIX = 7
     LAST_SUFFIX = 8
-
-@with_slots
-@dataclass
-class PotentialAvatar:
-    doId: int
-    name: str
-    wishName: str
-    approvedName: str
-    rejectedName: str
-    dnaString: str
-    index: int
-    allowName: int
 
 class ClientState(IntEnum):
     NEW = 0
@@ -103,6 +88,8 @@ class DISLAccount:
     createFriendsWithChat: str
     chatCodeCreationRule: str
     whitelistChatEnabled: str
+    avatarId: int
+    racecarId: int
 
 class ClientProtocol(CarsProtocol, MDParticipant):
     def __init__(self, service):
@@ -127,10 +114,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.account: Union[DISLAccount, None] = None
         self.avatarId: int = 0
-        self.createdAvId: int = 0
         self.wantedName: str = ''
-        self.potentialAvatar = None
-        self.potentialAvatars: List[PotentialAvatar] = []
         self.avsDeleted: List[Tuple[int, int]] = []
         self.pendingObjects: Dict[int, PendingObject] = {}
 
@@ -168,7 +152,9 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
     def receiveDatagram(self, dg):
         dgi = DatagramIterator(dg)
-        msgtype = dgi.get_uint16()
+        msgtype = dgi.getUint16()
+
+        print(MSG_TO_NAME_DICT[msgtype])
 
         if msgtype != CLIENT_OBJECT_UPDATE_FIELD:
             self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from client {self.channel}')
@@ -200,8 +186,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         elif self.state == ClientState.AVATAR_CHOOSER:
             if msgtype == CLIENT_CREATE_AVATAR:
                 self.receiveCreateAvatar(dgi)
-            elif msgtype == CLIENT_SET_AVATAR:
-                self.receiveSetAvatar(dgi)
             elif msgtype == CLIENT_SET_WISHNAME:
                 self.receiveSetWishName(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
@@ -219,9 +203,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             else:
                 self.service.log.debug(f'Unexpected message type during avatar chooser {msgtype}.')
         elif self.state == ClientState.CREATING_AVATAR:
-            if msgtype == CLIENT_SET_AVATAR:
-                self.receiveSetAvatar(dgi)
-            elif msgtype == CLIENT_SET_WISHNAME:
+            if msgtype == CLIENT_SET_WISHNAME:
                 self.receiveSetWishName(dgi)
             elif msgtype == CLIENT_SET_NAME_PATTERN:
                 self.receiveSetNamePattern(dgi)
@@ -244,8 +226,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
                 self.receiveClientLocation(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 self.receiveUpdateField(dgi)
-            elif msgtype == CLIENT_SET_AVATAR:
-                self.receiveSetAvatar(dgi)
             elif msgtype in (CLIENT_GET_AVATAR_DETAILS, CLIENT_GET_PET_DETAILS):
                 self.receiveGetObjectDetails(dgi, msgtype)
             else:
@@ -279,6 +259,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         resp.appendData(dgi.getRemainingBytes())
         self.service.sendDatagram(resp)
 
+        print(field.getName())
+
         if field.getName() == 'setTalk':
             # TODO: filtering
             resp = Datagram()
@@ -306,23 +288,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         else:
             self.service.log.debug(f'Client {self.channel} tried setting location for unowned object {doId}!')
 
-    def receiveGetFriendList(self, dgi):
-        self.service.log.debug(f'Friend list query received from {self.channel}')
-
-        # Friend Structure
-        # uint32 doId
-        # string name
-        # string dnaString
-        # uint32 petId
-
-        query = Datagram()
-        addServerHeader(query, [DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_FRIENDS)
-        query.addUint32(self.avatarId)
-        self.service.sendDatagram(query)
-
-    def receiveSetAvatar(self, dgi):
-        avId = dgi.getUint32()
-
+    def setAvatar(self, avId: int):
         self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
 
         if not avId:
@@ -347,19 +313,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             self.service.log.debug(f'Client {self.channel} tried to set their avatar {avId} while avatar is already set to {self.avatarId}.')
             return
 
-        potAv = None
-
-        for pa in self.potentialAvatars:
-            if pa and pa.doId == avId:
-                potAv = pa
-                break
-
-        if potAv is None:
-            self.disconnect(ClientDisconnect.INTERNAL_ERROR, 'Could not find avatar on account.')
-            return
-
         self.avatarId = avId
-        self.createdAvId = 0
 
         self.state = ClientState.SETTING_AVATAR
 
@@ -367,21 +321,16 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.subscribeChannel(self.channel)
         self.subscribeChannel(getPuppetChannel(self.avatarId))
 
-        dclass = self.service.dcFile.getClassByName('DistributedToon')
+        dclass = self.service.dcFile.getClassByName('DistributedCarPlayer')
 
         access = 2 if self.account.access == 'FULL' else 1
 
         # These Fields are REQUIRED but not stored in db.
         otherFields = [
-            (dclass.getFieldByName('setAccess'), (access,)),
-            (dclass.getFieldByName('setPreviousAccess'), (access,)),
-            (dclass.getFieldByName('setAsGM'), (False,)),
-            (dclass.getFieldByName('setBattleId'), (0,))
+            (dclass.getFieldByName('setTelemetry'), (0, 0, 0, 0, 0, 0, 0, 0,)),
+            (dclass.getFieldByName('setPhysics'), ([], [], [], [], [],)),
+            (dclass.getFieldByName('setState'), (0,))
         ]
-
-        if potAv.approvedName:
-            otherFields.append((dclass.getFieldByName('setName'), (potAv.approvedName,)))
-            potAv.approvedName = ''
 
         dg = Datagram()
         addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
@@ -404,123 +353,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.service.sendDatagram(dg)
 
-    def receiveCreateAvatar(self, dgi):
-        _ = dgi.getUint16()
-        dna = dgi.getBlob()
-        pos = dgi.getUint8()
-        self.service.log.debug(f'Client {self.channel} requesting avatar creation with dna {dna} and pos {pos}.')
-
-        if not 0 <= pos < 6 or self.potentialAvatars[pos] is not None:
-            self.service.log.debug(f'Client {self.channel} tried creating avatar in invalid position.')
-            return
-
-        self.potentialAvatar = PotentialAvatar(doId = 0, name = 'Toon', wishName = '', approvedName = '',
-                                                      rejectedName = '', dnaString = dna, index = pos, allowName = 1)
-
-        dclass = self.service.dcFile.getClassByName('DistributedToon')
-
-        dg = Datagram()
-        addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_CREATE_STORED_OBJECT)
-        dg.addUint32(0)
-        dg.addUint16(dclass.getNumber())
-        dg.addUint32(self.account._id)
-        dg.addUint8(pos)
-
-        defaultToon = dict(DEFAULT_TOON)
-        defaultToon['setDNAString'] = (dna,)
-        defaultToon['setDISLid'] = (self.account._id,)
-        defaultToon['WishName'] = ('',)
-        defaultToon['WishNameState'] = ('CLOSED',)
-        defaultToon['setAccountName'] = (self.account.playToken,)
-
-        count = 0
-        packer = DCPacker()
-
-        for fieldId in range(dclass.getNumInheritedFields()):
-            field = dclass.getInheritedField(fieldId)
-
-            if not field.asMolecularField() and field.isDb():
-                if field.getName() == 'DcObjectType':
-                    continue
-
-                packer.rawPackUint16(field.getNumber())
-                packer.beginPack(field)
-                field.packArgs(packer, defaultToon[field.getName()])
-                packer.endPack()
-                count += 1
-
-        dg.addUint16(count)
-        dg.appendData(packer.getBytes())
-
-        self.state = ClientState.CREATING_AVATAR
-
-        self.service.sendDatagram(dg)
-
-        self.tasks.append(self.service.loop.create_task(self.createdAvatar()))
-
-    async def createdAvatar(self):
-        f = DatagramFuture(self.service.loop, DBSERVER_CREATE_STORED_OBJECT_RESP)
-        self.futures.append(f)
-        sender, dgi = await f
-        context = dgi.getUint32()
-        returnCode = dgi.getUint8()
-        avId = dgi.getUint32()
-
-        av = self.potentialAvatar
-        av.doId = avId
-        self.potentialAvatars[av.index] = av
-        self.potentialAvatar = None
-
-        resp = Datagram()
-        resp.addUint16(CLIENT_CREATE_AVATAR_RESP)
-        resp.addUint16(0) # Context
-        resp.addUint8(returnCode) # Return Code
-        resp.addUint32(avId) # avId
-        self.sendDatagram(resp)
-
-        self.createdAvId = avId
-
-        self.service.log.debug(f'New avatar {avId} created for client {self.channel}.')
-
-    def receiveSetWishName(self, dgi):
-        avId = dgi.getUint32()
-        name = dgi.getString()
-
-        av = self.getPotentialAvatar(avId)
-
-        self.service.log.debug(f'Received wishname request from {self.channel} for avatar {avId} for name "{name}".')
-
-        pending = name
-        approved = ''
-        rejected = ''
-
-        failed = False
-
-        resp = Datagram()
-        resp.addUint16(CLIENT_SET_WISHNAME_RESP)
-        resp.addUint32(avId)
-        resp.addUint16(failed)
-        resp.addString(pending)
-        resp.addString(approved)
-        resp.addString(rejected)
-
-        self.sendDatagram(resp)
-
-        if avId and av:
-            dclass = self.service.dcFile.getClassByName('DistributedToon')
-            wishNameField = dclass.getFieldByName('WishName')
-            wishNameStateField = dclass.getFieldByName('WishNameState')
-
-            resp = Datagram()
-            addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
-            resp.addUint32(avId)
-            resp.addUint16(2)
-
-            resp.appendData(self.packFieldData(wishNameStateField, ('PENDING',)))
-            resp.appendData(self.packFieldData(wishNameField, (name,)))
-
-            self.service.sendDatagram(resp)
-
     def packFieldData(self, field, data):
         packer = DCPacker()
         packer.rawPackUint16(field.getNumber())
@@ -532,121 +364,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         packer.endPack()
 
         return packer.getBytes()
-
-    def receiveSetNamePattern(self, dgi):
-        avId = dgi.getUint32()
-
-        self.service.log.debug(f'Got name pattern request for avId {avId}.')
-
-        title_index, title_flag = dgi.getInt16(), dgi.getInt16()
-        first_index, first_flag = dgi.getInt16(), dgi.getInt16()
-        last_prefix_index, last_prefix_flag = dgi.getInt16(), dgi.getInt16()
-        last_suffix_index, last_suffix_flag = dgi.getInt16(), dgi.getInt16()
-
-        resp = Datagram()
-        resp.addUint16(CLIENT_SET_NAME_PATTERN_ANSWER)
-        resp.addUint32(avId)
-
-        if avId != self.createdAvId:
-            resp.addUint8(1)
-            self.sendDatagram(resp)
-            return
-
-        if first_index <= 0 and last_prefix_index <= 0 and last_suffix_index <= 0:
-            self.service.log.debug(f'Received request for empty name for {avId}.')
-            resp.addUint8(2)
-            self.sendDatagram(resp)
-            return
-
-        if (last_prefix_index <= 0 <= last_suffix_index) or (last_suffix_index <= 0 <= last_prefix_index):
-            self.service.log.debug(f'Received request for invalid last name for {avId}.')
-            resp.addUint8(3)
-            self.sendDatagram(resp)
-            return
-
-        try:
-            title = self.get_name_part(title_index, title_flag, {NamePart.BOY_TITLE, NamePart.GIRL_TITLE, NamePart.NEUTRAL_TITLE})
-            first = self.get_name_part(first_index, first_flag, {NamePart.BOY_FIRST, NamePart.GIRL_FIRST, NamePart.NEUTRAL_FIRST})
-            last_prefix = self.get_name_part(last_prefix_index, last_prefix_flag, {NamePart.CAP_PREFIX, NamePart.LAST_PREFIX})
-            last_suffix = self.get_name_part(last_suffix_index, last_suffix_flag, {NamePart.LAST_SUFFIX})
-        except KeyError as e:
-            resp.addUint8(4)
-            self.sendDatagram(resp)
-            self.service.log.debug(f'Received invalid index for name part. {e.args}')
-            return
-
-        name = f'{title}{" " if title else ""}{first}{" " if first else ""}{last_prefix}{last_suffix}'
-
-        for potAv in self.potentialAvatars:
-            if potAv and potAv.doId == avId:
-                potAv.approvedName = name.strip()
-                break
-
-        resp.addUint8(0)
-        self.sendDatagram(resp)
-
-    def get_name_part(self, index, flag, categories):
-        if index >= 0:
-            if self.service.name_categories[index] not in categories:
-                self.service.log.debug(f'Received invalid index for pattern name: {index}. Expected categories: {categories}')
-                return
-
-            title = self.service.name_parts[index]
-            return title.capitalize() if flag else title
-        else:
-            return ''
-
-    def receiveDeleteAvatar(self, dgi):
-        avId = dgi.getUint32()
-
-        av = self.getPotentialAvatar(avId)
-
-        if not av:
-            return
-
-        self.potentialAvatars[av.index] = None
-        avatars = [potAv.doId if potAv else 0 for potAv in self.potentialAvatars]
-        self.avsDeleted.append((avId, int(time.time())))
-
-        field = self.service.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
-        delField = self.service.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET_DEL')
-
-        dg = Datagram()
-        addServerHeader(dg, [DBSERVERS_CHANNEL], self.channel, DBSERVER_SET_STORED_VALUES)
-        dg.addUint32(self.account.dislId)
-        dg.addUint16(2)
-
-        dg.appendData(self.packFieldData(field, avatars))
-        dg.appendData(self.packFieldData(delField, self.avsDeleted))
-
-        self.service.sendDatagram(dg)
-
-        resp = Datagram()
-        resp.addUint16(CLIENT_DELETE_AVATAR_RESP)
-        resp.addUint8(0) # Return code
-
-        avCount = sum((1 if potAv else 0 for potAv in self.potentialAvatars))
-        resp.addUint16(avCount)
-
-        for potAv in self.potentialAvatars:
-            if not potAv:
-                continue
-            resp.addUint32(potAv.doId)
-            resp.addString(potAv.name)
-            resp.addString(potAv.wishName)
-            resp.addString(potAv.approvedName)
-            resp.addString(potAv.rejectedName)
-
-            dnaString = potAv.dnaString
-
-            if not isinstance(dnaString, bytes):
-                dnaString = dnaString.encode()
-
-            resp.addBlob(dnaString)
-            resp.addUint8(potAv.index)
-            resp.addUint8(potAv.allowName)
-
-        self.sendDatagram(resp)
 
     def receiveRemoveInterest(self, dgi, ai = False):
         handle = dgi.getUint16()
@@ -704,68 +421,12 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             resp.addUint32(context)
             self.sendDatagram(resp)
 
-    def receiveGetAvatars(self, dgi):
-        query = Datagram()
-        addServerHeader(query, [DBSERVERS_CHANNEL], self.channel, DBSERVER_ACCOUNT_QUERY)
-
-        query.addUint32(self.account._id)
-        fieldNumber = self.service.avatarsField.getNumber()
-        query.addUint16(fieldNumber)
-        self.service.sendDatagram(query)
-
-        self.tasks.append(self.service.loop.create_task(self.doLogin()))
-
-    async def doLogin(self):
-        f = DatagramFuture(self.service.loop, DBSERVER_ACCOUNT_QUERY_RESP)
-        self.futures.append(f)
-        sender, dgi = await f
-
-        avDelField = self.service.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET_DEL')
-        self.service.log.debug('Begin unpack of deleted avatars.')
-        try:
-            unpacker = DCPacker()
-            unpacker.setUnpackData(dgi.getBlob())
-
-            unpacker.beginUnpack(avDelField)
-
-            self.avsDeleted = avDelField.unpackArgs(unpacker)
-
-            unpacker.endUnpack()
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            return
-        self.service.log.debug(f'Avatars deleted list for {self.account.playToken}: {self.avsDeleted}')
-
-        pos = dgi.getCurrentIndex()
-
-        avatarInfo = [None] * 6
-
-        for i in range(dgi.getUint16()):
-            potAv = PotentialAvatar(doId = dgi.getUint32(), name = dgi.getString(), wishName = dgi.getString(),
-                                     approvedName = dgi.getString(), rejectedName = dgi.getString(),
-                                     dnaString = dgi.getBlob(), index = dgi.getUint8(), allowName = dgi.getUint8())
-
-            avatarInfo[potAv.index] = potAv
-
-        self.potentialAvatars = avatarInfo
-
-        self.state = ClientState.AVATAR_CHOOSER
-
-        resp = Datagram()
-        resp.addUint16(CLIENT_GET_AVATARS_RESP)
-        resp.addUint8(0) # Return code
-        resp.appendData(dgi.getDatagram().getMessage()[pos:])
-        self.sendDatagram(resp)
-
     def receiveLogin(self, dgi):
         playToken = dgi.getString()
         clientVersion = dgi.getString()
         hashVal = dgi.getUint32()
         tokenType = dgi.getUint32()
         _ = dgi.getString()
-
-        print(clientVersion, playToken, _)
 
         if clientVersion != str(self.service.version):
             self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
@@ -805,7 +466,9 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         errorString = '' # 'Bad DC Version Compare'
         resp.addString(errorString)
 
-        resp.addUint32(0) # Avatar Id
+        print(data)
+
+        resp.addUint32(self.account.avatarId) # Avatar Id
         resp.addUint32(self.account._id)
 
         resp.addString(self.account.playToken)
@@ -826,26 +489,13 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.sendDatagram(resp)
 
+        self.setAvatar(self.account.avatarId)
+
     def receiveAddInterest(self, dgi, ai = False):
-        handle = dgi.getUint16()
+        handle = dgi.getInt16()
         contextId = dgi.getUint32()
         parentId = dgi.getUint32()
-
-        numZones = dgi.getRemainingSize() // 4
-
-        zones = []
-
-        for i in range(numZones):
-            zoneId = dgi.getUint32()
-            if zoneId == 1:
-                continue
-            zones.append(zoneId)
-            if numZones == 1:
-                canonicalzoneId = getCanonicalZoneId(zoneId)
-                if canonicalzoneId in VIS_ZONES:
-                    for viszoneId in VIS_ZONES[canonicalzoneId]:
-                        truezoneId = getTrueZoneId(viszoneId, zoneId)
-                        zones.append(truezoneId)
+        zones = [dgi.getUint32()]
 
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {contextId} '
                                f'for location {parentId} {zones}')
@@ -1001,8 +651,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         fieldNumber = dgi.getUint16()
         field = self.service.dcFile.getFieldByIndex(fieldNumber)
 
-        print(field.getName())
-        print(fieldNumber)
+        print('handleUpdateField', field.getName())
 
         resp = Datagram()
         resp.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
@@ -1021,9 +670,11 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.ownedObjects[doId] = ObjectInfo(doId, dcId, parentId, zoneId)
 
         resp = Datagram()
-        resp.addUint16(CLIENT_GET_AVATAR_DETAILS_RESP)
+        resp.addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER)
+        resp.addUint16(dcId)
         resp.addUint32(self.avatarId)
-        resp.addUint8(0) # Return code
+        resp.addUint32(parentId)
+        resp.addUint32(zoneId)
         resp.appendData(dgi.getRemainingBytes())
         self.sendDatagram(resp)
 
@@ -1148,10 +799,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
                 interest.pendingObjects.append(doId)
             return
 
-        if doId not in self.uberdogs and self.objectExists(doId):
+        if self.objectExists(doId):
             return
-
-        print('!', doId)
 
         self.visibleObjects[doId] = ObjectInfo(doId, dcId, parentId, zoneId)
 
@@ -1181,6 +830,9 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         return False
 
     def sendObjectEntrance(self, parentId, zoneId, dcId, doId, dgi, hasOther):
+        dcName = self.service.dcFile.getClass(dcId).getName()
+        print(f'Sending entry for: {dcName}')
+
         resp = Datagram()
         resp.addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER if hasOther else CLIENT_CREATE_OBJECT_REQUIRED)
         resp.addUint32(parentId)
@@ -1189,11 +841,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         resp.addUint32(doId)
         resp.appendData(dgi.getRemainingBytes())
         self.sendDatagram(resp)
-
-    def getPotentialAvatar(self, avId):
-        for potAv in self.potentialAvatars:
-            if potAv and potAv.doId == avId:
-                return potAv
 
     def sendGoGetLost(self, bootedIndex, bootedText):
         resp = Datagram()
@@ -1204,28 +851,3 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
     def annihilate(self):
         self.service.upstream.unsubscribeAll(self)
-
-    def receiveSetWishNameClear(self, dgi):
-        avatarId = dgi.getUint32()
-        actionFlag = dgi.getUint8()
-
-        # Send this to the Database server.
-        resp = Datagram()
-        addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_WISHNAME_CLEAR)
-        resp.addUint32(avatarId)
-        resp.addUint8(actionFlag)
-        self.service.sendDatagram(resp)
-
-    def receiveGetObjectDetails(self, dgi, msgType: int):
-        doId = dgi.getUint32()
-        access = 2 if self.account.access == 'FULL' else 1
-        dclass = messageToClass[msgType]
-
-        # Send this to the Database server.
-        resp = Datagram()
-        addServerHeader(resp, [DBSERVERS_CHANNEL], self.channel, DBSERVER_GET_AVATAR_DETAILS)
-        resp.addUint32(self.avatarId)
-        resp.addUint32(doId)
-        resp.addUint8(access)
-        resp.addString(dclass)
-        self.service.sendDatagram(resp)
