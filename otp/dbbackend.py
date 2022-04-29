@@ -286,6 +286,7 @@ class MongoBackend(DatabaseBackend):
             data['whitelistChatEnabled'] = 'YES'
             data['avatarId'] = 0
             data['racecarId'] = 0
+            data['playerStatusId'] = 0
 
             self.mongodb.accounts.insert_one(data)
 

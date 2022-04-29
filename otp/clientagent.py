@@ -2,7 +2,6 @@ from otp import config
 import asyncio
 
 from panda3d.direct import DCFile
-from panda3d.core import Datagram
 
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol, UpstreamServer
 from otp.networking import ChannelAllocator

@@ -209,7 +209,7 @@ dclass DistributedRaceCar : Persistent {
     setConsumableSlot(uint16 = 0) required db ownrecv;
     setConsumableStack(uint16 = 0) required db ownrecv;
     setDashboardTexture(int32 = 0) required db ownrecv;
-    setRaceSeries(int32 = 0) required db ownrecv;
+    setRaceSeries(int32 = 44000) required db ownrecv;
     setActiveSponsor(int32 = 0) required db ownrecv;
     setActiveGear(int32 = 0) required db ownrecv;
     setDNA(CarDNA) required db ownrecv;
@@ -287,9 +287,9 @@ struct Dialog {
 // struct 77
 dclass CarPlayerStatus {
     // field 477 (ok)
-    setLocationType(int16) required broadcast ram;
+    setLocationType(int16 = 0) required db ownrecv ownsend;
     // !! uint8/int8 type clash
-    setPrivacySettings(uint8) required broadcast ram;
+    setPrivacySettings(uint8 = 0) required db ownrecv ownsend;
     hi();
 };
 

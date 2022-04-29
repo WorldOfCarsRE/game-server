@@ -97,3 +97,10 @@ class DistributedZoneAI(DistributedObjectAI):
 
     def getMute(self):
         return 0
+
+class DistributedLobbyAI(DistributedObjectAI):
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+class DistributedTutorialLobbyAI(DistributedLobbyAI):
+        pass

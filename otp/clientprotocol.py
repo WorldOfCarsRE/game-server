@@ -90,6 +90,7 @@ class DISLAccount:
     whitelistChatEnabled: str
     avatarId: int
     racecarId: int
+    playerStatusId: int
 
 class ClientProtocol(CarsProtocol, MDParticipant):
     def __init__(self, service):
@@ -115,6 +116,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.account: Union[DISLAccount, None] = None
         self.avatarId: int = 0
         self.racecarId: int = 0
+        self.playerStatusId: int = 0
         self.wantedName: str = ''
         self.avsDeleted: List[Tuple[int, int]] = []
         self.pendingObjects: Dict[int, PendingObject] = {}
@@ -136,9 +138,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.service.log.debug(f'Connection lost to client {self.channel}')
         CarsProtocol.connection_lost(self, exc)
 
-        if self.avatarId and self.racecarId:
+        if self.avatarId and self.racecarId and self.playerStatusId:
             self.deleteObject(self.avatarId)
             self.deleteObject(self.racecarId)
+            self.deleteObject(self.playerStatusId)
 
         self.service.removeParticipant(self)
 
@@ -250,8 +253,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         if not sendable:
             self.disconnect(ClientDisconnect.INTERNAL_ERROR, 'Tried to send nonsendable field to object.')
-            self.service.log.warn(f'Client {self.channel} tried to update {doId} with nonsendable field {field.getName()}. '
-                                  f'DCField keywords: {field.keywords}')
+            self.service.log.warn(f'Client {self.channel} tried to update {doId} with nonsendable field {field.getName()}')
             return
 
         resp = Datagram()
@@ -326,29 +328,9 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         dclass = self.service.dcFile.getClassByName('DistributedRaceCar')
 
         # These Fields are REQUIRED but not stored in db.
-        otherFields = [
-        ]
+        otherFields = []
 
-        dg = Datagram()
-        addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
-        dg.addUint32(racecarId)
-        dg.addUint32(0)
-        dg.addUint32(0)
-        dg.addUint64(self.channel)
-        dg.addUint16(dclass.getNumber())
-        dg.addUint16(len(otherFields))
-
-        for f, arg in otherFields:
-            otherPacker = DCPacker()
-            otherPacker.rawPackUint16(f.getNumber())
-
-            otherPacker.beginPack(f)
-            f.packArgs(otherPacker, arg)
-            otherPacker.endPack()
-
-            dg.appendData(otherPacker.getBytes())
-
-        self.service.sendDatagram(dg)
+        self.activateDatabaseObjectWithOther(racecarId, dclass, otherFields)
 
     def setAvatar(self, avId: int):
         self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
@@ -394,26 +376,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             (dclass.getFieldByName('setState'), (0,))
         ]
 
-        dg = Datagram()
-        addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
-        dg.addUint32(avId)
-        dg.addUint32(0)
-        dg.addUint32(0)
-        dg.addUint64(self.channel)
-        dg.addUint16(dclass.getNumber())
-        dg.addUint16(len(otherFields))
-
-        for f, arg in otherFields:
-            otherPacker = DCPacker()
-            otherPacker.rawPackUint16(f.getNumber())
-
-            otherPacker.beginPack(f)
-            f.packArgs(otherPacker, arg)
-            otherPacker.endPack()
-
-            dg.appendData(otherPacker.getBytes())
-
-        self.service.sendDatagram(dg)
+        self.activateDatabaseObjectWithOther(avId, dclass, otherFields)
 
     def packFieldData(self, field, data):
         packer = DCPacker()
@@ -528,8 +491,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         errorString = '' # 'Bad DC Version Compare'
         resp.addString(errorString)
 
-        print(data)
-
         resp.addUint32(self.account.avatarId) # Avatar Id
         resp.addUint32(self.account._id)
 
@@ -553,6 +514,31 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.setAvatar(self.account.avatarId)
         self.setRaceCar(self.account.racecarId)
+
+        dclass = self.service.dcFile.getClassByName('CarPlayerStatus')
+        self.activateDatabaseObjectWithOther(self.account.playerStatusId, dclass, [])
+
+    def activateDatabaseObjectWithOther(self, doId: int, dclass, other: list):
+        dg = Datagram()
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
+        dg.addUint32(doId)
+        dg.addUint32(0)
+        dg.addUint32(0)
+        dg.addUint64(self.channel)
+        dg.addUint16(dclass.getNumber())
+        dg.addUint16(len(other))
+
+        for f, arg in other:
+            packer = DCPacker()
+            packer.rawPackUint16(f.getNumber())
+
+            packer.beginPack(f)
+            f.packArgs(packer, arg)
+            packer.endPack()
+
+            dg.appendData(packer.getBytes())
+
+        self.service.sendDatagram(dg)
 
     def receiveAddInterest(self, dgi, ai = False):
         handle = dgi.getUint16()

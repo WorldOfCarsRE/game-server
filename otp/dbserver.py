@@ -537,6 +537,18 @@ class DBServer(DownstreamMessageDirector):
 
             accountData['racecarId'] = racecarId
 
+        if accountData['playerStatusId'] == 0:
+            playerStatus = self.dc.getClassByName('CarPlayerStatus')
+
+            fields = []
+            fields.append(('setLocationType', [0]))
+            fields.append(('setPrivacySettings', [0]))
+
+            playerStatusId = await self.createAvatar(playerStatus, accountId, fields)
+            await self.backend.setField(accountId, 'playerStatusId', playerStatusId, 'accounts')
+
+            accountData['playerStatusId'] = playerStatusId
+
         # Prepare our response.
         dg = Datagram()
         addServerHeader(dg, [sender], DBSERVERS_CHANNEL, DBSERVER_AUTH_REQUEST_RESP)
