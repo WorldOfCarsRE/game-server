@@ -233,7 +233,7 @@ dclass DistributedPlayer : DistributedAvatar {
   WishName(string) db ram;
   WishNameState(string) db ram;
   setPreviousAccess(uint8) required db airecv;
-  setAccess(uint8) broadcast ownrecv required ram airecv;
+  setAccess(uint8 access = 2) broadcast ownrecv required ram airecv;
   setAsGM(bool) required ram broadcast ownrecv airecv;
 };
 

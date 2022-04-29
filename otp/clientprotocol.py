@@ -110,10 +110,11 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             OTP_DO_ID_FRIEND_MANAGER,
             OTP_DO_ID_CARS_SHARD_MANAGER,
             OTP_DO_ID_CARS_HOLIDAY_MANAGER
-            ]
+        ]
 
         self.account: Union[DISLAccount, None] = None
         self.avatarId: int = 0
+        self.racecarId: int = 0
         self.wantedName: str = ''
         self.avsDeleted: List[Tuple[int, int]] = []
         self.pendingObjects: Dict[int, PendingObject] = {}
@@ -135,7 +136,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.service.log.debug(f'Connection lost to client {self.channel}')
         CarsProtocol.connection_lost(self, exc)
 
-        if self.avatarId:
+        if self.avatarId or self.racecarId:
             self.deleteAvatarRam()
 
         self.service.removeParticipant(self)
@@ -222,8 +223,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
                 self.receiveRemoveInterest(dgi)
             elif msgtype == CLIENT_GET_FRIEND_LIST:
                 self.receiveGetFriendList(dgi)
-            elif msgtype == CLIENT_OBJECT_LOCATION:
-                self.receiveClientLocation(dgi)
+            elif msgtype == CLIENT_SET_LOCATION:
+                self.receiveClientSetLocation(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 self.receiveUpdateField(dgi)
             elif msgtype in (CLIENT_GET_AVATAR_DETAILS, CLIENT_GET_PET_DETAILS):
@@ -270,7 +271,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             resp.appendData(dgi.getRemainingBytes())
             self.sendDatagram(resp)
 
-    def receiveClientLocation(self, dgi):
+    def receiveClientSetLocation(self, dgi):
         doId = dgi.getUint32()
         parentId = dgi.getUint32()
         zoneId = dgi.getUint32()
@@ -287,6 +288,68 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             self.service.sendDatagram(dg)
         else:
             self.service.log.debug(f'Client {self.channel} tried setting location for unowned object {doId}!')
+
+    def setRaceCar(self, racecarId: int):
+        self.service.log.debug(f'client {self.channel} is setting their racecar to {racecarId}')
+
+        if not racecarId:
+            if self.racecarId:
+                # Client is logging out of their racecar.
+                self.deleteAvatarRam()
+                self.ownedObjects.clear()
+                self.visibleObjects.clear()
+
+                self.unsubscribeChannel(getClientSenderChannel(self.account._id, self.avatarId))
+                self.unsubscribeChannel(getPuppetChannel(self.avatarId))
+                self.channel = getClientSenderChannel(self.account._id, 0)
+                self.subscribeChannel(self.channel)
+
+                self.state = ClientState.AUTHENTICATED
+                self.avatarId = 0
+                return
+            else:
+                # Do nothing.
+                return
+        elif self.state == ClientState.PLAY_GAME:
+            self.service.log.debug(f'Client {self.channel} tried to set their racecar {racecarId} while racecar is already set to {self.racecarId}.')
+            return
+
+        self.racecarId = racecarId
+
+        self.state = ClientState.SETTING_AVATAR
+
+        self.channel = getClientSenderChannel(self.account._id, self.racecarId)
+        self.subscribeChannel(self.channel)
+        self.subscribeChannel(getPuppetChannel(self.racecarId))
+
+        dclass = self.service.dcFile.getClassByName('DistributedRaceCar')
+
+        # These Fields are REQUIRED but not stored in db.
+        otherFields = [
+        ]
+
+        dg = Datagram()
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.channel, STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT)
+        dg.addUint32(racecarId)
+        dg.addUint32(0)
+        dg.addUint32(0)
+        dg.addUint64(self.channel)
+        dg.addUint16(dclass.getNumber())
+        dg.addUint16(len(otherFields))
+
+        for f, arg in otherFields:
+            otherPacker = DCPacker()
+            otherPacker.rawPackUint16(f.getNumber())
+
+            otherPacker.beginPack(f)
+            f.packArgs(otherPacker, arg)
+            otherPacker.endPack()
+
+            dg.appendData(otherPacker.getBytes())
+
+        self.service.sendDatagram(dg)
+
+        print('generated a car')
 
     def setAvatar(self, avId: int):
         self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
@@ -490,9 +553,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.sendDatagram(resp)
 
         self.setAvatar(self.account.avatarId)
+        self.setRaceCar(self.account.racecarId)
 
     def receiveAddInterest(self, dgi, ai = False):
-        handle = dgi.getInt16()
+        handle = dgi.getUint16()
         contextId = dgi.getUint32()
         parentId = dgi.getUint32()
         zones = [dgi.getUint32()]
@@ -612,7 +676,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         elif msgtype == STATESERVER_OBJECT_DELETE_RAM:
             doId = dgi.getUint32()
 
-            if doId == self.avatarId:
+            if doId == self.avatarId or doId == self.racecarId:
                 if sender == self.account._id << 32:
                     self.disconnect(ClientDisconnect.RELOGGED, 'redundant login')
                 else:
@@ -669,10 +733,14 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.ownedObjects[doId] = ObjectInfo(doId, dcId, parentId, zoneId)
 
+        dcName = self.service.dcFile.getClass(dcId).getName()
+
+        print(f'Sending owned entry for: {dcName}')
+
         resp = Datagram()
         resp.addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER)
         resp.addUint16(dcId)
-        resp.addUint32(self.avatarId)
+        resp.addUint32(doId)
         resp.addUint32(parentId)
         resp.addUint32(zoneId)
         resp.appendData(dgi.getRemainingBytes())
@@ -726,7 +794,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
     def sendObjectLocation(self, doId, newParent, newZone):
         resp = Datagram()
-        resp.addUint16(CLIENT_OBJECT_LOCATION)
+        resp.addUint16(CLIENT_SET_LOCATION)
         resp.addUint32(doId)
         resp.addUint32(newParent)
         resp.addUint32(newZone)

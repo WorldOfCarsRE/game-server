@@ -2,7 +2,6 @@ from ai.DistributedObjectGlobalAI import DistributedObjectGlobalAI
 from otp.constants import OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_HOLIDAY_MANAGER
 from .DistributedObjectAI import DistributedObjectAI
 from direct.directnotify.DirectNotifyGlobal import directNotify
-from otp.util import getAccountIDFromChannel
 
 class DistributedDistrictAI(DistributedObjectAI):
 
@@ -66,3 +65,35 @@ class ShardManagerUD(DistributedObjectGlobalAI):
 
 class HolidayManagerUD(DistributedObjectGlobalAI):
     doId = OTP_DO_ID_CARS_HOLIDAY_MANAGER
+
+class CarPlayerStatusAI(DistributedObjectAI):
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+    def getPrivacySettings(self):
+        return 0
+
+    def getLocationType(self):
+        return 0
+
+class DistributedZoneAI(DistributedObjectAI):
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+    def getName(self):
+        return ''
+
+    def getMapId(self):
+        return 0
+
+    def getCatalogItemId(self):
+        return 0
+
+    def getInteractiveObjectCount(self):
+        return 0
+
+    def getPlayerCount(self):
+        return 0
+
+    def getMute(self):
+        return 0

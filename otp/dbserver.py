@@ -1,3 +1,4 @@
+from ai.dna.CarDNA import CarDNA
 from otp import config
 
 import asyncio
@@ -451,30 +452,12 @@ class DBServer(DownstreamMessageDirector):
 
             packer = DCPacker()
 
-            carDNA = [
-                'Test',
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 0,
-                 [],
-                 [],
-                 [],
-                 0,
-            ]
+            carDNA = CarDNA()
 
             fields = []
             fields.append(('setDISLname', [accountData['playToken']]))
             fields.append(('setDISLid', [accountId]))
+            fields.append(('setDNA', [carDNA]))
 
             # Iterate through all of the fields.
             fieldCount = carPlayer.getNumInheritedFields()
@@ -505,10 +488,54 @@ class DBServer(DownstreamMessageDirector):
 
                 fields.append((name, value))
 
+            avatarId = await self.createAvatar(carPlayer, accountId, fields)
+            await self.backend.setField(accountId, 'avatarId', avatarId, 'accounts')
 
-            doId = await self.createAvatar(carPlayer, accountId, fields)
-            await self.backend.setField(doId, 'setDNA', carddna, 'DistributedCarPlayer')
-            await self.backend.setField(accountId, 'avatarId', doId, 'accounts')
+            accountData['avatarId'] = avatarId
+
+        if accountData['racecarId'] == 0:
+            raceCar = self.dc.getClassByName('DistributedRaceCar')
+
+            packer = DCPacker()
+
+            carDNA = CarDNA()
+
+            fields = []
+            fields.append(('setDNA', [carDNA]))
+
+            # Iterate through all of the fields.
+            fieldCount = raceCar.getNumInheritedFields()
+
+            for i in range(fieldCount):
+                field = raceCar.getInheritedField(i)
+
+                # Skip the field if it is molecular.
+                if field.asMolecularField() is not None:
+                    continue
+
+                # Check if the field is required.
+                if not field.isRequired():
+                    continue
+
+                # Check if the user set a value for this field already.
+                name = field.getName()
+
+                if name in fields:
+                    continue
+
+                # Get the default value of the field.
+                default = field.getDefaultValue()
+                packer.setUnpackData(default)
+                packer.beginUnpack(field)
+                value = field.unpackArgs(packer)
+                packer.endUnpack()
+
+                fields.append((name, value))
+
+            racecarId = await self.createAvatar(raceCar, accountId, fields)
+            await self.backend.setField(accountId, 'racecarId', racecarId, 'accounts')
+
+            accountData['racecarId'] = racecarId
 
         # Prepare our response.
         dg = Datagram()
