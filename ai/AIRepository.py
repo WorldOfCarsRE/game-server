@@ -390,11 +390,14 @@ class AIRepository:
         self.holidayManager = HolidayManagerUD(self)
         self.holidayManager.generateGlobalObject(OTP_ZONE_ID_ELEMENTS)
 
-        self.zone = DistributedZoneAI(self)
-        self.generateWithRequired(self.zone, OTP_DO_ID_FAIRIES, OTP_ZONE_ID_ELEMENTS)
-
         self.tutorialLobby = DistributedTutorialLobbyAI(self)
-        self.generateWithRequired(self.tutorialLobby, OTP_DO_ID_CARS_SHARD_MANAGER, TUTORIAL_LOBBY_INTEREST_HANDLE)
+        self.generateWithRequired(self.tutorialLobby, OTP_DO_ID_CARS_SHARD_MANAGER, 100)
+
+        dg = Datagram()
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
+        dg.addUint32(self.tutorialLobby.doId)
+        dg.addUint64(self.ourChannel)
+        self.send(dg)
 
         self.district.b_setAvailable(True)
 

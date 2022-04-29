@@ -1,7 +1,9 @@
 from ai.DistributedObjectGlobalAI import DistributedObjectGlobalAI
 from otp.constants import OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_HOLIDAY_MANAGER
+from otp.constants import OTP_ZONE_ID_ELEMENTS
 from .DistributedObjectAI import DistributedObjectAI
 from direct.directnotify.DirectNotifyGlobal import directNotify
+from typing import List
 
 class DistributedDistrictAI(DistributedObjectAI):
 
@@ -98,9 +100,89 @@ class DistributedZoneAI(DistributedObjectAI):
     def getMute(self):
         return 0
 
+class DistributedLobbyContextAI(DistributedObjectAI):
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+        self.playersInDungeon: List[int] = []
+        self.playersInContext: List[int] = []
+        self.owningAv: int = 0
+
+        self.destinationShard: int = 0
+        self.destinationZone: int = 0
+
+    def getPlayersInDungeon(self):
+        return self.playersInDungeon
+
+    def getPlayersInContext(self):
+        return self.playersInContext
+
+    def getOwner(self):
+        return self.owningAv
+
+    def b_setGotoDungeon(self, destinationShard: int, destinationZone: int):
+        self.destinationShard = destinationShard
+        self.destinationZone = destinationZone
+
+        self.sendUpdate('gotoDungeon', [destinationShard, destinationZone])
+
+    def getGotoDungeon(self):
+        return self.destinationShard, self.destinationZone
+
+class DistributedDungeonAI(DistributedObjectAI):
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+        self.playerIds: List[int] = []
+        self.lobbyDoId: int = 0
+        self.contextDoId: int = 0
+
+    def getWaitForObjects(self):
+        return self.playerIds
+
+    def getDungeonItemId(self):
+        return 1000
+
+    def getLobbyDoid(self):
+        return self.lobbyDoId
+
+    def getContextDoid(self):
+        return self.contextDoId
+
+class DistributedTutorialLobbyContextAI(DistributedLobbyContextAI):
+    def __init__(self, air):
+        DistributedLobbyContextAI.__init__(self, air)
+
 class DistributedLobbyAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
 
+    def getDungeonItemId(self):
+        return 1000
+
+    def getHotSpotName(self):
+        return ''
+
+    def join(self):
+        avatarId = self.air.currentAvatarSender
+
+        zoneId = self.air.allocateZone()
+
+        lobby = DistributedTutorialLobbyContextAI(self.air)
+        lobby.owningAv = avatarId
+        lobby.playersInContext.append(avatarId)
+        self.air.generateWithRequired(lobby, OTP_ZONE_ID_ELEMENTS, zoneId)
+
+        dungeon = DistributedDungeonAI(self.air)
+        dungeon.playerIds.append(avatarId)
+        lobby.lobbyDoId = lobby.doId
+        lobby.contextDoId = self.doId
+        self.air.generateWithRequired(dungeon, self.doId, zoneId)
+
+        lobby.b_setGotoDungeon(self.air.district.doId, dungeon.zoneId)
+
+        self.sendUpdateToAvatar(avatarId, 'gotoLobbyContext', [zoneId])
+
 class DistributedTutorialLobbyAI(DistributedLobbyAI):
-        pass
+    def __init__(self, air):
+        DistributedLobbyAI.__init__(self, air)

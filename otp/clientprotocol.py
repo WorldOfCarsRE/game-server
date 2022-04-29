@@ -516,6 +516,9 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.setRaceCar(self.account.racecarId)
 
         dclass = self.service.dcFile.getClassByName('CarPlayerStatus')
+
+        self.playerStatusId = self.account.playerStatusId
+
         self.activateDatabaseObjectWithOther(self.account.playerStatusId, dclass, [])
 
     def activateDatabaseObjectWithOther(self, doId: int, dclass, other: list):

@@ -54,13 +54,13 @@ dclass ShardManager {
 
 // struct 50
 dclass DistributedLobby {
-    setParentingRules(string, string); // 361
-    setDungeonItemId(int32) required;
-    setHotSpotName(string) required;
+    setParentingRules(string, string) broadcast ram; // 361
+    setDungeonItemId(int32) required broadcast ram;
+    setHotSpotName(string) required broadcast ram;
     gotoLobbyContext(int32);
     joinFail(int32);
-    join() clsend clrecv;
-    quit() clsend clrecv;
+    join() clsend airecv;
+    quit() clsend airecv;
 };
 
 // struct 51
@@ -88,10 +88,10 @@ dclass DistributedTutorialLobby : DistributedLobby {
 
 // struct 56
 dclass DistributedLobbyContext {
-    setPlayersInDungeon(int32[]) required; // 371
-    setPlayersInContext(int32[]) required;
-    setOwner(int32) required;
-    gotoDungeon(int32, int32) required;
+    setPlayersInDungeon(int32[]) required broadcast ram; // 371
+    setPlayersInContext(int32[]) required broadcast ram;
+    setOwner(int32) required broadcast ram;
+    gotoDungeon(int32, int32) required broadcast ram;
     setPlayerJoin(int32);
     setPlayerQuit(int32); // 376
 };
@@ -322,7 +322,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
     setReward(Reward[]);
     updateYardPermissionMask(int32, int32) clsend;
-    sendEventLog(string, int32[], string[]) clsend;
+    sendEventLog(string, int32[], string[]) clsend airecv;
     setChatLevel(uint8 = 0) required db ownrecv;
     setMute(uint8 = 0) required db ownrecv;
     setSubscriptionStatus(uint8[] = []) required db ownrecv;
@@ -402,11 +402,11 @@ dclass YardInteractiveObject : InteractiveObject {
 
 // struct 86
 dclass DistributedDungeon {
-    setParentingRules(string, string); // 554
-    waitForObjects(uint32[]) required;
-    setDungeonItemId(int32) required;
-    setLobbyDoid(int32) required;
-    setContextDoid(int32) required;
+    setParentingRules(string, string) broadcast ram; // 554
+    waitForObjects(uint32[]) required broadcast ram;
+    setDungeonItemId(int32) required broadcast ram;
+    setLobbyDoid(int32) required broadcast ram;
+    setContextDoid(int32) required broadcast ram;
     syncReady() clsend;
     setAiCommand(int32, int32[]) clsend;
     setClientCommand(int32, int32[]);
