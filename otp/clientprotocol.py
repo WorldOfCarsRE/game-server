@@ -136,8 +136,9 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.service.log.debug(f'Connection lost to client {self.channel}')
         CarsProtocol.connection_lost(self, exc)
 
-        if self.avatarId or self.racecarId:
-            self.deleteAvatarRam()
+        if self.avatarId and self.racecarId:
+            self.deleteObject(self.avatarId)
+            self.deleteObject(self.racecarId)
 
         self.service.removeParticipant(self)
 
@@ -145,10 +146,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         CarsProtocol.connection_made(self, transport)
         self.subscribeChannel(CLIENTS_CHANNEL)
 
-    def deleteAvatarRam(self):
+    def deleteObject(self, doId: int):
         dg = Datagram()
-        addServerHeader(dg, [self.avatarId], self.channel, STATESERVER_OBJECT_DELETE_RAM)
-        dg.addUint32(self.avatarId)
+        addServerHeader(dg, [doId], self.channel, STATESERVER_OBJECT_DELETE_RAM)
+        dg.addUint32(doId)
         self.service.sendDatagram(dg)
 
     def receiveDatagram(self, dg):
@@ -295,7 +296,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         if not racecarId:
             if self.racecarId:
                 # Client is logging out of their racecar.
-                self.deleteAvatarRam()
+                self.deleteObject(self.racecarId)
                 self.ownedObjects.clear()
                 self.visibleObjects.clear()
 
@@ -349,15 +350,13 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.service.sendDatagram(dg)
 
-        print('generated a car')
-
     def setAvatar(self, avId: int):
         self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
 
         if not avId:
             if self.avatarId:
                 # Client is logging out of their avatar.
-                self.deleteAvatarRam()
+                self.deleteObject(self.avatarId)
                 self.ownedObjects.clear()
                 self.visibleObjects.clear()
 
