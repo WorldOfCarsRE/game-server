@@ -35,31 +35,11 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
         # This shouldn't change as we won't be adding new content anyways.
         self.dcHash = 46329213
 
-        self.avatarsField = self.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
-
         self.loop.set_exception_handler(self.onException)
 
         self._context = 0
 
         self.log.debug(f'DC Hash is {self.dcHash}')
-
-        self.name_parts = {}
-        self.name_categories = {}
-
-        with open('etc/assets/NameMasterEnglish.txt', 'r') as f:
-            for line in f:
-                if line[0] == '#':
-                    continue
-
-                if line.endswith('\r\n'):
-                    line = line[:-2]
-                elif line.endswith('\n'):
-                    line = line[:-1]
-
-                index, category, name = line.split('*')
-                index, category = int(index), int(category)
-                self.name_parts[index] = name
-                self.name_categories[index] = category
 
         self.listen_task = None
         self.version = config['ClientAgent.Version']

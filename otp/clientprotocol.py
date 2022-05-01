@@ -210,8 +210,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         elif self.state == ClientState.CREATING_AVATAR:
             if msgtype == CLIENT_SET_WISHNAME:
                 self.receiveSetWishName(dgi)
-            elif msgtype == CLIENT_SET_NAME_PATTERN:
-                self.receiveSetNamePattern(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 doId = dgi.getUint32()
                 if doId == OTP_DO_ID_CENTRAL_LOGGER:
