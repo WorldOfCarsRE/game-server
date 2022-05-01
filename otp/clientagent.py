@@ -30,7 +30,10 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
         self.dcFile.read('etc/dclass/otp.dc')
         self.dcFile.read('etc/dclass/cars.dc')
 
-        self.dcHash = self.dcFile.getHash()
+        # Doesn't seem dcFile.getHash() matches the client.
+        # We'll just hardcode the stock WOC client hashVal.
+        # This shouldn't change as we won't be adding new content anyways.
+        self.dcHash = 46329213
 
         self.avatarsField = self.dcFile.getClassByName('Account').getFieldByName('ACCOUNT_AV_SET')
 

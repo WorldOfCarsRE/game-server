@@ -15,7 +15,7 @@ MAX_CHANNEL=2000999999
 
 # The client/server version.
 # This is checked against the client's version to make sure they match.
-Version=1.1
+Version=9.8.3
 
 [StateServer]
 HOST=127.0.0.1
@@ -28,12 +28,6 @@ SQL=0
 MinRange=100000000
 MaxRange=200000000
 
-[WebServer]
-CONTENT_DIR=web/content/
-WRITE_PATCH_FILES=0
-HOST=0.0.0.0
-PORT=7969
-
 [SQL]
 HOST=127.0.0.1
 PORT=3306
@@ -43,10 +37,3 @@ PASSWORD=root
 [MongoDB]
 Host=mongodb://127.0.0.1:27017
 Name=Dialga
-
-[AI]
-# Immediately complete all quests and all visits are to ToonHQ
-QuestCheat=0
-
-CatalogTimeScale=1.0
-CatalogSkipWeeks=0

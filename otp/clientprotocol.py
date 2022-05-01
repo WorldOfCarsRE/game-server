@@ -453,15 +453,19 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         tokenType = dgi.getUint32()
         _ = dgi.getString()
 
+        self.service.log.debug(f'playToken:{playToken}, clientVersion:{clientVersion}, hashVal:{hashVal}')
+
         if clientVersion != str(self.service.version):
             self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
             return
 
-        if tokenType != 4:
-            self.disconnect(ClientDisconnect.OUTDATED_CLIENT, 'Version mismatch')
+        if tokenType != CLIENT_LOGIN_3_DISL_TOKEN:
+            self.disconnect(ClientDisconnect.LOGIN_ERROR, 'Invalid token')
             return
 
-        self.service.log.debug(f'playToken:{playToken}, clientVersion:{clientVersion}, hashVal:{hashVal}')
+        if hashVal != self.service.dcHash:
+            self.disconnect(ClientDisconnect.LOGIN_ERROR, '')
+            return
 
         # Send this to the Database server.
         resp = Datagram()
