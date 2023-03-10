@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import List, Union, Dict, Tuple
 
-from dataslots import with_slots
+from dataslots import dataslots
 from panda3d.direct import DCPacker
 from panda3d.core import Datagram, DatagramIterator
 
@@ -48,7 +48,7 @@ class ClientDisconnect(IntEnum):
     PERIOD_EXPIRED2 = 349
     SERVER_MAINTENANCE = 154
 
-@with_slots
+@dataslots
 @dataclass
 class PendingObject:
     doId: int
@@ -68,7 +68,7 @@ class Interest:
         self.ai = False
         self.pendingObjects: List[int] = []
 
-@with_slots
+@dataslots
 @dataclass
 class ObjectInfo:
     doId: int
@@ -78,7 +78,7 @@ class ObjectInfo:
 
 CLIENTAGENT_SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 
-@with_slots
+@dataslots
 @dataclass
 class DISLAccount:
     playToken: str

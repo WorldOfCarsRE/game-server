@@ -1,13 +1,9 @@
-aiohttp
-git+https://github.com/rocketprogrammer/aiomysql.git
-Cython
+git+https://github.com/aio-libs/aiomysql.git
 dataslots
 pycryptodome
 PyMySQL
 pyOpenSSL
 uvloop; sys_platform != 'win32'
 lark-parser
-numpy
 pymongo
 coloredlogs
-git+https://git.sunrise.games/SunriseGames/libsunrise

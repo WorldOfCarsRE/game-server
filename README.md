@@ -5,10 +5,7 @@ Dialga is a Python 3 asyncio-based OTP for World of Cars Online.
 The base of this project is [here](https://github.com/alexanderr/OpenOTP).
 
 ## Python Dependencies
-* [pydc](https://github.com/alexanderr/pydc)
-* [lark](https://github.com/lark-parser/lark)
-* [uvloop](https://github.com/MagicStack/uvloop) (optional)
-* aiohttp
+* [Requirements](https://raw.githubusercontent.com/WorldOfCarsRE/woc-otp/woc/requirements.txt)
 
 ## Database Backends
 Currently only MySQL and MongoDB is supported.
