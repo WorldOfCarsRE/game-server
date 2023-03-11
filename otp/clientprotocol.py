@@ -389,7 +389,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         return packer.getBytes()
 
     def receiveRemoveInterest(self, dgi, ai = False):
-        handle = dgi.getUint16()
+        handle = dgi.getInt16()
 
         if dgi.getRemainingSize():
             context = dgi.getUint32()
@@ -437,10 +437,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.interests.remove(interest)
 
-        if not ai:
+        if not ai and context:
             resp = Datagram()
             resp.addUint16(CLIENT_DONE_INTEREST_RESP)
-            resp.addUint16(handle)
+            resp.addInt16(handle)
             resp.addUint32(context)
             self.sendDatagram(resp)
 
@@ -546,7 +546,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.service.sendDatagram(dg)
 
     def receiveAddInterest(self, dgi, ai = False):
-        handle = dgi.getUint16()
+        handle = dgi.getInt16()
         contextId = dgi.getUint32()
         parentId = dgi.getUint32()
         zones = [dgi.getUint32()]
@@ -606,10 +606,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         if not zones:
             interest.done = True
-            if not ai:
+            if not ai and contextId:
                 resp = Datagram()
                 resp.addUint16(CLIENT_DONE_INTEREST_RESP)
-                resp.addUint16(handle)
+                resp.addInt16(handle)
                 resp.addUint32(contextId)
                 self.sendDatagram(resp)
                 return
@@ -823,10 +823,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             for datagram in pendingObject.datagrams:
                 self.handleDatagram(datagram, DatagramIterator(datagram))
 
-        if not interest.ai:
+        if not interest.ai and context:
             resp = Datagram()
             resp.addUint16(CLIENT_DONE_INTEREST_RESP)
-            resp.addUint16(handle)
+            resp.addInt16(handle)
             resp.addUint32(context)
             self.sendDatagram(resp)
 
