@@ -211,7 +211,7 @@ dclass DistributedRaceCar : Persistent {
     setDashboardTexture(int32 = 0) required db ownrecv;
     setRaceSeries(int32 = 44000) required db ownrecv;
     setActiveSponsor(int32 = 0) required db ownrecv;
-    setActiveGear(int32 = 0) required db ownrecv;
+    setActiveGear(int32 = 1) required db ownrecv;
     setDNA(CarDNA) required db ownrecv;
     setOffAddons(Addon[] = []) required db ownrecv;
     setConsumables(Consumable[] = []) required db ownrecv;
