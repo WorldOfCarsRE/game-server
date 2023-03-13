@@ -586,7 +586,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             self.interests.remove(previousInterest)
 
             if previousInterest.parentId != parentId:
-                killedZones = previousInterest.zones
+                print(previousInterest.parentId, parentId)
+                killedZones = set(previousInterest.zones)
             else:
                 killedZones = set(previousInterest.zones).difference(set(zones))
 

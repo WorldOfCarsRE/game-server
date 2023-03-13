@@ -140,7 +140,7 @@ dclass CarMgr {
 // struct 63
 dclass Persistent {
     // field 389 (ok)
-    persistRequest(int32) clsend;
+    persistRequest(int32) clsend airecv;
     persistResponse(int32, int8); // 390
 };
 

@@ -10,3 +10,6 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def sendEventLog(self, event: str, params, _):
         # self.air.writeServerEvent(event, self.doId, params)
         print(event, params, type(params), _, type(_))
+
+    def persistRequest(self, context: int):
+        self.sendUpdateToAvatar(self.air.currentAvatarSender, 'persistResponse', [context, 1])

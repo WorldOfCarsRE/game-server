@@ -1,6 +1,6 @@
 from ai.DistributedObjectGlobalAI import DistributedObjectGlobalAI
 from otp.constants import OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_HOLIDAY_MANAGER
-from otp.constants import OTP_ZONE_ID_ELEMENTS
+from otp.constants import OTP_ZONE_ID_ELEMENTS, DEFAULT_DUNGEON_ZONE
 from .DistributedObjectAI import DistributedObjectAI
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from typing import List
@@ -138,7 +138,7 @@ class DistributedDungeonAI(DistributedObjectAI):
         self.contextDoId: int = 0
 
     def getWaitForObjects(self):
-        return self.playerIds
+        return [] # self.playerIds
 
     def getDungeonItemId(self):
         return 1000
@@ -178,6 +178,9 @@ class DistributedLobbyAI(DistributedObjectAI):
         lobby.lobbyDoId = lobby.doId
         lobby.contextDoId = self.doId
         self.air.generateWithRequired(dungeon, self.doId, zoneId)
+
+        # zone = DistributedZoneAI(self.air)
+        # self.air.generateWithRequired(zone, self.doId, DEFAULT_DUNGEON_ZONE)
 
         lobby.b_setGotoDungeon(self.air.district.doId, dungeon.zoneId)
 
