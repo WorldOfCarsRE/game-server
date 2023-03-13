@@ -240,7 +240,7 @@ dclass DistributedRaceCar : Persistent {
 
 // struct 70
 dclass DistributedCarAvatar : TalkPath_owner, TalkPath_whisper {
-    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0) required clsend; // 460
+    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required clsend; // 460
     setPhysics(int32[] = [], int32[] = [], int32[] = [], int32[] = [], int32[] = []) required clsend;
     setState(uint32 = 0) required clsend;
 };
