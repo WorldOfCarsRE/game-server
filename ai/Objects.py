@@ -89,7 +89,7 @@ class DistributedZoneAI(DistributedObjectAI):
         return 0
 
     def getCatalogItemId(self):
-        return 0
+        return 0 # 15001
 
     def getInteractiveObjectCount(self):
         return 0
@@ -128,6 +128,9 @@ class DistributedLobbyContextAI(DistributedObjectAI):
 
     def getGotoDungeon(self):
         return self.destinationShard, self.destinationZone
+
+DRIVING_CONTROLS_SHOWN = 3
+GIVE_PLAYER_CAR_CONTROL = 1007
 
 class DistributedDungeonAI(DistributedObjectAI):
     def __init__(self, air):
@@ -168,23 +171,26 @@ class DistributedLobbyAI(DistributedObjectAI):
 
         zoneId = self.air.allocateZone()
 
-        lobby = DistributedTutorialLobbyContextAI(self.air)
-        lobby.owningAv = avatarId
-        lobby.playersInContext.append(avatarId)
-        self.air.generateWithRequired(lobby, OTP_ZONE_ID_ELEMENTS, zoneId)
+        lobbyContext = DistributedTutorialLobbyContextAI(self.air)
+        lobbyContext.owningAv = avatarId
+        lobbyContext.playersInContext.append(avatarId)
+        self.air.generateWithRequired(lobbyContext, OTP_ZONE_ID_ELEMENTS, zoneId)
 
         dungeon = DistributedDungeonAI(self.air)
         dungeon.playerIds.append(avatarId)
-        lobby.lobbyDoId = lobby.doId
-        lobby.contextDoId = self.doId
+        dungeon.lobbyDoId = self.doId
+        dungeon.contextDoId = lobbyContext.doId
         self.air.generateWithRequired(dungeon, self.doId, zoneId)
 
         # zone = DistributedZoneAI(self.air)
-        # self.air.generateWithRequired(zone, self.doId, DEFAULT_DUNGEON_ZONE)
-
-        lobby.b_setGotoDungeon(self.air.district.doId, dungeon.zoneId)
+        # self.air.generateWithRequired(zone, dungeon.doId, DEFAULT_DUNGEON_ZONE)
 
         self.sendUpdateToAvatar(avatarId, 'gotoLobbyContext', [zoneId])
+
+        lobbyContext.b_setGotoDungeon(self.air.district.doId, dungeon.zoneId)
+
+        # dungeon.sendUpdateToAvatar(avatarId, 'setClientCommand', [DRIVING_CONTROLS_SHOWN, []])
+        # dungeon.sendUpdateToAvatar(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])
 
 class DistributedTutorialLobbyAI(DistributedLobbyAI):
     def __init__(self, air):

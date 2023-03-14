@@ -211,7 +211,7 @@ dclass DistributedRaceCar : Persistent {
     setDashboardTexture(int32 = 0) required db ownrecv;
     setRaceSeries(int32 = 44000) required db ownrecv;
     setActiveSponsor(int32 = 0) required db ownrecv;
-    setActiveGear(int32 = 1) required db ownrecv;
+    setActiveGear(int32 = 2) required db ownrecv;
     setDNA(CarDNA) required db ownrecv;
     setOffAddons(Addon[] = []) required db ownrecv;
     setConsumables(Consumable[] = []) required db ownrecv;
@@ -330,7 +330,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     setCargo(int32[] = []) required db ownrecv;
     dropCargo(int32[]) clsend;
     setAfk(int8 = 0) required db ownrecv clsend;
-    setVisible(int8 = 0, int8 = 0, int8 = 0, int8 = 0) required db ownrecv; // 515
+    setVisible(int8 = 1, int8 = 1, int8 = 1, int8 = 0) required db ownrecv; // 515
 };
 
 // struct 79
@@ -408,7 +408,7 @@ dclass DistributedDungeon {
     setLobbyDoid(int32) required broadcast ram;
     setContextDoid(int32) required broadcast ram;
     syncReady() clsend;
-    setAiCommand(int32, int32[]) clsend;
+    setAiCommand(int32, int32[]) clsend airecv;
     setClientCommand(int32, int32[]);
     broadcastClientCommand(int32, int32[]);
     addHotspot(int32, int32, int32, int32);

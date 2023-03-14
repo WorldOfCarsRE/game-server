@@ -159,8 +159,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         dgi = DatagramIterator(dg)
         msgtype = dgi.getUint16()
 
-        print(MSG_TO_NAME_DICT[msgtype])
-
         if msgtype != CLIENT_OBJECT_UPDATE_FIELD:
             self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from client {self.channel}')
 
