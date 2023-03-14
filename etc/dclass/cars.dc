@@ -35,7 +35,7 @@ dclass ShardManager {
     // field 344 (ok)
     setParentingRules() broadcast ram;
     unk_345();
-    getYardRequest(int32) clsend;
+    getYardRequest(int32) clsend airecv;
     getYardResponse(int32, int32);
     unk_348();
     unk_349();
@@ -46,9 +46,9 @@ dclass ShardManager {
     unk_354();
     unk_355();
     unk_356();
-    getAllShardsRequest(int32) clsend;
+    getAllShardsRequest(int32) clsend airecv;
     getAllShardsResponse(int32, ShardStatus[]);
-    getShardRequest(int32, int32) clsend;
+    getShardRequest(int32, int32) clsend airecv;
     getShardResponse(int32, ShardStatus);
 };
 

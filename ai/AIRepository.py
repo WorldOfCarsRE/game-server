@@ -385,7 +385,13 @@ class AIRepository:
         self.send(dg)
 
         self.shardManager = ShardManagerUD(self)
-        self.shardManager.generateGlobalObject(OTP_ZONE_ID_ELEMENTS)
+        self.generateWithRequiredAndId(self.shardManager, OTP_DO_ID_CARS_SHARD_MANAGER, 1, OTP_ZONE_ID_ELEMENTS)
+
+        dg = Datagram()
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
+        dg.addUint32(OTP_DO_ID_CARS_SHARD_MANAGER)
+        dg.addUint64(self.ourChannel)
+        self.send(dg)
 
         self.holidayManager = HolidayManagerUD(self)
         self.holidayManager.generateGlobalObject(OTP_ZONE_ID_ELEMENTS)

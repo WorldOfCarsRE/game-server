@@ -54,16 +54,18 @@ POPULATION_LEVEL_MEDIUM = 3
 POPULATION_LEVEL_FULL = 4
 POPULATION_LEVEL_VERY_FULL = 5
 
-class ShardManagerUD(DistributedObjectGlobalAI):
-    doId = OTP_DO_ID_CARS_SHARD_MANAGER
+class ShardManagerUD(DistributedObjectAI):
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
 
     def getAllShardsRequest(self, context):
+        avatarId = self.air.currentAvatarSender
         print(f'getAllShardsRequest - {context}')
 
         response = []
         response.append([self.air.district.doId, self.air.district.name, POPULATION_LEVEL_NONE, 0, 1])
 
-        self.sendUpdateToSender('getAllShardsResponse', [context, response])
+        self.sendUpdateToAvatar(avatarId, 'getAllShardsResponse', [context, response])
 
 class HolidayManagerUD(DistributedObjectGlobalAI):
     doId = OTP_DO_ID_CARS_HOLIDAY_MANAGER
