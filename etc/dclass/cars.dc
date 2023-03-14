@@ -211,7 +211,7 @@ dclass DistributedRaceCar : Persistent {
     setDashboardTexture(int32 = 0) required db ownrecv;
     setRaceSeries(int32 = 44000) required db ownrecv;
     setActiveSponsor(int32 = 0) required db ownrecv;
-    setActiveGear(int32 = 2) required db ownrecv;
+    setActiveGear(int32 = 1) required db ownrecv;
     setDNA(CarDNA) required db ownrecv;
     setOffAddons(Addon[] = []) required db ownrecv;
     setConsumables(Consumable[] = []) required db ownrecv;
@@ -226,7 +226,7 @@ dclass DistributedRaceCar : Persistent {
     setDashboardTextures(int32 = 0) required db ownrecv;
     setProfileBackgrounds(int32[] = []) required db ownrecv;
     setPrintableBackgrounds(int32[] = []) required db ownrecv;;
-    setGears(int32[] = []) required db ownrecv;
+    setGears(int32[] = [1]) required db ownrecv;
     setCostumes(int32[] = []) required db ownrecv;
     modifyActiveSponsor(int32) clsend;
     modifyDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[]) clsend;
