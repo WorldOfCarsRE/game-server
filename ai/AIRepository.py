@@ -405,6 +405,9 @@ class AIRepository:
         dg.addUint64(self.ourChannel)
         self.send(dg)
 
+        self.downtownZone = DistributedZoneAI(self, "Downtown Radiator Springs", 15001)
+        self.generateWithRequired(self.downtownZone, self.district.doId, 5)
+
         self.district.b_setAvailable(True)
 
     def requestDelete(self, do):

@@ -81,26 +81,32 @@ class CarPlayerStatusAI(DistributedObjectAI):
         return 0
 
 class DistributedZoneAI(DistributedObjectAI):
-    def __init__(self, air):
+    def __init__(self, air, name, mapId):
         DistributedObjectAI.__init__(self, air)
+        self.name = name
+        self.mapId = mapId
+        self.catalogItemId = mapId
+        self.interactiveObjects = []
+        self.playersInZone = []
+        self.mute = 0
 
     def getName(self):
-        return ''
+        return self.name
 
     def getMapId(self):
-        return 0
+        return self.mapId
 
     def getCatalogItemId(self):
-        return 0 # 15001
+        return self.catalogItemId # 15001
 
     def getInteractiveObjectCount(self):
-        return 0
+        return len(self.interactiveObjects)
 
     def getPlayerCount(self):
-        return 0
+        return len(self.playersInZone)
 
     def getMute(self):
-        return 0
+        return self.mute
 
 class DistributedLobbyContextAI(DistributedObjectAI):
     def __init__(self, air):
