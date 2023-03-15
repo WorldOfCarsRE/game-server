@@ -240,9 +240,9 @@ dclass DistributedRaceCar : Persistent {
 
 // struct 70
 dclass DistributedCarAvatar : TalkPath_owner, TalkPath_whisper {
-    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required clsend; // 460
-    setPhysics(int32[] = [], int32[] = [], int32[] = [], int32[] = [], int32[] = []) required clsend;
-    setState(uint32 = 0) required clsend;
+    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required broadcast clsend; // 460
+    setPhysics(int32[] = [], int32[] = [], int32[] = [], int32[] = [], int32[] = []) required broadcast clsend;
+    setState(uint32 = 0) required broadcast clsend;
 };
 
 // struct 71
@@ -295,11 +295,11 @@ dclass CarPlayerStatus {
 
 // struct 78
 dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent {
-    setDNA(CarDNA) required db ownrecv; // 480
-    setCarCoins(uint32 = 0) required db ownrecv;
-    setCars(int32 = 0, int32[] = []) required db ownrecv;
-    setBadges(int32[] = []) required db ownrecv;
-    setYardStocks(Stock[] = []) required db ownrecv;
+    setDNA(CarDNA) required broadcast db ownrecv; // 480
+    setCarCoins(uint32 = 0) required broadcast db ownrecv;
+    setCars(int32 = 0, int32[] = []) required broadcast db ownrecv;
+    setBadges(int32[] = []) required broadcast db ownrecv;
+    setYardStocks(Stock[] = []) required broadcast db ownrecv;
     setRuleStates(RuleState[]);
     deleteRuleStates(int32[]);
     setCurrentCar(int32);
@@ -315,22 +315,22 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     gotoFriendsContext(int32, int32);
     generateComplete();
     setDISLname(string) db;
-    setDISLid(uint32 = 0) required db ownrecv;
-    setAccess(uint8 = 2) required db ownrecv;
-    setActiveQuests(int32[] = []) required db ownrecv;
+    setDISLid(uint32 = 0) required broadcast db ownrecv;
+    setAccess(uint8 = 2) required broadcast db ownrecv;
+    setActiveQuests(int32[] = []) required broadcast db ownrecv;
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
     broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
     setReward(Reward[]);
     updateYardPermissionMask(int32, int32) clsend;
     sendEventLog(string, int32[], string[]) clsend airecv;
-    setChatLevel(uint8 = 0) required db ownrecv;
-    setMute(uint8 = 0) required db ownrecv;
-    setSubscriptionStatus(uint8[] = []) required db ownrecv;
+    setChatLevel(uint8 = 0) required broadcast db ownrecv;
+    setMute(uint8 = 0) required broadcast db ownrecv;
+    setSubscriptionStatus(uint8[] = []) required broadcast db ownrecv;
     showDialogs(Dialog[]);
-    setCargo(int32[] = []) required db ownrecv;
+    setCargo(int32[] = []) required broadcast db ownrecv;
     dropCargo(int32[]) clsend;
-    setAfk(int8 = 0) required db ownrecv clsend;
-    setVisible(int8 = 1, int8 = 1, int8 = 1, int8 = 0) required db ownrecv; // 515
+    setAfk(int8 = 0) required broadcast db ownrecv clsend;
+    setVisible(int8 = 1, int8 = 1, int8 = 1, int8 = 0) required broadcast db ownrecv; // 515
 };
 
 // struct 79
