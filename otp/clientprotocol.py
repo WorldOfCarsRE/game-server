@@ -15,17 +15,6 @@ from otp.zone import *
 from otp.constants import *
 from otp.util import *
 
-class NamePart(IntEnum):
-    BOY_TITLE = 0
-    GIRL_TITLE = 1
-    NEUTRAL_TITLE = 2
-    BOY_FIRST = 3
-    GIRL_FIRST = 4
-    NEUTRAL_FIRST = 5
-    CAP_PREFIX = 6
-    LAST_PREFIX = 7
-    LAST_SUFFIX = 8
-
 class ClientState(IntEnum):
     NEW = 0
     ANONYMOUS = 1
@@ -366,24 +355,12 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         access = 2 if self.account.access == 'FULL' else 1
 
         # These Fields are REQUIRED but not stored in db.
-        stretches = [0 for _ in range(6)]
-
-        decalSlots = [
-            0,    -1,     0,     0,
-            -1,     0,     0,    -1,
-            0,     0,     0,     0,
-            51103, 51103, 51104, 51104
-        ]
-
-        dnaData = (('Tia,Spark,driver', 83, 0, 1004143, 0, 16777215, 0, -1, 5502, 20201, 10102, 30601, 30502, 0, 0, stretches, decalSlots, [], 0),)
-
         otherFields = [
             (dclass.getFieldByName('setTelemetry'), (0, 0, 0, 0, 0, 0, 0, 0,)),
             (dclass.getFieldByName('setPhysics'), ([], [], [], [], [],)),
             (dclass.getFieldByName('setState'), (0,)),
             # (dclass.getFieldByName('setRuleStates'), (((100, 1, 1, 1),),),), # To skip the tutorial, remove me to go to tutorial.
             (dclass.getFieldByName('setAfk'), (0,)),
-            (dclass.getFieldByName('setDNA'), dnaData)
         ]
 
         self.activateDatabaseObjectWithOther(avId, dclass, otherFields)

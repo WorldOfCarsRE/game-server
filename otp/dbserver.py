@@ -1,4 +1,3 @@
-from ai.dna.CarDNA import CarDNA
 from otp import config
 
 import asyncio
@@ -452,12 +451,7 @@ class DBServer(DownstreamMessageDirector):
 
             packer = DCPacker()
 
-            carDNA = CarDNA()
-
             fields = []
-            fields.append(('setDISLname', [accountData['playToken']]))
-            fields.append(('setDISLid', [accountId]))
-            fields.append(('setDNA', [carDNA]))
 
             # Iterate through all of the fields.
             fieldCount = carPlayer.getNumInheritedFields()
@@ -489,6 +483,11 @@ class DBServer(DownstreamMessageDirector):
                 fields.append((name, value))
 
             avatarId = await self.createAvatar(carPlayer, accountId, fields)
+
+            await self.backend.setField(avatarId, 'setDISLname', (accountData['playToken'],))
+            await self.backend.setField(avatarId, 'setDISLid', (accountId,))
+            await self.backend.setField(avatarId, 'setDNA', (await self.backend.queryDNA(playToken),))
+
             await self.backend.setField(accountId, 'avatarId', avatarId, 'accounts')
 
             accountData['avatarId'] = avatarId
@@ -498,10 +497,7 @@ class DBServer(DownstreamMessageDirector):
 
             packer = DCPacker()
 
-            carDNA = CarDNA()
-
             fields = []
-            fields.append(('setDNA', [carDNA]))
 
             # Iterate through all of the fields.
             fieldCount = raceCar.getNumInheritedFields()

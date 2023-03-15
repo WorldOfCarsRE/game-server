@@ -233,6 +233,7 @@ class MongoBackend(DatabaseBackend):
     async def setup(self):
         client = MongoClient(config['MongoDB.Host'])
         self.mongodb = client[config['MongoDB.Name']]
+        self.webMongo = client['woc']
 
         # Check if we need to create our initial entries in the database.
         entry = self.mongodb.objects.find_one({'type': 'objectId'})
@@ -249,6 +250,49 @@ class MongoBackend(DatabaseBackend):
         cursor = self.mongodb.objects
         fields = cursor.find_one({'_id': doId})
         return fields['className']
+
+    async def queryDNA(self, playToken: str) -> tuple:
+        data = self.webMongo.cars.find_one({'ownerAccount': playToken})
+
+        # Default DNA in case we fail to grab ours...
+        stretches = [0 for _ in range(6)]
+
+        decalSlots = [
+            0,    -1,     0,     0,
+            -1,     0,     0,    -1,
+            0,     0,     0,     0,
+            51103, 51103, 51104, 51104
+        ]
+
+        dna = ('Tia,Spark,driver', 83, 0, 1004143, 0, 16777215, 0, -1, 5502, 20201, 10102, 30601, 30502, 0, 0, stretches, decalSlots, [], 0)
+
+        if data:
+            car = data['carData']['carDna']
+            ourStretches = car['stretches']
+
+            dna = (
+                car['carName'],
+                car['carNumber'],
+                car['logoBackgroundId'],
+                car['logoBackgroundColor'],
+                car['logoFontId'],
+                car['logoFontColor'],
+                car['gender'],
+                car['careerType'],
+                car['chassis'],
+                car['color'],
+                car['eyeColor'],
+                car['wheel'],
+                car['tire'],
+                car['detailing'],
+                car['profileBackgroundId'],
+                stretches if ourStretches == [] else ourStretches,
+                car['decalSlots'],
+                car['onAddons'],
+                car['costumeId']
+            )
+
+        return dna
 
     async def queryAccount(self, playToken: str) -> dict:
         data = self.mongodb.accounts.find_one({'playToken': playToken})
