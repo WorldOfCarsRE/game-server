@@ -761,6 +761,15 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             ruleUpdate.appendData(self.packFieldData(dclass.getFieldByName('setRuleStates'), (((100, 1, 1, 1),),)))
             self.sendDatagram(ruleUpdate)
 
+            # HACK: Same as above basically.
+            setDISLname = Datagram()
+            setDISLname.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
+            setDISLname.addUint32(doId)
+
+            dclass = self.service.dcFile.getClass(dcId)
+            setDISLname.appendData(self.packFieldData(dclass.getFieldByName('setDISLname'), (self.account.playToken,)))
+            self.sendDatagram(setDISLname)
+
     def handleLocationChange(self, dgi, sender, doId):
         newParent = dgi.getUint32()
         newZone = dgi.getUint32()
