@@ -131,7 +131,9 @@ class DistributedLobbyContextAI(DistributedObjectAI):
     def getGotoDungeon(self):
         return self.destinationShard, self.destinationZone
 
+VIDEO_DONE_COMMAND = 1
 DRIVING_CONTROLS_SHOWN = 3
+SHOW_DRIVING_CONTROLS = 1003
 GIVE_PLAYER_CAR_CONTROL = 1007
 
 class DistributedDungeonAI(DistributedObjectAI):
@@ -153,6 +155,16 @@ class DistributedDungeonAI(DistributedObjectAI):
 
     def getContextDoid(self):
         return self.contextDoId
+
+    def setAiCommand(self, command, args):
+        avatarId = self.air.currentAvatarSender
+        print('setAICommand', command)
+        # BUG: Supposidly VIDEO_DONE_COMMAND gets sent after video is finished, but
+        # all command sent are 1003?  OTP Bug?
+        if command == 1003:
+            # self.sendUpdateToAvatar(avatarId, 'setClientCommand', [SHOW_DRIVING_CONTROLS, []])
+            self.sendUpdateToAvatar(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])
+
 
 class DistributedTutorialLobbyContextAI(DistributedLobbyContextAI):
     def __init__(self, air):
@@ -190,9 +202,6 @@ class DistributedLobbyAI(DistributedObjectAI):
         self.sendUpdateToAvatar(avatarId, 'gotoLobbyContext', [zoneId])
 
         lobbyContext.b_setGotoDungeon(self.air.district.doId, dungeon.zoneId)
-
-        # dungeon.sendUpdateToAvatar(avatarId, 'setClientCommand', [DRIVING_CONTROLS_SHOWN, []])
-        # dungeon.sendUpdateToAvatar(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])
 
 class DistributedTutorialLobbyAI(DistributedLobbyAI):
     def __init__(self, air):
