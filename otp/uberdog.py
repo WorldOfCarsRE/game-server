@@ -223,7 +223,7 @@ async def main():
     uberdogTasks = [
         asyncio.create_task(centralLogger.run()),
         asyncio.create_task(friendManager.run()),
-        asyncio.create_task(shardMgr.run()),
+        # asyncio.create_task(shardMgr.run()),
         asyncio.create_task(holidayMgr.run())
     ]
 
