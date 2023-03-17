@@ -9,7 +9,7 @@ dclass CarsDistrict : DistributedDistrict {
     setParentingRules(string, string) broadcast ram; // 331
     setServerTime(uint32) clsend;
     unk_333();
-    setEnabled(uint8) broadcast required ram; // 334
+    setEnabled(uint8) required broadcast; // 334
 };
 
 // struct 47
@@ -316,7 +316,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     generateComplete();
     setDISLname(string) broadcast db;
     setDISLid(uint32 = 0) required broadcast db ownrecv;
-    setAccess(uint8 = 2) required broadcast db ownrecv;
+    setAccess(uint8 = 2) required broadcast ownrecv;
     setActiveQuests(int32[] = []) required broadcast db ownrecv;
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
     broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
@@ -329,7 +329,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     showDialogs(Dialog[]);
     setCargo(int32[] = []) required broadcast db ownrecv;
     dropCargo(int32[]) clsend;
-    setAfk(int8 = 0) required broadcast db ownrecv clsend;
+    setAfk(int8 = 0) required broadcast ownrecv clsend;
     setVisible(int8 = 1, int8 = 1, int8 = 1, int8 = 0) required broadcast db ownrecv; // 515
 };
 
@@ -379,7 +379,7 @@ dclass InteractiveObject : DistributedCarAvatar {
     setName(string) required broadcast;
     setAssetId(int32) required broadcast;
     setType(int8) required broadcast;
-    setGlobalState(uint8[]) required broadcast;
+    setGlobalState(uint8) required broadcast;
     setPrivateState(uint8);
     setVisible(int8) required broadcast;
     setClientScript(string) required broadcast;
@@ -403,10 +403,10 @@ dclass YardInteractiveObject : InteractiveObject {
 // struct 86
 dclass DistributedDungeon {
     setParentingRules(string, string) broadcast ram; // 554
-    waitForObjects(uint32[]) required broadcast ram;
-    setDungeonItemId(int32) required broadcast ram;
-    setLobbyDoid(int32) required broadcast ram;
-    setContextDoid(int32) required broadcast ram;
+    waitForObjects(uint32[]) required broadcast;
+    setDungeonItemId(int32) required broadcast;
+    setLobbyDoid(int32) required broadcast;
+    setContextDoid(int32) required broadcast;
     syncReady() clsend;
     setAiCommand(int32, int32[]) clsend airecv;
     setClientCommand(int32, int32[]);

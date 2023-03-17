@@ -102,6 +102,9 @@ class DistributedZoneAI(DistributedObjectAI):
     def getInteractiveObjectCount(self):
         return len(self.interactiveObjects)
 
+    def updateObjectCount(self):
+        self.sendUpdate('setInteractiveObjectCount', [self.getInteractiveObjectCount()])
+
     def getPlayerCount(self):
         return len(self.playersInZone)
 
@@ -170,7 +173,6 @@ class DistributedDungeonAI(DistributedObjectAI):
         if command == 1003:
             # self.sendUpdateToAvatar(avatarId, 'setClientCommand', [SHOW_DRIVING_CONTROLS, []])
             self.sendUpdateToAvatar(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])
-
 
 class DistributedTutorialLobbyContextAI(DistributedLobbyContextAI):
     def __init__(self, air):
