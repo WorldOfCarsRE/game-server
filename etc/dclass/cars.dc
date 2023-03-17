@@ -300,7 +300,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     setCars(int32 = 0, int32[] = []) required broadcast db ownrecv;
     setBadges(int32[] = []) required broadcast db ownrecv;
     setYardStocks(Stock[] = []) required broadcast db ownrecv;
-    setRuleStates(RuleState[]) ownrecv;
+    setRuleStates(RuleState[]);
     deleteRuleStates(int32[]);
     setCurrentCar(int32);
     buyItemRequest(int32, int32) clsend;

@@ -5,6 +5,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         DistributedCarAvatarAI.__init__(self, air)
 
     def announceGenerate(self):
+        self.sendUpdateToAvatar(self.air.currentAvatarSender, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
         self.sendUpdateToAvatar(self.air.currentAvatarSender, 'generateComplete', [])
 
     def sendEventLog(self, event: str, params, _):
