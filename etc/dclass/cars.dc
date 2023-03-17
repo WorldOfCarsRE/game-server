@@ -204,30 +204,30 @@ dclass DistributedCareerCar {
 
 // struct 69
 dclass DistributedRaceCar : Persistent {
-    setMiles(uint32 = 0) required db ownrecv; // 428
-    setRacingPoints(uint32 = 0) required db ownrecv;
-    setConsumableSlot(uint16 = 0) required db ownrecv;
-    setConsumableStack(uint16 = 0) required db ownrecv;
-    setDashboardTexture(int32 = 0) required db ownrecv;
-    setRaceSeries(int32 = 44000) required db ownrecv;
-    setActiveSponsor(int32 = 0) required db ownrecv;
-    setActiveGear(int32 = 1) required db ownrecv;
-    setDNA(CarDNA) required db ownrecv;
-    setOffAddons(Addon[] = []) required db ownrecv;
-    setConsumables(Consumable[] = []) required db ownrecv;
-    setPaints(int32[] = []) required db ownrecv;
-    setEyeColors(int32[] = []) required db ownrecv;
-    setDecals(int32[] = []) required db ownrecv;
-    setWheels(int32[] = []) required db ownrecv;
-    setTires(int32[] = []) required db ownrecv;
-    setDetailings(int32[] = []) required db ownrecv;
-    setAnimations(int32[] = []) required db ownrecv;
-    setTrophies(int32[] = []) required db ownrecv;
-    setDashboardTextures(int32[] = []) required db ownrecv;
-    setProfileBackgrounds(int32[] = []) required db ownrecv;
-    setPrintableBackgrounds(int32[] = []) required db ownrecv;
-    setGears(int32[] = [1]) required db ownrecv;
-    setCostumes(int32[] = []) required db ownrecv;
+    setMiles(uint32 = 0) db ownrecv; // 428
+    setRacingPoints(uint32 = 0) db ownrecv;
+    setConsumableSlot(uint16 = 0) db ownrecv;
+    setConsumableStack(uint16 = 0) db ownrecv;
+    setDashboardTexture(int32 = 0) db ownrecv;
+    setRaceSeries(int32 = 44000) db ownrecv;
+    setActiveSponsor(int32 = 0) db ownrecv;
+    setActiveGear(int32 = 1) db ownrecv;
+    setDNA(CarDNA) db ownrecv;
+    setOffAddons(Addon[] = []) db ownrecv;
+    setConsumables(Consumable[] = []) db ownrecv;
+    setPaints(int32[] = []) db ownrecv;
+    setEyeColors(int32[] = []) db ownrecv;
+    setDecals(int32[] = []) db ownrecv;
+    setWheels(int32[] = []) db ownrecv;
+    setTires(int32[] = []) db ownrecv;
+    setDetailings(int32[] = []) db ownrecv;
+    setAnimations(int32[] = []) db ownrecv;
+    setTrophies(int32[] = []) db ownrecv;
+    setDashboardTextures(int32[] = []) db ownrecv;
+    setProfileBackgrounds(int32[] = []) db ownrecv;
+    setPrintableBackgrounds(int32[] = []) db ownrecv;
+    setGears(int32[] = [1]) db ownrecv;
+    setCostumes(int32[] = []) db ownrecv;
     modifyActiveSponsor(int32) clsend;
     modifyDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[]) clsend;
     modifyAddon(int32[], int32[]) clsend;
@@ -296,10 +296,10 @@ dclass CarPlayerStatus {
 // struct 78
 dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent {
     setDNA(CarDNA) required broadcast db ownrecv; // 480
-    setCarCoins(uint32 = 0) required broadcast db ownrecv;
-    setCars(int32 = 0, int32[] = []) required broadcast db ownrecv;
-    setBadges(int32[] = []) required broadcast db ownrecv;
-    setYardStocks(Stock[] = []) required broadcast db ownrecv;
+    setCarCoins(uint32 = 0) broadcast db ownrecv;
+    setCars(int32 = 0, int32[] = []) broadcast db ownrecv;
+    setBadges(int32[] = []) broadcast db ownrecv;
+    setYardStocks(Stock[] = []) broadcast db ownrecv;
     setRuleStates(RuleState[]) ownrecv;
     deleteRuleStates(int32[]);
     setCurrentCar(int32);
@@ -316,8 +316,8 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     generateComplete();
     setDISLname(string) broadcast db;
     setDISLid(uint32 = 0) required broadcast db ownrecv;
-    setAccess(uint8 = 2) required broadcast db ownrecv;
-    setActiveQuests(int32[] = []) required broadcast db ownrecv;
+    setAccess(uint8 = 2) broadcast db ownrecv;
+    setActiveQuests(int32[] = []) broadcast db ownrecv;
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
     broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
     setReward(Reward[]);
@@ -325,7 +325,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     sendEventLog(string, int32[], string[]) clsend airecv;
     setChatLevel(uint8 = 0) required broadcast db ownrecv;
     setMute(uint8 = 0) required broadcast db ownrecv;
-    setSubscriptionStatus(uint8 = 0) required broadcast db ownrecv;
+    setSubscriptionStatus(uint8 = 0) broadcast db ownrecv;
     showDialogs(Dialog[]);
     setCargo(int32[] = []) required broadcast db ownrecv;
     dropCargo(int32[]) clsend;
