@@ -223,9 +223,9 @@ dclass DistributedRaceCar : Persistent {
     setDetailings(int32[] = []) required db ownrecv;
     setAnimations(int32[] = []) required db ownrecv;
     setTrophies(int32[] = []) required db ownrecv;
-    setDashboardTextures(int32 = 0) required db ownrecv;
+    setDashboardTextures(int32[] = []) required db ownrecv;
     setProfileBackgrounds(int32[] = []) required db ownrecv;
-    setPrintableBackgrounds(int32[] = []) required db ownrecv;;
+    setPrintableBackgrounds(int32[] = []) required db ownrecv;
     setGears(int32[] = [1]) required db ownrecv;
     setCostumes(int32[] = []) required db ownrecv;
     modifyActiveSponsor(int32) clsend;
@@ -376,13 +376,13 @@ struct Command {
 // struct 84
 dclass InteractiveObject : DistributedCarAvatar {
     // field 536 (ok)
-    setName(string) required;
-    setAssetId(int32) required;
-    setType(int8) required;
-    setGlobalState(uint8[]) required;
+    setName(string) required broadcast ram;
+    setAssetId(int32) required broadcast ram;
+    setType(int8) required broadcast ram;
+    setGlobalState(uint8[]) required broadcast ram;
     setPrivateState(uint8);
-    setVisible(int8) required;
-    setClientScript(string) required;
+    setVisible(int8) required broadcast ram;
+    setClientScript(string) required broadcast ram;
     setDialogTree(int32);
     addDialogTree(int32, int32, int16);
     removeDialogTree(int32, int32, int16);

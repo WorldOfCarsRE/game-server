@@ -367,6 +367,7 @@ class AIRepository:
         from .Objects import CarsDistrictAI, ShardManagerUD
         from .Objects import HolidayManagerUD
         from .Objects import DistributedZoneAI, DistributedTutorialLobbyAI
+        from .carplayer.InteractiveObjectAI import InteractiveObjectAI
 
         self.district = CarsDistrictAI(self)
         self.district.name = 'Kachow!'
@@ -405,8 +406,12 @@ class AIRepository:
         dg.addUint64(self.ourChannel)
         self.send(dg)
 
+        self.testObj = InteractiveObjectAI(self)
+        # self.generateWithRequired(self.testObj, self.district.doId, OTP_ZONE_ID_ELEMENTS)
+
         self.downtownZone = DistributedZoneAI(self, "Downtown Radiator Springs", 15001)
-        self.generateWithRequired(self.downtownZone, self.district.doId, 5)
+        # self.downtownZone.interactiveObjects.append(self.testObj)
+        self.generateWithRequired(self.downtownZone, self.district.doId, OTP_ZONE_ID_ELEMENTS)
 
         self.district.b_setAvailable(True)
 
