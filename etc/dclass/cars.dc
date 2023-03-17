@@ -300,7 +300,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     setCars(int32 = 0, int32[] = []) required broadcast db ownrecv;
     setBadges(int32[] = []) required broadcast db ownrecv;
     setYardStocks(Stock[] = []) required broadcast db ownrecv;
-    setRuleStates(RuleState[]);
+    setRuleStates(RuleState[]) ownrecv;
     deleteRuleStates(int32[]);
     setCurrentCar(int32);
     buyItemRequest(int32, int32) clsend;
@@ -314,7 +314,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     raceInviteRequest(int32, int32, int32, int32, int32);
     gotoFriendsContext(int32, int32);
     generateComplete();
-    setDISLname(string) db;
+    setDISLname(string) broadcast db;
     setDISLid(uint32 = 0) required broadcast db ownrecv;
     setAccess(uint8 = 2) required broadcast db ownrecv;
     setActiveQuests(int32[] = []) required broadcast db ownrecv;
@@ -376,13 +376,13 @@ struct Command {
 // struct 84
 dclass InteractiveObject : DistributedCarAvatar {
     // field 536 (ok)
-    setName(string) required broadcast ram;
-    setAssetId(int32) required broadcast ram;
-    setType(int8) required broadcast ram;
-    setGlobalState(uint8[]) required broadcast ram;
+    setName(string) required broadcast;
+    setAssetId(int32) required broadcast;
+    setType(int8) required broadcast;
+    setGlobalState(uint8[]) required broadcast;
     setPrivateState(uint8);
-    setVisible(int8) required broadcast ram;
-    setClientScript(string) required broadcast ram;
+    setVisible(int8) required broadcast;
+    setClientScript(string) required broadcast;
     setDialogTree(int32);
     addDialogTree(int32, int32, int16);
     removeDialogTree(int32, int32, int16);

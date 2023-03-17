@@ -359,7 +359,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             (dclass.getFieldByName('setTelemetry'), (0, 0, 0, 0, 0, 0, 0, 0,)),
             (dclass.getFieldByName('setPhysics'), ([], [], [], [], [],)),
             (dclass.getFieldByName('setState'), (0,)),
-            # (dclass.getFieldByName('setRuleStates'), (((100, 1, 1, 1),),),), # To skip the tutorial, remove me to go to tutorial.
+            (dclass.getFieldByName('setRuleStates'), (((100, 1, 1, 1),),),), # To skip the tutorial, remove me to go to tutorial.
             (dclass.getFieldByName('setAfk'), (0,)),
         ]
 
@@ -725,27 +725,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         resp.addUint32(zoneId)
         resp.appendData(dgi.getRemainingBytes())
         self.sendDatagram(resp)
-
-        if dcName == "DistributedCarPlayer":
-            # HACK: For some reason, sending this field as an "other" in the CREATE_OBJECT
-            # messages crashes for some reason.  (Another DC/client element mismatch?)  This will have to do
-            # to skip the tutorial.
-            ruleUpdate = Datagram()
-            ruleUpdate.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
-            ruleUpdate.addUint32(doId)
-
-            dclass = self.service.dcFile.getClass(dcId)
-            ruleUpdate.appendData(self.packFieldData(dclass.getFieldByName('setRuleStates'), (((100, 1, 1, 1),),)))
-            self.sendDatagram(ruleUpdate)
-
-            # HACK: Same as above basically.
-            setDISLname = Datagram()
-            setDISLname.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
-            setDISLname.addUint32(doId)
-
-            dclass = self.service.dcFile.getClass(dcId)
-            setDISLname.appendData(self.packFieldData(dclass.getFieldByName('setDISLname'), (self.account.playToken,)))
-            self.sendDatagram(setDISLname)
 
     def handleLocationChange(self, dgi, sender, doId):
         newParent = dgi.getUint32()
