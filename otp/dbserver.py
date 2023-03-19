@@ -490,6 +490,11 @@ class DBServer(DownstreamMessageDirector):
 
             await self.backend.setField(accountId, 'avatarId', avatarId, 'accounts')
 
+            self.backend.webMongo.cars.update_one(
+                {'ownerAccount': accountData['playToken']},
+                {'$set': {'dislId': accountId}}
+            )
+
             accountData['avatarId'] = avatarId
 
         if accountData['racecarId'] == 0:
