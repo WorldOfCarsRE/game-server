@@ -416,6 +416,9 @@ class AIRepository:
         self.fillmoresFields = DistributedZoneAI(self, "Fillmore's Fields", ZoneConstants.FILLMORES_FIELDS)
         self.generateWithRequired(self.fillmoresFields, self.district.doId, OTP_ZONE_ID_ELEMENTS)
 
+        self.willysButte = DistributedZoneAI(self, "Willy's Butte", ZoneConstants.WILLYS_BUTTE)
+        self.generateWithRequired(self.willysButte, self.district.doId, OTP_ZONE_ID_ELEMENTS)
+
         self.mater = InteractiveObjectAI(self)
         self.mater.assetId = 31009 # materCatalogItemId
         self.generateWithRequired(self.mater, self.downtownZone.doId, downtownZoneId)
