@@ -55,8 +55,8 @@ dclass ShardManager {
 // struct 50
 dclass DistributedLobby {
     setParentingRules(string, string) broadcast ram; // 361
-    setDungeonItemId(int32) required broadcast ram;
-    setHotSpotName(string) required broadcast ram;
+    setDungeonItemId(int32) required broadcast;
+    setHotSpotName(string) required broadcast;
     gotoLobbyContext(int32);
     joinFail(int32);
     join() clsend airecv;
@@ -88,10 +88,10 @@ dclass DistributedTutorialLobby : DistributedLobby {
 
 // struct 56
 dclass DistributedLobbyContext {
-    setPlayersInDungeon(int32[]) required broadcast ram; // 371
-    setPlayersInContext(int32[]) required broadcast ram;
-    setOwner(int32) required broadcast ram;
-    gotoDungeon(int32, int32) required broadcast ram;
+    setPlayersInDungeon(int32[]) required broadcast; // 371
+    setPlayersInContext(int32[]) required broadcast;
+    setOwner(int32) required broadcast;
+    gotoDungeon(int32, int32) required broadcast;
     setPlayerJoin(int32);
     setPlayerQuit(int32); // 376
 };

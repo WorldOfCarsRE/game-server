@@ -368,6 +368,7 @@ class AIRepository:
         from .Objects import HolidayManagerUD
         from .Objects import DistributedZoneAI, DistributedTutorialLobbyAI
         from .carplayer.InteractiveObjectAI import InteractiveObjectAI
+        from.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
 
         from . import ZoneConstants
 
@@ -425,6 +426,9 @@ class AIRepository:
 
         # self.downtownZone.interactiveObjects.append(self.mater)
         # self.downtownZone.updateObjectCount()
+
+        self.spRaceLobby = DistributedSinglePlayerRacingLobbyAI(self)
+        self.generateWithRequired(self.spRaceLobby, self.district.doId, self.downtownZone.doId)
 
         self.district.b_setAvailable(True)
 

@@ -63,7 +63,7 @@ class ShardManagerUD(DistributedObjectAI):
         print(f'getAllShardsRequest - {context}')
 
         response = []
-        response.append([self.air.district.doId, self.air.district.name, POPULATION_LEVEL_NONE, 0, 1])
+        response.append([self.air.district.doId, self.air.district.name, POPULATION_LEVEL_NONE, 0, self.air.district.getAvailable()])
 
         self.sendUpdateToAvatar(avatarId, 'getAllShardsResponse', [context, response])
 
