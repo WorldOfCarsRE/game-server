@@ -4,6 +4,8 @@ from otp.constants import DUNGEON_INTEREST_HANDLE, DEFAULT_DUNGEON_ZONE
 from .DistributedObjectAI import DistributedObjectAI
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from typing import List
+from ai.yard.DistributedYardAI import DistributedYardAI
+from ai.dungeon.DistributedDungeonAI import DistributedDungeonAI
 
 class DistributedDistrictAI(DistributedObjectAI):
 
@@ -55,17 +57,28 @@ POPULATION_LEVEL_FULL = 4
 POPULATION_LEVEL_VERY_FULL = 5
 
 class ShardManagerUD(DistributedObjectAI):
+    # TODO FIXME: This should actually be a UberDOG.
+
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
 
     def getAllShardsRequest(self, context):
         avatarId = self.air.currentAvatarSender
-        print(f'getAllShardsRequest - {context}')
 
         response = []
         response.append([self.air.district.doId, self.air.district.name, POPULATION_LEVEL_NONE, 0, self.air.district.getAvailable()])
 
         self.sendUpdateToAvatar(avatarId, 'getAllShardsResponse', [context, response])
+
+    def getYardRequest(self, ownerDoId: int):
+        zoneId = self.air.allocateZone()
+
+        yard = DistributedYardAI(self.air)
+        yard.owner = ownerDoId
+        yard.dungeonItemId = 10001
+        self.air.generateWithRequired(yard, self.air.district.doId, ownerDoId)
+
+        self.sendUpdateToAvatar(ownerDoId, 'getYardResponse', [self.air.district.doId, yard.doId])
 
 class HolidayManagerUD(DistributedObjectGlobalAI):
     doId = OTP_DO_ID_CARS_HOLIDAY_MANAGER
@@ -139,40 +152,6 @@ class DistributedLobbyContextAI(DistributedObjectAI):
 
     def getGotoDungeon(self):
         return self.destinationShard, self.destinationZone
-
-VIDEO_DONE_COMMAND = 1
-DRIVING_CONTROLS_SHOWN = 3
-SHOW_DRIVING_CONTROLS = 1003
-GIVE_PLAYER_CAR_CONTROL = 1007
-
-class DistributedDungeonAI(DistributedObjectAI):
-    def __init__(self, air):
-        DistributedObjectAI.__init__(self, air)
-
-        self.playerIds: List[int] = []
-        self.lobbyDoId: int = 0
-        self.contextDoId: int = 0
-
-    def getWaitForObjects(self):
-        return [] # self.playerIds
-
-    def getDungeonItemId(self):
-        return 1000
-
-    def getLobbyDoid(self):
-        return self.lobbyDoId
-
-    def getContextDoid(self):
-        return self.contextDoId
-
-    def setAiCommand(self, command, args):
-        avatarId = self.air.currentAvatarSender
-        print('setAICommand', command)
-        # BUG: Supposidly VIDEO_DONE_COMMAND gets sent after video is finished, but
-        # all command sent are 1003?  OTP Bug?
-        if command == 1003:
-            # self.sendUpdateToAvatar(avatarId, 'setClientCommand', [SHOW_DRIVING_CONTROLS, []])
-            self.sendUpdateToAvatar(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])
 
 class DistributedTutorialLobbyContextAI(DistributedLobbyContextAI):
     def __init__(self, air):
