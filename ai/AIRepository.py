@@ -374,7 +374,7 @@ class AIRepository:
 
         self.district = CarsDistrictAI(self)
         self.district.name = 'Kachow!'
-        self.generateWithRequired(self.district, OTP_DO_ID_FAIRIES, OTP_ZONE_ID_DISTRICTS)
+        self.generateWithRequired(self.district, OTP_DO_ID_FAIRIES, REQUIRED_ZONE_INTEREST_HANDLE)
 
         postRemove = Datagram()
         addServerControlHeader(postRemove, CONTROL_ADD_POST_REMOVE)
