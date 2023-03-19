@@ -62,7 +62,7 @@ class ShardManagerUD(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
 
-    def getAllShardsRequest(self, context):
+    def getAllShardsRequest(self, context: int):
         avatarId = self.air.currentAvatarSender
 
         response = []
@@ -71,8 +71,6 @@ class ShardManagerUD(DistributedObjectAI):
         self.sendUpdateToAvatar(avatarId, 'getAllShardsResponse', [context, response])
 
     def getYardRequest(self, ownerDoId: int):
-        zoneId = self.air.allocateZone()
-
         yard = DistributedYardAI(self.air)
         yard.owner = ownerDoId
         yard.dungeonItemId = 10001
