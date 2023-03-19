@@ -1,6 +1,6 @@
 from ai.DistributedObjectGlobalAI import DistributedObjectGlobalAI
 from otp.constants import OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_HOLIDAY_MANAGER
-from otp.constants import OTP_ZONE_ID_ELEMENTS, DEFAULT_DUNGEON_ZONE
+from otp.constants import DUNGEON_INTEREST_HANDLE, DEFAULT_DUNGEON_ZONE
 from .DistributedObjectAI import DistributedObjectAI
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from typing import List
@@ -196,7 +196,7 @@ class DistributedLobbyAI(DistributedObjectAI):
         lobbyContext = DistributedTutorialLobbyContextAI(self.air)
         lobbyContext.owningAv = avatarId
         lobbyContext.playersInContext.append(avatarId)
-        self.air.generateWithRequired(lobbyContext, OTP_ZONE_ID_ELEMENTS, zoneId)
+        self.air.generateWithRequired(lobbyContext, DUNGEON_INTEREST_HANDLE, zoneId)
 
         dungeon = DistributedDungeonAI(self.air)
         dungeon.playerIds.append(avatarId)

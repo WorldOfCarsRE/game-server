@@ -63,7 +63,7 @@ class UberdogProtocol(MDUpstreamProtocol):
 class Uberdog(DownstreamMessageDirector):
     upstreamProtocol = UberdogProtocol
     GLOBAL_ID = None
-    ZONE_ID = OTP_ZONE_ID_MANAGEMENT
+    ZONE_ID = LOBBIES_INTEREST_HANDLE
 
     def __init__(self, loop):
         DownstreamMessageDirector.__init__(self, loop)
@@ -195,14 +195,14 @@ class FriendManagerUD(Uberdog):
 
 class ShardManagerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_CARS_SHARD_MANAGER
-    ZONE_ID = OTP_ZONE_ID_ELEMENTS
+    ZONE_ID = DUNGEON_INTEREST_HANDLE
 
     def getAllShardsRequest(self, context):
         pass
 
 class HolidayManagerUD(Uberdog):
     GLOBAL_ID = OTP_DO_ID_CARS_HOLIDAY_MANAGER
-    ZONE_ID = OTP_ZONE_ID_ELEMENTS
+    ZONE_ID = DUNGEON_INTEREST_HANDLE
 
     def getHolidayEvents(self):
         return ([])
