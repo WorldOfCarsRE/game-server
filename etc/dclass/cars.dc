@@ -240,7 +240,7 @@ dclass DistributedRaceCar : Persistent {
 
 // struct 70
 dclass DistributedCarAvatar : TalkPath_owner, TalkPath_whisper {
-    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required broadcast clsend; // 460
+    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required broadcast clsend airecv; // 460
     setPhysics(int32[] = [], int32[] = [], int32[] = [], int32[] = [], int32[] = []) required broadcast clsend;
     setState(uint32 = 0) required broadcast clsend;
 };
@@ -318,7 +318,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     setDISLid(uint32 = 0) required broadcast db ownrecv;
     setAccess(uint8 = 2) required broadcast ownrecv;
     setActiveQuests(int32[] = []) required broadcast db ownrecv;
-    setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
+    setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend airecv;
     broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
     setReward(Reward[]);
     updateYardPermissionMask(int32, int32) clsend;
@@ -386,7 +386,7 @@ dclass InteractiveObject : DistributedCarAvatar {
     setDialogTree(int32);
     addDialogTree(int32, int32, int16);
     removeDialogTree(int32, int32, int16);
-    triggerInteraction(int16, uint32[]) clsend;
+    triggerInteraction(int16, uint32[]) clsend airecv;
     setInteractiveCommands(uint16, Command[]);
     broadcastInteractiveCommands(uint16, Command[]);
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]);

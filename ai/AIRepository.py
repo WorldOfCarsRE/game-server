@@ -422,10 +422,10 @@ class AIRepository:
 
         self.mater = InteractiveObjectAI(self)
         self.mater.assetId = 31009 # materCatalogItemId
-        self.generateWithRequired(self.mater, self.downtownZone.doId, downtownZoneId)
+        self.generateWithRequired(self.mater, self.district.doId, self.downtownZone.doId)
 
-        # self.downtownZone.interactiveObjects.append(self.mater)
-        # self.downtownZone.updateObjectCount()
+        self.downtownZone.interactiveObjects.append(self.mater)
+        self.downtownZone.updateObjectCount()
 
         self.spRaceLobby = DistributedSinglePlayerRacingLobbyAI(self)
         self.generateWithRequired(self.spRaceLobby, self.district.doId, self.downtownZone.doId)
