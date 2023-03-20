@@ -337,7 +337,7 @@ class DBServer(DownstreamMessageDirector):
         else:
             dcName = await self.backend.queryDC(doId)
 
-        if dcName in ['DistributeedCarPlayer']:
+        if dcName in ['DistributedCarPlayer']:
             # TODO
             return
 

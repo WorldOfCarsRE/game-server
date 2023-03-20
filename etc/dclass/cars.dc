@@ -335,10 +335,10 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
 
 // struct 79
 dclass DistributedCarGM : DistributedCarPlayer {
-    banPlayer(uint32, int8) clsend; // 516
-    kickPlayer(uint32, int8) clsend;
-    warnPlayer(uint32, int8) clsend;
-    whisperPlayer(uint32, int8) clsend;
+    banPlayer(uint32, int8) clsend airecv; // 516
+    kickPlayer(uint32, int8) clsend airecv;
+    warnPlayer(uint32, int8) clsend airecv;
+    whisperPlayer(uint32, int8) clsend airecv;
 };
 
 // struct 80
