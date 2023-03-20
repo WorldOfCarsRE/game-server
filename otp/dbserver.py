@@ -495,6 +495,11 @@ class DBServer(DownstreamMessageDirector):
                 {'$set': {'dislId': accountId}}
             )
 
+            self.backend.webMongo.cars.update_one(
+                {'ownerAccount': accountData['playToken']},
+                {'$set': {'playerId': avatarId}}
+            )
+
             accountData['avatarId'] = avatarId
 
         if accountData['racecarId'] == 0:
@@ -537,6 +542,11 @@ class DBServer(DownstreamMessageDirector):
             await self.backend.setField(accountId, 'racecarId', racecarId, 'accounts')
 
             accountData['racecarId'] = racecarId
+
+            self.backend.webMongo.cars.update_one(
+                {'ownerAccount': accountData['playToken']},
+                {'$set': {'racecarId': racecarId}}
+            )
 
         if accountData['playerStatusId'] == 0:
             playerStatus = self.dc.getClassByName('CarPlayerStatus')
