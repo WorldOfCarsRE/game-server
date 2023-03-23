@@ -239,8 +239,8 @@ class DBServer(DownstreamMessageDirector):
                 if field.asMolecularField() is not None:
                     continue
 
-                # Check if the field is required.
-                if not field.isRequired():
+                # Check if the field is db.
+                if not field.isDb():
                     continue
 
                 # Check if the user set a value for this field already.
@@ -295,8 +295,8 @@ class DBServer(DownstreamMessageDirector):
                 if field.asMolecularField() is not None:
                     continue
 
-                # Check if the field is required.
-                if not field.isRequired():
+                # Check if the field is ownrecv.
+                if not field.isOwnrecv():
                     continue
 
                 # Check if the user set a value for this field already.
