@@ -303,20 +303,6 @@ class DistributedObject(MDParticipant):
             self.service.sendDatagram(dg)
             self.service.log.debug(f'Object {self.doId} saved value {data} for field {field.getName()} to database.')
 
-    def handleOneGet(self, dg, fieldId, subfield = False):
-        field = self.dclass.getFieldByIndex(fieldId)
-
-        if field.asMolecularField():
-            if not subfield:
-                dg.addUint16(fieldId)
-            for field in field.subfields:
-                self.handleOneGet(dg, field.getNumber(), subfield)
-
-        if field.getName() in self.required:
-            dg.append_data(self.required[field.getName()])
-        elif field.getName() in self.ram:
-            dg.append_data(self.ram[field.getName()])
-
     def handleDatagram(self, dg, dgi):
         sender = dgi.getInt64()
         msgtype = dgi.getUint16()
