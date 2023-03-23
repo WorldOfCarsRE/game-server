@@ -9,7 +9,7 @@ dclass CarsDistrict : DistributedDistrict {
     setParentingRules(string, string) broadcast ram; // 331
     setServerTime(uint32) clsend;
     unk_333();
-    setEnabled(uint8) broadcast required ram; // 334
+    setEnabled(uint8) required broadcast; // 334
 };
 
 // struct 47
@@ -55,8 +55,8 @@ dclass ShardManager {
 // struct 50
 dclass DistributedLobby {
     setParentingRules(string, string) broadcast ram; // 361
-    setDungeonItemId(int32) required broadcast ram;
-    setHotSpotName(string) required broadcast ram;
+    setDungeonItemId(int32) required broadcast;
+    setHotSpotName(string) required broadcast;
     gotoLobbyContext(int32);
     joinFail(int32);
     join() clsend airecv;
@@ -88,10 +88,10 @@ dclass DistributedTutorialLobby : DistributedLobby {
 
 // struct 56
 dclass DistributedLobbyContext {
-    setPlayersInDungeon(int32[]) required broadcast ram; // 371
-    setPlayersInContext(int32[]) required broadcast ram;
-    setOwner(int32) required broadcast ram;
-    gotoDungeon(int32, int32) required broadcast ram;
+    setPlayersInDungeon(int32[]) required broadcast; // 371
+    setPlayersInContext(int32[]) required broadcast;
+    setOwner(int32) required broadcast;
+    gotoDungeon(int32, int32) required broadcast;
     setPlayerJoin(int32);
     setPlayerQuit(int32); // 376
 };
@@ -240,7 +240,7 @@ dclass DistributedRaceCar : Persistent {
 
 // struct 70
 dclass DistributedCarAvatar : TalkPath_owner, TalkPath_whisper {
-    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required broadcast clsend; // 460
+    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required broadcast clsend airecv; // 460
     setPhysics(int32[] = [], int32[] = [], int32[] = [], int32[] = [], int32[] = []) required broadcast clsend;
     setState(uint32 = 0) required broadcast clsend;
 };
@@ -329,16 +329,16 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     showDialogs(Dialog[]);
     setCargo(int32[] = []) required broadcast db ownrecv;
     dropCargo(int32[]) clsend;
-    setAfk(int8 = 0) required broadcast db ownrecv clsend;
+    setAfk(int8 = 0) required broadcast ownrecv clsend;
     setVisible(int8 = 1, int8 = 1, int8 = 1, int8 = 0) required broadcast db ownrecv; // 515
 };
 
 // struct 79
 dclass DistributedCarGM : DistributedCarPlayer {
-    banPlayer(uint32, int8) clsend; // 516
-    kickPlayer(uint32, int8) clsend;
-    warnPlayer(uint32, int8) clsend;
-    whisperPlayer(uint32, int8) clsend;
+    banPlayer(uint32, int8) clsend airecv; // 516
+    kickPlayer(uint32, int8) clsend airecv;
+    warnPlayer(uint32, int8) clsend airecv;
+    whisperPlayer(uint32, int8) clsend airecv;
 };
 
 // struct 80
@@ -379,14 +379,14 @@ dclass InteractiveObject : DistributedCarAvatar {
     setName(string) required broadcast;
     setAssetId(int32) required broadcast;
     setType(int8) required broadcast;
-    setGlobalState(uint8[]) required broadcast;
+    setGlobalState(uint8) required broadcast;
     setPrivateState(uint8);
     setVisible(int8) required broadcast;
     setClientScript(string) required broadcast;
     setDialogTree(int32);
     addDialogTree(int32, int32, int16);
     removeDialogTree(int32, int32, int16);
-    triggerInteraction(int16, uint32[]) clsend;
+    triggerInteraction(int16, uint32[]) clsend airecv;
     setInteractiveCommands(uint16, Command[]);
     broadcastInteractiveCommands(uint16, Command[]);
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]);
@@ -403,10 +403,10 @@ dclass YardInteractiveObject : InteractiveObject {
 // struct 86
 dclass DistributedDungeon {
     setParentingRules(string, string) broadcast ram; // 554
-    waitForObjects(uint32[]) required broadcast ram;
-    setDungeonItemId(int32) required broadcast ram;
-    setLobbyDoid(int32) required broadcast ram;
-    setContextDoid(int32) required broadcast ram;
+    waitForObjects(uint32[]) required broadcast;
+    setDungeonItemId(int32) required broadcast;
+    setLobbyDoid(int32) required broadcast;
+    setContextDoid(int32) required broadcast;
     syncReady() clsend;
     setAiCommand(int32, int32[]) clsend airecv;
     setClientCommand(int32, int32[]);
@@ -459,7 +459,7 @@ dclass DistributedSPRace : DistributedRace {
 
 // struct 90
 dclass DistributedYard : DistributedDungeon {
-    setOwner(uint32) required; // 595
+    setOwner(uint32) required broadcast; // 595
     setItemPosition(int32, int32, int32) clsend;
     addItemRequest(int32, int32, int32, int32) clsend;
     addItemResponse(int8, int32);

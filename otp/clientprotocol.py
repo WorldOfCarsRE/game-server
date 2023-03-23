@@ -356,10 +356,10 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         # These Fields are REQUIRED but not stored in db.
         otherFields = [
+            (dclass.getFieldByName('setAccess'), (access,)),
             (dclass.getFieldByName('setTelemetry'), (0, 0, 0, 0, 0, 0, 0, 0,)),
             (dclass.getFieldByName('setPhysics'), ([], [], [], [], [],)),
             (dclass.getFieldByName('setState'), (0,)),
-            (dclass.getFieldByName('setRuleStates'), (((100, 1, 1, 1),),),), # To skip the tutorial, remove me to go to tutorial.
             (dclass.getFieldByName('setAfk'), (0,)),
         ]
 

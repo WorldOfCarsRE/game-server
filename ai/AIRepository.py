@@ -368,10 +368,13 @@ class AIRepository:
         from .Objects import HolidayManagerUD
         from .Objects import DistributedZoneAI, DistributedTutorialLobbyAI
         from .carplayer.InteractiveObjectAI import InteractiveObjectAI
+        from.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
+
+        from . import ZoneConstants
 
         self.district = CarsDistrictAI(self)
         self.district.name = 'Kachow!'
-        self.generateWithRequired(self.district, OTP_DO_ID_FAIRIES, OTP_ZONE_ID_DISTRICTS)
+        self.generateWithRequired(self.district, OTP_DO_ID_FAIRIES, REQUIRED_ZONE_INTEREST_HANDLE)
 
         postRemove = Datagram()
         addServerControlHeader(postRemove, CONTROL_ADD_POST_REMOVE)
@@ -386,7 +389,7 @@ class AIRepository:
         self.send(dg)
 
         self.shardManager = ShardManagerUD(self)
-        self.generateWithRequiredAndId(self.shardManager, OTP_DO_ID_CARS_SHARD_MANAGER, 1, OTP_ZONE_ID_ELEMENTS)
+        self.generateWithRequiredAndId(self.shardManager, OTP_DO_ID_CARS_SHARD_MANAGER, 1, DUNGEON_INTEREST_HANDLE)
 
         dg = Datagram()
         addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
@@ -395,7 +398,7 @@ class AIRepository:
         self.send(dg)
 
         self.holidayManager = HolidayManagerUD(self)
-        self.holidayManager.generateGlobalObject(OTP_ZONE_ID_ELEMENTS)
+        self.holidayManager.generateGlobalObject(DUNGEON_INTEREST_HANDLE)
 
         self.tutorialLobby = DistributedTutorialLobbyAI(self)
         self.generateWithRequired(self.tutorialLobby, OTP_DO_ID_CARS_SHARD_MANAGER, 100)
@@ -406,12 +409,26 @@ class AIRepository:
         dg.addUint64(self.ourChannel)
         self.send(dg)
 
-        self.testObj = InteractiveObjectAI(self)
-        # self.generateWithRequired(self.testObj, self.district.doId, OTP_ZONE_ID_ELEMENTS)
+        downtownZoneId = ZoneConstants.DOWNTOWN_RADIATOR_SPRINGS
 
-        self.downtownZone = DistributedZoneAI(self, "Downtown Radiator Springs", 15001)
-        # self.downtownZone.interactiveObjects.append(self.testObj)
-        self.generateWithRequired(self.downtownZone, self.district.doId, OTP_ZONE_ID_ELEMENTS)
+        self.downtownZone = DistributedZoneAI(self, "Downtown Radiator Springs", downtownZoneId)
+        self.generateWithRequired(self.downtownZone, self.district.doId, DUNGEON_INTEREST_HANDLE)
+
+        self.fillmoresFields = DistributedZoneAI(self, "Fillmore's Fields", ZoneConstants.FILLMORES_FIELDS)
+        self.generateWithRequired(self.fillmoresFields, self.district.doId, DUNGEON_INTEREST_HANDLE)
+
+        self.willysButte = DistributedZoneAI(self, "Willy's Butte", ZoneConstants.WILLYS_BUTTE)
+        self.generateWithRequired(self.willysButte, self.district.doId, DUNGEON_INTEREST_HANDLE)
+
+        self.mater = InteractiveObjectAI(self)
+        self.mater.assetId = 31009 # materCatalogItemId
+        self.generateWithRequired(self.mater, self.district.doId, self.downtownZone.doId)
+
+        self.downtownZone.interactiveObjects.append(self.mater)
+        self.downtownZone.updateObjectCount()
+
+        self.spRaceLobby = DistributedSinglePlayerRacingLobbyAI(self)
+        self.generateWithRequired(self.spRaceLobby, self.district.doId, self.downtownZone.doId)
 
         self.district.b_setAvailable(True)
 
