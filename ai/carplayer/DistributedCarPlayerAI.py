@@ -9,6 +9,9 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def setDISLname(self, DISLname):
         self.DISLname = DISLname
 
+    def getDISLname(self):
+        return self.DISLname
+
     def setDISLid(self, DISLid):
         self.DISLid = DISLid
 

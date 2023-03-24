@@ -449,10 +449,10 @@ dclass AvatarFriendsManager : DistributedObject {
 };
 
 dclass PlayerFriendsManager : DistributedObject, TalkPath_account {
-  requestInvite(uint32, uint32, uint8) airecv clsend;
-  invitationFrom(uint32, string);
-  retractInvite(uint32);
-  invitationResponse(uint32, uint16, uint32);
+  requestInvite(uint32 senderId, uint32 otherPlayerId, uint8 secretYesNo) airecv clsend;
+  invitationFrom(uint32 playerId, string playerName);
+  retractInvite(uint32 playerId);
+  invitationResponse(uint32 doid, uint16 respCode, uint32 context);
   requestDecline(uint32, uint32) airecv clsend;
   requestDeclineWithReason(uint32, uint32, uint32) airecv clsend;
   requestRemove(uint32, uint32) airecv clsend;

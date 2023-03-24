@@ -81,6 +81,18 @@ class ShardManagerUD(DistributedObjectAI):
 class HolidayManagerUD(DistributedObjectGlobalAI):
     doId = OTP_DO_ID_CARS_HOLIDAY_MANAGER
 
+class PlayerFriendsManagerUD(DistributedObjectAI):
+    # TODO FIXME: Same as above.
+
+    def __init__(self, air):
+        DistributedObjectAI.__init__(self, air)
+
+    def requestInvite(self, senderId: int, otherPlayerId: int, secretYesNo: int):
+        print(f'requestInvite - {senderId} - {otherPlayerId} - {secretYesNo}')
+
+        accData = self.air.mongoInterface.retrieveFields('accounts', otherPlayerId)
+        self.sendUpdateToAvatar(self.air.currentAvatarSender, 'invitationFrom', [senderId, accData['playToken']])
+
 class CarPlayerStatusAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)

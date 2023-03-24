@@ -367,7 +367,8 @@ class AIRepository:
         from .Objects import HolidayManagerUD
         from .Objects import DistributedZoneAI, DistributedTutorialLobbyAI
         from .carplayer.InteractiveObjectAI import InteractiveObjectAI
-        from.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
+        from .racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
+        from .Objects import PlayerFriendsManagerUD
 
         from . import ZoneConstants
 
@@ -428,6 +429,15 @@ class AIRepository:
 
         self.spRaceLobby = DistributedSinglePlayerRacingLobbyAI(self)
         self.generateWithRequired(self.spRaceLobby, self.district.doId, self.downtownZone.doId)
+
+        self.playerFriendsManager = PlayerFriendsManagerUD(self)
+        self.generateWithRequiredAndId(self.playerFriendsManager, OTP_DO_ID_PLAYER_FRIENDS_MANAGER, 1, DUNGEON_INTEREST_HANDLE)
+
+        dg = Datagram()
+        addServerHeader(dg, [STATESERVERS_CHANNEL], self.ourChannel, STATESERVER_ADD_AI_RECV)
+        dg.addUint32(OTP_DO_ID_PLAYER_FRIENDS_MANAGER)
+        dg.addUint64(self.ourChannel)
+        self.send(dg)
 
         self.district.b_setAvailable(True)
 

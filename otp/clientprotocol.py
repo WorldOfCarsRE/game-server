@@ -99,7 +99,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.uberdogs: List[int] = [
             OTP_DO_ID_FRIEND_MANAGER,
             OTP_DO_ID_CARS_SHARD_MANAGER,
-            OTP_DO_ID_CARS_HOLIDAY_MANAGER
+            OTP_DO_ID_CARS_HOLIDAY_MANAGER,
+            OTP_DO_ID_PLAYER_FRIENDS_MANAGER
         ]
 
         self.account: Union[DISLAccount, None] = None

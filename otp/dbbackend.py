@@ -229,6 +229,7 @@ class MongoBackend(DatabaseBackend):
     def __init__(self, service):
         DatabaseBackend.__init__(self, service)
         self.mongodb = None
+        self.webMongo = None
 
     async def setup(self):
         client = MongoClient(config['MongoDB.Host'])
