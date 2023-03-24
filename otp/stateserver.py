@@ -42,7 +42,7 @@ class DistributedObject(MDParticipant):
         self.handleLocationChange(parentId, zoneId, sender)
         self.subscribeChannel(doId)
 
-    def appendAllData(self, dg):
+    def appendBaseData(self, dg):
         dg.addUint32(self.doId)
         dg.addUint32(self.parentId)
         dg.addUint32(self.zoneId)
@@ -52,6 +52,9 @@ class DistributedObject(MDParticipant):
             return
 
         dg.addUint16(self.dclass.getNumber())
+
+    def appendAllData(self, dg):
+        self.appendBaseData(dg)
 
         blacklisted = [
             'setTalk',
@@ -89,14 +92,7 @@ class DistributedObject(MDParticipant):
             dg.appendData(fieldPacker.getBytes())
 
     def appendRequiredData(self, dg, clientOnly, alsoOwner):
-        dg.addUint32(self.doId)
-        dg.addUint32(self.parentId)
-        dg.addUint32(self.zoneId)
-        if not self.dclass:
-            print('dclass is none for object id', self.doId)
-            return
-
-        dg.addUint16(self.dclass.getNumber())
+        self.appendBaseData(dg)
 
         for fieldIndex in range(self.dclass.getNumInheritedFields()):
             field = self.dclass.getInheritedField(fieldIndex)
