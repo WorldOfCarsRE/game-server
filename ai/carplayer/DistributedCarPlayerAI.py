@@ -4,9 +4,13 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
         self.DISLname = ''
+        self.DISLid = 0
 
     def setDISLname(self, DISLname):
         self.DISLname = DISLname
+
+    def setDISLid(self, DISLid):
+        self.DISLid = DISLid
 
     def announceGenerate(self):
         self.sendUpdateToAvatar(self.air.currentAvatarSender, 'setDISLname', [self.DISLname])
