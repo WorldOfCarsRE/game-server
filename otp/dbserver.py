@@ -260,7 +260,6 @@ class DBServer(DownstreamMessageDirector):
 
             avatarId = await self.createObjectNoResponse(carPlayer, accountId, fields)
 
-            await self.backend.setField(avatarId, 'setDISLname', (accountData['playToken'],))
             await self.backend.setField(avatarId, 'setDISLid', (accountId,))
             await self.backend.setField(avatarId, 'setDNA', (await self.backend.queryDNA(playToken),))
 

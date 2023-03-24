@@ -42,6 +42,52 @@ class DistributedObject(MDParticipant):
         self.handleLocationChange(parentId, zoneId, sender)
         self.subscribeChannel(doId)
 
+    def appendAllData(self, dg):
+        dg.addUint32(self.doId)
+        dg.addUint32(self.parentId)
+        dg.addUint32(self.zoneId)
+
+        if not self.dclass:
+            print('dclass is none for object id', self.doId)
+            return
+
+        dg.addUint16(self.dclass.getNumber())
+
+        blacklisted = [
+            'setTalk',
+            'setTalkWhisper'
+        ]
+
+        for fieldIndex in range(self.dclass.getNumInheritedFields()):
+            field = self.dclass.getInheritedField(fieldIndex)
+            readyToPack = False
+
+            if field.asMolecularField() is not None:
+                continue
+
+            if field.getName() in blacklisted:
+                continue
+
+            if field.isRequired() or field.isDb() or field.isOwnrecv():
+                readyToPack = True
+
+            if not readyToPack:
+                continue
+
+            fieldPacker = DCPacker()
+
+            if field.getName() in self.required:
+                fieldArgs = self.required[field.getName()]
+            elif field.getName() in self.ram:
+                fieldArgs = self.ram[field.getName()]
+
+            fieldPacker.beginPack(field)
+
+            field.packArgs(fieldPacker, fieldArgs)
+            fieldPacker.endPack()
+
+            dg.appendData(fieldPacker.getBytes())
+
     def appendRequiredData(self, dg, clientOnly, alsoOwner):
         dg.addUint32(self.doId)
         dg.addUint32(self.parentId)
@@ -126,10 +172,7 @@ class DistributedObject(MDParticipant):
     def sendOwnerEntry(self, location):
         dg = Datagram()
         addServerHeader(dg, [location], self.doId, STATESERVER_OBJECT_ENTER_OWNER_RECV)
-        self.appendRequiredData(dg, False, True)
-
-        if self.ram:
-            self.appendOtherData(dg, True, True)
+        self.appendAllData(dg)
 
         self.service.sendDatagram(dg)
 

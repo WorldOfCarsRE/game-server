@@ -314,7 +314,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     raceInviteRequest(int32, int32, int32, int32, int32);
     gotoFriendsContext(int32, int32);
     generateComplete();
-    setDISLname(string) broadcast db;
+    setDISLname(string) broadcast;
     setDISLid(uint32 = 0) required broadcast db ownrecv;
     setAccess(uint8 = 2) broadcast ownrecv;
     setActiveQuests(int32[] = []) broadcast db ownrecv;
