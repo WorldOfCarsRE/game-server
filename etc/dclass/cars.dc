@@ -502,7 +502,7 @@ struct HolidayEvent {
 // struct 95
 dclass HolidayManager {
     // field 615 (ok)
-    setHolidayEvents(HolidayEvent[]) broadcast required ram;
+    setHolidayEvents(HolidayEvent[]) broadcast required;
 
     // might contain more unknown fields
 };

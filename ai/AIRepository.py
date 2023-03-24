@@ -143,8 +143,6 @@ class AIRepository:
             if self.currentSender == self.ourChannel:
                 return
             self.handleUpdateField(dgi)
-        elif msgType == DBSERVER_GET_ESTATE_RESP:
-            self.estateMgr.handleGetEstateResp(dgi)
         else:
             print('Unhandled msg type: ', msgType)
 
@@ -295,6 +293,7 @@ class AIRepository:
             obj.parentId = parentId
             obj.zoneId = zoneId
             dclass.receiveUpdateAllRequired(obj, dgi)
+            dclass.receiveUpdateOther(obj, dgi)
             self.doTable[obj.doId] = obj
             self.storeLocation(doId, 0, 0, parentId, zoneId)
             obj.announceGenerate()

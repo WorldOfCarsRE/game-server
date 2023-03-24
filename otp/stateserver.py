@@ -684,7 +684,7 @@ class StateServerProtocol(MDUpstreamProtocol):
 
                 if not field.isRam():
                     self.service.log.debug(f'Received non-RAM field {field.getName()} within an OTHER section.\n')
-                    field.unpack_bytes(dgi)
+                    field.unpackBytes(dgi)
                     continue
                 else:
                     ram[field.getName()] = field.unpackBytes(dgi)
