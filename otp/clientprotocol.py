@@ -242,23 +242,45 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             self.service.log.warn(f'Client {self.channel} tried to update {doId} with nonsendable field {field.getName()}')
             return
 
-        resp = Datagram()
-        addServerHeader(resp, [doId], self.channel, STATESERVER_OBJECT_UPDATE_FIELD)
-        resp.addUint32(doId)
-        resp.addUint16(fieldNumber)
-        resp.appendData(dgi.getRemainingBytes())
-        self.service.sendDatagram(resp)
+        dcData = dgi.getRemainingBytes()
+
+        avatar = self.service.dcFile.getClassByName('DistributedCarAvatar')
 
         print(field.getName())
 
         if field.getName() == 'setTalk':
-            # TODO: filtering
+            unpacker = DCPacker()
+            unpacker.setUnpackData(dcData)
+            unpacker.beginUnpack(field)
+            fieldArgs = field.unpackArgs(unpacker)
+            unpacker.endUnpack()
+
+            if len(fieldArgs) != 6:
+                # Bad field data.
+                return
+
+            message = fieldArgs[3]
+
+            if not message:
+                return
+
+            cleanMessage, modifications = self.service.chatFilter.filterWhiteList(message)
+
+            dcData = self.packFieldData(field, [doId, self.account._id, fieldArgs[2], cleanMessage, modifications, 0])
+
             resp = Datagram()
             resp.addUint16(CLIENT_OBJECT_UPDATE_FIELD)
             resp.addUint32(doId)
             resp.addUint16(fieldNumber)
-            resp.appendData(dgi.getRemainingBytes())
+            resp.appendData(dcData)
             self.sendDatagram(resp)
+
+        resp = Datagram()
+        addServerHeader(resp, [doId], self.channel, STATESERVER_OBJECT_UPDATE_FIELD)
+        resp.addUint32(doId)
+        resp.addUint16(fieldNumber)
+        resp.appendData(dcData)
+        self.service.sendDatagram(resp)
 
     def receiveClientSetLocation(self, dgi):
         doId = dgi.getUint32()
@@ -369,7 +391,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
     def packFieldData(self, field, data):
         packer = DCPacker()
-        packer.rawPackUint16(field.getNumber())
 
         packer.beginPack(field)
 

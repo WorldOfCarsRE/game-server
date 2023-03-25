@@ -6,6 +6,7 @@ from panda3d.direct import DCFile
 from otp.messagedirector import DownstreamMessageDirector, MDUpstreamProtocol, UpstreamServer
 from otp.networking import ChannelAllocator
 from .clientprotocol import ClientProtocol
+from .whitelist import WhiteList
 
 class ClientAgentProtocol(MDUpstreamProtocol):
     def handleDatagram(self, dg, dgi):
@@ -43,6 +44,8 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
 
         self.listen_task = None
         self.version = config['ClientAgent.Version']
+
+        self.chatFilter = WhiteList()
 
     def onException(self, loop, context):
         print('err', context)
