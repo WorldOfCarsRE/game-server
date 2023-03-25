@@ -244,15 +244,15 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         dcData = dgi.getRemainingBytes()
 
-        avatar = self.service.dcFile.getClassByName('DistributedCarAvatar')
-
         print(field.getName())
 
         if field.getName() == 'setTalk':
             unpacker = DCPacker()
             unpacker.setUnpackData(dcData)
             unpacker.beginUnpack(field)
+
             fieldArgs = field.unpackArgs(unpacker)
+
             unpacker.endUnpack()
 
             if len(fieldArgs) != 6:
