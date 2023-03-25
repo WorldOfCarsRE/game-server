@@ -81,8 +81,30 @@ class ShardManagerUD(DistributedObjectAI):
 class HolidayManagerUD(DistributedObjectGlobalAI):
     doId = OTP_DO_ID_CARS_HOLIDAY_MANAGER
 
+class FriendInfo:
+    def __init__(self,
+    avatarName: str = '',
+    openChatEnabledYesNo: int = 1,
+    openChatFriendshipYesNo: int = 0,
+    sublocation: str = '',
+    playerName: str = '',
+    avatarId: int = 0,
+    onlineYesNo: int = 1,
+    timestamp: int = 0,
+    wlChatEnabledYesNo: int = 0,
+    location: str = ''):
+        self.avatarName = avatarName
+        self.openChatEnabledYesNo = openChatEnabledYesNo
+        self.openChatFriendshipYesNo = openChatFriendshipYesNo
+        self.sublocation = sublocation
+        self.playerName = playerName
+        self.avatarId = avatarId
+        self.onlineYesNo = onlineYesNo
+        self.timestamp = timestamp
+        self.wlChatEnabledYesNo = wlChatEnabledYesNo
+        self.location = location
+
 class PlayerFriendsManagerUD(DistributedObjectAI):
-    # TODO FIXME: Same as above.
 
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
@@ -91,7 +113,8 @@ class PlayerFriendsManagerUD(DistributedObjectAI):
         print(f'requestInvite - {senderId} - {otherPlayerId} - {secretYesNo}')
 
         accData = self.air.mongoInterface.retrieveFields('accounts', otherPlayerId)
-        self.sendUpdateToAvatar(self.air.currentAvatarSender, 'invitationFrom', [senderId, accData['playToken']])
+
+        self.sendUpdateToAvatar(accData['racecarId'], 'invitationFrom', [senderId, accData['playToken']])
 
 class CarPlayerStatusAI(DistributedObjectAI):
     def __init__(self, air):
@@ -120,7 +143,7 @@ class DistributedZoneAI(DistributedObjectAI):
         return self.mapId
 
     def getCatalogItemId(self):
-        return self.catalogItemId # 15001
+        return self.catalogItemId
 
     def getInteractiveObjectCount(self):
         return len(self.interactiveObjects)
@@ -192,9 +215,6 @@ class DistributedLobbyAI(DistributedObjectAI):
         dungeon.lobbyDoId = self.doId
         dungeon.contextDoId = lobbyContext.doId
         self.air.generateWithRequired(dungeon, self.doId, zoneId)
-
-        # zone = DistributedZoneAI(self.air)
-        # self.air.generateWithRequired(zone, dungeon.doId, DEFAULT_DUNGEON_ZONE)
 
         self.sendUpdateToAvatar(avatarId, 'gotoLobbyContext', [zoneId])
 

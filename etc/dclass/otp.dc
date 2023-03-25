@@ -459,8 +459,8 @@ dclass PlayerFriendsManager : DistributedObject, TalkPath_account {
   secretResponse(string);
   rejectSecret(string);
   rejectUseSecret(string);
-  updatePlayerFriend(uint32, FriendInfo, uint8);
-  removePlayerFriend(uint32);
+  updatePlayerFriend(uint32 playerId, FriendInfo info, uint8 is_newfriend);
+  removePlayerFriend(uint32 playerId);
 };
 
 dclass SnapshotDispatcher : DistributedObject {
