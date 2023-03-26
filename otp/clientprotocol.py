@@ -19,10 +19,8 @@ class ClientState(IntEnum):
     NEW = 0
     ANONYMOUS = 1
     AUTHENTICATED = 2
-    AVATAR_CHOOSER = 3
-    CREATING_AVATAR = 4
-    SETTING_AVATAR = 5
-    PLAY_GAME = 6
+    SETTING_AVATAR = 3
+    PLAY_GAME = 4
 
 class ClientDisconnect(IntEnum):
     INTERNAL_ERROR = 1
@@ -116,7 +114,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             task.cancel()
         del self.tasks[:]
         resp = Datagram()
-        resp.addUint16(CLIENT_GO_GET_LOST)
+        resp.addUint16(CLIENT_GO_GET_LOST_RESP)
         resp.addUint16(bootedIndex)
         resp.addString(bootedText)
         self.transport.write(resp.getLength().to_bytes(2, byteorder = 'little'))
@@ -152,11 +150,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         if msgtype != CLIENT_OBJECT_UPDATE_FIELD:
             self.service.log.debug(f'Got message type {MSG_TO_NAME_DICT[msgtype]} from client {self.channel}')
 
-        if msgtype == CLIENT_HEARTBEAT:
+        if msgtype == CLIENT_HEART_BEAT:
             self.sendDatagram(dg)
-            return
-
-        if msgtype == CLIENT_DISCONNECT:
             return
 
         if self.state == ClientState.NEW:
@@ -168,57 +163,23 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         elif self.state == ClientState.AUTHENTICATED:
             if msgtype == CLIENT_GET_AVATARS:
                 self.receiveGetAvatars(dgi)
-            elif msgtype == CLIENT_ADD_INTEREST:
-                self.receiveAddInterest(dgi)
+            elif msgtype == CLIENT_SET_INTEREST:
+                self.receiveSetInterest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receiveRemoveInterest(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 self.receiveUpdateField(dgi)
             else:
                 self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
-        elif self.state == ClientState.AVATAR_CHOOSER:
-            if msgtype == CLIENT_CREATE_AVATAR:
-                self.receiveCreateAvatar(dgi)
-            elif msgtype == CLIENT_SET_WISHNAME:
-                self.receiveSetWishName(dgi)
-            elif msgtype == CLIENT_REMOVE_INTEREST:
-                self.receiveRemoveInterest(dgi)
-            elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                doId = dgi.getUint32()
-                if doId == OTP_DO_ID_CENTRAL_LOGGER:
-                    self.receiveUpdateField(dgi, doId)
-                else:
-                    self.service.log.debug(f'Unexpected field update for doId {doId} during avatar chooser.')
-            elif msgtype == CLIENT_DELETE_AVATAR:
-                self.receiveDeleteAvatar(dgi)
-            elif msgtype == CLIENT_SET_WISHNAME_CLEAR:
-                self.receiveSetWishNameClear(dgi)
-            else:
-                self.service.log.debug(f'Unexpected message type during avatar chooser {msgtype}.')
-        elif self.state == ClientState.CREATING_AVATAR:
-            if msgtype == CLIENT_SET_WISHNAME:
-                self.receiveSetWishName(dgi)
-            elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                doId = dgi.getUint32()
-                if doId == OTP_DO_ID_CENTRAL_LOGGER:
-                    self.receiveUpdateField(dgi, doId)
-                else:
-                    self.service.log.debug(f'Unexpected field update for doId {doId} during avatar creation.')
-            else:
-                self.service.log.debug(f'Unexpected message type during avatar creation {msgtype}.')
         else:
-            if msgtype == CLIENT_ADD_INTEREST:
-                self.receiveAddInterest(dgi)
+            if msgtype == CLIENT_SET_INTEREST:
+                self.receiveSetInterest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receiveRemoveInterest(dgi)
-            elif msgtype == CLIENT_GET_FRIEND_LIST:
-                self.receiveGetFriendList(dgi)
             elif msgtype == CLIENT_SET_LOCATION:
                 self.receiveClientSetLocation(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 self.receiveUpdateField(dgi)
-            elif msgtype in (CLIENT_GET_AVATAR_DETAILS, CLIENT_GET_PET_DETAILS):
-                self.receiveGetObjectDetails(dgi, msgtype)
             else:
                 self.service.log.debug(f'Unhandled msg type {msgtype} in state {self.state}')
 
@@ -451,7 +412,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         if not ai and context:
             resp = Datagram()
-            resp.addUint16(CLIENT_DONE_INTEREST_RESP)
+            resp.addUint16(CLIENT_DONE_SET_ZONE_RESP)
             resp.addInt16(handle)
             resp.addUint32(context)
             self.sendDatagram(resp)
@@ -557,7 +518,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.service.sendDatagram(dg)
 
-    def receiveAddInterest(self, dgi, ai = False):
+    def receiveSetInterest(self, dgi, ai = False):
         handle = dgi.getInt16()
         contextId = dgi.getUint32()
         parentId = dgi.getUint32()
@@ -621,7 +582,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             interest.done = True
             if not ai and contextId:
                 resp = Datagram()
-                resp.addUint16(CLIENT_DONE_INTEREST_RESP)
+                resp.addUint16(CLIENT_DONE_SET_ZONE_RESP)
                 resp.addInt16(handle)
                 resp.addUint32(contextId)
                 self.sendDatagram(resp)
@@ -692,17 +653,11 @@ class ClientProtocol(CarsProtocol, MDParticipant):
                 self.sendRemoveObject(doId)
                 del self.visibleObjects[doId]
         elif msgtype == CLIENT_AGENT_SET_INTEREST:
-            self.receiveAddInterest(dgi, ai = True)
+            self.receiveSetInterest(dgi, ai = True)
         elif msgtype == CLIENT_AGENT_REMOVE_INTEREST:
             self.receiveRemoveInterest(dgi, ai = True)
         elif msgtype == CLIENT_AGENT_EJECT:
             bootCode, message = dgi.getUint16(), dgi.getString()
-            self.disconnect(bootCode, message)
-        elif msgtype in {CLIENT_FRIEND_ONLINE, CLIENT_FRIEND_OFFLINE, CLIENT_GET_FRIEND_LIST_RESP, CLIENT_GET_AVATAR_DETAILS_RESP}:
-            dg = Datagram()
-            dg.addUint16(msgtype)
-            dg.appendData(dgi.getRemainingBytes())
-            self.sendDatagram(dg)
         elif msgtype == DBSERVER_AUTH_REQUEST_RESP:
             self.handleLoginResp(dgi)
         else:
@@ -741,7 +696,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         print(f'Sending owned entry for: {dcName}')
 
         resp = Datagram()
-        resp.addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER)
+        resp.addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER_RESP)
         resp.addUint16(dcId)
         resp.addUint32(doId)
         resp.addUint32(parentId)
@@ -791,7 +746,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
     def sendRemoveObject(self, doId):
         self.service.log.debug(f'Sending removal of {doId}.')
         resp = Datagram()
-        resp.addUint16(CLIENT_OBJECT_DISABLE)
+        resp.addUint16(CLIENT_OBJECT_DISABLE_RESP)
         resp.addUint32(doId)
         self.sendDatagram(resp)
 
@@ -838,7 +793,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         if not interest.ai and context:
             resp = Datagram()
-            resp.addUint16(CLIENT_DONE_INTEREST_RESP)
+            resp.addUint16(CLIENT_DONE_SET_ZONE_RESP)
             resp.addInt16(handle)
             resp.addUint32(context)
             self.sendDatagram(resp)
@@ -905,7 +860,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         print(f'Sending entry for: {dcName}')
 
         resp = Datagram()
-        resp.addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER if hasOther else CLIENT_CREATE_OBJECT_REQUIRED)
+        resp.addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_RESP if hasOther else CLIENT_CREATE_OBJECT_REQUIRED_RESP)
         resp.addUint32(parentId)
         resp.addUint32(zoneId)
         resp.addUint16(dcId)
@@ -915,7 +870,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
     def sendGoGetLost(self, bootedIndex, bootedText):
         resp = Datagram()
-        resp.addUint16(CLIENT_GO_GET_LOST)
+        resp.addUint16(CLIENT_GO_GET_LOST_RESP)
         resp.addUint16(bootedIndex)
         resp.addString(bootedText)
         self.sendDatagram(resp)
