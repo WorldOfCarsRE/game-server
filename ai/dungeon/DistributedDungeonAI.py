@@ -13,7 +13,7 @@ class DistributedDungeonAI(DistributedObjectAI):
         self.playerIds: List[int] = []
         self.lobbyDoId: int = 0
         self.contextDoId: int = 0
-        self.dungeonItemId = 1000
+        self.dungeonItemId: int = 1000
 
     def getWaitForObjects(self):
         return [] # self.playerIds

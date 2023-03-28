@@ -193,9 +193,10 @@ class DistributedTutorialLobbyContextAI(DistributedLobbyContextAI):
 class DistributedLobbyAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
+        self.dungeonItemId: int = 1000
 
     def getDungeonItemId(self):
-        return 1000
+        return self.dungeonItemId
 
     def getHotSpotName(self):
         return ''
