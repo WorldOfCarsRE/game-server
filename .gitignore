@@ -234,3 +234,4 @@ PYTHON_PATH
 # Keys
 etc/*.key
 etc/*.cert
+etc/secret.par

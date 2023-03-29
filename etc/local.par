@@ -1,6 +1,5 @@
 [General]
 UVLOOP=0
-LOGIN_SECRET=326d5568663768242621384d696c2159
 
 [MessageDirector]
 HOST=127.0.0.1
@@ -15,7 +14,7 @@ MAX_CHANNEL=2000999999
 
 # The client/server version.
 # This is checked against the client's version to make sure they match.
-Version=9.8.3
+VERSION=9.8.3
 
 [StateServer]
 HOST=127.0.0.1
@@ -35,5 +34,5 @@ USER=root
 PASSWORD=root
 
 [MongoDB]
-Host=mongodb://127.0.0.1:27017
-Name=Dialga
+HOST=mongodb://127.0.0.1:27017
+NAME=Dialga

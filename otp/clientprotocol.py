@@ -15,6 +15,10 @@ from otp.zone import *
 from otp.constants import *
 from otp.util import *
 
+from base64 import b64decode
+from Crypto.Cipher import AES
+from Crypto.Protocol.KDF import PBKDF2
+
 class ClientState(IntEnum):
     NEW = 0
     ANONYMOUS = 1
@@ -62,8 +66,6 @@ class ObjectInfo:
     dcId: int
     parentId: int
     zoneId: int
-
-CLIENTAGENT_SECRET = bytes.fromhex(config['General.LOGIN_SECRET'])
 
 @dataslots
 @dataclass
@@ -437,6 +439,17 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         if hashVal != self.service.dcHash:
             self.disconnect(ClientDisconnect.LOGIN_ERROR, '')
             return
+
+        if self.service.useEncryptedTokens:
+            try:
+                byteData = PBKDF2(self.service.encPass.encode(), self.service.encSalt.encode(), 48, 128)
+                iv, key = byteData[0:16], byteData[16:48]
+                cipher = AES.new(key, AES.MODE_CBC, iv)
+                dec = cipher.decrypt(b64decode(playToken))
+                playToken = dec[:-dec[-1]].decode()
+            except:
+                self.disconnect(ClientDisconnect.LOGIN_ERROR, 'Invalid token')
+                return
 
         # Send this to the Database server.
         resp = Datagram()

@@ -1,5 +1,5 @@
-from otp import config
-import asyncio
+from otp import config, secretsData
+import asyncio, builtins
 
 from panda3d.direct import DCFile
 
@@ -43,9 +43,20 @@ class ClientAgent(DownstreamMessageDirector, UpstreamServer, ChannelAllocator):
         self.log.debug(f'DC Hash is {self.dcHash}')
 
         self.listen_task = None
-        self.version = config['ClientAgent.Version']
+        self.version = config['ClientAgent.VERSION']
 
         self.chatFilter = WhiteList()
+
+        self.encPass = ''
+        self.encSalt = ''
+
+        self.useEncryptedTokens = builtins.USE_ENC_TOKENS
+
+        if self.useEncryptedTokens:
+            self.log.debug('Using encrypted tokens for authentication.')
+
+            self.encPass = secretsData['Secrets.PASS']
+            self.encSalt = secretsData['Secrets.SALT']
 
     def onException(self, loop, context):
         print('err', context)

@@ -232,8 +232,8 @@ class MongoBackend(DatabaseBackend):
         self.webMongo = None
 
     async def setup(self):
-        client = MongoClient(config['MongoDB.Host'])
-        self.mongodb = client[config['MongoDB.Name']]
+        client = MongoClient(config['MongoDB.HOST'])
+        self.mongodb = client[config['MongoDB.NAME']]
         self.webMongo = client['woc']
 
         # Check if we need to create our initial entries in the database.
