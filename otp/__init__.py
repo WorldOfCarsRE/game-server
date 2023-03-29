@@ -7,7 +7,7 @@ builtins.USE_ENC_TOKENS = os.path.isfile('etc/secret.par')
 
 secretsData = None
 
-if os.path.isfile('etc/secret.par'):
+if builtins.USE_ENC_TOKENS:
     secretsData = parse_par_file('etc/secret.par')
 
 if config['General.UVLOOP']:
