@@ -417,6 +417,9 @@ class AIRepository:
         self.fillmoresFields = DistributedZoneAI(self, "Fillmore's Fields", ZoneConstants.FILLMORES_FIELDS)
         self.generateWithRequired(self.fillmoresFields, self.district.doId, DUNGEON_INTEREST_HANDLE)
 
+        self.redhoodValley = DistributedZoneAI(self, "Redhood Valley", ZoneConstants.REDHOOD_VALLEY)
+        self.generateWithRequired(self.redhoodValley, self.district.doId, DUNGEON_INTEREST_HANDLE)
+
         self.willysButte = DistributedZoneAI(self, "Willy's Butte", ZoneConstants.WILLYS_BUTTE)
         self.generateWithRequired(self.willysButte, self.district.doId, DUNGEON_INTEREST_HANDLE)
 
