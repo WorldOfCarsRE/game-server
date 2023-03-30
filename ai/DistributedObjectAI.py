@@ -92,7 +92,7 @@ class DistributedObjectAI(DirectObject):
             self._zoneData.destroy()
             self._zoneData = None
 
-    def handleLogicalZoneChange(self, old_zone: int, new_zone: int):
+    def handleLogicalZoneChange(self, oldZone: int, newZone: int):
         pass
 
     def generate(self):

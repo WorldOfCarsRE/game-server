@@ -324,7 +324,7 @@ class MongoBackend(DatabaseBackend):
             data = {}
             data['playToken'] = playToken
             data['_id'] = acc['_id']
-            data['access'] = 'FULL'
+            data['access'] = 'unpaid'
             data['accountType'] = 'NO_PARENT_ACCOUNT'
             data['createFriendsWithChat'] = 'YES'
             data['chatCodeCreationRule'] = 'YES'

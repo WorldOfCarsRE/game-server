@@ -192,13 +192,13 @@ class AIRepository:
         if newZone != oldZone and newParentObj:
             newParentObj.handleChildArriveZone(obj, newZone)
 
-    def sendLocation(self, doId, old_parent: int, old_zone: int, new_parent: int, new_zone: int):
+    def sendLocation(self, doId, oldParent: int, oldZone: int, newParent: int, newZone: int):
         dg = Datagram()
         addServerHeader(dg, [doId], self.ourChannel, STATESERVER_OBJECT_SET_ZONE)
-        dg.addUint32(new_parent)
-        dg.addUint32(new_zone)
-        dg.addUint32(old_parent)
-        dg.addUint32(old_zone)
+        dg.addUint32(newParent)
+        dg.addUint32(newZone)
+        dg.addUint32(oldParent)
+        dg.addUint32(oldZone)
         self.send(dg)
 
     @staticmethod

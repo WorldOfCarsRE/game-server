@@ -5,8 +5,8 @@ class MongoInterface:
     def __init__(self, air):
         self.air = air
 
-        client = MongoClient(config['MongoDB.Host'])
-        self.mongodb = client[config['MongoDB.Name']]
+        client = MongoClient(config['MongoDB.HOST'])
+        self.mongodb = client[config['MongoDB.NAME']]
         self.webMongo = client['woc']
 
     def retrieveFields(self, dclass: str, doId: int) -> list:

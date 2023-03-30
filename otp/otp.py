@@ -1,7 +1,5 @@
-import os
 from multiprocessing import Pool
-
-import sys
+import os, sys
 
 def runProcess(process):
     os.system(f'{sys.executable} {process}')
