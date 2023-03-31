@@ -1,4 +1,5 @@
-import json
+import json, time
+
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import List, Union, Dict, Tuple
@@ -446,7 +447,12 @@ class ClientProtocol(CarsProtocol, MDParticipant):
                 iv, key = byteData[0:16], byteData[16:48]
                 cipher = AES.new(key, AES.MODE_CBC, iv)
                 dec = cipher.decrypt(b64decode(playToken))
-                playToken = dec[:-dec[-1]].decode()
+                jsonData = json.loads(dec[:-dec[-1]].decode())
+                playToken = jsonData['user']
+
+                if jsonData['expiry'] < int(time.time()):
+                    self.disconnect(ClientDisconnect.LOGIN_ERROR, 'Expired token')
+                    return
             except:
                 self.disconnect(ClientDisconnect.LOGIN_ERROR, 'Invalid token')
                 return
