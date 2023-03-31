@@ -209,7 +209,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         print(field.getName())
 
-        if field.getName() == 'setTalk':
+        if field.getName() in ('setTalk', 'setTalkWhisper'):
             unpacker = DCPacker()
             unpacker.setUnpackData(dcData)
             unpacker.beginUnpack(field)
