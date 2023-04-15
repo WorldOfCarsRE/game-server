@@ -223,7 +223,7 @@ class DBServer(DownstreamMessageDirector):
         accountId = accountData['_id']
 
         if accountData['avatarId'] == 0:
-            carPlayer = self.dc.getClassByName('DistributedCarPlayer')
+            carPlayer = self.dc.getClassByName('DistributedCarPlayer') # DistributedCarPuppet
 
             packer = DCPacker()
 

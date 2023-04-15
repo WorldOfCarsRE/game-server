@@ -337,7 +337,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.subscribeChannel(self.channel)
         self.subscribeChannel(getPuppetChannel(self.avatarId))
 
-        dclass = self.service.dcFile.getClassByName('DistributedCarPlayer')
+        dclass = self.service.dcFile.getClassByName('DistributedCarPlayer') # DistributedCarPuppet
 
         access = 2 if self.account.access == 'FULL' else 1
 
@@ -349,6 +349,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             (dclass.getFieldByName('setState'), (0,)),
             (dclass.getFieldByName('setAfk'), (0,)),
             (dclass.getFieldByName('setDISLname'), (self.account.playToken,))
+            # (dclass.getFieldByName('setPuppetId'), (101,)),
         ]
 
         self.activateDatabaseObjectWithOther(avId, dclass, otherFields)
