@@ -4,6 +4,7 @@ from ai.dungeon.DistributedSPRaceAI import DistributedSPRaceAI
 from otp.constants import DUNGEON_INTEREST_HANDLE
 
 class DistributedSinglePlayerRacingLobbyAI(DistributedLobbyAI):
+
     def __init__(self, air):
         DistributedLobbyAI.__init__(self, air)
 

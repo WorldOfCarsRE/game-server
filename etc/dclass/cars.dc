@@ -363,7 +363,7 @@ dclass DistributedZone {
     setPlayerCount(uint16) required broadcast;
     setMute(uint8) required broadcast;
     refreshInteractiveObjects(uint32[]) clsend;
-    onClientEnter() clsend; // 532
+    onClientEnter() clsend airecv; // 532
 };
 
 // struct 83
@@ -407,7 +407,7 @@ dclass DistributedDungeon {
     setDungeonItemId(int32) required broadcast;
     setLobbyDoid(int32) required broadcast;
     setContextDoid(int32) required broadcast;
-    syncReady() clsend;
+    syncReady() clsend airecv;
     setAiCommand(int32, int32[]) clsend airecv;
     setClientCommand(int32, int32[]);
     broadcastClientCommand(int32, int32[]);
@@ -417,7 +417,7 @@ dclass DistributedDungeon {
 
 // struct 87
 dclass DistributedRace : DistributedDungeon {
-    setCountDown(int8); // 565
+    setCountDown(int8) broadcast; // 565
     setPlaces(int32[]);
     onSegmentEnter(int16, int16, int8) clsend;
     openSegment(int16);
@@ -453,8 +453,8 @@ dclass DistributedMPRace : DistributedRace {
 
 // struct 89
 dclass DistributedSPRace : DistributedRace {
-    setOpponentNPCs(int32[]) clsend; // 593
-    onNpcSegmentEnter(int32, int16, int16, int8) clsend;
+    setOpponentNPCs(int32[]) clsend airecv; // 593
+    onNpcSegmentEnter(int32, int16, int16, int8) clsend airecv;
 };
 
 // struct 90
