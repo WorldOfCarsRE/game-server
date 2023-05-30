@@ -1,4 +1,5 @@
 from .DistributedDungeonAI import DistributedDungeonAI
+from direct.task.Task import Task
 
 class DistributedRaceAI(DistributedDungeonAI):
     COUNTDOWN_TIME = 3
@@ -7,4 +8,17 @@ class DistributedRaceAI(DistributedDungeonAI):
         DistributedDungeonAI.__init__(self, air)
 
     def syncReady(self):
-        self.sendUpdate('setCountDown', [self.COUNTDOWN_TIME])
+        avatarId = self.air.currentAvatarSender
+
+        countDownTask = Task(self.__countDownTask)
+        countDownTask.duration = self.COUNTDOWN_TIME
+
+        taskMgr.add(countDownTask, self.uniqueName(avatarId), extraArgs = [avatarId], appendTask = True)
+
+    def __countDownTask(self, avatarId: int, task: Task):
+        if task.time >= task.duration:
+            return Task.done
+        else:
+            self.sendUpdateToAvatar(avatarId, 'setCountDown', [int(task.duration - task.time)])
+
+            return Task.cont

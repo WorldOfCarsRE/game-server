@@ -417,7 +417,7 @@ dclass DistributedDungeon {
 
 // struct 87
 dclass DistributedRace : DistributedDungeon {
-    setCountDown(int8) broadcast; // 565
+    setCountDown(int8); // 565
     setPlaces(int32[]);
     onSegmentEnter(int16, int16, int8) clsend;
     openSegment(int16);
