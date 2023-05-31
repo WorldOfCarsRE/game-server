@@ -24,8 +24,6 @@ class ClientState(IntEnum):
     NEW = 0
     ANONYMOUS = 1
     AUTHENTICATED = 2
-    SETTING_AVATAR = 3
-    PLAY_GAME = 4
 
 class ClientDisconnect(IntEnum):
     INTERNAL_ERROR = 1
@@ -105,11 +103,6 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         ]
 
         self.account: Union[DISLAccount, None] = None
-        self.avatarId: int = 0
-        self.racecarId: int = 0
-        self.playerStatusId: int = 0
-        self.wantedName: str = ''
-        self.avsDeleted: List[Tuple[int, int]] = []
         self.pendingObjects: Dict[int, PendingObject] = {}
 
     def disconnect(self, bootedIndex, bootedText):
@@ -129,10 +122,13 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.service.log.debug(f'Connection lost to client {self.channel}')
         CarsProtocol.connection_lost(self, exc)
 
-        if self.avatarId and self.racecarId and self.playerStatusId:
-            self.deleteObject(self.avatarId)
-            self.deleteObject(self.racecarId)
-            self.deleteObject(self.playerStatusId)
+        if self.account.avatarId and self.account.racecarId and self.account.playerStatusId:
+            self.deleteObject(self.account.avatarId)
+            self.deleteObject(self.account.racecarId)
+            self.deleteObject(self.account.playerStatusId)
+
+            self.ownedObjects.clear()
+            self.visibleObjects.clear()
 
         self.service.removeParticipant(self)
 
@@ -170,21 +166,12 @@ class ClientProtocol(CarsProtocol, MDParticipant):
                 self.receiveSetInterest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receiveRemoveInterest(dgi)
-            elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
-                self.receiveUpdateField(dgi)
-            else:
-                self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
-        else:
-            if msgtype == CLIENT_SET_INTEREST:
-                self.receiveSetInterest(dgi)
-            elif msgtype == CLIENT_REMOVE_INTEREST:
-                self.receiveRemoveInterest(dgi)
             elif msgtype == CLIENT_SET_LOCATION:
                 self.receiveClientSetLocation(dgi)
             elif msgtype == CLIENT_OBJECT_UPDATE_FIELD:
                 self.receiveUpdateField(dgi)
             else:
-                self.service.log.debug(f'Unhandled msg type {msgtype} in state {self.state}')
+                self.service.log.debug(f'Unexpected message type during post authentication {msgtype}.')
 
     def receiveUpdateField(self, dgi, doId = None):
         if doId is None:
@@ -264,78 +251,12 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         else:
             self.service.log.debug(f'Client {self.channel} tried setting location for unowned object {doId}!')
 
-    def setRaceCar(self, racecarId: int):
-        self.service.log.debug(f'client {self.channel} is setting their racecar to {racecarId}')
+    def activateObjects(self):
+        self.service.log.debug(f'client {self.channel} is setting their avatar to {self.account.avatarId}')
 
-        if not racecarId:
-            if self.racecarId:
-                # Client is logging out of their racecar.
-                self.deleteObject(self.racecarId)
-                self.ownedObjects.clear()
-                self.visibleObjects.clear()
-
-                self.unsubscribeChannel(getClientSenderChannel(self.account._id, self.avatarId))
-                self.unsubscribeChannel(getPuppetChannel(self.avatarId))
-                self.channel = getClientSenderChannel(self.account._id, 0)
-                self.subscribeChannel(self.channel)
-
-                self.state = ClientState.AUTHENTICATED
-                self.avatarId = 0
-                return
-            else:
-                # Do nothing.
-                return
-        elif self.state == ClientState.PLAY_GAME:
-            self.service.log.debug(f'Client {self.channel} tried to set their racecar {racecarId} while racecar is already set to {self.racecarId}.')
-            return
-
-        self.racecarId = racecarId
-
-        self.state = ClientState.SETTING_AVATAR
-
-        self.channel = getClientSenderChannel(self.account._id, self.racecarId)
+        self.channel = getClientSenderChannel(self.account._id, self.account.avatarId)
         self.subscribeChannel(self.channel)
-        self.subscribeChannel(getPuppetChannel(self.racecarId))
-
-        dclass = self.service.dcFile.getClassByName('DistributedRaceCar')
-
-        # These Fields are REQUIRED but not stored in db.
-        otherFields = []
-
-        self.activateDatabaseObjectWithOther(racecarId, dclass, otherFields)
-
-    def setAvatar(self, avId: int):
-        self.service.log.debug(f'client {self.channel} is setting their avatar to {avId}')
-
-        if not avId:
-            if self.avatarId:
-                # Client is logging out of their avatar.
-                self.deleteObject(self.avatarId)
-                self.ownedObjects.clear()
-                self.visibleObjects.clear()
-
-                self.unsubscribeChannel(getClientSenderChannel(self.account._id, self.avatarId))
-                self.unsubscribeChannel(getPuppetChannel(self.avatarId))
-                self.channel = getClientSenderChannel(self.account._id, 0)
-                self.subscribeChannel(self.channel)
-
-                self.state = ClientState.AUTHENTICATED
-                self.avatarId = 0
-                return
-            else:
-                # Do nothing.
-                return
-        elif self.state == ClientState.PLAY_GAME:
-            self.service.log.debug(f'Client {self.channel} tried to set their avatar {avId} while avatar is already set to {self.avatarId}.')
-            return
-
-        self.avatarId = avId
-
-        self.state = ClientState.SETTING_AVATAR
-
-        self.channel = getClientSenderChannel(self.account._id, self.avatarId)
-        self.subscribeChannel(self.channel)
-        self.subscribeChannel(getPuppetChannel(self.avatarId))
+        self.subscribeChannel(getPuppetChannel(self.account.avatarId))
 
         dclass = self.service.dcFile.getClassByName('DistributedCarPlayer') # DistributedCarPuppet
 
@@ -352,7 +273,26 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             # (dclass.getFieldByName('setPuppetId'), (101,)),
         ]
 
-        self.activateDatabaseObjectWithOther(avId, dclass, otherFields)
+        self.activateDatabaseObjectWithOther(self.account.avatarId, dclass, otherFields)
+
+        # Next, we activate our DistributedRaceCar object
+        self.service.log.debug(f'client {self.channel} is setting their racecar to {self.account.racecarId}')
+
+        self.channel = getClientSenderChannel(self.account._id, self.account.racecarId)
+        self.subscribeChannel(self.channel)
+        self.subscribeChannel(getPuppetChannel(self.account.racecarId))
+
+        dclass = self.service.dcFile.getClassByName('DistributedRaceCar')
+
+        # These Fields are REQUIRED but not stored in db.
+        otherFields = []
+
+        self.activateDatabaseObjectWithOther(self.account.racecarId, dclass, otherFields)
+
+        # Finally, we activate our CarPlayerStatus object
+        dclass = self.service.dcFile.getClassByName('CarPlayerStatus')
+
+        self.activateDatabaseObjectWithOther(self.account.playerStatusId, dclass, [])
 
     def packFieldData(self, field, data):
         packer = DCPacker()
@@ -507,14 +447,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
 
         self.sendDatagram(resp)
 
-        self.setAvatar(self.account.avatarId)
-        self.setRaceCar(self.account.racecarId)
-
-        dclass = self.service.dcFile.getClassByName('CarPlayerStatus')
-
-        self.playerStatusId = self.account.playerStatusId
-
-        self.activateDatabaseObjectWithOther(self.account.playerStatusId, dclass, [])
+        # Activate our DBSS client objects.
+        self.activateObjects()
 
     def activateDatabaseObjectWithOther(self, doId: int, dclass, other: list):
         dg = Datagram()
@@ -547,7 +481,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         self.service.log.debug(f'Client {self.channel} is requesting interest with handle {handle} and context {contextId} '
                                f'for location {parentId} {zones}')
 
-        if self.state <= ClientState.AUTHENTICATED and parentId != OTP_DO_ID_FAIRIES:
+        if self.state != ClientState.AUTHENTICATED and parentId != OTP_DO_ID_FAIRIES:
             self.service.log.debug(f'Client {self.channel} requested unexpected interest in state {self.state}. Ignoring.')
             return
 
@@ -660,7 +594,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
         elif msgtype == STATESERVER_OBJECT_DELETE_RAM:
             doId = dgi.getUint32()
 
-            if doId == self.avatarId or doId == self.racecarId:
+            if doId == self.account.avatarId or doId == self.account.racecarId:
                 if sender == self.account._id << 32:
                     self.disconnect(ClientDisconnect.RELOGGED, 'redundant login')
                 else:
