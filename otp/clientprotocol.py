@@ -160,9 +160,7 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             else:
                 self.service.log.debug(f'Unexpected message type during handshake {msgtype}.')
         elif self.state == ClientState.AUTHENTICATED:
-            if msgtype == CLIENT_GET_AVATARS:
-                self.receiveGetAvatars(dgi)
-            elif msgtype == CLIENT_SET_INTEREST:
+            if msgtype == CLIENT_SET_INTEREST:
                 self.receiveSetInterest(dgi)
             elif msgtype == CLIENT_REMOVE_INTEREST:
                 self.receiveRemoveInterest(dgi)
