@@ -10,17 +10,18 @@ class WhiteList(Service):
 
         vfs = VirtualFileSystem.getGlobalPtr()
 
-        filename = Filename('chat_whitelist.xml')
+        chatwhitelist = Filename('chat_whitelist.xml')
         speedchat = Filename('speedchat.xml')
 
-        searchPath = DSearchPath()
-        searchPath.appendDirectory(Filename('etc/assets'))
+        searchpath = DSearchPath()
+        searchpath.appendDirectory(Filename('etc/assets'))
 
-        if not vfs.resolveFilename(filename, searchPath) or not vfs.resolveFilename(speedchat, searchPath):
-            self.log.error('Failed to find chat data!')
-            return
+        for filename in [chatwhitelist, speedchat]:
+            if not vfs.resolveFilename(filename, searchpath):
+                self.log.error(f'Failed to find {filename}!')
+                return
 
-        data = vfs.readFile(filename, 1)
+        data = vfs.readFile(chatwhitelist, 1)
         wordlist = data.split(b'\n')
 
         self.words = []
