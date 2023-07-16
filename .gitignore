@@ -235,3 +235,4 @@ PYTHON_PATH
 etc/*.key
 etc/*.cert
 etc/secret.par
+etc/assets
