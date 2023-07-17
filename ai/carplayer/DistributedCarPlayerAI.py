@@ -40,8 +40,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         if eventId in ZoneConstants.MINIGAMES:
             level, score = rules
 
-            self.d_updateCoins(score)
+            self.addCoins(score)
             self.sendUpdateToAvatar(self.doId, 'invokeRuleResponse', [eventId, rules, context])
 
-    def d_updateCoins(self, coins: int):
-        self.sendUpdateToAvatar(self.doId, 'setCarCoins', [coins])
+    def addCoins(self, deltaCoins: int):
+        self.sendUpdate('setCarCoins', [deltaCoins + self.getCarCoins()])
