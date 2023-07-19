@@ -81,41 +81,6 @@ class ShardManagerUD(DistributedObjectAI):
 class HolidayManagerUD(DistributedObjectGlobalAI):
     doId = OTP_DO_ID_CARS_HOLIDAY_MANAGER
 
-class FriendInfo:
-    def __init__(self,
-    avatarName: str = '',
-    openChatEnabledYesNo: int = 1,
-    openChatFriendshipYesNo: int = 0,
-    sublocation: str = '',
-    playerName: str = '',
-    avatarId: int = 0,
-    onlineYesNo: int = 1,
-    timestamp: int = 0,
-    wlChatEnabledYesNo: int = 0,
-    location: str = ''):
-        self.avatarName = avatarName
-        self.openChatEnabledYesNo = openChatEnabledYesNo
-        self.openChatFriendshipYesNo = openChatFriendshipYesNo
-        self.sublocation = sublocation
-        self.playerName = playerName
-        self.avatarId = avatarId
-        self.onlineYesNo = onlineYesNo
-        self.timestamp = timestamp
-        self.wlChatEnabledYesNo = wlChatEnabledYesNo
-        self.location = location
-
-class PlayerFriendsManagerUD(DistributedObjectAI):
-
-    def __init__(self, air):
-        DistributedObjectAI.__init__(self, air)
-
-    def requestInvite(self, senderId: int, otherPlayerId: int, secretYesNo: int):
-        print(f'requestInvite - {senderId} - {otherPlayerId} - {secretYesNo}')
-
-        accData = self.air.mongoInterface.retrieveFields('accounts', otherPlayerId)
-
-        self.sendUpdateToAvatar(accData['racecarId'], 'invitationFrom', [senderId, accData['playToken']])
-
 class CarPlayerStatusAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)

@@ -41,7 +41,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             level, score = rules
 
             self.addCoins(score)
-            self.sendUpdateToAvatar(self.doId, 'invokeRuleResponse', [eventId, rules, context])
+
+        self.sendUpdateToAvatar(self.doId, 'invokeRuleResponse', [eventId, rules, context])
 
     def addCoins(self, deltaCoins: int):
         self.sendUpdate('setCarCoins', [deltaCoins + self.getCarCoins()])

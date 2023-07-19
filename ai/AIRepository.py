@@ -368,7 +368,7 @@ class AIRepository:
         from .Objects import DistributedZoneAI, DistributedTutorialLobbyAI
         from .carplayer.InteractiveObjectAI import InteractiveObjectAI
         from .racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
-        from .Objects import PlayerFriendsManagerUD
+        from .friends.PlayerFriendsManagerUD import PlayerFriendsManagerUD
 
         from . import ZoneConstants
 
@@ -409,9 +409,7 @@ class AIRepository:
         dg.addUint64(self.ourChannel)
         self.send(dg)
 
-        downtownZoneId = ZoneConstants.DOWNTOWN_RADIATOR_SPRINGS
-
-        self.downtownZone = DistributedZoneAI(self, "Downtown Radiator Springs", downtownZoneId)
+        self.downtownZone = DistributedZoneAI(self, "Downtown Radiator Springs", ZoneConstants.DOWNTOWN_RADIATOR_SPRINGS)
         self.generateWithRequired(self.downtownZone, self.district.doId, DUNGEON_INTEREST_HANDLE)
 
         self.fillmoresFields = DistributedZoneAI(self, "Fillmore's Fields", ZoneConstants.FILLMORES_FIELDS)
