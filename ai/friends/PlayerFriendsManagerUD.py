@@ -79,7 +79,7 @@ class PlayerFriendsManagerUD(DistributedObjectAI):
         self.sendUpdateToAvatar(ourPlayer.doId, 'invitationResponse', [otherPlayerId, status, self.air.context()])
 
         _, theirStatus = self.addFriendship(otherPlayerId, senderId)
-        self.sendUpdateToAvatar(otherPlayer.doId, 'invitationResponse', [senderId, status, self.air.context()])
+        self.sendUpdateToAvatar(otherPlayer.doId, 'invitationResponse', [senderId, theirStatus, self.air.context()])
 
         del self.requests[senderId]
         del self.requests[otherPlayerId]
