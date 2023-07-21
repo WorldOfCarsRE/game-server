@@ -261,7 +261,6 @@ class DBServer(DownstreamMessageDirector):
             avatarId = await self.createObjectNoResponse(carPlayer, accountId, fields)
 
             await self.backend.setField(avatarId, 'setDISLid', (accountId,))
-            await self.backend.setField(avatarId, 'setDNA', (await self.backend.queryDNA(playToken),))
 
             await self.backend.setField(accountId, 'avatarId', avatarId, 'accounts')
 
@@ -322,6 +321,12 @@ class DBServer(DownstreamMessageDirector):
                 {'ownerAccount': accountData['playToken']},
                 {'$set': {'racecarId': racecarId}}
             )
+
+            # Set our DNA on both our avatar and race car
+            dna = await self.backend.queryDNA(playToken)
+
+            await self.backend.setField(account['avatarId'], 'setDNA', (dna,))
+            await self.backend.setField(racecarId, 'setDNA', (dna,))
 
         if accountData['playerStatusId'] == 0:
             playerStatus = self.dc.getClassByName('CarPlayerStatus')

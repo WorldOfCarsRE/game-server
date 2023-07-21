@@ -72,8 +72,6 @@ class AIRepository:
         self.currentSender = None
         self.loop = None
         self.net_thread = None
-        self.hoods = None
-        self.suitPlanners = {}
 
         self.zoneDataStore = AIZoneData.AIZoneDataStore()
 
@@ -87,6 +85,8 @@ class AIRepository:
         self.eventSocket = None # Socket for EventLogger, if enabled.
 
         self.setEventLogHost('127.0.0.1', port = 46668)
+
+        self.playerTable: Dict[int, 'DistributedCarPlayerAI'] = {}
 
     def run(self):
         self.net_thread = Thread(target=self.__event_loop)

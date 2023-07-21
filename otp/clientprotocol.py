@@ -267,7 +267,8 @@ class ClientProtocol(CarsProtocol, MDParticipant):
             (dclass.getFieldByName('setPhysics'), ([], [], [], [], [],)),
             (dclass.getFieldByName('setState'), (0,)),
             (dclass.getFieldByName('setAfk'), (0,)),
-            (dclass.getFieldByName('setDISLname'), (self.account.playToken,))
+            (dclass.getFieldByName('setDISLname'), (self.account.playToken,)),
+            (dclass.getFieldByName('setCars'), (1, [self.account.racecarId]))
             # (dclass.getFieldByName('setPuppetId'), (101,)),
         ]
 
