@@ -335,6 +335,14 @@ class MongoBackend(DatabaseBackend):
 
             self.mongodb.accounts.insert_one(data)
 
+            # Create us a brand new friends list
+            self.mongodb.friends.insert_one(
+                {
+                    '_id': acc['_id'],
+                    'ourFriends': []
+                }
+            )
+
         return data
 
     async def createObject(self, dclass, fields: List[Tuple[str, bytes]]):

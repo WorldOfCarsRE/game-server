@@ -9,6 +9,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.carCoins = 0
         self.carCount = 0
         self.racecarId = 0
+        self.friendIds = []
 
     def setCars(self, carCount: int, cars: list):
         self.carCount = carCount
@@ -40,7 +41,10 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         self.sendUpdateToAvatar(self.doId, 'setDISLname', [self.getDISLname()])
 
-        self.air.playerFriendsManager.avatarOnline(self.getDISLid(), self.getRaceCarId())
+        self.friendIds = self.air.mongoInterface.retrieveFields('friends', self.getDISLid())['ourFriends']
+
+        for friendId in self.friendIds:
+            self.air.playerFriendsManager.avatarOnline(self.getRaceCarId(), self.getDISLid(), friendId)
 
         self.sendUpdateToAvatar(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
         self.sendUpdateToAvatar(self.doId, 'generateComplete', [])
@@ -48,6 +52,10 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def delete(self):
         if self.getDISLid() in self.air.playerTable:
             del self.air.playerTable[self.getDISLid()]
+
+        for friendId in self.friendIds:
+            if friendId in self.air.playerTable:
+                self.air.playerFriendsManager.avatarOffline(self.getDISLid(), friendId)
 
         DistributedCarAvatarAI.delete(self)
 

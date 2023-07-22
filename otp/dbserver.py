@@ -325,7 +325,7 @@ class DBServer(DownstreamMessageDirector):
             # Set our DNA on both our avatar and race car
             dna = await self.backend.queryDNA(playToken)
 
-            await self.backend.setField(account['avatarId'], 'setDNA', (dna,))
+            await self.backend.setField(accountData['avatarId'], 'setDNA', (dna,))
             await self.backend.setField(racecarId, 'setDNA', (dna,))
 
         if accountData['playerStatusId'] == 0:

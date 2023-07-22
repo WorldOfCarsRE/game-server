@@ -14,40 +14,40 @@ class PlayerFriendsManagerUD(DistributedObjectAI):
         DistributedObjectAI.__init__(self, air)
         self.requests: Dict[int, FriendRequest] = {}
 
-    def avatarOnline(self, DISLid: int, racecarId: int):
-        fields = self.air.mongoInterface.retrieveFields('friends', DISLid)
+    def avatarOnline(self, racecarId: int, DISLid: int, friendDISLid: int):
+        if friendDISLid in self.air.playerTable:
+            player = self.air.playerTable[friendDISLid]
+            self.updatePlayerFriend(player.getRaceCarId(), DISLid, 0)
 
-        if fields:
-            for friendDISLid in fields['ourFriends']:
-                friendInfo = FriendInfo(
-                    onlineYesNo = friendDISLid in self.air.playerTable,
-                    playerName = '???' # TODO: Grab from database
-                )
+        self.updatePlayerFriend(racecarId, friendDISLid, 0)
 
-                self.sendUpdateToAvatar(racecarId, 'updatePlayerFriend', [friendDISLid, friendInfo, 0])
+    def avatarOffline(self, DISLid: int, friendDISLid: int):
+        player = self.air.playerTable[friendDISLid]
+        self.updatePlayerFriend(player.getRaceCarId(), DISLid, 0)
+
+    def updatePlayerFriend(self, racecarId: int, DISLid: int, newFriend: int):
+        self.sendUpdateToAvatar(racecarId, 'updatePlayerFriend', [DISLid, self.createFriendInfo(DISLid), newFriend])
+
+    def createFriendInfo(self, DISLid: int) -> FriendInfo:
+        account = self.air.mongoInterface.retrieveFields('accounts', DISLid)
+
+        return FriendInfo(
+            onlineYesNo = int(DISLid in self.air.playerTable),
+            playerName = account['playToken']
+        )
 
     def addFriendship(self, senderId: int, otherPlayerId: int) -> tuple[bool, int]:
         fields = self.air.mongoInterface.retrieveFields('friends', senderId)
+        friends = fields['ourFriends']
 
-        if fields:
-            friends = fields['ourFriends']
+        if len(friends) >= MAX_FRIENDS:
+            return False, INVRESP_DECLINED
 
-            if len(friends) >= MAX_FRIENDS:
-                return False, INVRESP_DECLINED
+        if otherPlayerId in friends:
+            return False, INVRESP_ALREADYFRIEND
 
-            if otherPlayerId in friends:
-                return False, INVRESP_ALREADYFRIEND
-
-            friends.append(otherPlayerId)
-            self.air.mongoInterface.updateField('friends', 'ourFriends', senderId, friends)
-        else:
-            # Create us a brand new friends list
-            self.air.mongoInterface.mongodb.friends.insert_one(
-                {
-                    '_id': senderId,
-                    'ourFriends': [otherPlayerId]
-                }
-            )
+        friends.append(otherPlayerId)
+        self.air.mongoInterface.updateField('friends', 'ourFriends', senderId, friends)
 
         return True, INVRESP_ACCEPTED
 
@@ -77,9 +77,11 @@ class PlayerFriendsManagerUD(DistributedObjectAI):
 
         _, status = self.addFriendship(senderId, otherPlayerId)
         self.sendUpdateToAvatar(ourPlayer.doId, 'invitationResponse', [otherPlayerId, status, self.air.context()])
+        self.updatePlayerFriend(ownPlayer.getRaceCarId(), otherPlayerId, 1)
 
         _, theirStatus = self.addFriendship(otherPlayerId, senderId)
         self.sendUpdateToAvatar(otherPlayer.doId, 'invitationResponse', [senderId, theirStatus, self.air.context()])
+        self.updatePlayerFriend(otherPlayer.getRaceCarId(), senderId, 1)
 
         del self.requests[senderId]
         del self.requests[otherPlayerId]
