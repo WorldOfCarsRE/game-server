@@ -77,7 +77,7 @@ class PlayerFriendsManagerUD(DistributedObjectAI):
 
         _, status = self.addFriendship(senderId, otherPlayerId)
         self.sendUpdateToAvatar(ourPlayer.doId, 'invitationResponse', [otherPlayerId, status, self.air.context()])
-        self.updatePlayerFriend(ownPlayer.getRaceCarId(), otherPlayerId, 1)
+        self.updatePlayerFriend(ourPlayer.getRaceCarId(), otherPlayerId, 1)
 
         _, theirStatus = self.addFriendship(otherPlayerId, senderId)
         self.sendUpdateToAvatar(otherPlayer.doId, 'invitationResponse', [senderId, theirStatus, self.air.context()])
