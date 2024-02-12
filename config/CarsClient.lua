@@ -335,7 +335,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     client:userTable(userTable)
 
     -- Log the event
-    client:writeServerEvent("acccount-login", "CarsClient", string.format("%d", accountId))
+    client:writeServerEvent("account-login", "CarsClient", string.format("%d", accountId))
 
     -- Prepare the login response.
     local resp = datagram:new()
