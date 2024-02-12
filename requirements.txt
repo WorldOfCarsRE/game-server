@@ -1,9 +1,0 @@
-git+https://github.com/aio-libs/aiomysql.git
-dataslots
-pycryptodome
-PyMySQL
-pyOpenSSL
-uvloop; sys_platform != 'win32'
-lark-parser
-pymongo
-coloredlogs
