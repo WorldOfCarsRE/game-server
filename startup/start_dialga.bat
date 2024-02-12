@@ -1,9 +1,8 @@
 @echo off
 title OTP Server
-cd ..
-set /P PYTHON_PATH=<PYTHON_PATH
+cd ../config
 
 :main
-%PYTHON_PATH% -m otp.otp
+"../otpd/otpgo" -l info otp.yml
 pause
 goto :main

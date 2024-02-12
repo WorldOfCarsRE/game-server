@@ -1,0 +1,75 @@
+daemon:
+    name: Dialga OTP Cluster
+
+general:
+    eventlogger: 127.0.0.1:4343
+    dc_files:
+        - dclass/otp.dc
+        - dclass/cars.dc
+
+messagedirector:
+    bind: 127.0.0.1:6666
+
+eventlogger:
+    bind: 127.0.0.1:4343
+    output: ../logs/events-%Y%m%d_%H%M%S.log
+
+uberdogs:
+    - class: FriendManager
+      id: 4501
+
+    - class: HolidayManager
+      id: 4756
+
+    - class: ShardManager
+      id: 4757
+
+    - class: PlayerFriendsManager
+      id: 4687
+
+roles:
+    - type: clientagent
+      # Use stunnel to accept incoming connections from 0.0.0.0
+      bind: 127.0.0.1:8012
+      version: "9.8.3"
+      dc_hash: 2308474396
+      lua_file: "CarsClient.lua"
+      database: 4003
+      client:
+          relocate: true
+          add_interest: enabled
+          heartbeat_timeout: 60
+      channels:
+          min: 1000000000
+          max: 1009999999
+
+    - type: stateserver
+      control: 20100000
+      objects:
+          - class: DistributedDirectory
+            id: 4619
+
+    - type: database
+      control: 4003
+      generate:
+          min: 100000000
+          max: 199999999
+      backend:
+          type: mongodb
+          server: mongodb://127.0.0.1
+          database: Dialga
+      objects:
+          - class: Account
+            id: 1
+          - class: DistributedCarPlayer
+            id: 2
+          - class: DistributedRaceCar
+            id: 3
+          - class: CarPlayerStatus
+            id: 4
+
+    - type: dbss
+      database: 4003
+      ranges:
+          min: 100000000
+          max: 199999999

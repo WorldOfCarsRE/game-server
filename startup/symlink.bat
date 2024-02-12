@@ -1,3 +1,3 @@
 cd ..
-mklink /J "etc/assets" "../site/game/config"
+mklink /J "assets" "../site/game/config"
 pause

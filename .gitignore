@@ -4,9 +4,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Keys
-etc/*.key
-etc/*.cert
-etc/secret.par
-etc/assets
-*.pyc
+# Game-specific stuff
+assets
+
+# OTP
+logs/*.log
+config/config.lua
+otpd/databases/accounts.json
