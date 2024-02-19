@@ -297,7 +297,7 @@ dclass CarPlayerStatus {
 dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent {
     setDNA(CarDNA) required broadcast db ownrecv; // 480
     setCarCoins(uint32 = 0) broadcast db ownrecv;
-    setCars(int32 = 0, int32[] = []) broadcast db ownrecv;
+    setCars(int32 = 0, int32[] = []) broadcast db ownrecv ram;
     setBadges(int32[] = []) broadcast db ownrecv;
     setYardStocks(Stock[] = []) broadcast db ownrecv;
     setRuleStates(RuleState[]);
@@ -314,9 +314,9 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     raceInviteRequest(int32, int32, int32, int32, int32);
     gotoFriendsContext(int32, int32);
     generateComplete();
-    setDISLname(string) broadcast;
+    setDISLname(string) broadcast ram;
     setDISLid(uint32 = 0) required broadcast db ownrecv;
-    setAccess(uint8 = 2) broadcast ownrecv;
+    setAccess(uint8 = 2) broadcast ownrecv ram;
     setActiveQuests(int32[] = []) broadcast db ownrecv;
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend airecv;
     broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;

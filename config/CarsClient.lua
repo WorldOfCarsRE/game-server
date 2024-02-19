@@ -42,7 +42,7 @@ CLIENT_DISCONNECT_FIELD_CONSTRAINT       = 127
 CLIENT_DISCONNECT_SESSION_OBJECT_DELETED = 153
 
 DATABASE_OBJECT_TYPE_ACCOUNT = 1
-DATABASE_OBJECT_TYPE_PLAYER  = 2
+DATABASE_OBJECT_TYPE_AVATAR  = 2
 DATABASE_OBJECT_TYPE_RACECAR = 3
 DATABASE_OBJECT_TYPE_CAR_STATUS = 4
 
@@ -127,6 +127,38 @@ end
 
 -- Load the configuration varables (see config.example.lua)
 dofile("config.lua")
+
+local API_BASE
+
+local http = require('http')
+
+if PRODUCTION_ENABLED then
+    API_BASE = 'https://dxd.sunrise.games/carsds/api/internal/'
+else
+    API_BASE = 'http://localhost/carsds/api/internal/'
+end
+
+function retrieveCar(data)
+    response, error_message = http.get(API_BASE .. "retrieveCar", {
+        query=data,
+        headers={
+            ["Authorization"]=API_TOKEN
+        }
+    })
+
+    return response.body
+end
+
+function setCarData(data)
+    response, error_message = http.post(API_BASE .. "setCarData", {
+        body=data,
+        headers={
+            ["Authorization"]=API_TOKEN
+        }
+    })
+
+    return response
+end
 
 function handleDatagram(client, msgType, dgi)
     -- Internal datagrams
@@ -236,7 +268,7 @@ function handleLogin(client, dgi)
             if tonumber(jsonData.Member) == 1 then
                 isPaid = true
             else
-                isPaid =false
+                isPaid = false
             end
 
             local timestamp = jsonData.Timestamp
@@ -283,11 +315,11 @@ function handleLogin(client, dgi)
                 LAST_LOGIN = os.date("%a %b %d %H:%M:%S %Y"),
             })
 
-            loginAccount(client, fields, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
+            loginAccount(client, fields, accountId, playToken, openChat, isPaid, dislId, linkedToParent, false)
         end
         client:getDatabaseValues(accountId, "Account", {"ACCOUNT_AV_SET"}, queryLoginResponse)
     else
-        -- Create a new account object
+        -- Create a new Account object
         local account = {
             -- The rest of the values are defined in the dc file.
             CREATED = os.date("%a %b %d %H:%M:%S %Y"),
@@ -304,17 +336,72 @@ function handleLogin(client, dgi)
             ACCOUNT_BRIDGE[playToken] = accountId
             saveAccountBridge()
 
-            account.ACCOUNT_AV_SET = {0, 0, 0, 0, 0, 0}
+            account.ACCOUNT_AV_SET = {0, 0, 0}
 
             client:writeServerEvent("account-created", "CarsClient", string.format("%d", accountId))
 
-            loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
+            createAvatar(client, account, accountId)
+            createRaceCar(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
         end
         client:createDatabaseObject("Account", account, DATABASE_OBJECT_TYPE_ACCOUNT, createAccountResponse)
     end
 end
 
-function loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
+function createAvatar(client, account, accountId)
+    function createAvatarResponse(avatarId)
+        if avatarId == 0 then
+            client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The DistributedCarPlayer object was unable to be created.", false)
+            return
+        end
+
+        client:writeServerEvent("avatar-created", "CarsClient", string.format("%d", avatarId))
+
+        account.ACCOUNT_AV_SET[1] = avatarId
+
+        client:setDatabaseValues(accountId, "Account", {
+            ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
+        })
+    end
+
+    -- Create a new DistributedCarPlayer object
+    local avatar = {
+        -- The rest of the values are defined in the dc file.
+        setDISLid = {accountId},
+    }
+
+    client:createDatabaseObject("DistributedCarPlayer", avatar, DATABASE_OBJECT_TYPE_AVATAR, createAvatarResponse)
+end
+
+function createRaceCar(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
+    function createRaceCarResponse(racecarId)
+        if racecarId == 0 then
+            client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The DistributedRaceCar object was unable to be created.", false)
+            return
+        end
+
+        account.ACCOUNT_AV_SET[2] = racecarId
+
+        client:setDatabaseValues(accountId, "Account", {
+            ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
+        })
+
+        -- Link account id with AMF car object:
+        -- setCarData({playToken, {
+        --    dislId = accountId,
+         --    playerId =  playerId,
+        --    racecarId = racecarId
+        -- }})
+
+        loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, true)
+
+        client:writeServerEvent("racecar-created", "CarsClient", string.format("%d", racecarId))
+    end
+
+    -- Create a new DistributedRaceCar object
+    client:createDatabaseObject("DistributedRaceCar", {}, DATABASE_OBJECT_TYPE_RACECAR, createRaceCarResponse)
+end
+
+function loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, firstLogin)
     -- TODO: Eject logged in accounts.
 
     -- Subscribe to our puppet channel.
@@ -338,11 +425,44 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     client:writeServerEvent("account-login", "CarsClient", string.format("%d", accountId))
 
     -- Prepare the login response.
+    local avatarId = userTable.avatars[1]
+    local racecarId = userTable.avatars[2]
+
+    if firstLogin then
+        local json = require("json")
+        local car = json.decode(retrieveCar("playToken=" .. playToken))
+
+        local dna = {
+            car.carData.carDna.carName,
+            car.carData.carDna.carNumber,
+            car.carData.carDna.logoBackgroundId,
+            car.carData.carDna.logoBackgroundColor,
+            car.carData.carDna.logoFontId,
+            car.carData.carDna.logoFontColor,
+            car.carData.carDna.gender,
+            car.carData.carDna.careerType,
+            car.carData.carDna.chassis,
+            car.carData.carDna.color,
+            car.carData.carDna.eyeColor,
+            car.carData.carDna.wheel,
+            car.carData.carDna.tire,
+            car.carData.carDna.detailing,
+            car.carData.carDna.profileBackgroundId,
+            car.carData.carDna.stretches,
+            car.carData.carDna.decalSlots,
+            car.carData.carDna.onAddons,
+            car.carData.carDna.costumeId
+        }
+
+        client:setDatabaseValues(avatarId, "DistributedCarPlayer", {setDNA = {dna}})
+        client:setDatabaseValues(racecarId, "DistributedRaceCar", {setDNA = {dna}})
+    end
+
     local resp = datagram:new()
     resp:addUint16(CLIENT_LOGIN_CARS_RESP)
     resp:addUint8(0) -- Return code
     resp:addString("All Ok") -- errorString
-    resp:addUint32(0) -- avatarId
+    resp:addUint32(avatarId) -- avatarId
     resp:addUint32(dislId) -- accountId
     resp:addString(playToken) -- playToken
     resp:addUint8(1) -- accountNameApproved
@@ -365,41 +485,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     -- Dispatch the response to the client.
     client:sendDatagram(resp)
 
-    -- TODO: DBSS activate car & other objects
-end
-
-function handleAddInterest(client, dgi)
-    local handle = dgi:readInt16()
-    local context = dgi:readUint32()
-    local parent = dgi:readUint32()
-    local zones = {}
-    table.insert(zones, dgi:readUint32())
-    client:handleAddInterest(handle, context, parent, zones)
-end
-
-function handleSetAvatar(client, dgi)
-    local userTable = client:userTable()
-    local accountId = userTable.accountId
-
-    local avatarId = dgi:readUint32()
-
-    if avatarId == 0 then
-        clearAvatar(client)
-        return
-    end
-
-    local isAvInList = false
-    for _, avId in ipairs(userTable.avatars) do
-        if avatarId == avId then
-            isAvInList = true
-            break
-        end
-    end
-    if not isAvInList then
-        client:sendDisconnect(CLIENT_DISCONNECT_GENERIC, string.format("Avatar %d not in list.", avatarId), true)
-        return
-    end
-
+    -- Activate DistributedCarPlayer & other owned objects
     userTable.avatarId = avatarId
     client:userTable(userTable)
 
@@ -410,11 +496,28 @@ function handleSetAvatar(client, dgi)
         setAccess = 2
     end
 
-    client:sendActivateObject(avatarId, "DistributedToon", {
+    local playerFields = {
         setAccess = {setAccess},
-    })
+        setTelemetry = {0, 0, 0, 0, 0, 0, 0, 0},
+        setPhysics = {{}, {}, {}, {}, {}},
+        setState = {0},
+        setAfk = {0},
+        setDISLname = {playToken},
+        setCars = {1, {racecarId}},
+    }
+
+    client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
 
     client:objectSetOwner(avatarId, true)
+end
+
+function handleAddInterest(client, dgi)
+    local handle = dgi:readInt16()
+    local context = dgi:readUint32()
+    local parent = dgi:readUint32()
+    local zones = {}
+    table.insert(zones, dgi:readUint32())
+    client:handleAddInterest(handle, context, parent, zones)
 end
 
 function clearAvatar(client)
@@ -458,39 +561,23 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
     client:subscribePuppetChannel(avatarId, 1)
 
     -- Store name for SpeedChat+
-    local name = dgi:readString()
-    userTable.avatarName = name
-    client:userTable(userTable)
+    -- local name = dgi:readString()
+    -- userTable.avatarName = name
+    -- client:userTable(userTable)
 
     local remainder = dgi:readRemainder()
 
     client:writeServerEvent("selected-avatar", "CarsClient", string.format("%d|%d", accountId, avatarId))
 
     local resp = datagram:new()
-    resp:addUint16(CLIENT_GET_AVATAR_DETAILS_RESP)
-    resp:addUint32(doId) -- avatarId
-    resp:addUint8(0) -- returnCode
-    resp:addString(name) -- setName
+    resp:addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER_RESP)
+    resp:addUint16(dc) -- dclassId
+    resp:addUint32(doId) -- doId
+    resp:addUint32(parent) -- parentId
+    resp:addUint32(zone) -- zoneId
+    -- resp:addString(name) -- setName
     resp:addData(remainder)
     client:sendDatagram(resp)
-
-    -- Update common chat flags:
-    local dg = datagram:new()
-    dg:addServerHeader(avatarId, avatarId, STATESERVER_OBJECT_UPDATE_FIELD)
-    dg:addUint32(avatarId)
-    client:packFieldToDatagram(dg, "DistributedCarPlayer", "setCommonChatFlags", {0}, true)
-    client:routeDatagram(dg)
-
-    -- update whitelist chat flags:
-    local dg = datagram:new()
-    dg:addServerHeader(avatarId, avatarId, STATESERVER_OBJECT_UPDATE_FIELD)
-    dg:addUint32(avatarId)
-    if userTable.openChat then
-        client:packFieldToDatagram(dg, "DistributedCarPlayer", "setWhitelistChatFlags", {1}, true)
-    else
-        client:packFieldToDatagram(dg, "DistributedCarPlayer", "setWhitelistChatFlags", {0}, true)
-    end
-    client:routeDatagram(dg)
 end
 
 function filterWhitelist(message)
