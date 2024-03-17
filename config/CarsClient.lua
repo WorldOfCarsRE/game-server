@@ -212,7 +212,10 @@ function handleLogin(client, dgi)
         client:sendDisconnect(CLIENT_DISCONNECT_BAD_VERSION, string.format("Client version mismatch: client=%s, server=%s", version, SERVER_VERSION), true)
         return
     end
-    if hash ~= CLIENT_HASH then
+    -- Doesn't seem dcFile.getHash() matches the client.
+    -- We'll just hardcode the stock WOC client hashVal.
+    -- This shouldn't change as we won't be adding new content anyways.
+    if hash ~= 46329213 then
         client:sendDisconnect(CLIENT_DISCONNECT_BAD_VERSION, string.format("Client DC hash mismatch: client=%d, server=%d", hash, CLIENT_HASH), true)
         return
     end
