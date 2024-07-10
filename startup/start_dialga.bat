@@ -3,6 +3,7 @@ title OTP Server
 cd ../config
 
 :main
-"../otpd/otpgo" -l info otp.yml
+set DEBUG=DBSS
+"../otpd/otpgo" otp.yml
 pause
 goto :main

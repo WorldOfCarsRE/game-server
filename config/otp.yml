@@ -7,6 +7,9 @@ general:
         - dclass/otp.dc
         - dclass/cars.dc
 
+debug:
+    pprof: false
+
 messagedirector:
     bind: 127.0.0.1:6666
 
@@ -31,6 +34,8 @@ roles:
     - type: clientagent
       # Use stunnel to accept incoming connections from 0.0.0.0
       bind: 127.0.0.1:8012
+      # Enable PROXY protocol. Set to false if not connecting using stunnel
+      proxy: false
       version: "9.8.3"
       dc_hash: 2308474396
       lua_file: "CarsClient.lua"
@@ -73,3 +78,7 @@ roles:
       ranges:
           min: 100000000
           max: 199999999
+
+    - type: eventlogger
+      bind: 127.0.0.1:4343
+      output: ../logs/events-%Y%m%d_%H%M%S.log
