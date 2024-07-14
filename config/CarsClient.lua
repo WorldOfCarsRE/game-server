@@ -601,7 +601,7 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
         local value = field2Value[ownRequiredField]
         if value ~= nil then
             client:debug(string.format("Packing found ownrequired field \"%s\": %s", ownRequiredField:getName(), inspect(value)))
-            print(packer:packField(ownRequiredField, generateData, value))
+            packer:packField(ownRequiredField, generateData, value)
         else
             -- TODO:  This might need fetching some stuff from the API server, because not
             -- everything is set to "required", even though the owner generate message needs them.
