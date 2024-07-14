@@ -548,7 +548,6 @@ function clearAvatar(client)
     client:userTable(userTable)
 
     client:setChannel(userTable.accountId, 0)
-
 end
 
 function handleAddOwnership(client, doId, parent, zone, dc, dgi)
@@ -587,27 +586,55 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
         end
     end
 
-    -- First, we unpack all the required fields:
-    local field2Value = {}
+    local requiredField2Value = {}
+    local otherField2Value = {}
     local packer = dcpacker:new()
+
+    -- First, we unpack all the required fields:
     for _, requiredField in ipairs(requiredFields) do
         local value = packer:unpackField(requiredField, dgi)
-        field2Value[requiredField] = value
+        requiredField2Value[requiredField] = value
     end
 
-    -- Secondly, populate the ownrequired fields with data.
+    -- Then the other fields, if any:
+    if dgi:getRemainingSize() > 0 then
+        local numFields = dgi:readUint16()
+        for i = 1, numFields, 1 do
+            local fieldId = dgi:readUint16()
+            local dcField = dcFile:getFieldByIndex(fieldId)
+            local value = packer:unpackField(dcField, dgi)
+            otherField2Value[dcField:getName()] = value
+        end
+    end
+
+    -- Now, populate the ownrequired fields with data.
     local generateData = datagram:new()
     for _, ownRequiredField in ipairs(ownRequiredFields) do
-        local value = field2Value[ownRequiredField]
+        local value = requiredField2Value[ownRequiredField]
+        local otherValue = otherField2Value[ownRequiredField:getName()]
         if value ~= nil then
             client:debug(string.format("Packing found ownrequired field \"%s\": %s", ownRequiredField:getName(), inspect(value)))
             packer:packField(ownRequiredField, generateData, value)
+        elseif otherValue ~= nil then
+            client:debug(string.format("Packing found ownrequired field from OTHER \"%s\": %s", ownRequiredField:getName(), inspect(otherValue)))
+            packer:packField(ownRequiredField, generateData, otherValue)
+            otherField2Value[ownRequiredField:getName()] = nil
         else
             -- TODO:  This might need fetching some stuff from the API server, because not
             -- everything is set to "required", even though the owner generate message needs them.
             client:warn(string.format("No value for ownrequired field \"%s\".  Adding default value", ownRequiredField:getName()))
             generateData:addData(ownRequiredField:getDefaultValue())
         end
+    end
+
+    -- Add leftover OTHER fields
+    local numOtherFields = 0
+    local otherData = datagram:new()
+    for fieldName, value in pairs(otherField2Value) do
+        numOtherFields = numOtherFields + 1
+        local dcField = dcClass:getFieldByName(fieldName)
+        otherData:addUint16(dcField:getNumber())
+        packer:packField(dcField, otherData, value)
     end
 
     packer:delete()
@@ -620,6 +647,10 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
     resp:addUint32(zone) -- zoneId
     -- resp:addString(name) -- setName
     resp:addDatagram(generateData)
+    if numOtherFields > 0 then
+        resp:addUint16(numOtherFields)
+        resp:addDatagram(otherData)
+    end
     client:sendDatagram(resp)
 end
 
