@@ -4,10 +4,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
 # Game-specific stuff
 assets
 
 # OTP
 logs/*.log
 config/config.lua
-otpd/databases/accounts.json
