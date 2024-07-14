@@ -560,6 +560,8 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
         return
     end
 
+    client:writeServerEvent("selected-avatar", "CarsClient", string.format("%d|%d", accountId, avatarId))
+
     client:addSessionObject(doId)
     client:subscribePuppetChannel(avatarId, 1)
 
@@ -568,9 +570,47 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
     -- userTable.avatarName = name
     -- client:userTable(userTable)
 
-    local remainder = dgi:readRemainder()
+    local requiredFields = {}
+    local ownRequiredFields = {}
 
-    client:writeServerEvent("selected-avatar", "CarsClient", string.format("%d|%d", accountId, avatarId))
+    local dcClass = dcFile:getClass(dc)
+    client:debug(string.format("Handling ownership generation for class \"%s\"", dcClass:getName()))
+
+    local numFields = dcClass:getNumFields()
+    for i = 0, numFields - 1, 1 do
+        local dcField = dcClass:getField(i)
+        if dcField:hasKeyword("required") then
+            table.insert(requiredFields, dcField)
+        end
+        if dcField:hasKeyword("ownrequired") then
+            table.insert(ownRequiredFields, dcField)
+        end
+    end
+
+    -- First, we unpack all the required fields:
+    local field2Value = {}
+    local packer = dcpacker:new()
+    for _, requiredField in ipairs(requiredFields) do
+        local value = packer:unpackField(requiredField, dgi)
+        field2Value[requiredField] = value
+    end
+
+    -- Secondly, populate the ownrequired fields with data.
+    local generateData = datagram:new()
+    for _, ownRequiredField in ipairs(ownRequiredFields) do
+        local value = field2Value[ownRequiredField]
+        if value ~= nil then
+            client:debug(string.format("Packing found ownrequired field \"%s\": %s", ownRequiredField:getName(), inspect(value)))
+            print(packer:packField(ownRequiredField, generateData, value))
+        else
+            -- TODO:  This might need fetching some stuff from the API server, because not
+            -- everything is set to "required", even though the owner generate message needs them.
+            client:warn(string.format("No value for ownrequired field \"%s\".  Adding default value", ownRequiredField:getName()))
+            generateData:addData(ownRequiredField:getDefaultValue())
+        end
+    end
+
+    packer:delete()
 
     local resp = datagram:new()
     resp:addUint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER_RESP)
@@ -579,7 +619,7 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
     resp:addUint32(parent) -- parentId
     resp:addUint32(zone) -- zoneId
     -- resp:addString(name) -- setName
-    resp:addData(remainder)
+    resp:addDatagram(generateData)
     client:sendDatagram(resp)
 end
 

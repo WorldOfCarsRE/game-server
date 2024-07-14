@@ -32,9 +32,8 @@ uberdogs:
 
 roles:
     - type: clientagent
-      # Use stunnel to accept incoming connections from 0.0.0.0
-      bind: 127.0.0.1:8012
-      # Enable PROXY protocol. Set to false if not connecting using stunnel
+      # Clients connect in raw TCP.
+      bind: 0.0.0.0:8012
       proxy: false
       version: "9.8.3"
       dc_hash: 2308474396
@@ -54,6 +53,8 @@ roles:
           - class: DistributedDirectory
             id: 4619
 
+    # TODO: Communicate with the API server instead
+    # which hosts its own database.
     - type: database
       control: 4003
       generate:
@@ -73,6 +74,9 @@ roles:
           - class: CarPlayerStatus
             id: 4
 
+    # TODO: Replace with a standard State Server, one dedicated in hosting
+    # Avatars and database heavy objects (A custom Lua role will handle
+    # communication to the API)
     - type: dbss
       database: 4003
       ranges:

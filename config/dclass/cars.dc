@@ -1,5 +1,9 @@
 // cars start at struct 45 and field 331
 
+// This keyword will help CarsClient filter the owner
+// generate message into the one that the client expects.
+keyword ownrequired;
+
 // struct 45
 dclass unk_45 {
 };
@@ -192,11 +196,11 @@ struct RuleState {
 // struct 68
 dclass DistributedCareerCar {
     // field 420 (ok)
-    setCareerType(int16) ownrecv;
-    setPoints(uint32) ownrecv;
-    setOnAddons(Addon[]) ownrecv;
-    setOffAddons(Addon[]) ownrecv;
-    setConsumables(Consumable[]) ownrecv;
+    setCareerType(int16) ownrequired ownrecv;
+    setPoints(uint32) ownrequired ownrecv;
+    setOnAddons(Addon[]) ownrequired ownrecv;
+    setOffAddons(Addon[]) ownrequired ownrecv;
+    setConsumables(Consumable[]) ownrequired ownrecv;
     modifyAddon(int32[], int32[]) clsend;
     deformAddons(Addon[]) clsend;
     consume(Consumable) clsend;
@@ -204,30 +208,30 @@ dclass DistributedCareerCar {
 
 // struct 69
 dclass DistributedRaceCar : Persistent {
-    setMiles(uint32 = 0) db ownrecv; // 428
-    setRacingPoints(uint32 = 0) db ownrecv;
-    setConsumableSlot(uint16 = 0) db ownrecv;
-    setConsumableStack(uint16 = 0) db ownrecv;
-    setDashboardTexture(int32 = 0) db ownrecv;
-    setRaceSeries(int32 = 44000) db ownrecv;
-    setActiveSponsor(int32 = 0) db ownrecv;
-    setActiveGear(int32 = 1) db ownrecv;
-    setDNA(CarDNA) db ownrecv;
-    setOffAddons(Addon[] = []) db ownrecv;
-    setConsumables(Consumable[] = []) db ownrecv;
-    setPaints(int32[] = []) db ownrecv;
-    setEyeColors(int32[] = []) db ownrecv;
-    setDecals(int32[] = []) db ownrecv;
-    setWheels(int32[] = []) db ownrecv;
-    setTires(int32[] = []) db ownrecv;
-    setDetailings(int32[] = []) db ownrecv;
-    setAnimations(int32[] = []) db ownrecv;
-    setTrophies(int32[] = []) db ownrecv;
-    setDashboardTextures(int32[] = []) db ownrecv;
-    setProfileBackgrounds(int32[] = []) db ownrecv;
-    setPrintableBackgrounds(int32[] = []) db ownrecv;
-    setGears(int32[] = [1]) db ownrecv;
-    setCostumes(int32[] = []) db ownrecv;
+    setMiles(uint32 = 0) ownrequired db ownrecv; // 428
+    setRacingPoints(uint32 = 0) ownrequired db ownrecv;
+    setConsumableSlot(uint16 = 0) ownrequired db ownrecv;
+    setConsumableStack(uint16 = 0) ownrequired db ownrecv;
+    setDashboardTexture(int32 = 0) ownrequired db ownrecv;
+    setRaceSeries(int32 = 44000) ownrequired db ownrecv;
+    setActiveSponsor(int32 = 0) ownrequired db ownrecv;
+    setActiveGear(int32 = 1) ownrequired db ownrecv;
+    setDNA(CarDNA) ownrequired db ownrecv;
+    setOffAddons(Addon[] = []) ownrequired db ownrecv;
+    setConsumables(Consumable[] = []) ownrequired db ownrecv;
+    setPaints(int32[] = []) ownrequired db ownrecv;
+    setEyeColors(int32[] = []) ownrequired db ownrecv;
+    setDecals(int32[] = []) ownrequired db ownrecv;
+    setWheels(int32[] = []) ownrequired db ownrecv;
+    setTires(int32[] = []) ownrequired db ownrecv;
+    setDetailings(int32[] = []) ownrequired db ownrecv;
+    setAnimations(int32[] = []) ownrequired db ownrecv;
+    setTrophies(int32[] = []) ownrequired db ownrecv;
+    setDashboardTextures(int32[] = []) ownrequired db ownrecv;
+    setProfileBackgrounds(int32[] = []) ownrequired db ownrecv;
+    setPrintableBackgrounds(int32[] = []) ownrequired db ownrecv;
+    setGears(int32[] = [1]) ownrequired db ownrecv;
+    setCostumes(int32[] = []) ownrequired db ownrecv;
     modifyActiveSponsor(int32) clsend;
     modifyDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[]) clsend;
     modifyAddon(int32[], int32[]) clsend;
@@ -240,9 +244,9 @@ dclass DistributedRaceCar : Persistent {
 
 // struct 70
 dclass DistributedCarAvatar : TalkPath_owner, TalkPath_whisper {
-    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required broadcast clsend airecv; // 460
-    setPhysics(int32[] = [], int32[] = [], int32[] = [], int32[] = [], int32[] = []) required broadcast clsend;
-    setState(uint32 = 0) required broadcast clsend;
+    setTelemetry(int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int16 = 0, int32 = 0) required ownrequired broadcast clsend airecv; // 460
+    setPhysics(int32[] = [], int32[] = [], int32[] = [], int32[] = [], int32[] = []) required ownrequired broadcast clsend;
+    setState(uint32 = 0) required ownrequired broadcast clsend;
 };
 
 // struct 71
@@ -295,11 +299,11 @@ dclass CarPlayerStatus {
 
 // struct 78
 dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent {
-    setDNA(CarDNA) required broadcast db ownrecv; // 480
-    setCarCoins(uint32 = 0) broadcast db ownrecv;
-    setCars(int32 = 0, int32[] = []) broadcast db ownrecv ram;
-    setBadges(int32[] = []) broadcast db ownrecv;
-    setYardStocks(Stock[] = []) broadcast db ownrecv;
+    setDNA(CarDNA) required ownrequired broadcast db ownrecv; // 480
+    setCarCoins(uint32 = 0) ownrequired broadcast db ownrecv;
+    setCars(int32 = 0, int32[] = []) ownrequired broadcast db ownrecv ram;
+    setBadges(int32[] = []) ownrequired broadcast db ownrecv;
+    setYardStocks(Stock[] = []) ownrequired broadcast db ownrecv;
     setRuleStates(RuleState[]);
     deleteRuleStates(int32[]);
     setCurrentCar(int32);
@@ -315,26 +319,27 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     gotoFriendsContext(int32, int32);
     generateComplete();
     setDISLname(string) broadcast ram;
-    setDISLid(uint32 = 0) required broadcast db ownrecv;
-    setAccess(uint8 = 2) broadcast ownrecv ram;
-    setActiveQuests(int32[] = []) broadcast db ownrecv;
+    setDISLid(uint32 = 0) required ownrequired broadcast db ownrecv;
+    setAccess(uint8 = 2) ownrequired broadcast ownrecv ram;
+    setActiveQuests(int32[] = []) ownrequired broadcast db ownrecv;
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend airecv;
     broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
     setReward(Reward[]);
     updateYardPermissionMask(int32, int32) clsend;
     sendEventLog(string, int32[], string[]) clsend airecv;
-    setChatLevel(uint8 = 0) required broadcast db ownrecv;
-    setMute(uint8 = 0) required broadcast db ownrecv;
-    setSubscriptionStatus(uint8 = 0) broadcast db ownrecv;
+    setChatLevel(uint8 = 0) required ownrequired broadcast db ownrecv;
+    setMute(uint8 = 0) required ownrequired broadcast db ownrecv;
+    setSubscriptionStatus(uint8 = 0) ownrequired broadcast db ownrecv;
     showDialogs(Dialog[]);
-    setCargo(int32[] = []) required broadcast db ownrecv;
+    setCargo(int32[] = []) required ownrequired broadcast db ownrecv;
     dropCargo(int32[]) clsend;
-    setAfk(int8 = 0) required broadcast ownrecv clsend;
-    setVisible(int8 = 1, int8 = 1, int8 = 1, int8 = 0) required broadcast db ownrecv; // 515
+    setAfk(int8 = 0) required ownrequired broadcast ownrecv clsend;
+    setVisible(int8 = 1, int8 = 1, int8 = 1, int8 = 0) required ownrequired broadcast db ownrecv; // 515
 };
 
 // struct 79
 dclass DistributedCarGM : DistributedCarPlayer {
+    // No ownrequireds needed
     banPlayer(uint32, int8) clsend airecv; // 516
     kickPlayer(uint32, int8) clsend airecv;
     warnPlayer(uint32, int8) clsend airecv;
@@ -344,7 +349,7 @@ dclass DistributedCarGM : DistributedCarPlayer {
 // struct 80
 dclass DistributedCarPuppet : DistributedCarGM {
     invokePeriodicRule(int32, int8, uint32, uint32) clsend; // 520
-    setPuppetId(int32) required ownrecv;
+    setPuppetId(int32) required ownrequired ownrecv;
 };
 
 // struct 81
