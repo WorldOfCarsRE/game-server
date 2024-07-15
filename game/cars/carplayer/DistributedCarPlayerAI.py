@@ -39,15 +39,16 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def announceGenerate(self):
         self.air.playerTable[self.getDISLid()] = self
 
-        self.sendUpdateToAvatar(self.doId, 'setDISLname', [self.getDISLname()])
+        self.sendUpdateToAvatarId(self.doId, 'setDISLname', [self.getDISLname()])
 
-        self.friendIds = self.air.mongoInterface.retrieveFields('friends', self.getDISLid())['ourFriends']
+        # TODO: Fix friends
+        # self.friendIds = self.air.mongoInterface.retrieveFields('friends', self.getDISLid())['ourFriends']
 
         for friendId in self.friendIds:
             self.air.playerFriendsManager.avatarOnline(self.getRaceCarId(), self.getDISLid(), friendId)
 
-        self.sendUpdateToAvatar(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
-        self.sendUpdateToAvatar(self.doId, 'generateComplete', [])
+        self.sendUpdateToAvatarId(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
+        self.sendUpdateToAvatarId(self.doId, 'generateComplete', [])
 
     def delete(self):
         if self.getDISLid() in self.air.playerTable:
@@ -63,7 +64,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.air.writeServerEvent(event, self.doId, f'{params}:{args}')
 
     def persistRequest(self, context: int):
-        self.sendUpdateToAvatar(self.doId, 'persistResponse', [context, 1])
+        self.sendUpdateToAvatarIdIdId(self.doId, 'persistResponse', [context, 1])
 
     def invokeRuleRequest(self, eventId: int, rules: list, context: int):
         print(f'invokeRuleRequest - {eventId} - {rules} - {context}')
@@ -73,7 +74,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
             self.addCoins(score)
 
-        self.sendUpdateToAvatar(self.doId, 'invokeRuleResponse', [eventId, rules, context])
+        self.sendUpdateToAvatarId(self.doId, 'invokeRuleResponse', [eventId, rules, context])
 
     def addCoins(self, deltaCoins: int):
         self.sendUpdate('setCarCoins', [deltaCoins + self.getCarCoins()])

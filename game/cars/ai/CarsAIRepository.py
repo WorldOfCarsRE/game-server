@@ -7,11 +7,19 @@ from game.otp.ai.AIDistrict import AIDistrict
 
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 
+from typing import Dict
+
+from game.cars.distributed.MongoInterface import MongoInterface
+
 class CarsAIRepository(AIDistrict):
     notify = DirectNotifyGlobal.directNotify.newCategory("CarsAIRepository")
 
     def __init__(self, *args, **kw):
         AIDistrict.__init__(self, *args, **kw)
+
+        self.playerTable: Dict[int, 'DistributedCarPlayerAI'] = {}
+
+        self.mongoInterface = MongoInterface(self)
 
     def getGameDoId(self):
         return OTP_DO_ID_CARS

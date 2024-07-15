@@ -1,12 +1,11 @@
-from otp import config
 from pymongo import MongoClient
 
 class MongoInterface:
     def __init__(self, air):
         self.air = air
 
-        client = MongoClient(config['MongoDB.HOST'])
-        self.mongodb = client[config['MongoDB.NAME']]
+        client = MongoClient(config.GetString('mongodb-host'))
+        self.mongodb = client[config.GetString('mongodb-name')]
         self.webMongo = client['woc']
 
     def retrieveFields(self, dclass: str, doId: int) -> list:

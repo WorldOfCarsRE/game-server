@@ -1,4 +1,5 @@
 from game.cars.distributed import CarsDistrict/AI
+from game.cars.carplayer import DistributedCarPlayer/AI
 
 // cars start at struct 45 and field 331
 

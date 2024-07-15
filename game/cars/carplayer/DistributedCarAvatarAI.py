@@ -1,4 +1,4 @@
-from ai.DistributedObjectAI import DistributedObjectAI
+from direct.distributed.DistributedObjectAI import DistributedObjectAI
 
 class DistributedCarAvatarAI(DistributedObjectAI):
     def __init__(self, air):

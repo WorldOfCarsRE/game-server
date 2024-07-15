@@ -19,3 +19,6 @@ assets
 # OTP
 logs/*.log
 config/config.lua
+
+# Python Path
+PYTHON_PATH
