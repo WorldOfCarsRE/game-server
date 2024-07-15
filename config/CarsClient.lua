@@ -344,7 +344,8 @@ function handleLogin(client, dgi)
             client:writeServerEvent("account-created", "CarsClient", string.format("%d", accountId))
 
             createAvatar(client, account, accountId)
-            createRaceCar(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
+            createRaceCar(client, account, accountId)
+            createCarPlayerStatus(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
         end
         client:createDatabaseObject("Account", account, DATABASE_OBJECT_TYPE_ACCOUNT, createAccountResponse)
     end
@@ -375,7 +376,7 @@ function createAvatar(client, account, accountId)
     client:createDatabaseObject("DistributedCarPlayer", avatar, DATABASE_OBJECT_TYPE_AVATAR, createAvatarResponse)
 end
 
-function createRaceCar(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
+function createRaceCar(client, account, accountId)
     function createRaceCarResponse(racecarId)
         if racecarId == 0 then
             client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The DistributedRaceCar object was unable to be created.", false)
@@ -395,13 +396,30 @@ function createRaceCar(client, account, accountId, playToken, openChat, isPaid, 
         --    racecarId = racecarId
         -- }})
 
-        loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, true)
-
         client:writeServerEvent("racecar-created", "CarsClient", string.format("%d", racecarId))
     end
 
     -- Create a new DistributedRaceCar object
     client:createDatabaseObject("DistributedRaceCar", {}, DATABASE_OBJECT_TYPE_RACECAR, createRaceCarResponse)
+end
+
+function createCarPlayerStatus(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
+    -- Create a new CarPlayerStatus object
+    client:createDatabaseObject("CarPlayerStatus", {}, DATABASE_OBJECT_TYPE_CAR_STATUS, function (statusId)
+        if statusId == 0 then
+            client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The CarPlayerStatus object was unable to be created.", false)
+            return
+        end
+
+        account.ACCOUNT_AV_SET[3] = statusId
+
+        client:setDatabaseValues(accountId, "Account", {
+            ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
+        })
+
+        loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, true)
+        client:writeServerEvent("carplayerstatus-created", "CarsClient", string.format("%d", statusId))
+    end)
 end
 
 function loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, firstLogin)
@@ -430,6 +448,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     -- Prepare the login response.
     local avatarId = userTable.avatars[1]
     local racecarId = userTable.avatars[2]
+    local statusId = userTable.avatars[3]
 
     if firstLogin then
         local json = require("json")
@@ -516,6 +535,9 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
 
     client:sendActivateObject(racecarId, "DistributedRaceCar", {})
     client:objectSetOwner(racecarId, true)
+
+    client:sendActivateObject(statusId, "CarPlayerStatus", {})
+    client:objectSetOwner(statusId, true)
 end
 
 function handleAddInterest(client, dgi)
