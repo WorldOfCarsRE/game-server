@@ -1,3 +1,5 @@
+from game.cars.distributed import CarsDistrict/AI
+
 // cars start at struct 45 and field 331
 
 // This keyword will help CarsClient filter the owner

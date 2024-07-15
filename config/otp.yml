@@ -86,3 +86,7 @@ roles:
     - type: eventlogger
       bind: 127.0.0.1:4343
       output: ../logs/events-%Y%m%d_%H%M%S.log
+
+    - type: lua
+      name: ShardManager
+      lua_file: ShardManager.lua

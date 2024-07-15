@@ -490,9 +490,11 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
 
     -- Activate DistributedCarPlayer & other owned objects
     userTable.avatarId = avatarId
+    userTable.racecarId = racecarId
     client:userTable(userTable)
 
     client:setChannel(accountId, avatarId)
+    client:subscribePuppetChannel(avatarId, 1)
 
     local setAccess = 1
     if userTable.isPaid then
@@ -510,8 +512,10 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     }
 
     client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
-
     client:objectSetOwner(avatarId, true)
+
+    client:sendActivateObject(racecarId, "DistributedRaceCar", {})
+    client:objectSetOwner(racecarId, true)
 end
 
 function handleAddInterest(client, dgi)
@@ -554,15 +558,12 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
     local userTable = client:userTable()
     local accountId = userTable.accountId
     local avatarId = userTable.avatarId
-    if doId ~= avatarId then
-        client:warn(string.format("Got AddOwnership for object %d, our avatarId is %d", doId, avatarId))
-        return
+    local racecarId = userTable.racecarId
+    if doId == avatarId then
+        client:writeServerEvent("selected-avatar", "CarsClient", string.format("%d|%d", accountId, avatarId))
     end
 
-    client:writeServerEvent("selected-avatar", "CarsClient", string.format("%d|%d", accountId, avatarId))
-
     client:addSessionObject(doId)
-    client:subscribePuppetChannel(avatarId, 1)
 
     -- Store name for SpeedChat+
     -- local name = dgi:readString()
