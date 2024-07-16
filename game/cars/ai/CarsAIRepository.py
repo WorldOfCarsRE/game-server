@@ -3,9 +3,13 @@ from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
 
 from game.cars.ai.CarsAIMsgTypes import *
+from game.cars.distributed.CarsGlobals import *
+from game.cars.zone import ZoneConstants
+
 from game.otp.ai.AIDistrict import AIDistrict
 
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
+from game.cars.zone.DistributedZoneAI import DistributedZoneAI
 
 from typing import Dict
 
@@ -30,6 +34,19 @@ class CarsAIRepository(AIDistrict):
         self.district.generateOtpObject(
                 OTP_DO_ID_CARS, OTP_ZONE_ID_DISTRICTS,
                 doId=self.districtId)
+
+        # Generate zones:
+        self.downtownZone = DistributedZoneAI(self, "Downtown Radiator Springs", ZoneConstants.DOWNTOWN_RADIATOR_SPRINGS)
+        self.generateWithRequired(self.downtownZone, self.districtId, DUNGEON_INTEREST_HANDLE)
+
+        self.fillmoresFields = DistributedZoneAI(self, "Fillmore's Fields", ZoneConstants.FILLMORES_FIELDS)
+        self.generateWithRequired(self.fillmoresFields, self.districtId, DUNGEON_INTEREST_HANDLE)
+
+        self.redhoodValley = DistributedZoneAI(self, "Redhood Valley", ZoneConstants.REDHOOD_VALLEY)
+        self.generateWithRequired(self.redhoodValley, self.districtId, DUNGEON_INTEREST_HANDLE)
+
+        self.willysButte = DistributedZoneAI(self, "Willy's Butte", ZoneConstants.WILLYS_BUTTE)
+        self.generateWithRequired(self.willysButte, self.districtId, DUNGEON_INTEREST_HANDLE)
 
         # mark district as enabled
         # NOTE: Only setEnabled is used in the client

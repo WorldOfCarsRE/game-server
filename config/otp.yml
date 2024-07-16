@@ -42,7 +42,8 @@ roles:
       client:
           relocate: true
           add_interest: enabled
-          heartbeat_timeout: 60
+          # Client heartbeats are apparently broken?
+          heartbeat_timeout: 0 # 60
       channels:
           min: 1000000000
           max: 1009999999

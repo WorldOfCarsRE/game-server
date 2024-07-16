@@ -50,6 +50,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.sendUpdateToAvatarId(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
         self.sendUpdateToAvatarId(self.doId, 'generateComplete', [])
 
+        self.air.incrementPopulation()
+
     def delete(self):
         if self.getDISLid() in self.air.playerTable:
             del self.air.playerTable[self.getDISLid()]
@@ -58,13 +60,15 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             if friendId in self.air.playerTable:
                 self.air.playerFriendsManager.avatarOffline(self.getDISLid(), friendId)
 
+        self.air.decrementPopulation()
+
         DistributedCarAvatarAI.delete(self)
 
     def sendEventLog(self, event: str, params: list, args: list):
         self.air.writeServerEvent(event, self.doId, f'{params}:{args}')
 
     def persistRequest(self, context: int):
-        self.sendUpdateToAvatarIdIdId(self.doId, 'persistResponse', [context, 1])
+        self.sendUpdateToAvatarId(self.doId, 'persistResponse', [context, 1])
 
     def invokeRuleRequest(self, eventId: int, rules: list, context: int):
         print(f'invokeRuleRequest - {eventId} - {rules} - {context}')
