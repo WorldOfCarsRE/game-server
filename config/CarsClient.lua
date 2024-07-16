@@ -453,6 +453,11 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     if firstLogin then
         local json = require("json")
         local car = json.decode(retrieveCar("playToken=" .. playToken))
+        local stretches = car.carData.carDna.stretches
+
+        if #stretches == 0 then
+            stretches = {0, 0, 0, 0, 0, 0}
+        end
 
         local dna = {
             car.carData.carDna.carName,
@@ -470,7 +475,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
             car.carData.carDna.tire,
             car.carData.carDna.detailing,
             car.carData.carDna.profileBackgroundId,
-            car.carData.carDna.stretches,
+            stretches,
             car.carData.carDna.decalSlots,
             car.carData.carDna.onAddons,
             car.carData.carDna.costumeId
