@@ -327,7 +327,7 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     setAccess(uint8 = 2) ownrequired broadcast ownrecv ram;
     setActiveQuests(int32[] = []) ownrequired broadcast db ownrecv;
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend airecv;
-    broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) clsend clrecv;
+    broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) ownsend broadcast;
     setReward(Reward[]);
     updateYardPermissionMask(int32, int32) clsend;
     sendEventLog(string, int32[], string[]) clsend airecv;
