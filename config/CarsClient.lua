@@ -50,6 +50,8 @@ DATABASE_OBJECT_TYPE_CAR_STATUS = 4
 STATESERVER_OBJECT_UPDATE_FIELD = 2004
 STATESERVER_OBJECT_DELETE_RAM = 2007
 
+CLIENTAGENT_EJECT = 3004
+
 local inspect = require('inspect')
 
 -- From https://stackoverflow.com/a/22831842
@@ -423,7 +425,12 @@ function createCarPlayerStatus(client, account, accountId, playToken, openChat, 
 end
 
 function loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, firstLogin)
-    -- TODO: Eject logged in accounts.
+    -- Eject other client if already logged in.
+    local ejectDg = datagram:new()
+    client:addServerHeaderWithAccountId(ejectDg, accountId, CLIENTAGENT_EJECT)
+    ejectDg:addUint16(CLIENT_DISCONNECT_RELOGIN)
+    ejectDg:addString("You have been disconnected because someone else just logged in using your account on another computer.")
+    client:routeDatagram(ejectDg)
 
     -- Subscribe to our puppet channel.
     client:subscribePuppetChannel(accountId, 3)
