@@ -405,7 +405,7 @@ function createAvatar(client, account, accountId, playToken)
             ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
         })
 
-        -- Link account id with AMF car object:
+        -- Link playerId with AMF car object:
         setCarData(playToken, {
             playerId = avatarId,
          })

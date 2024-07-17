@@ -10,6 +10,7 @@ from game.otp.ai.AIDistrict import AIDistrict
 
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
+from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
 
 from typing import Dict
 
@@ -47,6 +48,13 @@ class CarsAIRepository(AIDistrict):
 
         self.willysButte = DistributedZoneAI(self, "Willy's Butte", ZoneConstants.WILLYS_BUTTE)
         self.generateWithRequired(self.willysButte, self.districtId, DUNGEON_INTEREST_HANDLE)
+
+        self.mater = InteractiveObjectAI(self)
+        self.mater.assetId = 31009 # materCatalogItemId
+        self.generateWithRequired(self.mater, self.districtId, self.downtownZone.doId)
+
+        self.downtownZone.interactiveObjects.append(self.mater)
+        self.downtownZone.updateObjectCount()
 
         # mark district as enabled
         # NOTE: Only setEnabled is used in the client

@@ -1,6 +1,7 @@
 from game.cars.distributed import CarsDistrict/AI
 from game.cars.carplayer import DistributedCarPlayer/AI
 from game.cars.zone import DistributedZone/AI
+from game.cars.carplayer import InteractiveObject/AI
 
 // cars start at struct 45 and field 331
 

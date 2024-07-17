@@ -53,11 +53,11 @@ class InteractiveObjectAI(DistributedCarAvatarAI):
         return 'scripts/interactive/default_npc_no_physics.lua'
 
     def triggerInteraction(self, eventId: int, args: list):
-        avatarId = self.air.currentAvatarSender
+        avatarId = self.air.getAvatarIdFromSender()
         print(f'triggerInteraction - {eventId} - {args}')
 
         if eventId == COMMAND_CLICK:
             self.d_setInteractiveCommands(avatarId, eventId, [COMMAND_OFFER_SHOP, 31012, CMD_TYPE_POSITIVE])
 
     def d_setInteractiveCommands(self, avatarId: int, eventId: int, args: list):
-        self.sendUpdateToAvatar(avatarId, 'setInteractiveCommands', [eventId, [args]])
+        self.sendUpdateToAvatarId(avatarId, 'setInteractiveCommands', [eventId, [args]])
