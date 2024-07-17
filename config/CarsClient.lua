@@ -175,11 +175,19 @@ function retrieveCar(data)
     return response.body
 end
 
-function setCarData(data)
+function setCarData(playToken, data)
+    local request = {playToken = playToken, fieldData = data}
+    local json = require("json")
+    local result, err = json.encode(request)
+    if err then
+        print(err)
+        return
+    end
     response, error_message = http.post(API_BASE .. "setCarData", {
-        body=data,
+        body=result,
         headers={
-            ["Authorization"]=API_TOKEN
+            ["Authorization"]=API_TOKEN,
+            ["Content-Type"]="application/json"
         }
     })
 
@@ -369,15 +377,20 @@ function handleLogin(client, dgi)
 
             client:writeServerEvent("account-created", "CarsClient", string.format("%d", accountId))
 
-            createAvatar(client, account, accountId)
-            createRaceCar(client, account, accountId)
+            -- Link account id with AMF car object:
+            setCarData(playToken, {
+                dislId = accountId,
+            })
+
+            createAvatar(client, account, accountId, playToken)
+            createRaceCar(client, account, accountId, playToken)
             createCarPlayerStatus(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
         end
         client:createDatabaseObject("Account", account, DATABASE_OBJECT_TYPE_ACCOUNT, createAccountResponse)
     end
 end
 
-function createAvatar(client, account, accountId)
+function createAvatar(client, account, accountId, playToken)
     function createAvatarResponse(avatarId)
         if avatarId == 0 then
             client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The DistributedCarPlayer object was unable to be created.", false)
@@ -391,6 +404,11 @@ function createAvatar(client, account, accountId)
         client:setDatabaseValues(accountId, "Account", {
             ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
         })
+
+        -- Link account id with AMF car object:
+        setCarData(playToken, {
+            playerId = avatarId,
+         })
     end
 
     -- Create a new DistributedCarPlayer object
@@ -402,7 +420,7 @@ function createAvatar(client, account, accountId)
     client:createDatabaseObject("DistributedCarPlayer", avatar, DATABASE_OBJECT_TYPE_AVATAR, createAvatarResponse)
 end
 
-function createRaceCar(client, account, accountId)
+function createRaceCar(client, account, accountId, playToken)
     function createRaceCarResponse(racecarId)
         if racecarId == 0 then
             client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The DistributedRaceCar object was unable to be created.", false)
@@ -415,12 +433,10 @@ function createRaceCar(client, account, accountId)
             ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
         })
 
-        -- Link account id with AMF car object:
-        -- setCarData({playToken, {
-        --    dislId = accountId,
-         --    playerId =  playerId,
-        --    racecarId = racecarId
-        -- }})
+        -- Link racecarId with AMF car object:
+        setCarData(playToken, {
+            racecarId = racecarId
+         })
 
         client:writeServerEvent("racecar-created", "CarsClient", string.format("%d", racecarId))
     end
