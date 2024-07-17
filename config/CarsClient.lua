@@ -64,6 +64,15 @@ function string.upperFirst(str)
     return (string.gsub(str, "^%l", string.upper))
 end
 
+-- https://gist.github.com/VADemon/afb10dbb0d10d99aeb21449752da6285
+function regexEscape(str)
+    return string.gsub(str, "[%(%)%.%%%+%-%*%?%[%^%$%]]", "%%%1")
+end
+
+string.replace = function (str, this, that)
+    return string.gsub(str, regexEscape(this), string.gsub(that, "%%", "%%%%")) -- only % needs to be escaped for 'that'
+end
+
 function readAccountBridge()
     local json = require("json")
     local io = require("io")
@@ -112,23 +121,11 @@ print("CarsClient: Successfully loaded whitelist.")
 SPEEDCHAT = {}
 function readChatPhrases()
     local io = require("io")
-    local f, err = io.open("../assets/speedchat.xml")
+    local f, err = io.open("../assets/speedchat.txt")
     assert(not err, err)
-
-    local xml2lua = require("xml2lua")
-
-    -- Uses a handler that converts the XML to a Lua table
-    local handler = require("xmlhandler.tree")
-
-    -- Instantiates the XML parser
-    local parser = xml2lua.parser(handler)
-    parser:parse(f:read("*all"))
-
-    for i, p in pairs(handler.root.speedchat.tier) do
-        print(inspect(p))
-        -- TODO
-        -- table.insert(SPEEDCHAT, p)
-      end
+    for line in f:lines() do
+        SPEEDCHAT[line] = true
+    end
 end
 readChatPhrases()
 print("CarsClient: Successfully loaded SpeedChat phrases.")
@@ -163,6 +160,8 @@ if PRODUCTION_ENABLED then
 else
     API_BASE = 'http://localhost/carsds/api/internal/'
 end
+
+avatarSpeedChatPlusStates = {}
 
 function retrieveCar(data)
     response, error_message = http.get(API_BASE .. "retrieveCar", {
@@ -254,6 +253,7 @@ function handleLogin(client, dgi)
         return
     end
 
+    local speedChatPlus
     local openChat
     local isPaid
     local dislId
@@ -310,8 +310,14 @@ function handleLogin(client, dgi)
 
             local timestamp = jsonData.Timestamp
             dislId = tonumber(jsonData.dislId)
-            local accountType = jsonData.accountType
+            accountType = jsonData.accountType
             linkedToParent = jsonData.LinkedToParent
+
+            if tonumber(jsonData.SpeedChatPlus) == 1 then
+                speedChatPlus = true
+            else
+                speedChatPlus = false
+            end
 
             if WANT_TOKEN_EXPIRATIONS and timestamp < os.time() then
                 client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Token has expired.", true)
@@ -330,13 +336,20 @@ function handleLogin(client, dgi)
         -- Production is not enabled
         -- We need these dummy values
         openChat = false
+        if WANT_OPEN_CHAT then
+            openChat = true
+        end
+        isPaid = false
         if WANT_MEMBERSHIP then
             isPaid = true
-        else
-            isPaid = false
         end
         dislId = 1
         linkedToParent = false
+        accountType = "Administrator"
+        speedChatPlus = false
+        if WANT_SPEEDCHAT_PLUS then
+            speedChatPlus = true
+        end
     end
 
     local accountId = ACCOUNT_BRIDGE[playToken]
@@ -352,7 +365,7 @@ function handleLogin(client, dgi)
                 LAST_LOGIN = os.date("%a %b %d %H:%M:%S %Y"),
             })
 
-            loginAccount(client, fields, accountId, playToken, openChat, isPaid, dislId, linkedToParent, false)
+            loginAccount(client, fields, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, false)
         end
         client:getDatabaseValues(accountId, "Account", {"ACCOUNT_AV_SET"}, queryLoginResponse)
     else
@@ -384,7 +397,7 @@ function handleLogin(client, dgi)
 
             createAvatar(client, account, accountId, playToken)
             createRaceCar(client, account, accountId, playToken)
-            createCarPlayerStatus(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
+            createCarPlayerStatus(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus)
         end
         client:createDatabaseObject("Account", account, DATABASE_OBJECT_TYPE_ACCOUNT, createAccountResponse)
     end
@@ -459,12 +472,12 @@ function createCarPlayerStatus(client, account, accountId, playToken, openChat, 
             ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
         })
 
-        loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, true)
+        loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, true)
         client:writeServerEvent("carplayerstatus-created", "CarsClient", string.format("%d", statusId))
     end)
 end
 
-function loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, firstLogin)
+function loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, firstLogin)
     -- Eject other client if already logged in.
     local ejectDg = datagram:new()
     client:addServerHeaderWithAccountId(ejectDg, accountId, CLIENTAGENT_EJECT)
@@ -486,7 +499,9 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     userTable.avatars = account.ACCOUNT_AV_SET
     userTable.playToken = playToken
     userTable.isPaid = isPaid
+    userTable.speedChatPlus = speedChatPlus
     userTable.openChat = openChat
+    userTable.accountType = accountType
     client:userTable(userTable)
 
     -- Log the event
@@ -559,7 +574,13 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     resp:addUint32(dislId) -- accountId
     resp:addString(playToken) -- playToken
     resp:addUint8(1) -- accountNameApproved
-    resp:addString('YES') -- openChatEnabled
+
+    if openChat then
+        resp:addString('YES') -- openChatEnabled
+    else
+        resp:addString('NO') -- openChatEnabled
+    end
+
     resp:addString('YES') -- createFriendsWithChat
     resp:addString('YES') -- chatCodeCreationRule
 
@@ -569,7 +590,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
         resp:addString("VELVET") -- access
     end
 
-    if openChat then
+    if speedChatPlus then
         resp:addString("YES") -- WhiteListResponse
     else
         resp:addString("NO") -- WhiteListResponse
@@ -609,6 +630,8 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
 
     client:sendActivateObject(statusId, "CarPlayerStatus", {})
     client:objectSetOwner(statusId, true)
+
+    avatarSpeedChatPlusStates[avatarId] = userTable.speedChatPlus
 end
 
 function handleAddInterest(client, dgi)
@@ -639,6 +662,8 @@ function clearAvatar(client)
 
     -- Undeclare all friends.
     client:undeclareAllObjects()
+
+    avatarSpeedChatPlusStates[userTable.avatarId] = nil
 
     userTable.avatarId = nil
     userTable.friendsList = nil
@@ -743,15 +768,22 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
     client:sendDatagram(resp)
 end
 
-function filterWhitelist(message)
+function filterWhitelist(message, filterOverride)
     local modifications = {}
     local wordsToSub = {}
     local offset = 0
+
+    if filterOverride or SPEEDCHAT[message] ~= true then
+        local cleanMessage = "*"
+        table.insert(modifications, {0, 0})
+        return cleanMessage, modifications
+      end
+
     -- Match any character except spaces.
     for word in string.gmatch(message, "[^%s]*") do
         -- Strip out punctuations just for checking with the whitelist.
         local strippedWord = string.gsub(word, "[.,?!]", "")
-        if word ~= "" and WHITELIST[string.lower(strippedWord)] ~= true then
+        if filterOverride == true or word ~= "" and WHITELIST[string.lower(strippedWord)] ~= true then
             table.insert(modifications, {offset, offset + string.len(word) - 1})
             table.insert(wordsToSub, word)
         end
@@ -762,7 +794,7 @@ function filterWhitelist(message)
     local cleanMessage = message
 
     for _, word in ipairs(wordsToSub) do
-        cleanMessage = string.gsub(cleanMessage, word, string.rep('*', string.len(word)), 1)
+        cleanMessage = string.replace(cleanMessage, word, string.rep('*', string.len(word)))
     end
 
     return cleanMessage, modifications
@@ -805,6 +837,7 @@ function handleDistributedCarPlayer_setTalk(client, doId, fieldId, data)
     local modifications = {}
 
     local shouldFilterMessage = true
+    local notSecretFriends = true
     if userTable.friendsList ~= nil then
         if avatarId == userTable.avatarId then
             -- That's us.  Don't filter from whitelist
@@ -812,6 +845,7 @@ function handleDistributedCarPlayer_setTalk(client, doId, fieldId, data)
             for i, v in ipairs(userTable.friendsList) do
                 if userTable.friendsList[i][2] == 1 then
                     shouldFilterMessage = false
+                    notSecretFriends = false
                     break
                 end
             end
@@ -821,14 +855,23 @@ function handleDistributedCarPlayer_setTalk(client, doId, fieldId, data)
             for i, v in ipairs(userTable.friendsList) do
                 if userTable.friendsList[i][1] == avatarId and userTable.friendsList[i][2] == 1 then
                     shouldFilterMessage = false
+                    notSecretFriends = false
                     break
                 end
             end
         end
     end
 
+    -- Special cases
+    local filterOverride = true
+
+    -- sender, receiver
+    if (avatarSpeedChatPlusStates[avatarId] and userTable.speedChatPlus) or (notSecretFriends == false) then
+        filterOverride = false
+    end
+
     if shouldFilterMessage then
-        message, modifications = filterWhitelist(message)
+        message, modifications = filterWhitelist(message, filterOverride)
     end
 
     local dg = datagram:new()
