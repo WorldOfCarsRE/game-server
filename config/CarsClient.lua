@@ -109,6 +109,30 @@ end
 readWhitelist()
 print("CarsClient: Successfully loaded whitelist.")
 
+SPEEDCHAT = {}
+function readChatPhrases()
+    local io = require("io")
+    local f, err = io.open("../assets/speedchat.xml")
+    assert(not err, err)
+
+    local xml2lua = require("xml2lua")
+
+    -- Uses a handler that converts the XML to a Lua table
+    local handler = require("xmlhandler.tree")
+
+    -- Instantiates the XML parser
+    local parser = xml2lua.parser(handler)
+    parser:parse(f:read("*all"))
+
+    for i, p in pairs(handler.root.speedchat.tier) do
+        print(inspect(p))
+        -- TODO
+        -- table.insert(SPEEDCHAT, p)
+      end
+end
+readChatPhrases()
+print("CarsClient: Successfully loaded SpeedChat phrases.")
+
 -- Converts a hexadecimal string to a string of bytes
 -- From: https://smherwig.blogspot.com/2013/05/a-simple-binascii-module-in-ruby-and-lua.html
 function unhexlify(s)
@@ -457,9 +481,10 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     local racecarId = userTable.avatars[2]
     local statusId = userTable.avatars[3]
 
+    local json = require("json")
+    local car = json.decode(retrieveCar("playToken=" .. playToken))
+
     if firstLogin then
-        local json = require("json")
-        local car = json.decode(retrieveCar("playToken=" .. playToken))
         local stretches = car.carData.carDna.stretches
 
         if #stretches == 0 then
@@ -491,6 +516,24 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
         client:setDatabaseValues(avatarId, "DistributedCarPlayer", {setDNA = {dna}})
         client:setDatabaseValues(racecarId, "DistributedRaceCar", {setDNA = {dna}})
     end
+
+    -- Store name for SpeedChat+
+    -- By default the name is formatted like "Wreckless,Spinna,roader" so we format it to normal "Wreckless Spinnaroader".
+    local name = ""
+    local count = 0
+
+    for part in string.gmatch(car.carData.carDna.carName, "([^,]+)") do
+        if count == 1 then
+            name = name .. " " .. part
+        else
+            name = name .. part
+        end
+
+        count = count + 1
+    end
+
+    userTable.avatarName = name
+    client:userTable(userTable)
 
     local resp = datagram:new()
     resp:addUint16(CLIENT_LOGIN_CARS_RESP)
@@ -598,11 +641,6 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
     end
 
     client:addSessionObject(doId)
-
-    -- Store name for SpeedChat+
-    -- local name = dgi:readString()
-    -- userTable.avatarName = name
-    -- client:userTable(userTable)
 
     local requiredFields = {}
     local ownRequiredFields = {}
