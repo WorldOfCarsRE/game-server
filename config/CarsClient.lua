@@ -612,6 +612,11 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
         setAccess = 2
     end
 
+    local chatLevel = 0
+    if userTable.speedChatPlus then
+        chatLevel = 1
+    end
+
     local playerFields = {
         setAccess = {setAccess},
         setTelemetry = {0, 0, 0, 0, 0, 0, 0, 0},
@@ -620,6 +625,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
         setAfk = {0},
         setDISLname = {playToken},
         setCars = {1, {racecarId}},
+        setChatLevel = {chatLevel},
     }
 
     client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
