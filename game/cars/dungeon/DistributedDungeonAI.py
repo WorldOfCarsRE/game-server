@@ -1,4 +1,4 @@
-from ai.DistributedObjectAI import DistributedObjectAI
+from direct.distributed.DistributedObjectAI import DistributedObjectAI
 from typing import List
 
 VIDEO_DONE_COMMAND = 1

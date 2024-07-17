@@ -11,6 +11,7 @@ from game.otp.ai.AIDistrict import AIDistrict
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
 from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
+from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
 
 from typing import Dict
 
@@ -55,6 +56,9 @@ class CarsAIRepository(AIDistrict):
 
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.updateObjectCount()
+
+        self.spRaceLobby = DistributedSinglePlayerRacingLobbyAI(self)
+        self.generateWithRequired(self.spRaceLobby, self.district.doId, self.downtownZone.doId)
 
         # mark district as enabled
         # NOTE: Only setEnabled is used in the client

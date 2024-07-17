@@ -1,4 +1,4 @@
-from ai.Objects import DistributedLobbyContextAI
+from game.cars.lobby.DistributedLobbyContextAI import DistributedLobbyContextAI
 
 class DistributedSinglePlayerRacingLobbyContextAI(DistributedLobbyContextAI):
     def __init__(self, air):

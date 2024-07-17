@@ -19,6 +19,6 @@ class DistributedRaceAI(DistributedDungeonAI):
         if task.time >= task.duration:
             return Task.done
         else:
-            self.sendUpdateToAvatar(avatarId, 'setCountDown', [int(task.duration - task.time)])
+            self.sendUpdateToAvatarId(avatarId, 'setCountDown', [int(task.duration - task.time)])
 
             return Task.cont
