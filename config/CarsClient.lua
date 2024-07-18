@@ -258,7 +258,7 @@ function handleLogin(client, dgi)
     local isPaid
     local dislId
     local linkedToParent
-    if false then -- PRODUCTION_ENABLED
+    if PRODUCTION_ENABLED then
         local json = require("json")
         local crypto = require("crypto")
         local ok, err = pcall(function()
