@@ -13,3 +13,7 @@ PRODUCTION_ENABLED = false
 API_TOKEN = "woc_api"
 PLAY_TOKEN_KEY = ""
 WANT_TOKEN_EXPIRATIONS = false
+
+-- Population Levels (for ShardManager):
+-- (NONE, VERY_LIGHT, LIGHT, MEDIUM, FULL, VERY_FULL)
+POPULATION_LEVELS = {0, 1, 50, 100, 150, 200}
