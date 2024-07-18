@@ -775,11 +775,15 @@ function handleAddOwnership(client, doId, parent, zone, dc, dgi)
 end
 
 function filterWhitelist(message, filterOverride)
+    if SPEEDCHAT[message] then
+        return message, {}
+    end
+
     local modifications = {}
     local wordsToSub = {}
     local offset = 0
 
-    if filterOverride or SPEEDCHAT[message] ~= true then
+    if filterOverride then
         local cleanMessage = "*"
         table.insert(modifications, {0, 0})
         return cleanMessage, modifications
