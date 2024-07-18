@@ -12,6 +12,7 @@ from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
 from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
+from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
 from typing import Dict
 
@@ -39,26 +40,29 @@ class CarsAIRepository(AIDistrict):
 
         # Generate zones:
         self.downtownZone = DistributedZoneAI(self, "Downtown Radiator Springs", ZoneConstants.DOWNTOWN_RADIATOR_SPRINGS)
-        self.generateWithRequired(self.downtownZone, self.districtId, DUNGEON_INTEREST_HANDLE)
+        self.downtownZone.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
         self.fillmoresFields = DistributedZoneAI(self, "Fillmore's Fields", ZoneConstants.FILLMORES_FIELDS)
-        self.generateWithRequired(self.fillmoresFields, self.districtId, DUNGEON_INTEREST_HANDLE)
+        self.fillmoresFields.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
         self.redhoodValley = DistributedZoneAI(self, "Redhood Valley", ZoneConstants.REDHOOD_VALLEY)
-        self.generateWithRequired(self.redhoodValley, self.districtId, DUNGEON_INTEREST_HANDLE)
+        self.redhoodValley.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
         self.willysButte = DistributedZoneAI(self, "Willy's Butte", ZoneConstants.WILLYS_BUTTE)
-        self.generateWithRequired(self.willysButte, self.districtId, DUNGEON_INTEREST_HANDLE)
+        self.willysButte.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
         self.mater = InteractiveObjectAI(self)
         self.mater.assetId = 31009 # materCatalogItemId
-        self.generateWithRequired(self.mater, self.districtId, self.downtownZone.doId)
+        self.mater.generateWithRequired(self.downtownZone.doId)
 
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.updateObjectCount()
 
         self.spRaceLobby = DistributedSinglePlayerRacingLobbyAI(self)
-        self.generateWithRequired(self.spRaceLobby, self.district.doId, self.downtownZone.doId)
+        self.spRaceLobby.generateWithRequired(self.downtownZone.doId)
+
+        self.holidayManager = HolidayManagerAI(self)
+        # self.holidayManager.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
         # mark district as enabled
         # NOTE: Only setEnabled is used in the client

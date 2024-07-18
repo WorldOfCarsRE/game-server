@@ -5,6 +5,7 @@ from game.cars.carplayer import InteractiveObject/AI
 from game.cars.racing import DistributedSinglePlayerRacingLobby/AI
 from game.cars.racing import DistributedSinglePlayerRacingLobbyContext/AI
 from game.cars.dungeon import DistributedSPRace/AI
+from game.cars.ai import HolidayManager/AI
 
 // cars start at struct 45 and field 331
 
