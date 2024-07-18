@@ -19,7 +19,7 @@ class DistributedSinglePlayerRacingLobbyAI(DistributedLobbyAI):
         lobbyContext = DistributedSinglePlayerRacingLobbyContextAI(self.air)
         lobbyContext.owningAv = avatarId
         lobbyContext.playersInContext.append(avatarId)
-        lobbyContext.generateOtpObject(DUNGEON_INTEREST_HANDLE, zoneId)
+        lobbyContext.generateWithRequired(zoneId)
 
         race = DistributedSPRaceAI(self.air)
         race.playerIds.append(avatarId)
