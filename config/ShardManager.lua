@@ -15,6 +15,9 @@ SHARDMANAGER_REGISTER_SHARD = 20000
 SHARDMANAGER_UPDATE_SHARD = 20001
 SHARDMANAGER_DELETE_SHARD = 20002
 
+-- Load the configuration varables (see config.example.lua)
+dofile("config.lua")
+
 local inspect = require('inspect')
 
 function init(participant)
@@ -84,10 +87,20 @@ function handleShardManager_getAllShardsRequest(participant, fieldId, data)
     local shards = {}
     for _, shard in pairs(Shards) do
         -- TODO: population levels
-        table.insert(shards, {shard[1], shard[2], POPULATION_LEVEL_NONE, shard[3], shard[4]})
+        local popLevel = POPULATION_LEVEL_NONE
+        if shard[3] >= POPULATION_LEVEL_VERY_FULL then
+            popLevel = POPULATION_LEVEL_VERY_FULL
+        elseif shard[3] >= POPULATION_LEVEL_FULL and shard[3] <= POPULATION_LEVEL_VERY_FULL then
+            popLevel = POPULATION_LEVEL_FULL
+        elseif shard[3] >= POPULATION_LEVEL_MEDIUM and shard[3] <= POPULATION_LEVEL_FULL then
+            popLevel = POPULATION_LEVEL_MEDIUM
+        elseif shard[3] >= POPULATION_LEVEL_LIGHT and shard[3] <= POPULATION_LEVEL_MEDIUM then
+            popLevel = POPULATION_LEVEL_LIGHT
+        elseif shard[3] >= POPULATION_LEVEL_VERY_LIGHT and shard[3] <= POPULATION_LEVEL_LIGHT then
+            popLevel = POPULATION_LEVEL_VERY_LIGHT
+        end
+        table.insert(shards, {shard[1], shard[2], popLevel, shard[3], shard[4]})
     end
-
-    print(inspect(shards))
 
     participant:sendUpdateToAvatarId(avatarId, OTP_DO_ID_CARS_SHARD_MANAGER,
                 "ShardManager", "getAllShardsResponse", {context, shards})
