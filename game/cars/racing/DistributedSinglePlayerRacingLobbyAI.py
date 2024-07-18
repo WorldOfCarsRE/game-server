@@ -26,7 +26,7 @@ class DistributedSinglePlayerRacingLobbyAI(DistributedLobbyAI):
         race.lobbyDoId = self.doId
         race.contextDoId = lobbyContext.doId
         race.dungeonItemId = self.dungeonItemId
-        race.generateOtpObject(self.doId, zoneId)
+        race.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
         self.sendUpdateToAvatarId(avatarId, 'gotoLobbyContext', [zoneId])
 
