@@ -8,7 +8,7 @@ class DistributedRaceAI(DistributedDungeonAI):
         DistributedDungeonAI.__init__(self, air)
 
     def syncReady(self):
-        avatarId = self.air.currentAvatarSender
+        avatarId = self.air.getAvatarIdFromSender()
 
         countDownTask = Task(self.__countDownTask)
         countDownTask.duration = self.COUNTDOWN_TIME
