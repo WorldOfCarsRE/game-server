@@ -1,6 +1,5 @@
 cd ../config
 
-export DEBUG=DBSS
 screen -dmS OTP "../../OtpGo/otpgo" otp.yml
 
 sleep 5

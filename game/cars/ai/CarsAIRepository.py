@@ -14,8 +14,6 @@ from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
 from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
-from typing import Dict
-
 from game.cars.distributed.MongoInterface import MongoInterface
 
 class CarsAIRepository(AIDistrict):
@@ -23,8 +21,6 @@ class CarsAIRepository(AIDistrict):
 
     def __init__(self, *args, **kw):
         AIDistrict.__init__(self, *args, **kw)
-
-        self.playerTable: Dict[int, 'DistributedCarPlayerAI'] = {}
 
         self.mongoInterface = MongoInterface(self)
 
@@ -101,7 +97,6 @@ class CarsAIRepository(AIDistrict):
         dg.addServerHeader(OTP_DO_ID_PLAYER_FRIENDS_MANAGER, self.ourChannel, FRIENDMANAGER_ACCOUNT_OFFLINE)
         dg.addUint32(accountId)
         self.send(dg)
-
 
     def incrementPopulation(self):
         AIDistrict.incrementPopulation(self)
