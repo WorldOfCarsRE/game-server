@@ -610,9 +610,9 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     client:subscribePuppetChannel(avatarId, 1)
 
     local setAccess = 1
-    if userTable.isPaid then
-        setAccess = 2
-    end
+    -- if userTable.isPaid then
+        -- setAccess = 2
+    -- end
 
     local chatLevel = 0
     if userTable.speedChatPlus then
