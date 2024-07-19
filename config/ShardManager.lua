@@ -78,6 +78,22 @@ function handleDelete(participant)
     Shards[sender] = nil
 end
 
+function getPopulationLevel(shardPop)
+    local popLevel = POPULATION_LEVEL_NONE
+    if shardPop >= POPULATION_LEVEL_VERY_FULL then
+        popLevel = POPULATION_LEVEL_VERY_FULL
+    elseif shardPop >= POPULATION_LEVEL_FULL and shardPop <= POPULATION_LEVEL_VERY_FULL then
+        popLevel = POPULATION_LEVEL_FULL
+    elseif shardPop >= POPULATION_LEVEL_MEDIUM and shardPop <= POPULATION_LEVEL_FULL then
+        popLevel = POPULATION_LEVEL_MEDIUM
+    elseif shardPop >= POPULATION_LEVEL_LIGHT and shardPop <= POPULATION_LEVEL_MEDIUM then
+        popLevel = POPULATION_LEVEL_LIGHT
+    elseif shardPop >= POPULATION_LEVEL_VERY_LIGHT and shardPop <= POPULATION_LEVEL_LIGHT then
+        popLevel = POPULATION_LEVEL_VERY_LIGHT
+    end
+    return popLevel
+end
+
 -- Field updates sent by the client:
 function handleShardManager_getAllShardsRequest(participant, fieldId, data)
     local avatarId = participant:getAvatarIdFromSender()
@@ -86,23 +102,27 @@ function handleShardManager_getAllShardsRequest(participant, fieldId, data)
 
     local shards = {}
     for _, shard in pairs(Shards) do
-        -- TODO: population levels
-        local popLevel = POPULATION_LEVEL_NONE
-        if shard[3] >= POPULATION_LEVEL_VERY_FULL then
-            popLevel = POPULATION_LEVEL_VERY_FULL
-        elseif shard[3] >= POPULATION_LEVEL_FULL and shard[3] <= POPULATION_LEVEL_VERY_FULL then
-            popLevel = POPULATION_LEVEL_FULL
-        elseif shard[3] >= POPULATION_LEVEL_MEDIUM and shard[3] <= POPULATION_LEVEL_FULL then
-            popLevel = POPULATION_LEVEL_MEDIUM
-        elseif shard[3] >= POPULATION_LEVEL_LIGHT and shard[3] <= POPULATION_LEVEL_MEDIUM then
-            popLevel = POPULATION_LEVEL_LIGHT
-        elseif shard[3] >= POPULATION_LEVEL_VERY_LIGHT and shard[3] <= POPULATION_LEVEL_LIGHT then
-            popLevel = POPULATION_LEVEL_VERY_LIGHT
-        end
-        table.insert(shards, {shard[1], shard[2], popLevel, shard[3], shard[4]})
+        table.insert(shards, {shard[1], shard[2], getPopulationLevel(shard[3]), shard[3], shard[4]})
     end
 
     participant:sendUpdateToAvatarId(avatarId, OTP_DO_ID_CARS_SHARD_MANAGER,
                 "ShardManager", "getAllShardsResponse", {context, shards})
 
+end
+
+function handleShardManager_getShardRequest(participant, fieldId, data)
+    local avatarId = participant:getAvatarIdFromSender()
+
+    local context = data[1]
+    local shardId = data[2]
+    participant:debug(string.format("getShardRequest(%d, %d, %d)", context, shardId, avatarId))
+
+    for _, shard in pairs(Shards) do
+        if shard[1] == shardId then
+            participant:sendUpdateToAvatarId(avatarId, OTP_DO_ID_CARS_SHARD_MANAGER, "ShardManager", "getShardResponse", {context, {shard[1], shard[2], getPopulationLevel(shard[3]), shard[3], shard[4]}})
+            return
+        end
+    end
+
+    participant:warn(string.format("Got shard request for non-existant shard from avatar %d", avatarId))
 end
