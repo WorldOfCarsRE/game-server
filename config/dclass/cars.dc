@@ -320,10 +320,10 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     buyItemResponse(int32, int8);
     invokeRuleRequest(int32, int32[], int32) clsend airecv;
     invokeRuleResponse(int32, int32[], int32);
-    teleportRequest(uint32) clsend clrecv;
-    teleportResponseToZone(uint32, uint32, uint32, int32, int32) clsend clrecv;
-    teleportResponseUnavailable(uint32) clsend clrecv;
-    teleportResponseToYard(uint32, uint32) clsend clrecv;
+    teleportRequest(uint32) clsend ownrecv;
+    teleportResponseToZone(uint32, uint32, uint32, int32, int32) clsend ownrecv;
+    teleportResponseUnavailable(uint32) clsend ownrecv;
+    teleportResponseToYard(uint32, uint32) clsend ownrecv;
     raceInviteRequest(int32, int32, int32, int32, int32);
     gotoFriendsContext(int32, int32);
     generateComplete();
