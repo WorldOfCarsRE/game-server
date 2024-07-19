@@ -1,6 +1,8 @@
 from .DistributedCarAvatarAI import DistributedCarAvatarAI
 
 TYPE_NPC = 0
+TYPE_SPAWNED_SPRITE = 1
+TYPE_MAP_SPRITE = 2
 
 # Interation types
 CMD_TYPE_NEGATIVE = 0
@@ -18,6 +20,8 @@ COMMAND_OFFER_PLAYER_INTRODUCTION = 30
 COMMAND_OFFER_SPEAK = 31
 COMMAND_OFFER_SHOP = 32
 COMMAND_OFFER_GAME = 33
+
+COMMAND_SET_MAP_EFFECT = 78
 
 class InteractiveObjectAI(DistributedCarAvatarAI):
     def __init__(self, air):
@@ -56,8 +60,8 @@ class InteractiveObjectAI(DistributedCarAvatarAI):
         avatarId = self.air.getAvatarIdFromSender()
         print(f'triggerInteraction - {eventId} - {args}')
 
-        if eventId == COMMAND_CLICK:
-            self.d_setInteractiveCommands(avatarId, eventId, [COMMAND_OFFER_SHOP, 31012, CMD_TYPE_POSITIVE])
+        if eventId == COMMAND_OFFER_QUERY_INTERACTIONS:
+            self.d_setInteractiveCommands(avatarId, eventId, [COMMAND_SET_MAP_EFFECT, 102, CMD_TYPE_POSITIVE])
 
     def d_setInteractiveCommands(self, avatarId: int, eventId: int, args: list):
         self.sendUpdateToAvatarId(avatarId, 'setInteractiveCommands', [eventId, [args]])
