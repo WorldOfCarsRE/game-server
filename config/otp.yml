@@ -91,3 +91,7 @@ roles:
     - type: lua
       name: ShardManager
       lua_file: ShardManager.lua
+
+    - type: lua
+      name: PlayerFriendsManager
+      lua_file: PlayerFriendsManager.lua

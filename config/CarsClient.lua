@@ -163,6 +163,8 @@ end
 
 avatarSpeedChatPlusStates = {}
 
+-- TODO: These two functions should be moved to their own
+-- Lua role.
 function retrieveCar(data)
     response, error_message = http.get(API_BASE .. "retrieveCar", {
         query=data,
