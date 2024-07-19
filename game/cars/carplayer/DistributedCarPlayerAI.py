@@ -37,15 +37,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         return self.carCoins
 
     def announceGenerate(self):
-        self.air.playerTable[self.getDISLid()] = self
-
-        self.sendUpdateToAvatarId(self.doId, 'setDISLname', [self.getDISLname()])
-
-        # TODO: Fix friends
-        # self.friendIds = self.air.mongoInterface.retrieveFields('friends', self.getDISLid())['ourFriends']
-
-        for friendId in self.friendIds:
-            self.air.playerFriendsManager.avatarOnline(self.getRaceCarId(), self.getDISLid(), friendId)
+        self.air.sendFriendManagerAccountOnline(self.DISLid)
 
         self.sendUpdateToAvatarId(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
         self.sendUpdateToAvatarId(self.doId, 'generateComplete', [])
@@ -53,12 +45,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.air.incrementPopulation()
 
     def delete(self):
-        if self.getDISLid() in self.air.playerTable:
-            del self.air.playerTable[self.getDISLid()]
-
-        for friendId in self.friendIds:
-            if friendId in self.air.playerTable:
-                self.air.playerFriendsManager.avatarOffline(self.getDISLid(), friendId)
+        # TODO: Set a post-remove message in case of an AI crash.
+        self.air.sendFriendManagerAccountOffline(self.DISLid)
 
         self.air.decrementPopulation()
 

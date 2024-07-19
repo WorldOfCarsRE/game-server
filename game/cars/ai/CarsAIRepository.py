@@ -90,6 +90,19 @@ class CarsAIRepository(AIDistrict):
         dg.addUint8(self.district.getEnabled())
         self.send(dg)
 
+    def sendFriendManagerAccountOnline(self, accountId):
+        dg = PyDatagram()
+        dg.addServerHeader(OTP_DO_ID_PLAYER_FRIENDS_MANAGER, self.ourChannel, FRIENDMANAGER_ACCOUNT_ONLINE)
+        dg.addUint32(accountId)
+        self.send(dg)
+
+    def sendFriendManagerAccountOffline(self, accountId):
+        dg = PyDatagram()
+        dg.addServerHeader(OTP_DO_ID_PLAYER_FRIENDS_MANAGER, self.ourChannel, FRIENDMANAGER_ACCOUNT_OFFLINE)
+        dg.addUint32(accountId)
+        self.send(dg)
+
+
     def incrementPopulation(self):
         AIDistrict.incrementPopulation(self)
         self.updateShard()

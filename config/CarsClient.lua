@@ -651,35 +651,6 @@ function handleAddInterest(client, dgi)
     client:handleAddInterest(handle, context, parent, zones)
 end
 
-function clearAvatar(client)
-    local userTable = client:userTable()
-
-    if userTable.avatarId == nil then
-        return
-    end
-
-    client:removeSessionObject(userTable.avatarId)
-    client:unsubscribePuppetChannel(userTable.avatarId, 1)
-
-    dg = datagram:new()
-    client:addServerHeader(dg, userTable.avatarId, STATESERVER_OBJECT_DELETE_RAM)
-    dg:addUint32(userTable.avatarId)
-    client:routeDatagram(dg)
-
-    client:clearPostRemoves()
-
-    -- Undeclare all friends.
-    client:undeclareAllObjects()
-
-    avatarSpeedChatPlusStates[userTable.avatarId] = nil
-
-    userTable.avatarId = nil
-    userTable.friendsList = nil
-    client:userTable(userTable)
-
-    client:setChannel(userTable.accountId, 0)
-end
-
 function handleAddOwnership(client, doId, parent, zone, dc, dgi)
     local userTable = client:userTable()
     local accountId = userTable.accountId
