@@ -15,6 +15,7 @@ venv.bak/
 
 # Game-specific stuff
 assets
+config/local.prc
 
 # AI logs
 logs/aidistrict_*
