@@ -38,7 +38,7 @@ spaces.
 
 Example:
 
-python AIServiceStart.py --mdip=localhost --mdport=6665 --logpath=D:\carslog\ --district_number=200000000 --district_name="Kooky_Summit" --ssid=20100000 --min_objid=30000000 --max_objid=39999999
+python AIServiceStart.py --mdip=localhost --mdport=6665 --logpath=D:\carslog\ --district_number=200000000 --district_name="Alignment" --ssid=20100000 --min_objid=30000000 --max_objid=39999999
 """
 
 # Get the options

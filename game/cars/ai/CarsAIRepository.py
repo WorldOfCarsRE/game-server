@@ -23,7 +23,6 @@ import requests
 
 class CarsAIRepository(AIDistrict, ServerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory("CarsAIRepository")
-    notify.setInfo(True)
 
     def __init__(self, *args, **kw):
         AIDistrict.__init__(self, *args, **kw)
