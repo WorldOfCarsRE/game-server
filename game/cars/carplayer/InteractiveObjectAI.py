@@ -23,6 +23,8 @@ COMMAND_OFFER_GAME = 33
 
 COMMAND_SET_MAP_EFFECT = 78
 
+COMMAND_SHOW_GPS = 72
+
 class InteractiveObjectAI(DistributedCarAvatarAI):
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
