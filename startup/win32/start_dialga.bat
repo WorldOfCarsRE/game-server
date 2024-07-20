@@ -1,6 +1,6 @@
 @echo off
 title OTP Server
-cd ../config
+cd ../../config
 
 :main
 "../otpd/otpgo" otp.yml

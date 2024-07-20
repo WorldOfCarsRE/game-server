@@ -1,6 +1,6 @@
 @echo off
 title AI Server
-cd ..
+cd ../..
 set /P PYTHON_PATH=<PYTHON_PATH
 
 :main

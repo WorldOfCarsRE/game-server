@@ -14,13 +14,19 @@ from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
 from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
+from game.cars.ai.ServerBase import ServerBase
+from game.cars.ai import ServerGlobals
+
 from game.cars.distributed.MongoInterface import MongoInterface
 
-class CarsAIRepository(AIDistrict):
+import requests
+
+class CarsAIRepository(AIDistrict, ServerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory("CarsAIRepository")
 
     def __init__(self, *args, **kw):
         AIDistrict.__init__(self, *args, **kw)
+        ServerBase.__init__(self)
 
         self.mongoInterface = MongoInterface(self)
 
@@ -65,6 +71,10 @@ class CarsAIRepository(AIDistrict):
         # instead of setAvailable.
         self.district.b_setEnabled(1)
 
+        if self.isProdServer():
+            # Register us with the API server
+            self.sendPopulation()
+
         self.notify.info("Ready!")
 
     def registerShard(self):
@@ -80,6 +90,11 @@ class CarsAIRepository(AIDistrict):
         self.addPostSocketClose(dg)
 
     def updateShard(self):
+        if self.isProdServer():
+            # This is the production server.
+            # Send our population increase.
+            self.sendPopulation()
+
         dg = PyDatagram()
         dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_UPDATE_SHARD)
         dg.addUint16(self.getPopulation())
@@ -97,6 +112,24 @@ class CarsAIRepository(AIDistrict):
         dg.addServerHeader(OTP_DO_ID_PLAYER_FRIENDS_MANAGER, self.ourChannel, FRIENDMANAGER_ACCOUNT_OFFLINE)
         dg.addUint32(accountId)
         self.send(dg)
+
+    def sendPopulation(self):
+        data = {
+            'token': config.GetString('api-token'),
+            'population': self.getPopulation(),
+            'serverType': ServerGlobals.WORLD_OF_CARS_ONLINE,
+            'shardName': self.districtName,
+            'shardId': self.districtId
+        }
+
+        headers = {
+            'User-Agent': 'Sunrise Games - CarsAIRepository'
+        }
+
+        try:
+            requests.post('https://api.sunrise.games/api/setPopulation', json=data, headers=headers)
+        except:
+            self.notify.warning('Failed to send district population!')
 
     def incrementPopulation(self):
         AIDistrict.incrementPopulation(self)

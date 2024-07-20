@@ -14,7 +14,7 @@ import getopt
 from panda3d.core import loadPrcFile
 
 # Load our base configuration.
-loadPrcFile("config/Config.prc")
+loadPrcFile("config/config.prc")
 
 if os.path.exists("config/local.prc"):
     # A local configuration exists, load it.
@@ -38,7 +38,7 @@ spaces.
 
 Example:
 
-python AIServiceStart.py --mdip=localhost --mdport=6665 --logpath=D:\toonlog\ --district_number=200000000 --district_name="Kooky_Summit" --ssid=20100000 --min_objid=30000000 --max_objid=39999999
+python AIServiceStart.py --mdip=localhost --mdport=6665 --logpath=D:\carslog\ --district_number=200000000 --district_name="Kooky_Summit" --ssid=20100000 --min_objid=30000000 --max_objid=39999999
 """
 
 # Get the options
@@ -107,7 +107,7 @@ for opt in opts:
         sys.exit(1)
 
 if not dcFileNames:
-    dcFileNames = ['config/dclass/otp.dc', 'config/dclass/toon.dc']
+    dcFileNames = ['config/dclass/otp.dc', 'config/dclass/cars.dc']
 
 # Setup the log files
 # We want C++ and Python to both go to the same log so they

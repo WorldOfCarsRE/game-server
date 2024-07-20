@@ -16,6 +16,9 @@ venv.bak/
 # Game-specific stuff
 assets
 
+# AI logs
+logs/aidistrict_*
+
 # OTP
 logs/*.log
 config/config.lua
