@@ -15,7 +15,7 @@ from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSin
 from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
 from game.cars.ai.ServerBase import ServerBase
-from game.cars.ai import ServerGlobals
+from game.cars.ai.ServerGlobals import WORLD_OF_CARS_ONLINE
 
 from game.cars.distributed.MongoInterface import MongoInterface
 
@@ -23,6 +23,7 @@ import requests
 
 class CarsAIRepository(AIDistrict, ServerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory("CarsAIRepository")
+    notify.setInfo(True)
 
     def __init__(self, *args, **kw):
         AIDistrict.__init__(self, *args, **kw)
@@ -117,7 +118,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         data = {
             'token': config.GetString('api-token'),
             'population': self.getPopulation(),
-            'serverType': ServerGlobals.WORLD_OF_CARS_ONLINE,
+            'serverType': WORLD_OF_CARS_ONLINE,
             'shardName': self.districtName,
             'shardId': self.districtId
         }

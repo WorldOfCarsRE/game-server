@@ -1,2 +1,1 @@
-class ServerGlobals:
-    WORLD_OF_CARS_ONLINE = 7
+WORLD_OF_CARS_ONLINE = 7
