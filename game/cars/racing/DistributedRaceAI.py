@@ -4,12 +4,12 @@ from .Track import Track
 from direct.task.Task import Task
 
 class DistributedRaceAI(DistributedDungeonAI):
-    COUNTDOWN_TIME = 3
+    COUNTDOWN_TIME = 4
 
     def __init__(self, air, track):
         DistributedDungeonAI.__init__(self, air)
         self.track: Track = track
-        self.countDown: int = 4
+        self.countDown: int = self.COUNTDOWN_TIME
 
     def syncReady(self):
         # TODO: Verify that everybody's ready, (and gathered the NPC players in SPRaceAI)
