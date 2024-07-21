@@ -226,7 +226,7 @@ function receiveDatagram(client, dgi)
     end
 
     if dgi:getRemainingSize() ~= 0 then
-        client:sendDisconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, string.format("Datagram contains excess data.\n%s", dgi:dumpHex()), true)
+        client:sendDisconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, string.format("Datagram contains excess data.\n%s", tostring(dgi)), true)
     end
 end
 
