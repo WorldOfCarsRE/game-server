@@ -4,7 +4,7 @@ from game.cars.zone import DistributedZone/AI
 from game.cars.carplayer import InteractiveObject/AI
 from game.cars.racing import DistributedSinglePlayerRacingLobby/AI
 from game.cars.racing import DistributedSinglePlayerRacingLobbyContext/AI
-from game.cars.dungeon import DistributedSPRace/AI
+from game.cars.racing import DistributedSPRace/AI
 from game.cars.ai import HolidayManager/AI
 
 // cars start at struct 45 and field 331
@@ -431,13 +431,13 @@ dclass DistributedDungeon {
 
 // struct 87
 dclass DistributedRace : DistributedDungeon {
-    setCountDown(int8); // 565
-    setPlaces(int32[]);
-    onSegmentEnter(int16, int16, int8) clsend;
+    setCountDown(int8) broadcast; // 565
+    setPlaces(int32[] orderedPlayers) broadcast;
+    onSegmentEnter(int16 segment, int16 fromSegment, int8 forward) clsend airecv;
     openSegment(int16);
     closeSegment(int16);
     gotoFrameInObject(string, string);
-    setRacerResult(int32, int8, int32, int32, int8, int32);
+    setRacerResult(int32 doId, int8 place, int32 bestLapTime, int32 totalTime, int8 showPhotoFinish, int32 distanceFromFinish);
 };
 
 // struct 88
@@ -467,8 +467,8 @@ dclass DistributedMPRace : DistributedRace {
 
 // struct 89
 dclass DistributedSPRace : DistributedRace {
-    setOpponentNPCs(int32[]) clsend airecv; // 593
-    onNpcSegmentEnter(int32, int16, int16, int8) clsend airecv;
+    setOpponentNPCs(int32[] npcIds) clsend airecv; // 593
+    onNpcSegmentEnter(int32 npcId, int16 segment, int16 fromSegment, int8 forward) clsend airecv;
 };
 
 // struct 90
