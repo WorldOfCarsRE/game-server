@@ -33,6 +33,21 @@ class CarsAIRepository(AIDistrict, ServerBase):
     def getGameDoId(self):
         return OTP_DO_ID_CARS
 
+    def getMinDynamicZone(self):
+        # Override this to return the minimum allowable value for a
+        # dynamically-allocated zone id.
+        return DynamicZonesBegin
+
+    def getMaxDynamicZone(self):
+        # Override this to return the maximum allowable value for a
+        # dynamically-allocated zone id.
+
+        # Note that each zone requires the use of the channel derived
+        # by self.districtId + zoneId.  Thus, we cannot have any zones
+        # greater than or equal to self.minChannel - self.districtId,
+        # which is our first allocated doId.
+        return min(self.minChannel - self.districtId, DynamicZonesEnd) - 1
+
     def createObjects(self):
         # Create a new district (aka shard) for this AI:
         self.district = CarsDistrictAI(self, self.districtName)

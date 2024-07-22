@@ -18,20 +18,21 @@ class DistributedSinglePlayerRacingLobbyAI(DistributedLobbyAI):
     def join(self):
         avatarId = self.air.getAvatarIdFromSender()
 
+        # Maybe host it's own context zone allocation?
+        contextZoneId = self.air.allocateZone()
         zoneId = self.air.allocateZone()
 
         lobbyContext = DistributedSinglePlayerRacingLobbyContextAI(self.air)
         lobbyContext.owningAv = avatarId
         lobbyContext.playersInContext.append(avatarId)
-        lobbyContext.generateWithRequired(zoneId)
+        lobbyContext.generateOtpObject(self.doId, contextZoneId)
 
         race = DistributedSPRaceAI(self.air, self.track)
         race.playerIds.append(avatarId)
         race.lobbyDoId = self.doId
         race.contextDoId = lobbyContext.doId
         race.dungeonItemId = self.dungeonItemId
-        race.generateWithRequired(DUNGEON_INTEREST_HANDLE)
-
-        self.sendUpdateToAvatarId(avatarId, 'gotoLobbyContext', [zoneId])
+        race.generateWithRequired(zoneId)
 
         lobbyContext.b_setGotoDungeon(self.air.district.doId, race.zoneId)
+        self.sendUpdateToAvatarId(avatarId, 'gotoLobbyContext', [contextZoneId])
