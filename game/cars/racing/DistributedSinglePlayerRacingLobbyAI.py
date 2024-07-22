@@ -7,14 +7,12 @@ from .Track import Track
 
 class DistributedSinglePlayerRacingLobbyAI(DistributedLobbyAI):
 
-    def __init__(self, air):
+    def __init__(self, air, hotSpotName, dungeonItemId, track):
         DistributedLobbyAI.__init__(self, air)
 
-        # FIXME: Carburetor County race track doesn't seem to load at the moment,
-        # for now we will use another map for experimenting.
-        self.hotSpotName: str = 'spRace_ccs'
-        self.dungeonItemId: int = 42001 # spRace_ccs
-        self.track: Track = Track('car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml')
+        self.hotSpotName: str = hotSpotName
+        self.dungeonItemId: int = dungeonItemId
+        self.track: Track = Track(track)
         self.track.totalLaps = 3
 
     def join(self):
