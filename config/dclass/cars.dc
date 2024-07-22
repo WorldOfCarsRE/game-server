@@ -437,7 +437,7 @@ dclass DistributedRace : DistributedDungeon {
     openSegment(int16);
     closeSegment(int16);
     gotoFrameInObject(string, string);
-    setRacerResult(int32 doId, int8 place, int32 bestLapTime, int32 totalTime, int8 showPhotoFinish, int32 distanceFromFinish);
+    setRacerResult(int32 doId, int8 place, int32 bestLapTime, int32 totalTime, int8 showPhotoFinish, int32 distanceFromFinish) broadcast;
 };
 
 // struct 88

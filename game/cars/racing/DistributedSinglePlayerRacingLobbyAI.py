@@ -15,6 +15,7 @@ class DistributedSinglePlayerRacingLobbyAI(DistributedLobbyAI):
         self.hotSpotName: str = 'spRace_ccs'
         self.dungeonItemId: int = 42001 # spRace_ccs
         self.track: Track = Track('car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml')
+        self.track.totalLaps = 3
 
     def join(self):
         avatarId = self.air.getAvatarIdFromSender()

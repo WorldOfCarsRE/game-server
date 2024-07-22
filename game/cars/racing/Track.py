@@ -11,6 +11,7 @@ class Track():
         self.segments: List[TrackSegment] = []
         self.segmentById: Dict[int, TrackSegment] = {}
         self.startingTrackSegment: int = 1
+        self.totalLaps: int = 3
 
         # Parse physics file.
         self.notify.info(f"Parsing physics file: {physicsFile}")

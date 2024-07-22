@@ -1,3 +1,5 @@
+from typing import List
+
 from .DistributedCarAvatarAI import DistributedCarAvatarAI
 from ai import ZoneConstants
 
@@ -66,6 +68,9 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
             self.addCoins(score)
 
+        self.d_invokeRuleResponse(eventId, rules, context)
+
+    def d_invokeRuleResponse(self, eventId: int, rules: List[int], context: int):
         self.sendUpdateToAvatarId(self.doId, 'invokeRuleResponse', [eventId, rules, context])
 
     def addCoins(self, deltaCoins: int):
