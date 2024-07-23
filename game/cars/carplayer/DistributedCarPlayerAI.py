@@ -81,9 +81,11 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         print(f'invokeRuleRequest - {eventId} - {rules} - {context}')
 
         if eventId in ZoneConstants.MINIGAMES:
-            level, score = rules
+            # level, score = rules
 
-            self.addCoins(score)
+            # self.addCoins(score)
+
+            self.addCoins(10)
 
         self.d_invokeRuleResponse(eventId, rules, context)
 
