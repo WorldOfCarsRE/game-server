@@ -364,7 +364,6 @@ function handlePlayerFriendsManager_setTalkAccount(participant, fieldId, data)
     local otherAccountId = data[1]
     participant:debug(string.format("setTalkAccount - %d - %d", senderId, otherAccountId))
 
-    -- All other data are blank values, except for chat.
     local message = data[4] --chat
 
     if message == "" then
@@ -374,5 +373,5 @@ function handlePlayerFriendsManager_setTalkAccount(participant, fieldId, data)
     local cleanMessage, modifications = filterWhitelist(message, false)
 
     participant:sendUpdateToAccountId(otherAccountId, OTP_DO_ID_PLAYER_FRIENDS_MANAGER,
-            "PlayerFriendsManager", "setTalkAccount", {otherAccountId, senderId, avatarName, cleanMessage, modifications, 0})
+            "PlayerFriendsManager", "setTalkAccount", {otherAccountId, senderId, data[3], cleanMessage, modifications, 0})
 end
