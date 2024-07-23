@@ -461,7 +461,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     userTable.avatars = account.ACCOUNT_AV_SET
     userTable.playToken = playToken
     userTable.isPaid = isPaid
-    userTable.speedChatPlus = speedChatPlus
+    userTable.speedChatPlus = true -- speedChatPlus
     userTable.openChat = openChat
     userTable.accountType = accountType
     client:userTable(userTable)
