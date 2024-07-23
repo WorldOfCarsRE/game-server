@@ -24,6 +24,8 @@ class DistributedSPRaceAI(DistributedRaceAI):
         for player in npcPlayers:
             self.playerIds.append(player)
             self.playerIdToLap[player] = 1
+            self.playerIdToMaxLap[player] = 1
+            self.playerIdToBestLapTime[player] = 900000 # 15 minutes, seems like the best default.
             self.playerIdToReady[player] = True
             self.playerIdToSegment[player] = self.track.segmentById[self.track.startingTrackSegment]
 

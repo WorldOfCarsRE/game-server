@@ -25,11 +25,18 @@ class DistributedRaceAI(DistributedDungeonAI):
         self.playerIdToSegment: Dict[int, TrackSegment] = {}
         self.finishedPlayerIds: List[int] = []
 
+        self.totalRaceTime = 0
+        self.playerIdToBestLapTime: Dict[int, int] = {}
+        self.playerIdToCurrentLapTime: Dict[int, int] = {}
+        self.playerIdToMaxLap: Dict[int, int] = {}
+
         self.places: List[int] = [0, 0, 0, 0]
 
     def announceGenerate(self):
         for player in self.playerIds:
             self.playerIdToLap[player] = 1
+            self.playerIdToMaxLap[player] = 1
+            self.playerIdToBestLapTime[player] = 900000 # 15 minutes, seems like the best default.
             self.playerIdToReady[player] = False
             self.playerIdToSegment[player] = self.track.segmentById[self.track.startingTrackSegment]
 
@@ -49,11 +56,19 @@ class DistributedRaceAI(DistributedDungeonAI):
         self.ignore(self.staticGetZoneChangeEvent(playerId))
         self.ignore(self.air.getDeleteDoIdEvent(playerId))
 
+        taskMgr.remove(f"playerLapTime-{playerId}")
+
         if not self.getActualPlayers():
             self.notify.debug("Everybody has left, shutting down...")
             self.requestDelete()
 
     def delete(self):
+        # Stop the rest of the Tasks:
+        taskMgr.remove(self.taskName("countDown"))
+        taskMgr.remove(self.taskName("totalRaceTime"))
+        for playerId in self.playerIds:
+            taskMgr.remove(self.taskName(f"playerLapTime-{playerId}"))
+
         # Delete the lobby context if it still exists.
         context: DistributedObjectAI = self.air.getDo(self.contextDoId)
         if context:
@@ -178,6 +193,11 @@ class DistributedRaceAI(DistributedDungeonAI):
                 # It has reached a lap!
                 self.playerIdToLap[playerId] += 1
                 self.notify.debug(f"{playerId} has reached lap {self.playerIdToLap[playerId]}!")
+                if self.playerIdToLap[playerId] > self.playerIdToMaxLap[playerId]:
+                    self.playerIdToMaxLap[playerId] = self.playerIdToLap[playerId]
+                    if self.playerIdToCurrentLapTime[playerId] < self.playerIdToBestLapTime[playerId]:
+                        self.playerIdToBestLapTime[playerId] = self.playerIdToCurrentLapTime[playerId]
+                    self.playerIdToCurrentLapTime[playerId] = 0
         elif segment in currentSegment.parentIds:
             parentSegment = currentSegment.parentById.get(segment)
             if not parentSegment:
@@ -202,8 +222,8 @@ class DistributedRaceAI(DistributedDungeonAI):
 
         place = self.finishedPlayerIds.index(playerId) + 1
 
-        # TODO: Times and photo finish?
-        self.sendUpdate('setRacerResult', (playerId, place, 0, 0, 0, 0))
+        # TODO: Photo finish?
+        self.sendUpdate('setRacerResult', (playerId, place, self.playerIdToBestLapTime[playerId], self.totalRaceTime, 0, 0))
 
         if self.isNPC(playerId):
             # We don't give out rewards to NPCs.
@@ -225,7 +245,19 @@ class DistributedRaceAI(DistributedDungeonAI):
         self.countDown -= 1
         self.sendUpdate('setCountDown', (self.countDown,))
         if self.countDown == 0:
+            # Start the timers.
+            taskMgr.add(self.__doTotalRaceTime, self.taskName("totalRaceTime"))
+            for playerId in self.playerIds:
+                taskMgr.add(self.__doPlayerLapTime, self.taskName(f"playerLapTime-{playerId}"), extraArgs=[playerId], appendTask=True)
             return task.done
 
         task.delayTime = 1
         return task.again
+
+    def __doTotalRaceTime(self, task: Task):
+        self.totalRaceTime = int(task.time * 1000)
+        return task.cont
+
+    def __doPlayerLapTime(self, playerId: int, task: Task):
+        self.playerIdToCurrentLapTime[playerId] = int(task.time * 1000)
+        return task.cont
