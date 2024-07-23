@@ -461,6 +461,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     userTable.avatars = account.ACCOUNT_AV_SET
     userTable.playToken = playToken
     userTable.isPaid = isPaid
+    -- TODO: A way to toggle SpeedChat Plus, re-enable when ready
     userTable.speedChatPlus = true -- speedChatPlus
     userTable.openChat = openChat
     userTable.accountType = accountType
