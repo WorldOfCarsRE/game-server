@@ -33,6 +33,8 @@ invitesByInviteeId = {} -- inviteeId: invite
 CONTEXT = 0
 DBSS_QUERY_MAP = {}
 
+-- Load the TalkFilter
+dofile("TalkFilter.lua")
 
 function init(participant)
     participant:subscribeChannel(OTP_DO_ID_PLAYER_FRIENDS_MANAGER)
@@ -355,4 +357,22 @@ function makeFriends(participant, invite)
     participant:sendUpdateToAccountId(invite.inviterId, OTP_DO_ID_PLAYER_FRIENDS_MANAGER,
             "PlayerFriendsManager", "invitationResponse", {invite.inviteeId, status, 0})
 
+end
+
+function handlePlayerFriendsManager_setTalkAccount(participant, fieldId, data)
+    local senderId = participant:getAccountIdFromSender()
+    local otherAccountId = data[1]
+    participant:debug(string.format("setTalkAccount - %d - %d", senderId, otherAccountId))
+
+    -- All other data are blank values, except for chat.
+    local message = data[4] --chat
+
+    if message == "" then
+        return
+    end
+
+    local cleanMessage, modifications = filterWhitelist(message, false)
+
+    participant:sendUpdateToAccountId(otherAccountId, OTP_DO_ID_PLAYER_FRIENDS_MANAGER,
+            "PlayerFriendsManager", "setTalkAccount", {otherAccountId, senderId, avatarName, cleanMessage, modifications, 0})
 end
