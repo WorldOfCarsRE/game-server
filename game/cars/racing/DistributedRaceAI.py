@@ -68,8 +68,56 @@ class DistributedRaceAI(DistributedDungeonAI):
         return False
 
     def sendPlaces(self):
-        # TODO
-        pass
+        playerLapsAndSegmentsIds: Dict[int, tuple] = {}
+        firstPlaceIndexToDetermine = 0
+
+        for player in self.playerIds:
+            if player in self.finishedPlayerIds:
+                finishedPlaceIndex = self.finishedPlayerIds.index(player)
+                self.places[3 - finishedPlaceIndex] = player
+                firstPlaceIndexToDetermine += 1
+                continue
+
+            playerLap = self.playerIdToLap.get(player)
+            playerSegment = self.playerIdToSegment.get(player)
+            playerLapsAndSegmentsIds[player] = (playerLap, playerSegment.id)
+
+        playersOnFurthestLap: List[int] = []
+        playersInFurthestSegment: List[int] = []
+
+        for placeIndex in range(firstPlaceIndexToDetermine, 4):
+            # If we still have players to churn through on the furthest lap, we don't need to iterate again.
+            if len(playersOnFurthestLap) == 0:
+                furthestLap = 1
+                for player in playerLapsAndSegmentsIds:
+                    playerLap, playerSegmentId = playerLapsAndSegmentsIds.get(player)
+                    if playerLap > furthestLap:
+                        furthestLap = playerLap
+                        playersOnFurthestLap = [player]
+                    elif playerLap == furthestLap:
+                        playersOnFurthestLap.append(player)
+
+            # Same as above, but for segment:
+            if len(playersInFurthestSegment) == 0:
+                furthestSegmentId = -1
+                for player in playersOnFurthestLap:
+                    playerLap, playerSegmentId = playerLapsAndSegmentsIds.get(player)
+                    if playerSegmentId > furthestSegmentId:
+                        furthestSegmentId = playerSegmentId
+                        playersInFurthestSegment = [player]
+                    elif playerSegmentId == furthestSegmentId:
+                        playersInFurthestSegment.append(player)
+
+            # TODO: Determine what happens if there's a segment tie. Right now, lowest avId gets the lower place.
+            playerForThisPlace = playersInFurthestSegment[0]
+            self.places[3 - placeIndex] = playerForThisPlace
+
+            # Cleanup for further iterations.
+            del playerLapsAndSegmentsIds[playerForThisPlace]
+            playersOnFurthestLap.remove(playerForThisPlace)
+            playersInFurthestSegment.remove(playerForThisPlace)
+
+        self.sendUpdate('setPlaces', [self.places])
 
     def raceStarted(self) -> bool:
         return self.countDown == 0
