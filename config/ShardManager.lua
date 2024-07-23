@@ -80,15 +80,15 @@ end
 
 function getPopulationLevel(shardPop)
     local popLevel = POPULATION_LEVEL_NONE
-    if shardPop >= POPULATION_LEVEL_VERY_FULL then
+    if shardPop >= POPULATION_LEVELS[POPULATION_LEVEL_VERY_FULL + 1] then
         popLevel = POPULATION_LEVEL_VERY_FULL
-    elseif shardPop >= POPULATION_LEVEL_FULL and shardPop <= POPULATION_LEVEL_VERY_FULL then
+    elseif shardPop >= POPULATION_LEVELS[POPULATION_LEVEL_FULL + 1] and shardPop <= POPULATION_LEVELS[POPULATION_LEVEL_VERY_FULL + 1] then
         popLevel = POPULATION_LEVEL_FULL
-    elseif shardPop >= POPULATION_LEVEL_MEDIUM and shardPop <= POPULATION_LEVEL_FULL then
+    elseif shardPop >= POPULATION_LEVELS[POPULATION_LEVEL_MEDIUM + 1] and shardPop <= POPULATION_LEVELS[POPULATION_LEVEL_FULL + 1] then
         popLevel = POPULATION_LEVEL_MEDIUM
-    elseif shardPop >= POPULATION_LEVEL_LIGHT and shardPop <= POPULATION_LEVEL_MEDIUM then
+    elseif shardPop >= POPULATION_LEVELS[POPULATION_LEVEL_LIGHT + 1] and shardPop <= POPULATION_LEVELS[POPULATION_LEVEL_MEDIUM + 1] then
         popLevel = POPULATION_LEVEL_LIGHT
-    elseif shardPop >= POPULATION_LEVEL_VERY_LIGHT and shardPop <= POPULATION_LEVEL_LIGHT then
+    elseif shardPop >= POPULATION_LEVELS[POPULATION_LEVEL_VERY_LIGHT + 1] and shardPop <= POPULATION_LEVELS[POPULATION_LEVEL_LIGHT + 1] then
         popLevel = POPULATION_LEVEL_VERY_LIGHT
     end
     return popLevel
