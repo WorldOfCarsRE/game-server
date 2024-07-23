@@ -8,6 +8,7 @@ from game.cars.dungeon.DistributedDungeonAI import DistributedDungeonAI
 from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
 from .Track import Track
 from .TrackSegment import TrackSegment
+from .RaceGlobals import getRewardsForTrack
 from direct.task.Task import Task
 
 class DistributedRaceAI(DistributedDungeonAI):
@@ -165,10 +166,12 @@ class DistributedRaceAI(DistributedDungeonAI):
             self.notify.warning(f"No player for playerid: {playerId}")
             return
 
-        # TODO: Figure out and actually give out rewards.
+        coins, racingPoints = getRewardsForTrack(self.track.name, place)
+        player.addCoins(coins)
+        player.racecar.addRacingPoints(racingPoints)
 
         # See com.disney.cars.states.isoworld.ISOInstance
-        player.d_invokeRuleResponse(0, [1, place, 0, 0], -self.dungeonItemId)
+        player.d_invokeRuleResponse(0, [1, place, racingPoints, coins], -self.dungeonItemId)
 
     def __doCountDown(self, task: Task):
         self.countDown -= 1

@@ -12,7 +12,7 @@ class DistributedSinglePlayerRacingLobbyAI(DistributedLobbyAI):
 
         self.hotSpotName: str = hotSpotName
         self.dungeonItemId: int = dungeonItemId
-        self.track: Track = Track(track)
+        self.track: Track = Track(hotSpotName, track)
         self.track.totalLaps = 3
 
     def join(self):

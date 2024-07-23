@@ -7,7 +7,8 @@ import xml.etree.ElementTree as ET
 class Track():
     notify = directNotify.newCategory("Track")
 
-    def __init__(self, physicsFile):
+    def __init__(self, name, physicsFile):
+        self.name = name
         self.segments: List[TrackSegment] = []
         self.segmentById: Dict[int, TrackSegment] = {}
         self.startingTrackSegment: int = 1
