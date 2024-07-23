@@ -126,13 +126,21 @@ avatarSpeedChatPlusStates = {}
 -- TODO: These two functions should be moved to their own
 -- Lua role.
 function retrieveCar(data)
-    response, error_message = http.get(API_BASE .. "retrieveCar", {
+    local response, error_message = http.get(API_BASE .. "retrieveCar", {
         query=data,
         headers={
             ["Authorization"]=API_TOKEN
         }
     })
 
+    if error_message then
+        print(string.format("CarsClient: retrieveCar returned an error! \"%s\""), error_message)
+        return "{}"
+    end
+    if response.status_code ~= 200 then
+        print(string.format("CarsClient: retrieveCar returned %d!, \"%s\""), response.status_code, response.body)
+        return "{}"
+    end
     return response.body
 end
 
@@ -144,13 +152,22 @@ function setCarData(playToken, data)
         print(err)
         return
     end
-    response, error_message = http.post(API_BASE .. "setCarData", {
+    local response, error_message = http.post(API_BASE .. "setCarData", {
         body=result,
         headers={
             ["Authorization"]=API_TOKEN,
             ["Content-Type"]="application/json"
         }
     })
+
+    if error_message then
+        print(string.format("CarsClient: setCarData returned an error! \"%s\""), error_message)
+        return "{}"
+    end
+    if response.status_code ~= 200 then
+        print(string.format("CarsClient: setCarData returned %d!, \"%s\""), response.status_code, response.body)
+        return "{}"
+    end
 
     return response
 end
@@ -477,6 +494,31 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
 
     local json = require("json")
     local car = json.decode(retrieveCar("playToken=" .. playToken))
+
+    -- Check for missing data
+    if car.dislId ~= accountId then
+        client:warn(string.format("dislId is wrong in API (%d ~= %d), setting.", car.dislId, accountId))
+        firstLogin = true
+        setCarData(playToken, {
+            dislId = accountId,
+        })
+    end
+
+    if car.playerId ~= avatarId then
+        client:warn(string.format("playerId is wrong in API (%d ~= %d), setting.", car.playerId, avatarId))
+        firstLogin = true
+        setCarData(playToken, {
+            playerId = avatarId,
+        })
+    end
+
+    if car.racecarId ~= racecarId then
+        client:warn(string.format("racecarId is wrong in API (%d ~= %d), setting.", car.racecarId, racecarId))
+        firstLogin = true
+        setCarData(playToken, {
+            racecarId = racecarId,
+        })
+    end
 
     if firstLogin then
         local stretches = car.carData.carDna.stretches
