@@ -3,6 +3,8 @@ from typing import List
 from .DistributedCarAvatarAI import DistributedCarAvatarAI
 from ai import ZoneConstants
 
+from .DistributedRaceCarAI import DistributedRaceCarAI
+
 class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
@@ -11,11 +13,17 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.carCoins = 0
         self.carCount = 0
         self.racecarId = 0
+        self.racecar: DistributedRaceCarAI = None
         self.friendIds = []
 
     def setCars(self, carCount: int, cars: list):
         self.carCount = carCount
         self.racecarId = cars[0]
+
+        if self.racecarId:
+            # Retrieve their DistributedRaceCar object.
+            print(self.racecarId)
+            self.racecar = self.air.readRaceCar(self.racecarId)
 
     def getRaceCarId(self) -> int:
         return self.racecarId
@@ -38,6 +46,13 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def getCarCoins(self) -> int:
         return self.carCoins
 
+    def d_setCarCoins(self, carCoins: int):
+        self.sendUpdate('setCarCoins', [carCoins])
+
+    def b_setCarCoins(self, carCoins: int):
+        self.setCarCoins(carCoins)
+        self.d_setCarCoins(carCoins)
+
     def announceGenerate(self):
         self.air.sendFriendManagerAccountOnline(self.DISLid)
 
@@ -45,6 +60,9 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.sendUpdateToAvatarId(self.doId, 'generateComplete', [])
 
         self.air.incrementPopulation()
+
+        # Fill in the missing information from the database (i.e. coins)
+        self.air.fillInCarsPlayer(self)
 
     def delete(self):
         # TODO: Set a post-remove message in case of an AI crash.
@@ -74,4 +92,4 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.sendUpdateToAvatarId(self.doId, 'invokeRuleResponse', [eventId, rules, context])
 
     def addCoins(self, deltaCoins: int):
-        self.sendUpdate('setCarCoins', [deltaCoins + self.getCarCoins()])
+        self.b_setCarCoins(deltaCoins + self.getCarCoins())

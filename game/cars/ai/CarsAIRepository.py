@@ -14,9 +14,14 @@ from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
 from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
+from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
+from game.cars.carplayer.DistributedRaceCarAI import DistributedRaceCarAI
+
+
 from game.cars.ai.ServerBase import ServerBase
 from game.cars.ai.ServerGlobals import WORLD_OF_CARS_ONLINE
 
+from game.cars.ai.DatabaseObject import DatabaseObject
 from game.cars.distributed.MongoInterface import MongoInterface
 
 import requests
@@ -127,6 +132,16 @@ class CarsAIRepository(AIDistrict, ServerBase):
         dg.addServerHeader(OTP_DO_ID_PLAYER_FRIENDS_MANAGER, self.ourChannel, FRIENDMANAGER_ACCOUNT_OFFLINE)
         dg.addUint32(accountId)
         self.send(dg)
+
+    def fillInCarsPlayer(self, carPlayer) -> None:
+        dbo = DatabaseObject(self, carPlayer.doId)
+        # Add more fields if needed. (Good spot to look if the field you want
+        # is an ownrequired field, but no required or ram.)
+        dbo.readObject(carPlayer, ["setCarCoins"])
+
+    def readRaceCar(self, racecarId, fields = None) -> DistributedRaceCarAI:
+        dbo = DatabaseObject(self, racecarId)
+        return dbo.readRaceCar(fields)
 
     def sendPopulation(self):
         data = {
