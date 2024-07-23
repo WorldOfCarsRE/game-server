@@ -97,6 +97,11 @@ class DistributedRaceAI(DistributedDungeonAI):
             playerSegment = self.playerIdToSegment.get(player)
             playerLapsAndSegmentsIds[player] = (playerLap, playerSegment.id)
 
+        if len(playerLapsAndSegmentsIds) == 0:
+            # All players have finished. Just send the update now.
+            self.sendUpdate('setPlaces', [self.places])
+            return
+
         playersOnFurthestLap: List[int] = []
         playersInFurthestSegment: List[int] = []
 
