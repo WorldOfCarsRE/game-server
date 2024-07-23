@@ -1,6 +1,8 @@
 
 from typing import Dict, List
 from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.distributed.DistributedObjectAI import DistributedObjectAI
+from direct.showbase.PythonUtil import Functor
 
 from game.cars.dungeon.DistributedDungeonAI import DistributedDungeonAI
 from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
@@ -30,7 +32,38 @@ class DistributedRaceAI(DistributedDungeonAI):
             self.playerIdToReady[player] = False
             self.playerIdToSegment[player] = self.track.segmentById[self.track.startingTrackSegment]
 
+            self.accept(self.staticGetZoneChangeEvent(player), Functor(self._playerChangedZone, player))
+            self.acceptOnce(self.air.getDeleteDoIdEvent(player), self._playerDeleted, extraArgs=[player])
+
+    def _playerChangedZone(self, playerId, newZoneId, oldZoneId):
+        self.notify.debug(f"_playerChangedZone: {playerId} - {newZoneId} - {oldZoneId}")
+        # FIXME: Client seems to set their player's zone to the quiet zone
+        # for single player races, how would this work for multiplayer races?
+        if playerId in self.playerIds and oldZoneId == 1:
+            self._playerDeleted(playerId)
+
+    def _playerDeleted(self, playerId):
+        self.notify.debug(f"Player {playerId} have left the race!")
+        self.playerIds.remove(playerId)
+        self.ignore(self.staticGetZoneChangeEvent(playerId))
+        self.ignore(self.air.getDeleteDoIdEvent(playerId))
+
+        if not self.getActualPlayers():
+            self.notify.debug("Everybody has left, shutting down...")
+            self.requestDelete()
+
+    def delete(self):
+        # Delete the lobby context if it still exists.
+        context: DistributedObjectAI = self.air.getDo(self.contextDoId)
+        if context:
+            context.requestDelete()
+        DistributedDungeonAI.delete(self)
+
+    def getActualPlayers(self):
+        return list(filter(lambda playerId: not self.isNPC(playerId), self.playerIds))
+
     def isNPC(self, playerId):
+        # SPRaceAI overrides this.
         return False
 
     def sendPlaces(self):
@@ -51,6 +84,12 @@ class DistributedRaceAI(DistributedDungeonAI):
             self.notify.warning(f"Player {playerId} is not on the race!")
             return
         self.playerIdToReady[playerId] = True
+
+        self.shouldStartRace()
+
+    def shouldStartRace(self):
+        if self.raceStarted() or taskMgr.hasTaskNamed(self.taskName("countDown")):
+            return
 
         if self.isEverybodyReady():
             self.notify.debug("Everybody ready, starting countdown.")

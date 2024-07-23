@@ -10,10 +10,15 @@ class DistributedSPRaceAI(DistributedRaceAI):
         DistributedRaceAI.__init__(self, air, track)
         self.npcPlayers: List[int] = []
 
-    def setOpponentNPCs(self, npcPlayers):
+    def setOpponentNPCs(self, npcPlayers: List[int]):
         if bool(self.npcPlayers):
             self.notify.warning("Attempted to send NPC list again!")
             return
+
+        if len(npcPlayers) > 3:
+            self.notify.warning(f"setOpponentNPCs called with more than 3 NPCs! {npcPlayers}, trimming: {npcPlayers[:3]}")
+            npcPlayers = npcPlayers[:3]
+
         self.npcPlayers = npcPlayers
 
         for player in npcPlayers:
@@ -21,6 +26,8 @@ class DistributedSPRaceAI(DistributedRaceAI):
             self.playerIdToLap[player] = 1
             self.playerIdToReady[player] = True
             self.playerIdToSegment[player] = self.track.segmentById[self.track.startingTrackSegment]
+
+        self.shouldStartRace()
 
     def onNpcSegmentEnter(self, npcId, segment, fromSegment, forward):
         if npcId not in self.npcPlayers:
