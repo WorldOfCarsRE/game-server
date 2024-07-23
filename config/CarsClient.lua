@@ -520,130 +520,136 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
         })
     end
 
-    if firstLogin then
-        local stretches = car.carData.carDna.stretches
+    client:getDatabaseValues(avatarId, "DistributedCarPlayer", {"setDNA"}, function (_, success, dbFields)
+        if not firstLogin and dbFields.setDNA == nil then
+            client:warn(string.format("PlayerCar %d is missing DNA!, Attempting to fix...", avatarId))
+            firstLogin = true
+        end
+        if firstLogin then
+            local stretches = car.carData.carDna.stretches
 
-        if #stretches == 0 then
-            stretches = {0, 0, 0, 0, 0, 0}
+            if #stretches == 0 then
+                stretches = {0, 0, 0, 0, 0, 0}
+            end
+
+            local dna = {
+                car.carData.carDna.carName,
+                car.carData.carDna.carNumber,
+                car.carData.carDna.logoBackgroundId,
+                car.carData.carDna.logoBackgroundColor,
+                car.carData.carDna.logoFontId,
+                car.carData.carDna.logoFontColor,
+                car.carData.carDna.gender,
+                car.carData.carDna.careerType,
+                car.carData.carDna.chassis,
+                car.carData.carDna.color,
+                car.carData.carDna.eyeColor,
+                car.carData.carDna.wheel,
+                car.carData.carDna.tire,
+                car.carData.carDna.detailing,
+                car.carData.carDna.profileBackgroundId,
+                stretches,
+                car.carData.carDna.decalSlots,
+                car.carData.carDna.onAddons,
+                car.carData.carDna.costumeId
+            }
+
+            client:setDatabaseValues(avatarId, "DistributedCarPlayer", {setDNA = {dna}})
+            client:setDatabaseValues(racecarId, "DistributedRaceCar", {setDNA = {dna}})
         end
 
-        local dna = {
-            car.carData.carDna.carName,
-            car.carData.carDna.carNumber,
-            car.carData.carDna.logoBackgroundId,
-            car.carData.carDna.logoBackgroundColor,
-            car.carData.carDna.logoFontId,
-            car.carData.carDna.logoFontColor,
-            car.carData.carDna.gender,
-            car.carData.carDna.careerType,
-            car.carData.carDna.chassis,
-            car.carData.carDna.color,
-            car.carData.carDna.eyeColor,
-            car.carData.carDna.wheel,
-            car.carData.carDna.tire,
-            car.carData.carDna.detailing,
-            car.carData.carDna.profileBackgroundId,
-            stretches,
-            car.carData.carDna.decalSlots,
-            car.carData.carDna.onAddons,
-            car.carData.carDna.costumeId
+        -- Store name for SpeedChat+
+        -- By default the name is formatted like "Wreckless,Spinna,roader" so we format it to normal "Wreckless Spinnaroader".
+        local name = ""
+        local count = 0
+
+        for part in string.gmatch(car.carData.carDna.carName, "([^,]+)") do
+            if count == 1 then
+                name = name .. " " .. part
+            else
+                name = name .. part
+            end
+
+            count = count + 1
+        end
+
+        userTable.avatarName = name
+        client:userTable(userTable)
+
+        local resp = datagram:new()
+        resp:addUint16(CLIENT_LOGIN_CARS_RESP)
+        resp:addUint8(0) -- Return code
+        resp:addString("All Ok") -- errorString
+        resp:addUint32(avatarId) -- avatarId
+        resp:addUint32(dislId) -- accountId
+        resp:addString(playToken) -- playToken
+        resp:addUint8(1) -- accountNameApproved
+
+        if openChat then
+            resp:addString('YES') -- openChatEnabled
+        else
+            resp:addString('NO') -- openChatEnabled
+        end
+
+        resp:addString('YES') -- createFriendsWithChat
+        resp:addString('YES') -- chatCodeCreationRule
+
+        if isPaid then
+            resp:addString("FULL") -- access
+        else
+            resp:addString("VELVET") -- access
+        end
+
+        if speedChatPlus then
+            resp:addString("YES") -- WhiteListResponse
+        else
+            resp:addString("NO") -- WhiteListResponse
+        end
+
+        -- Dispatch the response to the client.
+        client:sendDatagram(resp)
+
+        -- Activate DistributedCarPlayer & other owned objects
+        userTable.avatarId = avatarId
+        userTable.racecarId = racecarId
+        client:userTable(userTable)
+
+        client:setChannel(accountId, avatarId)
+        client:subscribePuppetChannel(avatarId, 1)
+
+        -- TODO: Re-enable membership after we implement sponsors
+        local setAccess = 1
+        -- if userTable.isPaid then
+            -- setAccess = 2
+        -- end
+
+        local chatLevel = 0
+        if userTable.speedChatPlus then
+            chatLevel = 1
+        end
+
+        local playerFields = {
+            setAccess = {setAccess},
+            setTelemetry = {0, 0, 0, 0, 0, 0, 0, 0},
+            setPhysics = {{}, {}, {}, {}, {}},
+            setState = {0},
+            setAfk = {0},
+            setDISLname = {playToken},
+            setCars = {1, {racecarId}},
+            setChatLevel = {chatLevel},
         }
 
-        client:setDatabaseValues(avatarId, "DistributedCarPlayer", {setDNA = {dna}})
-        client:setDatabaseValues(racecarId, "DistributedRaceCar", {setDNA = {dna}})
-    end
+        client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
+        client:objectSetOwner(avatarId, true)
 
-    -- Store name for SpeedChat+
-    -- By default the name is formatted like "Wreckless,Spinna,roader" so we format it to normal "Wreckless Spinnaroader".
-    local name = ""
-    local count = 0
+        client:sendActivateObject(racecarId, "DistributedRaceCar", {})
+        client:objectSetOwner(racecarId, true)
 
-    for part in string.gmatch(car.carData.carDna.carName, "([^,]+)") do
-        if count == 1 then
-            name = name .. " " .. part
-        else
-            name = name .. part
-        end
+        client:sendActivateObject(statusId, "CarPlayerStatus", {})
+        client:objectSetOwner(statusId, true)
 
-        count = count + 1
-    end
-
-    userTable.avatarName = name
-    client:userTable(userTable)
-
-    local resp = datagram:new()
-    resp:addUint16(CLIENT_LOGIN_CARS_RESP)
-    resp:addUint8(0) -- Return code
-    resp:addString("All Ok") -- errorString
-    resp:addUint32(avatarId) -- avatarId
-    resp:addUint32(dislId) -- accountId
-    resp:addString(playToken) -- playToken
-    resp:addUint8(1) -- accountNameApproved
-
-    if openChat then
-        resp:addString('YES') -- openChatEnabled
-    else
-        resp:addString('NO') -- openChatEnabled
-    end
-
-    resp:addString('YES') -- createFriendsWithChat
-    resp:addString('YES') -- chatCodeCreationRule
-
-    if isPaid then
-        resp:addString("FULL") -- access
-    else
-        resp:addString("VELVET") -- access
-    end
-
-    if speedChatPlus then
-        resp:addString("YES") -- WhiteListResponse
-    else
-        resp:addString("NO") -- WhiteListResponse
-    end
-
-    -- Dispatch the response to the client.
-    client:sendDatagram(resp)
-
-    -- Activate DistributedCarPlayer & other owned objects
-    userTable.avatarId = avatarId
-    userTable.racecarId = racecarId
-    client:userTable(userTable)
-
-    client:setChannel(accountId, avatarId)
-    client:subscribePuppetChannel(avatarId, 1)
-
-    -- TODO: Re-enable membership after we implement sponsors
-    local setAccess = 1
-    -- if userTable.isPaid then
-        -- setAccess = 2
-    -- end
-
-    local chatLevel = 0
-    if userTable.speedChatPlus then
-        chatLevel = 1
-    end
-
-    local playerFields = {
-        setAccess = {setAccess},
-        setTelemetry = {0, 0, 0, 0, 0, 0, 0, 0},
-        setPhysics = {{}, {}, {}, {}, {}},
-        setState = {0},
-        setAfk = {0},
-        setDISLname = {playToken},
-        setCars = {1, {racecarId}},
-        setChatLevel = {chatLevel},
-    }
-
-    client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
-    client:objectSetOwner(avatarId, true)
-
-    client:sendActivateObject(racecarId, "DistributedRaceCar", {})
-    client:objectSetOwner(racecarId, true)
-
-    client:sendActivateObject(statusId, "CarPlayerStatus", {})
-    client:objectSetOwner(statusId, true)
-
-    avatarSpeedChatPlusStates[avatarId] = userTable.speedChatPlus
+        avatarSpeedChatPlusStates[avatarId] = userTable.speedChatPlus
+    end)
 end
 
 function handleAddInterest(client, dgi)
