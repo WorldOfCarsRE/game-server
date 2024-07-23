@@ -1,4 +1,3 @@
-
 from typing import Dict, List
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectAI import DistributedObjectAI
@@ -262,7 +261,7 @@ class DistributedRaceAI(DistributedDungeonAI):
     def __doPlayerLapTime(self, playerId: int, task: Task):
         self.playerIdToCurrentLapTime[playerId] = int(task.time * 1000)
         return task.cont
-    
+
     def __doPlaceUpdate(self, task: Task):
         self.sendPlaces()
         return task.again
