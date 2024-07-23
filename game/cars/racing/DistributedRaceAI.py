@@ -66,6 +66,7 @@ class DistributedRaceAI(DistributedDungeonAI):
         # Stop the rest of the Tasks:
         taskMgr.remove(self.taskName("countDown"))
         taskMgr.remove(self.taskName("totalRaceTime"))
+        taskMgr.remove(self.taskName("placeUpdate"))
         for playerId in self.playerIds:
             taskMgr.remove(self.taskName(f"playerLapTime-{playerId}"))
 
@@ -209,7 +210,6 @@ class DistributedRaceAI(DistributedDungeonAI):
                 self.playerIdToLap[playerId] -= 1
                 self.notify.debug(f"{playerId} went back to lap {self.playerIdToLap[playerId]}!")
 
-        self.sendPlaces()
         if self.playerIdToLap[playerId] > self.track.totalLaps:
             self.playerFinishedRace(playerId)
 
@@ -249,6 +249,7 @@ class DistributedRaceAI(DistributedDungeonAI):
             taskMgr.add(self.__doTotalRaceTime, self.taskName("totalRaceTime"))
             for playerId in self.playerIds:
                 taskMgr.add(self.__doPlayerLapTime, self.taskName(f"playerLapTime-{playerId}"), extraArgs=[playerId], appendTask=True)
+            self.doMethodLater(0.5, self.__doPlaceUpdate, self.taskName("placeUpdate"))
             return task.done
 
         task.delayTime = 1
@@ -261,3 +262,7 @@ class DistributedRaceAI(DistributedDungeonAI):
     def __doPlayerLapTime(self, playerId: int, task: Task):
         self.playerIdToCurrentLapTime[playerId] = int(task.time * 1000)
         return task.cont
+    
+    def __doPlaceUpdate(self, task: Task):
+        self.sendPlaces()
+        return task.again
