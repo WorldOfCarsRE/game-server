@@ -22,7 +22,6 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         if self.racecarId:
             # Retrieve their DistributedRaceCar object.
-            print(self.racecarId)
             self.racecar = self.air.readRaceCar(self.racecarId)
 
     def getRaceCarId(self) -> int:
