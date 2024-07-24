@@ -172,6 +172,34 @@ function setCarData(playToken, data)
     return response
 end
 
+function setCarFields(playToken, data)
+    local request = {playToken = playToken, fieldData = data}
+    local json = require("json")
+    local result, err = json.encode(request)
+    if err then
+        print(err)
+        return
+    end
+    local response, error_message = http.post(API_BASE .. "setCarFields", {
+        body=result,
+        headers={
+            ["Authorization"]=API_TOKEN,
+            ["Content-Type"]="application/json"
+        }
+    })
+
+    if error_message then
+        print(string.format("CarsClient: setCarFields returned an error! \"%s\""), error_message)
+        return "{}"
+    end
+    if response.status_code ~= 200 then
+        print(string.format("CarsClient: setCarFields returned %d!, \"%s\""), response.status_code, response.body)
+        return "{}"
+    end
+
+    return response
+end
+
 function handleDatagram(client, msgType, dgi)
     -- Internal datagrams
     client:warn(string.format("Received unknown server msgtype %d", msgType))
@@ -400,7 +428,10 @@ function createAvatar(client, account, accountId, playToken)
         -- Link playerId with AMF car object:
         setCarData(playToken, {
             playerId = avatarId,
-         })
+        })
+        setCarFields(playToken, {
+            playerId = avatarId,
+        })
     end
 
     -- Create a new DistributedCarPlayer object
@@ -428,7 +459,10 @@ function createRaceCar(client, account, accountId, playToken)
         -- Link racecarId with AMF car object:
         setCarData(playToken, {
             racecarId = racecarId
-         })
+        })
+        setCarFields(playToken, {
+            racecarId = racecarId,
+        })
 
         client:writeServerEvent("racecar-created", "CarsClient", string.format("%d", racecarId))
     end
@@ -510,12 +544,18 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
         setCarData(playToken, {
             playerId = avatarId,
         })
+        setCarFields(playToken, {
+            playerId = avatarId,
+        })
     end
 
     if car.racecarId ~= racecarId then
         client:warn(string.format("racecarId is wrong in API (%d ~= %d), setting.", car.racecarId, racecarId))
         firstLogin = true
         setCarData(playToken, {
+            racecarId = racecarId,
+        })
+        setCarFields(playToken, {
             racecarId = racecarId,
         })
     end
