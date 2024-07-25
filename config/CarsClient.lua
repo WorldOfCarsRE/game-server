@@ -123,12 +123,15 @@ end
 
 avatarSpeedChatPlusStates = {}
 
+USER_AGENT = 'Sunrise Games - World of Cars Online OTP'
+
 -- TODO: These two functions should be moved to their own
 -- Lua role.
 function retrieveCar(data)
     local response, error_message = http.get(API_BASE .. "retrieveCar", {
         query=data,
         headers={
+            ["User-Agent"]=USER_AGENT,
             ["Authorization"]=API_TOKEN
         }
     })
@@ -156,6 +159,7 @@ function setCarData(playToken, data)
         body=result,
         headers={
             ["Authorization"]=API_TOKEN,
+            ["User-Agent"]=USER_AGENT,
             ["Content-Type"]="application/json"
         }
     })
