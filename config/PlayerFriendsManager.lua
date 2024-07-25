@@ -77,43 +77,87 @@ end
 -- TODO: These two functions should be moved to their own
 -- Lua role.
 function retrieveCar(data)
-    response, error_message = http.get(API_BASE .. "retrieveCar", {
-        query=data,
-        headers={
-            ["Authorization"]=API_TOKEN
-        }
-    })
+    local connAttempts = 0
 
-    return response.body
+    while (connAttempts < 3) do
+        local response, error_message = http.get(API_BASE .. "retrieveCar", {
+            query=data,
+            headers={
+                ["User-Agent"]=USER_AGENT,
+                ["Authorization"]=API_TOKEN
+            }
+        })
+
+        if error_message then
+            print(string.format("PlayerFriendsManager: retrieveCar returned an error! \"%s\""), error_message)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        if response.status_code ~= 200 then
+            print(string.format("PlayerFriendsManager: retrieveCar returned %d!, \"%s\""), response.status_code, response.body)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        do
+            -- If we're here, then we can return the response body.
+            return response.body
+        end
+
+        -- retry goto to iterate again if we failed to retrieve our car data.
+        ::retry::
+    end
+
+    -- TODO: If we're here, then we failed to get valid car data. Disconnect here
+    -- client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to retrieveCar.", false)
 end
 
 function setCarData(playToken, data)
     local request = {playToken = playToken, fieldData = data}
     local json = require("json")
     local result, err = json.encode(request)
+
     if err then
         print(err)
+        client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to encode JSON data for setCarData.", false)
         return
     end
-    local response, error_message = http.post(API_BASE .. "setCarData", {
-        body=result,
-        headers={
-            ["Authorization"]=API_TOKEN,
-            ["User-Agent"]=USER_AGENT,
-            ["Content-Type"]="application/json"
-        }
-    })
 
-    if error_message then
-        print(string.format("CarsClient: setCarData returned an error! \"%s\""), error_message)
-        return "{}"
-    end
-    if response.status_code ~= 200 then
-        print(string.format("CarsClient: setCarData returned %d!, \"%s\""), response.status_code, response.body)
-        return "{}"
+    local connAttempts = 0
+    while (connAttempts < 3) do
+        local response, error_message = http.post(API_BASE .. "setCarData", {
+            body=result,
+            headers={
+                ["Authorization"]=API_TOKEN,
+                ["User-Agent"]=USER_AGENT,
+                ["Content-Type"]="application/json"
+            }
+        })
+
+        if error_message then
+            print(string.format("PlayerFriendsManager: setCarData returned an error! \"%s\""), error_message)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        if response.status_code ~= 200 then
+            print(string.format("PlayerFriendsManager: setCarData returned %d!, \"%s\""), response.status_code, response.body)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        do
+            -- If we're here, then we can return the response.
+            return response
+        end
+
+        -- retry goto to iterate again if we failed to set our car data.
+        ::retry::
     end
 
-    return response
+    -- TODO: If we're here, then we failed to set our car data. Disconnect here
+    -- client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to setCarData.", false)
 end
 
 function declareFriend(participant, avatarId, friendId)
