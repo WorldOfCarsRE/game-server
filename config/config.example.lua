@@ -13,6 +13,7 @@ PRODUCTION_ENABLED = false
 API_TOKEN = "woc_api"
 PLAY_TOKEN_KEY = ""
 WANT_TOKEN_EXPIRATIONS = false
+USER_AGENT = 'Sunrise Games - World of Cars Online OTP'
 
 -- Population Levels (for ShardManager):
 -- (NONE, VERY_LIGHT, LIGHT, MEDIUM, FULL, VERY_FULL)

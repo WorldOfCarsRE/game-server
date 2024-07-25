@@ -95,13 +95,23 @@ function setCarData(playToken, data)
         print(err)
         return
     end
-    response, error_message = http.post(API_BASE .. "setCarData", {
+    local response, error_message = http.post(API_BASE .. "setCarData", {
         body=result,
         headers={
             ["Authorization"]=API_TOKEN,
+            ["User-Agent"]=USER_AGENT,
             ["Content-Type"]="application/json"
         }
     })
+
+    if error_message then
+        print(string.format("CarsClient: setCarData returned an error! \"%s\""), error_message)
+        return "{}"
+    end
+    if response.status_code ~= 200 then
+        print(string.format("CarsClient: setCarData returned %d!, \"%s\""), response.status_code, response.body)
+        return "{}"
+    end
 
     return response
 end

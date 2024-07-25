@@ -123,8 +123,6 @@ end
 
 avatarSpeedChatPlusStates = {}
 
-USER_AGENT = 'Sunrise Games - World of Cars Online OTP'
-
 -- TODO: These two functions should be moved to their own
 -- Lua role.
 function retrieveCar(data)
