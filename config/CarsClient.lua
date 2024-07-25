@@ -125,10 +125,31 @@ avatarSpeedChatPlusStates = {}
 
 -- TODO: These three functions should be moved to their own
 -- Lua role.
+function retrieveAccount(data)
+    -- TODO: Retries
+    local response, error_message = http.get(API_BASE .. "retrieveAccount", {
+        query=data,
+        headers={
+            ["Authorization"]=API_TOKEN
+        }
+    })
+
+    if error_message then
+        print(string.format("CarsClient: retrieveAccount returned an error! \"%s\"", error_message))
+        return "{}"
+    end
+    if response.status_code ~= 200 then
+        print(string.format("CarsClient: retrieveAccount returned %d!, \"%s\"", response.status_code, response.body))
+        return "{}"
+    end
+    return response.body
+end
+
 function retrieveCar(client, data)
     local connAttempts = 0
 
     while (connAttempts < 3) do
+        print(data)
         local response, error_message = http.get(API_BASE .. "retrieveCar", {
             query=data,
             headers={
@@ -138,13 +159,13 @@ function retrieveCar(client, data)
         })
 
         if error_message then
-            print(string.format("CarsClient: retrieveCar returned an error! \"%s\""), error_message)
+            print(string.format("CarsClient: retrieveCar returned an error! \"%s\"", error_message))
             connAttempts = connAttempts + 1
             goto retry
         end
 
         if response.status_code ~= 200 then
-            print(string.format("CarsClient: retrieveCar returned %d!, \"%s\""), response.status_code, response.body)
+            print(string.format("CarsClient: retrieveCar returned %d!, \"%s\"", response.status_code, response.body))
             connAttempts = connAttempts + 1
             goto retry
         end
@@ -185,13 +206,13 @@ function setCarData(client, playToken, data)
         })
 
         if error_message then
-            print(string.format("CarsClient: setCarData returned an error! \"%s\""), error_message)
+            print(string.format("CarsClient: setCarData returned an error! \"%s\"", error_message))
             connAttempts = connAttempts + 1
             goto retry
         end
 
         if response.status_code ~= 200 then
-            print(string.format("CarsClient: setCarData returned %d!, \"%s\""), response.status_code, response.body)
+            print(string.format("CarsClient: setCarData returned %d!, \"%s\"", response.status_code, response.body))
             connAttempts = connAttempts + 1
             goto retry
         end
@@ -232,13 +253,13 @@ function setCarFields(client, playToken, data)
         })
 
         if error_message then
-            print(string.format("CarsClient: setCarFields returned an error! \"%s\""), error_message)
+            print(string.format("CarsClient: setCarFields returned an error! \"%s\"", error_message))
             connAttempts = connAttempts + 1
             goto retry
         end
 
         if response.status_code ~= 200 then
-            print(string.format("CarsClient: setCarFields returned %d!, \"%s\""), response.status_code, response.body)
+            print(string.format("CarsClient: setCarFields returned %d!, \"%s\"", response.status_code, response.body))
             connAttempts = connAttempts + 1
             goto retry
         end
@@ -583,6 +604,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     local statusId = userTable.avatars[3]
 
     local json = require("json")
+    local account = json.decode(retrieveAccount("userName=" .. playToken))
     local car = json.decode(retrieveCar(client, "playToken=" .. playToken))
 
     -- Check for missing data
@@ -735,7 +757,21 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
             setChatLevel = {chatLevel},
         }
 
-        client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
+        local function isPuppet(puppetId)
+            if account.puppetId ~= nil then
+                if account.puppetId > 0 then
+                    return true
+                end
+            end
+            return false
+        end
+
+        if isPuppet(account.puppetId) then
+            playerFields.setPuppetId = {account.puppetId}
+            client:sendActivateObject(avatarId, "DistributedCarPuppet", playerFields)
+        else
+            client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
+        end
         client:objectSetOwner(avatarId, true)
 
         client:sendActivateObject(racecarId, "DistributedRaceCar", {})
@@ -942,3 +978,8 @@ function handleClientDistributedCarPlayer_setTalkWhisper(client, doId, fieldId, 
     client:packFieldToDatagram(dg, "DistributedCarPlayer", "setTalkWhisper", {avatarId, accountId, avatarName, cleanMessage, modifications, 0}, true)
     client:routeDatagram(dg)
 end
+
+-- Make sure these works for puppets as well.
+handleClientDistributedCarPuppet_setTalk = handleClientDistributedCarPlayer_setTalk
+handleDistributedCarPuppet_setTalk = handleDistributedCarPlayer_setTalk
+handleClientDistributedCarPuppet_setTalkWhisper = handleClientDistributedCarPlayer_setTalkWhisper

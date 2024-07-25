@@ -1,5 +1,7 @@
 from game.cars.distributed import CarsDistrict/AI
 from game.cars.carplayer import DistributedCarPlayer/AI
+from game.cars.carplayer import DistributedCarGM/AI
+from game.cars.carplayer import DistributedCarPuppet/AI
 from game.cars.carplayer import DistributedRaceCar/AI
 from game.cars.zone import DistributedZone/AI
 from game.cars.carplayer import InteractiveObject/AI
@@ -359,7 +361,7 @@ dclass DistributedCarGM : DistributedCarPlayer {
 // struct 80
 dclass DistributedCarPuppet : DistributedCarGM {
     invokePeriodicRule(int32, int8, uint32, uint32) clsend; // 520
-    setPuppetId(int32) required ownrequired ownrecv;
+    setPuppetId(int32) required broadcast ownrequired ownrecv;
 };
 
 // struct 81

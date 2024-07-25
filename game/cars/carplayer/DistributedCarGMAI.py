@@ -1,4 +1,4 @@
-from ai.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
+from .DistributedCarPlayerAI import DistributedCarPlayerAI
 
 class DistributedCarGMAI(DistributedCarPlayerAI):
     def __init__(self, air):
