@@ -10,6 +10,7 @@ builtins.game = game()
 import time
 import os
 import sys
+import platform
 
 print("Initializing...")
 
@@ -39,7 +40,6 @@ simbase.mdport = ConfigVariableInt("msg-director-port", 6666).getValue()
 simbase.esip = ConfigVariableString("event-server-ip", "127.0.0.1").getValue()
 simbase.esport = ConfigVariableInt("event-server-port", 4343).getValue()
 
-
 districtType = 0
 serverId = ConfigVariableInt("district-ssid", 20100000).getValue()
 
@@ -55,16 +55,14 @@ for i in range(1, 20+1):
             200000000 + i*1000000).getValue()
         districtName = ConfigVariableString(
             "district-name%s"%postfix,
-            "%sville" % {1: 'Silly',
-                         2: 'Second',
-                         3: 'Third',
-                         4: 'Fourth',
-                         5: 'Fifth',
-                         6: 'Sixth',
-                         7: 'Seventh',
-                         8: 'Eighth',
-                         9: 'Ninth', }.get(i, str(i))
-                         ).getValue()
+            {
+                1: 'Alignment'}
+            .get(i, str(i))
+        ).getValue()
+
+        if platform.system() == "Windows":
+            os.system(f"title World of Cars Online - AI ({districtName})")
+
         districtMinChannel = ConfigVariableInt(
             "district-min-channel%s"%postfix,
             200100000 + i*1000000).getValue()

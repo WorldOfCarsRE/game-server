@@ -1,5 +1,5 @@
 @echo off
-title OTP Server
+title World of Cars Online - OTP Server
 cd ../../config
 
 :main
