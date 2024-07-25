@@ -1,5 +1,5 @@
 @echo off
-title AI Server
+title World of Cars Online - AI
 cd ../..
 set /P PYTHON_PATH=<PYTHON_PATH
 
