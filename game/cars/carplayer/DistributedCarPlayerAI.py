@@ -1,7 +1,7 @@
 from typing import List
 
 from .DistributedCarAvatarAI import DistributedCarAvatarAI
-from ai import ZoneConstants
+from game.cars.zone import ZoneConstants
 
 from .DistributedRaceCarAI import DistributedRaceCarAI
 
