@@ -123,83 +123,137 @@ end
 
 avatarSpeedChatPlusStates = {}
 
--- TODO: These two functions should be moved to their own
+-- TODO: These three functions should be moved to their own
 -- Lua role.
-function retrieveCar(data)
-    local response, error_message = http.get(API_BASE .. "retrieveCar", {
-        query=data,
-        headers={
-            ["User-Agent"]=USER_AGENT,
-            ["Authorization"]=API_TOKEN
-        }
-    })
+function retrieveCar(client, data)
+    local connAttempts = 0
 
-    if error_message then
-        print(string.format("CarsClient: retrieveCar returned an error! \"%s\""), error_message)
-        return "{}"
+    while (connAttempts < 3) do
+        local response, error_message = http.get(API_BASE .. "retrieveCar", {
+            query=data,
+            headers={
+                ["User-Agent"]=USER_AGENT,
+                ["Authorization"]=API_TOKEN
+            }
+        })
+
+        if error_message then
+            print(string.format("CarsClient: retrieveCar returned an error! \"%s\""), error_message)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        if response.status_code ~= 200 then
+            print(string.format("CarsClient: retrieveCar returned %d!, \"%s\""), response.status_code, response.body)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        do
+            -- If we're here, then we can return the response body.
+            return response.body
+        end
+
+        -- retry goto to iterate again if we failed to retrieve our car data.
+        ::retry::
     end
-    if response.status_code ~= 200 then
-        print(string.format("CarsClient: retrieveCar returned %d!, \"%s\""), response.status_code, response.body)
-        return "{}"
-    end
-    return response.body
+
+    -- If we're here, then we failed to get valid car data. Disconnect here
+    client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to retrieveCar.", false)
 end
 
-function setCarData(playToken, data)
+function setCarData(client, playToken, data)
     local request = {playToken = playToken, fieldData = data}
     local json = require("json")
     local result, err = json.encode(request)
+
     if err then
         print(err)
+        client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to encode JSON data for setCarData.", false)
         return
     end
-    local response, error_message = http.post(API_BASE .. "setCarData", {
-        body=result,
-        headers={
-            ["Authorization"]=API_TOKEN,
-            ["User-Agent"]=USER_AGENT,
-            ["Content-Type"]="application/json"
-        }
-    })
 
-    if error_message then
-        print(string.format("CarsClient: setCarData returned an error! \"%s\""), error_message)
-        return "{}"
-    end
-    if response.status_code ~= 200 then
-        print(string.format("CarsClient: setCarData returned %d!, \"%s\""), response.status_code, response.body)
-        return "{}"
+    local connAttempts = 0
+    while (connAttempts < 3) do
+        local response, error_message = http.post(API_BASE .. "setCarData", {
+            body=result,
+            headers={
+                ["Authorization"]=API_TOKEN,
+                ["User-Agent"]=USER_AGENT,
+                ["Content-Type"]="application/json"
+            }
+        })
+
+        if error_message then
+            print(string.format("CarsClient: setCarData returned an error! \"%s\""), error_message)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        if response.status_code ~= 200 then
+            print(string.format("CarsClient: setCarData returned %d!, \"%s\""), response.status_code, response.body)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        do
+            -- If we're here, then we can return the response.
+            return response
+        end
+
+        -- retry goto to iterate again if we failed to set our car data.
+        ::retry::
     end
 
-    return response
+    -- If we're here, then we failed to set our car data. Disconnect here
+    client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to setCarData.", false)
 end
 
-function setCarFields(playToken, data)
+function setCarFields(client, playToken, data)
     local request = {playToken = playToken, fieldData = data}
     local json = require("json")
     local result, err = json.encode(request)
+
     if err then
         print(err)
+        client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to encode JSON data for setCarFields.", false)
         return
     end
-    local response, error_message = http.post(API_BASE .. "setCarFields", {
-        body=result,
-        headers={
-            ["Authorization"]=API_TOKEN,
-            ["Content-Type"]="application/json"
-        }
-    })
 
-    if error_message then
-        print(string.format("CarsClient: setCarFields returned an error! \"%s\""), error_message)
-        return "{}"
-    end
-    if response.status_code ~= 200 then
-        print(string.format("CarsClient: setCarFields returned %d!, \"%s\""), response.status_code, response.body)
-        return "{}"
+    local connAttempts = 0
+    while (connAttempts < 3) do
+        local response, error_message = http.post(API_BASE .. "setCarFields", {
+            body=result,
+            headers={
+                ["Authorization"]=API_TOKEN,
+                ["User-Agent"]=USER_AGENT,
+                ["Content-Type"]="application/json"
+            }
+        })
+
+        if error_message then
+            print(string.format("CarsClient: setCarFields returned an error! \"%s\""), error_message)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        if response.status_code ~= 200 then
+            print(string.format("CarsClient: setCarFields returned %d!, \"%s\""), response.status_code, response.body)
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        do
+            -- If we're here, then we can return the response.
+            return response
+        end
+
+        -- retry goto to iterate again if we failed to set our car fields.
+        ::retry::
     end
 
-    return response
+    -- If we're here, then we failed to set our car fields. Disconnect here
+    client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to setCarFields.", false)
 end
 
 function handleDatagram(client, msgType, dgi)
@@ -400,7 +454,7 @@ function handleLogin(client, dgi)
             client:writeServerEvent("account-created", "CarsClient", string.format("%d", accountId))
 
             -- Link account id with AMF car object:
-            setCarData(playToken, {
+            setCarData(client, playToken, {
                 dislId = accountId,
             })
 
@@ -428,10 +482,10 @@ function createAvatar(client, account, accountId, playToken)
         })
 
         -- Link playerId with AMF car object:
-        setCarData(playToken, {
+        setCarData(client, playToken, {
             playerId = avatarId,
         })
-        setCarFields(playToken, {
+        setCarFields(client, playToken, {
             playerId = avatarId,
         })
     end
@@ -459,10 +513,10 @@ function createRaceCar(client, account, accountId, playToken)
         })
 
         -- Link racecarId with AMF car object:
-        setCarData(playToken, {
+        setCarData(client, playToken, {
             racecarId = racecarId
         })
-        setCarFields(playToken, {
+        setCarFields(client, playToken, {
             racecarId = racecarId,
         })
 
@@ -529,13 +583,13 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     local statusId = userTable.avatars[3]
 
     local json = require("json")
-    local car = json.decode(retrieveCar("playToken=" .. playToken))
+    local car = json.decode(retrieveCar(client, "playToken=" .. playToken))
 
     -- Check for missing data
     if car.dislId ~= accountId then
         client:warn(string.format("dislId is wrong in API (%d ~= %d), setting.", car.dislId, accountId))
         firstLogin = true
-        setCarData(playToken, {
+        setCarData(client, playToken, {
             dislId = accountId,
         })
     end
@@ -543,10 +597,10 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     if car.playerId ~= avatarId then
         client:warn(string.format("playerId is wrong in API (%d ~= %d), setting.", car.playerId, avatarId))
         firstLogin = true
-        setCarData(playToken, {
+        setCarData(client, playToken, {
             playerId = avatarId,
         })
-        setCarFields(playToken, {
+        setCarFields(client, playToken, {
             playerId = avatarId,
         })
     end
@@ -554,10 +608,10 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     if car.racecarId ~= racecarId then
         client:warn(string.format("racecarId is wrong in API (%d ~= %d), setting.", car.racecarId, racecarId))
         firstLogin = true
-        setCarData(playToken, {
+        setCarData(client, playToken, {
             racecarId = racecarId,
         })
-        setCarFields(playToken, {
+        setCarFields(client, playToken, {
             racecarId = racecarId,
         })
     end
