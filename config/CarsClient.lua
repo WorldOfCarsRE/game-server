@@ -171,7 +171,7 @@ function retrieveCar(client, data)
 
         do
             -- If we're here, then we can return the response body.
-            print(inspect(response))
+            print(response.body)
             return response.body
         end
 
