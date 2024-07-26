@@ -149,7 +149,6 @@ function retrieveCar(client, data)
     local connAttempts = 0
 
     while (connAttempts < 3) do
-        print(data)
         local response, error_message = http.get(API_BASE .. "retrieveCar", {
             query=data,
             headers={
@@ -172,6 +171,7 @@ function retrieveCar(client, data)
 
         do
             -- If we're here, then we can return the response body.
+            print(inspect(response))
             return response.body
         end
 
