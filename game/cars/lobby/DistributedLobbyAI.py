@@ -3,8 +3,8 @@ from direct.distributed.DistributedObjectAI import DistributedObjectAI
 class DistributedLobbyAI(DistributedObjectAI):
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
-        self.dungeonItemId = 0
-        self.hotSpotName = ''
+        self.dungeonItemId: int = 0
+        self.hotSpotName: str = ''
 
     def getDungeonItemId(self):
         return self.dungeonItemId

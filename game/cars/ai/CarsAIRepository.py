@@ -17,6 +17,7 @@ from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
 from game.cars.carplayer.DistributedRaceCarAI import DistributedRaceCarAI
 
+from game.cars.lobby.DistributedTutorialLobbyAI import DistributedTutorialLobbyAI
 
 from game.cars.ai.ServerBase import ServerBase
 from game.cars.ai.ServerGlobals import WORLD_OF_CARS_ONLINE
@@ -85,6 +86,9 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.holidayManager = HolidayManagerAI(self)
         # self.holidayManager.generateWithRequired(DUNGEON_INTEREST_HANDLE)
+
+        self.tutorialLobby = DistributedTutorialLobbyAI(self)
+        # TODO: Tutorial lobby generate
 
         # mark district as enabled
         # NOTE: Only setEnabled is used in the client

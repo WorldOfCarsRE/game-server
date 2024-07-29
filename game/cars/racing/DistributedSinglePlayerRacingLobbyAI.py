@@ -1,4 +1,4 @@
-from game.cars.racing.DistributedLobbyAI import DistributedLobbyAI
+from game.cars.lobby.DistributedLobbyAI import DistributedLobbyAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyContextAI import DistributedSinglePlayerRacingLobbyContextAI
 from game.cars.racing.DistributedSPRaceAI import DistributedSPRaceAI
 from game.cars.distributed.CarsGlobals import DUNGEON_INTEREST_HANDLE
