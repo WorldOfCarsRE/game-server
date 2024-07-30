@@ -89,9 +89,5 @@ roles:
       output: ../logs/events-%Y%m%d_%H%M%S.log
 
     - type: lua
-      name: ShardManager
-      lua_file: ShardManager.lua
-
-    - type: lua
       name: PlayerFriendsManager
       lua_file: PlayerFriendsManager.lua

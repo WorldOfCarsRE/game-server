@@ -9,6 +9,7 @@ from game.cars.racing import DistributedSinglePlayerRacingLobby/AI
 from game.cars.racing import DistributedSinglePlayerRacingLobbyContext/AI
 from game.cars.racing import DistributedSPRace/AI
 from game.cars.uberdog import HolidayManagerUD
+from game.cars.uberdog import ShardManagerUD
 from game.cars.lobby import DistributedTutorialLobby/AI
 
 // cars start at struct 45 and field 331

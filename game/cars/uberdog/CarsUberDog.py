@@ -7,7 +7,11 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from game.otp.distributed.OtpDoGlobals import OTP_DO_ID_CARS_HOLIDAY_MANAGER
 from game.otp.uberdog.UberDog import UberDog
 
+from game.otp.ai.AIDistrict import AIDistrict
+
 from game.cars.distributed.CarsGlobals import *
+
+from game.cars.ai.CarsAIMsgTypes import SHARDMANAGER_REGISTER_SHARD, SHARDMANAGER_UPDATE_SHARD
 
 class CarsUberDog(UberDog):
     notify = directNotify.newCategory("UberDog")
@@ -29,3 +33,14 @@ class CarsUberDog(UberDog):
         self.queryObjectAll(self.serverId, context)
 
         self.holidayManager = self.generateGlobalObject(OTP_DO_ID_CARS_HOLIDAY_MANAGER, "HolidayManager")
+        self.shardManager = self.generateGlobalObject(OTP_DO_ID_CARS_SHARD_MANAGER, "ShardManager")
+
+    def handlePlayGame(self, msgType, di):
+        # Handle Cars specific message types before
+        # calling the base class
+        if msgType == SHARDMANAGER_REGISTER_SHARD:
+            self.shardManager.handleRegister(di)
+        elif msgType == SHARDMANAGER_UPDATE_SHARD:
+            self.shardManager.handleUpdate(di)
+        else:
+            AIDistrict.handlePlayGame(self, msgType, di)
