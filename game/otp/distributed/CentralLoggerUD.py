@@ -1,9 +1,9 @@
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectGlobalUD import DistributedObjectGlobalUD
 
-from game.toontown.uberdog.ServerBase import ServerBase
-from game.toontown.discord.Webhook import Webhook
-from game.toontown.uberdog.ServerGlobals import ServerGlobals
+from game.otp.server.ServerBase import ServerBase
+from game.otp.discord.Webhook import Webhook
+from game.otp.server.ServerGlobals import WORLD_OF_CARS_ONLINE
 
 import json
 
@@ -13,8 +13,6 @@ class CentralLoggerUD(DistributedObjectGlobalUD, ServerBase):
     def __init__(self, air):
         DistributedObjectGlobalUD.__init__(self, air)
         ServerBase.__init__(self)
-
-        self.stateMap = {}
 
     def getCategory(self, category):
         if category == 'MODERATION_FOUL_LANGUAGE':
@@ -84,7 +82,7 @@ class CentralLoggerUD(DistributedObjectGlobalUD, ServerBase):
             },
             {
                 'name': 'Server Type',
-                'value': ServerGlobals.FINAL_TOONTOWN,
+                'value': WORLD_OF_CARS_ONLINE,
                 'inline': True
             }]
 
@@ -96,13 +94,6 @@ class CentralLoggerUD(DistributedObjectGlobalUD, ServerBase):
                 messageObj.setColor(1127128)
                 messageObj.setWebhook(config.GetString('discord-reports-webhook'))
                 messageObj.finalize()
-
-        # This is because we have naughty toons trying to flood the webhook.
-        accountId = self.air.getAccountIdFromSender()
-        self.stateMap[accountId] = False
-
-        if message.startswith('MAT - endingMakeAToon'):
-            self.stateMap[accountId] = True
 
         self.air.writeServerEvent(category, messageType = msgType, message = message, **fields)
 

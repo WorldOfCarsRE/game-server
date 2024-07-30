@@ -12,15 +12,14 @@ from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
 from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
-from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
 from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
 from game.cars.carplayer.DistributedRaceCarAI import DistributedRaceCarAI
 
 from game.cars.lobby.DistributedTutorialLobbyAI import DistributedTutorialLobbyAI
 
-from game.cars.ai.ServerBase import ServerBase
-from game.cars.ai.ServerGlobals import WORLD_OF_CARS_ONLINE
+from game.otp.server.ServerBase import ServerBase
+from game.otp.server.ServerGlobals import WORLD_OF_CARS_ONLINE
 
 from game.cars.ai.DatabaseObject import DatabaseObject
 from game.cars.distributed.MongoInterface import MongoInterface
@@ -84,9 +83,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.spRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml") # dungeonItemId is from constants.js
         self.spRaceLobby.generateWithRequired(self.redhoodValley.doId)
 
-        self.holidayManager = HolidayManagerAI(self)
-        # self.holidayManager.generateWithRequired(DUNGEON_INTEREST_HANDLE)
-
         self.tutorialLobby = DistributedTutorialLobbyAI(self)
         # TODO: Tutorial lobby generate
 
@@ -116,7 +112,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
     def updateShard(self):
         if self.isProdServer():
             # This is the production server.
-            # Send our population increase.
+            # Send our population update.
             self.sendPopulation()
 
         dg = PyDatagram()
