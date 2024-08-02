@@ -42,7 +42,7 @@ end
 
 -- Messages sent internally (AI)
 function handleRegister(participant, dgi)
-    local sender = participant:getSender()
+    local sender = participant:getSender():tonumber()
     local shardId = dgi:readUint32()
     local shardName = dgi:readString()
 
@@ -51,7 +51,7 @@ function handleRegister(participant, dgi)
 end
 
 function handleUpdate(participant, dgi)
-    local sender = participant:getSender()
+    local sender = participant:getSender():tonumber()
     local avatarCount = dgi:readUint16()
     local active = dgi:readUint8()
 
@@ -67,7 +67,7 @@ function handleUpdate(participant, dgi)
 end
 
 function handleDelete(participant)
-    local sender = participant:getSender()
+    local sender = participant:getSender():tonumber()
 
     participant:debug(string.format("handleDelete(%d)", sender))
 

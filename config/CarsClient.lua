@@ -54,39 +54,6 @@ CLIENTAGENT_EJECT = 3004
 
 local inspect = require('inspect')
 
-function readAccountBridge()
-    local json = require("json")
-    local io = require("io")
-
-    -- TODO: Custom path.
-    f, err = io.open("../otpd/databases/accounts.json", "r")
-    if err then
-        print("CarsClient: Returning empty table for account bridge")
-        return {}
-    end
-
-    decoder = json.new_decoder(f)
-    result, err = decoder:decode()
-    f:close()
-    assert(not err, err)
-    print("CarsClient: Account bridge successfully loaded.")
-    return result
-end
-
-ACCOUNT_BRIDGE = readAccountBridge()
-
-function saveAccountBridge()
-    local json = require("json")
-    local io = require("io")
-
-    -- TODO: Custom path.
-    f, err = io.open("../otpd/databases/accounts.json", "w")
-    assert(not err, err)
-    encoder = json.new_encoder(f)
-    err = encoder:encode(ACCOUNT_BRIDGE)
-    assert(not err, err)
-end
-
 -- Load the TalkFilter
 dofile("TalkFilter.lua")
 
@@ -436,134 +403,21 @@ function handleLogin(client, dgi)
         end
     end
 
-    local accountId = ACCOUNT_BRIDGE[playToken]
-    if accountId ~= nil then
-        -- Query the account object
-        function queryLoginResponse(doId, success, fields)
-            if not success then
-                client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The Account object was unable to be queried.", true)
-                return
-            end
-
-            client:setDatabaseValues(accountId, "Account", {
-                LAST_LOGIN = os.date("%a %b %d %H:%M:%S %Y"),
-            })
-
-            loginAccount(client, fields, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, false)
+    local json = require("json")
+    local account = json.decode(retrieveAccount("userName=" .. playToken))
+    local accountId = account._id
+    -- Query the account object
+    client:getDatabaseValues(accountId, "Account", {"ACCOUNT_AV_SET"}, function (doId, success, fields)
+        if not success then
+            client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The Account object was unable to be queried.", true)
+            return
         end
-        client:getDatabaseValues(accountId, "Account", {"ACCOUNT_AV_SET"}, queryLoginResponse)
-    else
-        -- Create a new Account object
-        local account = {
-            -- The rest of the values are defined in the dc file.
-            CREATED = os.date("%a %b %d %H:%M:%S %Y"),
+
+        client:setDatabaseValues(accountId, "Account", {
             LAST_LOGIN = os.date("%a %b %d %H:%M:%S %Y"),
-        }
-
-        function createAccountResponse(accountId)
-            if accountId == 0 then
-                client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The Account object was unable to be created.", false)
-                return
-            end
-
-            -- Store the account into the bridge
-            ACCOUNT_BRIDGE[playToken] = accountId
-            saveAccountBridge()
-
-            account.ACCOUNT_AV_SET = {0, 0, 0}
-
-            client:writeServerEvent("account-created", "CarsClient", string.format("%d", accountId))
-
-            -- Link account id with AMF car object:
-            setCarData(client, playToken, {
-                dislId = accountId,
-            })
-
-            createAvatar(client, account, accountId, playToken)
-            createRaceCar(client, account, accountId, playToken)
-            createCarPlayerStatus(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus)
-        end
-        client:createDatabaseObject("Account", account, DATABASE_OBJECT_TYPE_ACCOUNT, createAccountResponse)
-    end
-end
-
-function createAvatar(client, account, accountId, playToken)
-    function createAvatarResponse(avatarId)
-        if avatarId == 0 then
-            client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The DistributedCarPlayer object was unable to be created.", false)
-            return
-        end
-
-        client:writeServerEvent("avatar-created", "CarsClient", string.format("%d", avatarId))
-
-        account.ACCOUNT_AV_SET[1] = avatarId
-
-        client:setDatabaseValues(accountId, "Account", {
-            ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
         })
 
-        -- Link playerId with AMF car object:
-        setCarData(client, playToken, {
-            playerId = avatarId,
-        })
-        setCarFields(client, playToken, {
-            playerId = avatarId,
-        })
-    end
-
-    -- Create a new DistributedCarPlayer object
-    local avatar = {
-        -- The rest of the values are defined in the dc file.
-        setDISLid = {accountId},
-    }
-
-    client:createDatabaseObject("DistributedCarPlayer", avatar, DATABASE_OBJECT_TYPE_AVATAR, createAvatarResponse)
-end
-
-function createRaceCar(client, account, accountId, playToken)
-    function createRaceCarResponse(racecarId)
-        if racecarId == 0 then
-            client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The DistributedRaceCar object was unable to be created.", false)
-            return
-        end
-
-        account.ACCOUNT_AV_SET[2] = racecarId
-
-        client:setDatabaseValues(accountId, "Account", {
-            ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
-        })
-
-        -- Link racecarId with AMF car object:
-        setCarData(client, playToken, {
-            racecarId = racecarId
-        })
-        setCarFields(client, playToken, {
-            racecarId = racecarId,
-        })
-
-        client:writeServerEvent("racecar-created", "CarsClient", string.format("%d", racecarId))
-    end
-
-    -- Create a new DistributedRaceCar object
-    client:createDatabaseObject("DistributedRaceCar", {}, DATABASE_OBJECT_TYPE_RACECAR, createRaceCarResponse)
-end
-
-function createCarPlayerStatus(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent)
-    -- Create a new CarPlayerStatus object
-    client:createDatabaseObject("CarPlayerStatus", {}, DATABASE_OBJECT_TYPE_CAR_STATUS, function (statusId)
-        if statusId == 0 then
-            client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "The CarPlayerStatus object was unable to be created.", false)
-            return
-        end
-
-        account.ACCOUNT_AV_SET[3] = statusId
-
-        client:setDatabaseValues(accountId, "Account", {
-            ACCOUNT_AV_SET = account.ACCOUNT_AV_SET,
-        })
-
-        loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, true)
-        client:writeServerEvent("carplayerstatus-created", "CarsClient", string.format("%d", statusId))
+        loginAccount(client, fields, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, false)
     end)
 end
 
@@ -607,181 +461,111 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     local account = json.decode(retrieveAccount("userName=" .. playToken))
     local car = json.decode(retrieveCar(client, "playToken=" .. playToken))
 
-    -- Check for missing data
-    if car.dislId ~= accountId then
-        client:warn(string.format("dislId is wrong in API (%d ~= %d), setting.", car.dislId, accountId))
-        firstLogin = true
-        setCarData(client, playToken, {
-            dislId = accountId,
-        })
+    -- Store name for SpeedChat+
+    -- By default the name is formatted like "Wreckless,Spinna,roader" so we format it to normal "Wreckless Spinnaroader".
+    local name = ""
+    local count = 0
+
+    for part in string.gmatch(car.carData.carDna.carName, "([^,]+)") do
+        if count == 1 then
+            name = name .. " " .. part
+        else
+            name = name .. part
+        end
+
+        count = count + 1
     end
 
-    if car.playerId ~= avatarId then
-        client:warn(string.format("playerId is wrong in API (%d ~= %d), setting.", car.playerId, avatarId))
-        firstLogin = true
-        setCarData(client, playToken, {
-            playerId = avatarId,
-        })
-        setCarFields(client, playToken, {
-            playerId = avatarId,
-        })
+    userTable.avatarName = name
+    client:userTable(userTable)
+
+    local resp = datagram:new()
+    resp:addUint16(CLIENT_LOGIN_CARS_RESP)
+    resp:addUint8(0) -- Return code
+    resp:addString("All Ok") -- errorString
+    resp:addUint32(avatarId) -- avatarId
+    resp:addUint32(dislId) -- accountId
+    resp:addString(playToken) -- playToken
+    resp:addUint8(1) -- accountNameApproved
+
+    if openChat then
+        resp:addString('YES') -- openChatEnabled
+    else
+        resp:addString('NO') -- openChatEnabled
     end
 
-    if car.racecarId ~= racecarId then
-        client:warn(string.format("racecarId is wrong in API (%d ~= %d), setting.", car.racecarId, racecarId))
-        firstLogin = true
-        setCarData(client, playToken, {
-            racecarId = racecarId,
-        })
-        setCarFields(client, playToken, {
-            racecarId = racecarId,
-        })
+    resp:addString('YES') -- createFriendsWithChat
+    resp:addString('YES') -- chatCodeCreationRule
+
+    if isPaid then
+        resp:addString("FULL") -- access
+    else
+        resp:addString("VELVET") -- access
     end
 
-    client:getDatabaseValues(avatarId, "DistributedCarPlayer", {"setDNA"}, function (_, success, dbFields)
-        if not firstLogin and dbFields.setDNA == nil then
-            client:warn(string.format("PlayerCar %d is missing DNA!, Attempting to fix...", avatarId))
-            firstLogin = true
-        end
-        if firstLogin then
-            local stretches = car.carData.carDna.stretches
+    if speedChatPlus then
+        resp:addString("YES") -- WhiteListResponse
+    else
+        resp:addString("NO") -- WhiteListResponse
+    end
 
-            if #stretches == 0 then
-                stretches = {0, 0, 0, 0, 0, 0}
+    -- Dispatch the response to the client.
+    client:sendDatagram(resp)
+
+    -- Activate DistributedCarPlayer & other owned objects
+    userTable.avatarId = avatarId
+    userTable.racecarId = racecarId
+    client:userTable(userTable)
+
+    client:setChannel(accountId, avatarId)
+    client:subscribePuppetChannel(avatarId, 1)
+
+    -- TODO: Re-enable membership after we implement sponsors
+    local setAccess = 1
+    -- if userTable.isPaid then
+        -- setAccess = 2
+    -- end
+
+    local chatLevel = 0
+    if userTable.speedChatPlus then
+        chatLevel = 1
+    end
+
+    local playerFields = {
+        setAccess = {setAccess},
+        setTelemetry = {0, 0, 0, 0, 0, 0, 0, 0},
+        setPhysics = {{}, {}, {}, {}, {}},
+        setState = {0},
+        setAfk = {0},
+        setDISLname = {playToken},
+        setCars = {1, {racecarId}},
+        setChatLevel = {chatLevel},
+    }
+
+    local function isPuppet(puppetId)
+        if puppetId ~= nil then
+            if puppetId > 0 then
+                return true
             end
-
-            local dna = {
-                car.carData.carDna.carName,
-                car.carData.carDna.carNumber,
-                car.carData.carDna.logoBackgroundId,
-                car.carData.carDna.logoBackgroundColor,
-                car.carData.carDna.logoFontId,
-                car.carData.carDna.logoFontColor,
-                car.carData.carDna.gender,
-                car.carData.carDna.careerType,
-                car.carData.carDna.chassis,
-                car.carData.carDna.color,
-                car.carData.carDna.eyeColor,
-                car.carData.carDna.wheel,
-                car.carData.carDna.tire,
-                car.carData.carDna.detailing,
-                car.carData.carDna.profileBackgroundId,
-                stretches,
-                car.carData.carDna.decalSlots,
-                car.carData.carDna.onAddons,
-                car.carData.carDna.costumeId
-            }
-
-            client:setDatabaseValues(avatarId, "DistributedCarPlayer", {setDNA = {dna}})
-            client:setDatabaseValues(racecarId, "DistributedRaceCar", {setDNA = {dna}})
         end
+        return false
+    end
 
-        -- Store name for SpeedChat+
-        -- By default the name is formatted like "Wreckless,Spinna,roader" so we format it to normal "Wreckless Spinnaroader".
-        local name = ""
-        local count = 0
+    if isPuppet(account.puppet) then
+        playerFields.setPuppetId = {account.puppet}
+        client:sendActivateObject(avatarId, "DistributedCarPuppet", playerFields)
+    else
+        client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
+    end
+    client:objectSetOwner(avatarId, true)
 
-        for part in string.gmatch(car.carData.carDna.carName, "([^,]+)") do
-            if count == 1 then
-                name = name .. " " .. part
-            else
-                name = name .. part
-            end
+    client:sendActivateObject(racecarId, "DistributedRaceCar", {})
+    client:objectSetOwner(racecarId, true)
 
-            count = count + 1
-        end
+    client:sendActivateObject(statusId, "CarPlayerStatus", {})
+    client:objectSetOwner(statusId, true)
 
-        userTable.avatarName = name
-        client:userTable(userTable)
-
-        local resp = datagram:new()
-        resp:addUint16(CLIENT_LOGIN_CARS_RESP)
-        resp:addUint8(0) -- Return code
-        resp:addString("All Ok") -- errorString
-        resp:addUint32(avatarId) -- avatarId
-        resp:addUint32(dislId) -- accountId
-        resp:addString(playToken) -- playToken
-        resp:addUint8(1) -- accountNameApproved
-
-        if openChat then
-            resp:addString('YES') -- openChatEnabled
-        else
-            resp:addString('NO') -- openChatEnabled
-        end
-
-        resp:addString('YES') -- createFriendsWithChat
-        resp:addString('YES') -- chatCodeCreationRule
-
-        if isPaid then
-            resp:addString("FULL") -- access
-        else
-            resp:addString("VELVET") -- access
-        end
-
-        if speedChatPlus then
-            resp:addString("YES") -- WhiteListResponse
-        else
-            resp:addString("NO") -- WhiteListResponse
-        end
-
-        -- Dispatch the response to the client.
-        client:sendDatagram(resp)
-
-        -- Activate DistributedCarPlayer & other owned objects
-        userTable.avatarId = avatarId
-        userTable.racecarId = racecarId
-        client:userTable(userTable)
-
-        client:setChannel(accountId, avatarId)
-        client:subscribePuppetChannel(avatarId, 1)
-
-        -- TODO: Re-enable membership after we implement sponsors
-        local setAccess = 1
-        -- if userTable.isPaid then
-            -- setAccess = 2
-        -- end
-
-        local chatLevel = 0
-        if userTable.speedChatPlus then
-            chatLevel = 1
-        end
-
-        local playerFields = {
-            setAccess = {setAccess},
-            setTelemetry = {0, 0, 0, 0, 0, 0, 0, 0},
-            setPhysics = {{}, {}, {}, {}, {}},
-            setState = {0},
-            setAfk = {0},
-            setDISLname = {playToken},
-            setCars = {1, {racecarId}},
-            setChatLevel = {chatLevel},
-        }
-
-        local function isPuppet(puppetId)
-            if account.puppetId ~= nil then
-                if account.puppetId > 0 then
-                    return true
-                end
-            end
-            return false
-        end
-
-        if isPuppet(account.puppetId) then
-            playerFields.setPuppetId = {account.puppetId}
-            client:sendActivateObject(avatarId, "DistributedCarPuppet", playerFields)
-        else
-            client:sendActivateObject(avatarId, "DistributedCarPlayer", playerFields)
-        end
-        client:objectSetOwner(avatarId, true)
-
-        client:sendActivateObject(racecarId, "DistributedRaceCar", {})
-        client:objectSetOwner(racecarId, true)
-
-        client:sendActivateObject(statusId, "CarPlayerStatus", {})
-        client:objectSetOwner(statusId, true)
-
-        avatarSpeedChatPlusStates[avatarId] = userTable.speedChatPlus
-    end)
+    avatarSpeedChatPlusStates[avatarId] = userTable.speedChatPlus
 end
 
 function handleAddInterest(client, dgi)

@@ -12,7 +12,6 @@ class DistributedRaceCarAI(DistributedObjectAI):
         return self.racingPoints
 
     def d_setRacingPoints(self, racingPoints: int):
-        # TODO: Update API database
         self.sendUpdate('setRacingPoints', [racingPoints])
 
     def b_setRacingPoints(self, racingPoints: int):
