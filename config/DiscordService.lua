@@ -65,7 +65,7 @@ function handleCentralLoggerRequest(participant, dgi)
         },
         {
             name = "Server Type",
-            value = 7, -- World of Cars Online
+            value = SERVER_TYPE,
             inline = true
         }
     })
