@@ -8,7 +8,7 @@ general:
         - dclass/cars.dc
 
 debug:
-    pprof: false
+    pprof: true
 
 messagedirector:
     bind: 127.0.0.1:6666
