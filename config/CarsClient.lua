@@ -54,7 +54,9 @@ STATESERVER_OBJECT_DELETE_RAM = 2007
 
 CLIENTAGENT_EJECT = 3004
 
-local inspect = require('inspect')
+CENTRAL_LOGGER_REQUEST = 15000
+
+local inspect = require("inspect")
 
 -- Load the TalkFilter
 dofile("TalkFilter.lua")
@@ -63,7 +65,7 @@ dofile("TalkFilter.lua")
 -- From: https://smherwig.blogspot.com/2013/05/a-simple-binascii-module-in-ruby-and-lua.html
 function unhexlify(s)
     if #s % 2 ~= 0 then
-        error('unhexlify: hexstring must contain even number of digits')
+        error("unhexlify: hexstring must contain even number of digits")
     end
     local a = {}
     for i=1,#s,2 do
@@ -82,12 +84,12 @@ dofile("config.lua")
 
 local API_BASE
 
-local http = require('http')
+local http = require("http")
 
 if PRODUCTION_ENABLED then
-    API_BASE = 'https://dxd.sunrise.games/carsds/api/internal/'
+    API_BASE = "https://dxd.sunrise.games/carsds/api/internal/"
 else
-    API_BASE = 'http://localhost/carsds/api/internal/'
+    API_BASE = "http://localhost/carsds/api/internal/"
 end
 
 avatarSpeedChatPlusStates = {}
@@ -337,7 +339,7 @@ function handleLogin(client, dgi)
                 return
             end
 
-            local data, err = crypto.decrypt(encryptedData, 'aes-cbc', unhexlify(PLAY_TOKEN_KEY), crypto.RAW_DATA, iv)
+            local data, err = crypto.decrypt(encryptedData, "aes-cbc", unhexlify(PLAY_TOKEN_KEY), crypto.RAW_DATA, iv)
             if err then
                 error(err)
                 return
@@ -504,13 +506,13 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     resp:addUint8(1) -- accountNameApproved
 
     if openChat then
-        resp:addString('YES') -- openChatEnabled
+        resp:addString("YES") -- openChatEnabled
     else
-        resp:addString('NO') -- openChatEnabled
+        resp:addString("NO") -- openChatEnabled
     end
 
-    resp:addString('YES') -- createFriendsWithChat
-    resp:addString('YES') -- chatCodeCreationRule
+    resp:addString("YES") -- createFriendsWithChat
+    resp:addString("YES") -- chatCodeCreationRule
 
     if isPaid then
         resp:addString("FULL") -- access
@@ -783,6 +785,19 @@ handleClientDistributedCarPuppet_setTalk = handleClientDistributedCarPlayer_setT
 handleDistributedCarPuppet_setTalk = handleDistributedCarPlayer_setTalk
 handleClientDistributedCarPuppet_setTalkWhisper = handleClientDistributedCarPlayer_setTalkWhisper
 
+function getCategoryDescription(category)
+    if category == "MODERATION_FOUL_LANGUAGE" then
+        return "Foul Language"
+    elseif category == "MODERATION_PERSONAL_INFO" then
+        return "Personal Information"
+    elseif category == "MODERATION_RUDE_BEHAVIOR" then
+        return "Rude Behavior"
+    elseif category == "MODERATION_BAD_NAME" then
+        return "Bad Name"
+    end
+    return "Unknown Category"
+end
+
 -- sendMessage from client
 function handleClientCentralLogger_sendMessage(client, doId, fieldId, data)
     -- The data is safe to use, as the ranges has already been
@@ -794,4 +809,15 @@ function handleClientCentralLogger_sendMessage(client, doId, fieldId, data)
 
     local toLog = eventString .. "|" .. string.format("%d", targetDISLId) .. "|" .. string.format("%d", targetAvId)
     client:writeServerEvent(category, "CentralLogger", toLog)
+
+    if PRODUCTION_ENABLED then
+        -- Send a request to our Discord service for moderation.
+        dg = datagram:new()
+        client:addServerHeader(dg, CENTRAL_LOGGER_REQUEST, CENTRAL_LOGGER_REQUEST)
+        dg:addString(REPORTS_WEBHOOK_URL) -- webhookUrl
+        dg:addString(eventString) -- message
+        dg:addString(getCategoryDescription(category)) -- category
+        dg:addUint32(targetAvId) -- targetAvId
+        client:routeDatagram(dg)
+    end
 end

@@ -18,8 +18,6 @@ SHARDMANAGER_DELETE_SHARD = 20002
 -- Load the configuration varables (see config.example.lua)
 dofile("config.lua")
 
-local inspect = require('inspect')
-
 function init(participant)
     participant:subscribeChannel(OTP_DO_ID_CARS_SHARD_MANAGER)
 end

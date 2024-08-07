@@ -54,6 +54,9 @@ roles:
           - class: DistributedDirectory
             id: 4619
 
+          - class: CentralLogger
+            id: 4688
+
     # The OTP database has been replaced in favor
     # of the one hosting in the API server.
     # GET_STORED_VALUES and SET_STORED_VALUES OTP messages
@@ -79,3 +82,7 @@ roles:
     - type: lua
       name: PlayerFriendsManager
       lua_file: PlayerFriendsManager.lua
+
+    - type: lua
+      name: DiscordService
+      lua_file: DiscordService.lua
