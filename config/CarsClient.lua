@@ -767,3 +767,16 @@ end
 handleClientDistributedCarPuppet_setTalk = handleClientDistributedCarPlayer_setTalk
 handleDistributedCarPuppet_setTalk = handleDistributedCarPlayer_setTalk
 handleClientDistributedCarPuppet_setTalkWhisper = handleClientDistributedCarPlayer_setTalkWhisper
+
+-- sendMessage from client
+function handleClientCentralLogger_sendMessage(client, doId, fieldId, data)
+    -- The data is safe to use, as the ranges has already been
+    -- verified by the server prior to calling this function.
+    local category = data[1]
+    local eventString = data[2]
+    local targetDISLId = data[3]
+    local targetAvId = data[4]
+
+    local toLog = eventString .. "|" .. string.format("%d", targetDISLId) .. "|" .. string.format("%d", targetAvId)
+    client:writeServerEvent(category, "CentralLogger", toLog)
+end
