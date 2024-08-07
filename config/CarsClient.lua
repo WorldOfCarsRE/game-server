@@ -94,7 +94,7 @@ end
 
 avatarSpeedChatPlusStates = {}
 
--- TODO: These three functions should be moved to their own
+-- TODO: These two functions should be moved to their own
 -- Lua role.
 function retrieveAccount(data)
     -- TODO: Retries
@@ -152,100 +152,6 @@ function retrieveCar(client, data)
 
     -- If we're here, then we failed to get valid car data. Disconnect here
     client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to retrieveCar.", false)
-end
-
-function setCarData(client, playToken, data)
-    local request = {playToken = playToken, fieldData = data}
-    local json = require("json")
-    local result, err = json.encode(request)
-
-    if err then
-        print(err)
-        client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to encode JSON data for setCarData.", false)
-        return
-    end
-
-    local connAttempts = 0
-    while (connAttempts < 3) do
-        local response, error_message = http.post(API_BASE .. "setCarData", {
-            body=result,
-            headers={
-                ["Authorization"]=API_TOKEN,
-                ["User-Agent"]=USER_AGENT,
-                ["Content-Type"]="application/json"
-            }
-        })
-
-        if error_message then
-            print(string.format("CarsClient: setCarData returned an error! \"%s\"", error_message))
-            connAttempts = connAttempts + 1
-            goto retry
-        end
-
-        if response.status_code ~= 200 then
-            print(string.format("CarsClient: setCarData returned %d!, \"%s\"", response.status_code, response.body))
-            connAttempts = connAttempts + 1
-            goto retry
-        end
-
-        do
-            -- If we're here, then we can return the response.
-            return response
-        end
-
-        -- retry goto to iterate again if we failed to set our car data.
-        ::retry::
-    end
-
-    -- If we're here, then we failed to set our car data. Disconnect here
-    client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to setCarData.", false)
-end
-
-function setCarFields(client, playToken, data)
-    local request = {playToken = playToken, fieldData = data}
-    local json = require("json")
-    local result, err = json.encode(request)
-
-    if err then
-        print(err)
-        client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to encode JSON data for setCarFields.", false)
-        return
-    end
-
-    local connAttempts = 0
-    while (connAttempts < 3) do
-        local response, error_message = http.post(API_BASE .. "setCarFields", {
-            body=result,
-            headers={
-                ["Authorization"]=API_TOKEN,
-                ["User-Agent"]=USER_AGENT,
-                ["Content-Type"]="application/json"
-            }
-        })
-
-        if error_message then
-            print(string.format("CarsClient: setCarFields returned an error! \"%s\"", error_message))
-            connAttempts = connAttempts + 1
-            goto retry
-        end
-
-        if response.status_code ~= 200 then
-            print(string.format("CarsClient: setCarFields returned %d!, \"%s\"", response.status_code, response.body))
-            connAttempts = connAttempts + 1
-            goto retry
-        end
-
-        do
-            -- If we're here, then we can return the response.
-            return response
-        end
-
-        -- retry goto to iterate again if we failed to set our car fields.
-        ::retry::
-    end
-
-    -- If we're here, then we failed to set our car fields. Disconnect here
-    client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to setCarFields.", false)
 end
 
 function handleDatagram(client, msgType, dgi)
