@@ -25,8 +25,6 @@ AVATAR_CLASS = dcFile:getClassByName("DistributedCarPlayer"):getNumber()
 -- Load the configuration varables (see config.example.lua)
 dofile("config.lua")
 
-local inspect = require('inspect')
-
 invitesByInviterId = {} -- inviterId: invite
 invitesByInviteeId = {} -- inviteeId: invite
 
@@ -66,12 +64,12 @@ function newInviteTable(inviterId, inviterData, inviteeId, inviteeData)
     }
 end
 
-local http = require('http')
+local http = require("http")
 
 if PRODUCTION_ENABLED then
-    API_BASE = 'https://dxd.sunrise.games/carsds/api/internal/'
+    API_BASE = "https://dxd.sunrise.games/carsds/api/internal/"
 else
-    API_BASE = 'http://localhost/carsds/api/internal/'
+    API_BASE = "http://localhost/carsds/api/internal/"
 end
 
 -- TODO: These two functions should be moved to their own

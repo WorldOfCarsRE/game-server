@@ -16,14 +16,14 @@ dofile("config.lua")
 
 local API_BASE
 
-local http = require('http')
+local http = require("http")
 local json = require("json")
 local inspect = require("inspect")
 
 if PRODUCTION_ENABLED then
-    API_BASE = 'https://dxd.sunrise.games/carsds/api/internal/'
+    API_BASE = "https://dxd.sunrise.games/carsds/api/internal/"
 else
-    API_BASE = 'http://localhost/carsds/api/internal/'
+    API_BASE = "http://localhost/carsds/api/internal/"
 end
 
 function retrieveAccount(data)
@@ -255,26 +255,26 @@ end
 Api2Field = {
     -- TODO: Figure out the rest
     -- Account
-    lastLogin = 'LAST_LOGIN',
+    lastLogin = "LAST_LOGIN",
     -- DistributedRaceCar
-    totalMiles = 'setMiles',
-    racingPoints = 'setRacingPoints',
-    consumableSlot = 'setConsumableSlot',
-    consumableStack = 'setConsumableStack',
-    dashboardTextureId = 'setDashboardTexture',
-    raceSeries = 'setRaceSeries',
-    activeSponsorId = 'setActiveSponsor',
-    activeGearId = 'setActiveGear',
-    consumableItemList = 'setConsumables',
-    gears = 'setGears',
+    totalMiles = "setMiles",
+    racingPoints = "setRacingPoints",
+    consumableSlot = "setConsumableSlot",
+    consumableStack = "setConsumableStack",
+    dashboardTextureId = "setDashboardTexture",
+    raceSeries = "setRaceSeries",
+    activeSponsorId = "setActiveSponsor",
+    activeGearId = "setActiveGear",
+    consumableItemList = "setConsumables",
+    gears = "setGears",
 
     -- DistributedCarPlayer
-    carCoins = 'setCarCoins',
-    userId = 'setDISLid',
+    carCoins = "setCarCoins",
+    userId = "setDISLid",
 
     -- CarPlayerStatus
-    setLocationType = 'setLocationType',
-    setPrivacySettings = 'setPrivacySettings'
+    setLocationType = "setLocationType",
+    setPrivacySettings = "setPrivacySettings"
 }
 
 Field2Api = {}
