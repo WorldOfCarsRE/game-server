@@ -1,6 +1,6 @@
 cd ../../config
 
-screen -dmS OTP "../../OtpGo/otpgo" otp.yml >otpgo.log 2>&1
+screen -dmS OTP "../../OtpGo/otpgo" otp.yml
 
 cd ..
 screen -dmS Districts python3 -m DistrictStarter
