@@ -8,7 +8,7 @@ general:
         - dclass/cars.dc
 
 debug:
-    pprof: false
+    pprof: true
 
 messagedirector:
     bind: 127.0.0.1:6666
@@ -54,30 +54,17 @@ roles:
           - class: DistributedDirectory
             id: 4619
 
-    # TODO: Communicate with the API server instead
-    # which hosts its own database.
-    - type: database
-      control: 4003
-      generate:
-          min: 100000000
-          max: 199999999
-      backend:
-          type: mongodb
-          server: mongodb://127.0.0.1
-          database: Dialga
-      objects:
-          - class: Account
-            id: 1
-          - class: DistributedCarPlayer
-            id: 2
-          - class: DistributedRaceCar
-            id: 3
-          - class: CarPlayerStatus
-            id: 4
+          - class: CentralLogger
+            id: 4688
 
-    # TODO: Replace with a standard State Server, one dedicated in hosting
-    # Avatars and database heavy objects (A custom Lua role will handle
-    # communication to the API)
+    # The OTP database has been replaced in favor
+    # of the one hosting in the API server.
+    # GET_STORED_VALUES and SET_STORED_VALUES OTP messages
+    # are supported.
+    - type: lua
+      name: APIDatabase
+      lua_file: APIDatabase.lua
+
     - type: dbss
       database: 4003
       ranges:
@@ -91,3 +78,7 @@ roles:
     - type: lua
       name: PlayerFriendsManager
       lua_file: PlayerFriendsManager.lua
+
+    - type: lua
+      name: DiscordService
+      lua_file: DiscordService.lua

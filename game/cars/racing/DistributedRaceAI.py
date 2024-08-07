@@ -23,6 +23,7 @@ class DistributedRaceAI(DistributedDungeonAI):
         self.playerIdToReady: Dict[int, bool] = {}
         self.playerIdToSegment: Dict[int, TrackSegment] = {}
         self.finishedPlayerIds: List[int] = []
+        self.playerIdsThatLeft: List[int] = []
 
         self.totalRaceTime = 0
         self.playerIdToBestLapTime: Dict[int, int] = {}
@@ -52,6 +53,7 @@ class DistributedRaceAI(DistributedDungeonAI):
     def _playerDeleted(self, playerId):
         self.notify.debug(f"Player {playerId} have left the race!")
         self.playerIds.remove(playerId)
+        self.playerIdsThatLeft.append(playerId)
         self.ignore(self.staticGetZoneChangeEvent(playerId))
         self.ignore(self.air.getDeleteDoIdEvent(playerId))
 
@@ -83,14 +85,28 @@ class DistributedRaceAI(DistributedDungeonAI):
         return False
 
     def sendPlaces(self):
-        playerLapsAndSegmentsIds: Dict[int, tuple] = {}
         firstPlaceIndexToDetermine = 0
+        numPlayersDidntFinish = 0
+
+        # Players that have finished must retain their position and increment the first position we check for other players.
+        for player in self.finishedPlayerIds:
+            finishedPlaceIndex = self.finishedPlayerIds.index(player)
+            self.places[3 - finishedPlaceIndex] = player
+            firstPlaceIndexToDetermine += 1
+
+        # Players that left but didn't finish will display as the lowest position based on the index (e.g. the first player that leaves would be 4th).
+        for player in self.playerIdsThatLeft:
+            if player in self.finishedPlayerIds:
+                continue
+
+            self.places[self.playerIdsThatLeft.index(player)] = player
+            numPlayersDidntFinish += 1
+
+        # Now we need to store and churn through lap and segment data from players that are still in the race and haven't finished yet.
+        playerLapsAndSegmentsIds: Dict[int, tuple] = {}
 
         for player in self.playerIds:
             if player in self.finishedPlayerIds:
-                finishedPlaceIndex = self.finishedPlayerIds.index(player)
-                self.places[3 - finishedPlaceIndex] = player
-                firstPlaceIndexToDetermine += 1
                 continue
 
             playerLap = self.playerIdToLap.get(player)
@@ -98,14 +114,14 @@ class DistributedRaceAI(DistributedDungeonAI):
             playerLapsAndSegmentsIds[player] = (playerLap, playerSegment.id)
 
         if len(playerLapsAndSegmentsIds) == 0:
-            # All players have finished. Just send the update now.
+            # All players have finished/left. Just send the update now.
             self.sendUpdate('setPlaces', [self.places])
             return
 
         playersOnFurthestLap: List[int] = []
         playersInFurthestSegment: List[int] = []
 
-        for placeIndex in range(firstPlaceIndexToDetermine, 4):
+        for placeIndex in range(firstPlaceIndexToDetermine, (4 - numPlayersDidntFinish)):
             # If we still have players to churn through on the furthest lap, we don't need to iterate again.
             if len(playersOnFurthestLap) == 0:
                 furthestLap = 1
@@ -253,7 +269,7 @@ class DistributedRaceAI(DistributedDungeonAI):
             taskMgr.add(self.__doTotalRaceTime, self.taskName("totalRaceTime"))
             for playerId in self.playerIds:
                 taskMgr.add(self.__doPlayerLapTime, self.taskName(f"playerLapTime-{playerId}"), extraArgs=[playerId], appendTask=True)
-            self.doMethodLater(0.5, self.__doPlaceUpdate, self.taskName("placeUpdate"))
+            self.doMethodLater(1.0, self.__doPlaceUpdate, self.taskName("placeUpdate"))
             return task.done
 
         task.delayTime = 1

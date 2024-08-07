@@ -18,3 +18,6 @@ USER_AGENT = "Sunrise Games - World of Cars Online OTP"
 -- Population Levels (for ShardManager):
 -- (NONE, VERY_LIGHT, LIGHT, MEDIUM, FULL, VERY_FULL)
 POPULATION_LEVELS = {0, 1, 50, 100, 150, 200}
+
+-- Discord settings
+REPORTS_WEBHOOK_URL = ""

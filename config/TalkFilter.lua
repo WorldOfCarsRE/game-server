@@ -66,7 +66,7 @@ function filterWhitelist(message, filterOverride)
     local cleanMessage = message
 
     for _, word in ipairs(wordsToSub) do
-        cleanMessage = string.replace(cleanMessage, word, string.rep('*', string.len(word)))
+        cleanMessage = string.replace(cleanMessage, word, string.rep("*", string.len(word)))
     end
 
     return cleanMessage, modifications

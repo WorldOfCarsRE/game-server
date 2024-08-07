@@ -25,8 +25,6 @@ AVATAR_CLASS = dcFile:getClassByName("DistributedCarPlayer"):getNumber()
 -- Load the configuration varables (see config.example.lua)
 dofile("config.lua")
 
-local inspect = require('inspect')
-
 invitesByInviterId = {} -- inviterId: invite
 invitesByInviteeId = {} -- inviteeId: invite
 
@@ -66,12 +64,12 @@ function newInviteTable(inviterId, inviterData, inviteeId, inviteeData)
     }
 end
 
-local http = require('http')
+local http = require("http")
 
 if PRODUCTION_ENABLED then
-    API_BASE = 'https://dxd.sunrise.games/carsds/api/internal/'
+    API_BASE = "https://dxd.sunrise.games/carsds/api/internal/"
 else
-    API_BASE = 'http://localhost/carsds/api/internal/'
+    API_BASE = "http://localhost/carsds/api/internal/"
 end
 
 -- TODO: These two functions should be moved to their own
@@ -221,7 +219,7 @@ function handleOnline(participant, accountId)
     -- Tell this account's friends that it went online.
     local friendInfo = {
         formatCarName(account.carData.carDna.carName), -- avatarName
-        account.playerId, -- avatarId
+        account._id, -- avatarId
         account.ownerAccount, -- playerName
         1, -- onlineYesNo
         -- Most of these values appears to be unused.
@@ -239,7 +237,7 @@ function handleOnline(participant, accountId)
 
         local dg = datagram:new()
         participant:addServerHeaderWithAccountId(dg, friendId, OTP_DO_ID_PLAYER_FRIENDS_MANAGER, CLIENTAGENT_DECLARE_OBJECT)
-        dg:addUint32(account.playerId)
+        dg:addUint32(account._id)
         dg:addUint16(AVATAR_CLASS)
         participant:routeDatagram(dg)
     end
@@ -250,16 +248,16 @@ function handleOnline(participant, accountId)
 
         local dg = datagram:new()
         participant:addServerHeaderWithAccountId(dg, accountId, OTP_DO_ID_PLAYER_FRIENDS_MANAGER, CLIENTAGENT_DECLARE_OBJECT)
-        dg:addUint32(friendAccount.playerId)
+        dg:addUint32(friendAccount._id)
         dg:addUint16(AVATAR_CLASS)
         participant:routeDatagram(dg)
 
         -- Check if this account's avatar is online or not.
-        queryDBSS(participant, friendAccount.playerId, function (doId, activated)
-            participant:debug(string.format("Is friend %d online? %s", friendAccount.playerId, tostring(activated)))
+        queryDBSS(participant, friendAccount._id, function (doId, activated)
+            participant:debug(string.format("Is friend %d online? %s", friendAccount._id, tostring(activated)))
             friendInfo = {
                 formatCarName(friendAccount.carData.carDna.carName), -- avatarName
-                friendAccount.playerId, -- avatarId
+                friendAccount._id, -- avatarId
                 friendAccount.ownerAccount, -- playerName
                 activated, -- onlineYesNo
                 -- Most of these values appears to be unused.
@@ -284,7 +282,7 @@ function handleOffline(participant, accountId)
     -- Tell this account's friends that it went offline.
     local friendInfo = {
         formatCarName(account.carData.carDna.carName), -- avatarName
-        account.playerId, -- avatarId
+        account._id, -- avatarId
         account.ownerAccount, -- playerName
         0, -- onlineYesNo
         -- Most of these values appears to be unused.
@@ -365,7 +363,7 @@ function makeFriends(participant, invite)
 
         local friendInfo = {
             formatCarName(invite.inviteeData.carData.carDna.carName), -- avatarName
-            invite.inviteeData.playerId, -- avatarId
+            invite.inviteeData._id, -- avatarId
             invite.inviteeData.ownerAccount, -- playerName
             1, -- onlineYesNo
             -- Most of these values appears to be unused.
@@ -392,7 +390,7 @@ function makeFriends(participant, invite)
 
         local friendInfo = {
             formatCarName(invite.inviterData.carData.carDna.carName), -- avatarName
-            invite.inviterData.playerId, -- avatarId
+            invite.inviterData._id, -- avatarId
             invite.inviterData.ownerAccount, -- playerName
             1, -- onlineYesNo
             -- Most of these values appears to be unused.
