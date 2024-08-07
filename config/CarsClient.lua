@@ -41,6 +41,8 @@ CLIENT_DISCONNECT_BAD_VERSION            = 125
 CLIENT_DISCONNECT_FIELD_CONSTRAINT       = 127
 CLIENT_DISCONNECT_SESSION_OBJECT_DELETED = 153
 
+LOGOUT_REASON_ACCOUNT_DISABLED = 152
+
 DATABASE_OBJECT_TYPE_ACCOUNT = 1
 DATABASE_OBJECT_TYPE_AVATAR  = 2
 DATABASE_OBJECT_TYPE_RACECAR = 3
@@ -309,6 +311,7 @@ function handleLogin(client, dgi)
     local isPaid
     local dislId
     local linkedToParent
+    local accountDisabled
     if PRODUCTION_ENABLED then
         local json = require("json")
         local crypto = require("crypto")
@@ -370,6 +373,12 @@ function handleLogin(client, dgi)
                 speedChatPlus = false
             end
 
+            if tonumber(jsonData.Banned) == 1 or tonumber(jsonData.Terminated) == 1 then
+                accountDisabled = true
+            else
+                accountDisabled = false
+            end
+
             if WANT_TOKEN_EXPIRATIONS and timestamp < os.time() then
                 client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Token has expired.", true)
                 return
@@ -401,6 +410,7 @@ function handleLogin(client, dgi)
         if WANT_SPEEDCHAT_PLUS then
             speedChatPlus = true
         end
+        accountDisabled = false
     end
 
     local json = require("json")
@@ -417,11 +427,16 @@ function handleLogin(client, dgi)
             LAST_LOGIN = os.date("%a %b %d %H:%M:%S %Y"),
         })
 
-        loginAccount(client, fields, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, false)
+        loginAccount(client, fields, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, accountDisabled)
     end)
 end
 
-function loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, firstLogin)
+function loginAccount(client, account, accountId, playToken, openChat, isPaid, dislId, linkedToParent, accountType, speedChatPlus, accountDisabled)
+    if accountDisabled then
+        client:sendDisconnect(LOGOUT_REASON_ACCOUNT_DISABLED, "There has been a reported violation of our Terms of Use connected to this account. For safety purposes, we have placed a temporary hold on the account.  For more details, please review the messages sent to the email address associated with this account.", false)
+        return
+    end
+
     -- Eject other client if already logged in.
     local ejectDg = datagram:new()
     client:addServerHeaderWithAccountId(ejectDg, accountId, CLIENTAGENT_EJECT)
