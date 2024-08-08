@@ -63,7 +63,7 @@ function filterWhitelist(message, filterOverride)
     -- Match any character except spaces.
     for word in string.gmatch(message, "[^%s]*") do
         -- Strip out punctuations just for checking with the whitelist.
-        local strippedWord = string.gsub(word, "[.,?!]", "")
+        local strippedWord = string.gsub(word, "[,?!]", "")
         if filterOverride == true or word ~= "" and WHITELIST[string.lower(strippedWord)] ~= true then
             table.insert(modifications, {offset, offset + string.len(word) - 1})
             table.insert(wordsToSub, word)
