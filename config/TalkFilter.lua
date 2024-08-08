@@ -12,6 +12,15 @@ string.replace = function (str, this, that)
     return string.gsub(str, regexEscape(this), string.gsub(that, "%%", "%%%%")) -- only % needs to be escaped for 'that'
 end
 
+local function replaceModifiedText(str, modifications)
+    local cleanMessage = str
+    for _, modification in ipairs(modifications) do
+        local length = modification[2] - modification[1] + 1
+        cleanMessage = string.sub(cleanMessage, 0, modification[1]) .. string.rep("*", length) .. string.sub(cleanMessage, modification[1] + 1 + length)
+    end
+    return cleanMessage
+end
+
 WHITELIST = {}
 function readWhitelist()
     local io = require("io")
@@ -54,7 +63,7 @@ function filterWhitelist(message, filterOverride)
     -- Match any character except spaces.
     for word in string.gmatch(message, "[^%s]*") do
         -- Strip out punctuations just for checking with the whitelist.
-        local strippedWord = string.gsub(word, "[.,?!]", "")
+        local strippedWord = string.gsub(word, "[,?!]", "")
         if filterOverride == true or word ~= "" and WHITELIST[string.lower(strippedWord)] ~= true then
             table.insert(modifications, {offset, offset + string.len(word) - 1})
             table.insert(wordsToSub, word)
@@ -63,11 +72,7 @@ function filterWhitelist(message, filterOverride)
             offset = offset + string.len(word) + 1
         end
     end
-    local cleanMessage = message
-
-    for _, word in ipairs(wordsToSub) do
-        cleanMessage = string.replace(cleanMessage, word, string.rep("*", string.len(word)))
-    end
+    local cleanMessage = replaceModifiedText(message, modifications)
 
     return cleanMessage, modifications
 end
