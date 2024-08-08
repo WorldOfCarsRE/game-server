@@ -12,6 +12,15 @@ string.replace = function (str, this, that)
     return string.gsub(str, regexEscape(this), string.gsub(that, "%%", "%%%%")) -- only % needs to be escaped for 'that'
 end
 
+local function replaceModifiedText(str, modifications)
+    local cleanMessage = str
+    for _, modification in ipairs(modifications) do
+        local length = modification[2] - modification[1] + 1
+        cleanMessage = string.sub(cleanMessage, 0, modification[1]) .. string.rep("*", length) .. string.sub(cleanMessage, modification[1] + 1 + length)
+    end
+    return cleanMessage
+end
+
 WHITELIST = {}
 function readWhitelist()
     local io = require("io")
@@ -63,11 +72,7 @@ function filterWhitelist(message, filterOverride)
             offset = offset + string.len(word) + 1
         end
     end
-    local cleanMessage = message
-
-    for _, word in ipairs(wordsToSub) do
-        cleanMessage = string.replace(cleanMessage, word, string.rep("*", string.len(word)))
-    end
+    local cleanMessage = replaceModifiedText(message, modifications)
 
     return cleanMessage, modifications
 end
