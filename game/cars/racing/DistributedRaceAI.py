@@ -123,22 +123,22 @@ class DistributedRaceAI(DistributedDungeonAI):
 
         for placeIndex in range(firstPlaceIndexToDetermine, (4 - numPlayersDidntFinish)):
             # If we still have players to churn through on the furthest lap, we don't need to iterate again.
-            if len(playersOnFurthestLap) == 0:
-                furthestLap = 1
+            if not playersOnFurthestLap:
+                furthestLap = -1
                 for player in playerLapsAndSegmentsIds:
                     playerLap, playerSegmentId = playerLapsAndSegmentsIds.get(player)
-                    if playerLap > furthestLap:
+                    if not playersOnFurthestLap or playerLap > furthestLap:
                         furthestLap = playerLap
                         playersOnFurthestLap = [player]
                     elif playerLap == furthestLap:
                         playersOnFurthestLap.append(player)
 
             # Same as above, but for segment:
-            if len(playersInFurthestSegment) == 0:
+            if not playersInFurthestSegment:
                 furthestSegmentId = -1
                 for player in playersOnFurthestLap:
                     playerLap, playerSegmentId = playerLapsAndSegmentsIds.get(player)
-                    if playerSegmentId > furthestSegmentId:
+                    if not playersInFurthestSegment or playerSegmentId > furthestSegmentId:
                         furthestSegmentId = playerSegmentId
                         playersInFurthestSegment = [player]
                     elif playerSegmentId == furthestSegmentId:
