@@ -45,6 +45,15 @@ end
 readChatPhrases()
 print("TalkFilter: Successfully loaded SpeedChat phrases.")
 
+function isWordOnWhitelist(word)
+    -- Test without stripping out the punctuations first
+    if WHITELIST[string.lower(word)] then
+        return true
+    end
+    -- Now try with puncutations stripped out
+    return WHITELIST[string.lower(string.gsub(word, "[.,?!]", ""))]
+end
+
 function filterWhitelist(message, filterOverride)
     if SPEEDCHAT[message] then
         return message, {}
@@ -63,8 +72,7 @@ function filterWhitelist(message, filterOverride)
     -- Match any character except spaces.
     for word in string.gmatch(message, "[^%s]*") do
         -- Strip out punctuations just for checking with the whitelist.
-        local strippedWord = string.gsub(word, "[,?!]", "")
-        if filterOverride == true or word ~= "" and WHITELIST[string.lower(strippedWord)] ~= true then
+        if filterOverride == true or word ~= "" and isWordOnWhitelist(word) ~= true then
             table.insert(modifications, {offset, offset + string.len(word) - 1})
             table.insert(wordsToSub, word)
         end
