@@ -116,11 +116,11 @@ Api2Field = {
     activeGearId = "setActiveGear",
     consumableItemList = "setConsumables",
     gears = "setGears",
+    animationList = "setAnimations",
 
     -- DistributedCarPlayer
     carCoins = "setCarCoins",
     userId = "setDISLid",
-    animationList = "setAnimations",
 
     -- CarPlayerStatus
     setLocationType = "setLocationType",

@@ -40,18 +40,6 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def getDISLid(self) -> int:
         return self.DISLid
 
-    def setAnimations(self, animations: list):
-        self.animations = animations
-        if self.animations == []:
-            self.animations = [21001, 21002, 21003, 21004, 21005, 21006, 21007]
-            self.d_setAnimations(self.animations)
-
-    def d_setAnimations(self, animations: list):
-        self.sendUpdate('setAnimations', [animations])
-
-    def getAnimations(self) -> list:
-        return self.animations
-
     def setCarCoins(self, carCoins: int):
         self.carCoins = carCoins
 
