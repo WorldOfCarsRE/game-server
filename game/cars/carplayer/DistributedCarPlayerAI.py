@@ -14,7 +14,6 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.carCount = 0
         self.racecarId = 0
         self.racecar: DistributedRaceCarAI = None
-        self.friendIds = []
 
     def setCars(self, carCount: int, cars: list):
         self.carCount = carCount

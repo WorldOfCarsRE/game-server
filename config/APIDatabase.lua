@@ -116,6 +116,7 @@ Api2Field = {
     activeGearId = "setActiveGear",
     consumableItemList = "setConsumables",
     gears = "setGears",
+    animationList = "setAnimations",
 
     -- DistributedCarPlayer
     carCoins = "setCarCoins",
