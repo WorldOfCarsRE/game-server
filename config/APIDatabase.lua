@@ -120,6 +120,7 @@ Api2Field = {
     -- DistributedCarPlayer
     carCoins = "setCarCoins",
     userId = "setDISLid",
+    animationList = "setAnimations",
 
     -- CarPlayerStatus
     setLocationType = "setLocationType",
