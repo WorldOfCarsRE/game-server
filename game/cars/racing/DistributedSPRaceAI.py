@@ -15,10 +15,6 @@ class DistributedSPRaceAI(DistributedRaceAI):
             self.notify.warning("Attempted to send NPC list again!")
             return
 
-        if len(npcPlayers) > 3:
-            self.notify.warning(f"setOpponentNPCs called with more than 3 NPCs! {npcPlayers}, trimming: {npcPlayers[:3]}")
-            npcPlayers = npcPlayers[:3]
-
         self.npcPlayers = npcPlayers
 
         for player in npcPlayers:
