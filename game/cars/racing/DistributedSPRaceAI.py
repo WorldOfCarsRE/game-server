@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import List
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from .DistributedRaceAI import DistributedRaceAI
@@ -14,10 +14,6 @@ class DistributedSPRaceAI(DistributedRaceAI):
         if bool(self.npcPlayers):
             self.notify.warning("Attempted to send NPC list again!")
             return
-
-        if len(npcPlayers) > 3:
-            self.notify.warning(f"setOpponentNPCs called with more than 3 NPCs! {npcPlayers}, trimming: {npcPlayers[:3]}")
-            npcPlayers = npcPlayers[:3]
 
         self.npcPlayers = npcPlayers
 
