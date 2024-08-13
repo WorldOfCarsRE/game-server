@@ -73,6 +73,24 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.willysButte = DistributedZoneAI(self, "Willy's Butte", ZoneConstants.WILLYS_BUTTE)
         self.willysButte.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
+        self.tailgatorSpeedway = DistributedZoneAI(self, "Tailgator Speedway", ZoneConstants.TAILGATOR_SPEEDWAY)
+        self.tailgatorSpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
+
+        self.bigHeartlandSpeedway = DistributedZoneAI(self, "Big Heartland Speedway", ZoneConstants.BIG_HEARTLAND_SPEEDWAY)
+        self.bigHeartlandSpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
+
+        self.backfireCanyonSpeedway = DistributedZoneAI(self, "Backfire Canyon Speedway", ZoneConstants.BACKFIRE_CANYON_SPEEDWAY)
+        self.backfireCanyonSpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
+
+        self.petroleumCitySpeedway = DistributedZoneAI(self, "Petroleum City Super Speedway", ZoneConstants.PETROLEUM_CITY_SPEEDWAY)
+        self.petroleumCitySpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
+
+        self.motorSpeedwaySouth = DistributedZoneAI(self, "Motor Speedway of the South", ZoneConstants.MOTOR_SOUTH_SPEEDWAY)
+        self.motorSpeedwaySouth.generateWithRequired(DUNGEON_INTEREST_HANDLE)
+
+        self.laSpeedway = DistributedZoneAI(self, "Los Angeles International Speedway", ZoneConstants.LA_SPEEDWAY)
+        self.laSpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
+
         self.mater = InteractiveObjectAI(self)
         self.mater.assetId = 31009 # materCatalogItemId
         self.mater.generateWithRequired(self.downtownZone.doId)
