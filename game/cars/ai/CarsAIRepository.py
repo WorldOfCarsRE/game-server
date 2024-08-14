@@ -98,8 +98,14 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.updateObjectCount()
 
-        self.spRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml") # dungeonItemId is from constants.js
-        self.spRaceLobby.generateWithRequired(self.redhoodValley.doId)
+        self.spRHRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml") # dungeonItemId is from constants.js
+        self.spRHRaceLobby.generateWithRequired(self.redhoodValley.doId)
+
+        self.spWBRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_wb", 42005, "car_w_trk_wil_WillysButte_SS_phys.xml") # dungeonItemId is from constants.js
+        self.spWBRaceLobby.generateWithRequired(self.willysButte.doId)
+
+        self.spFFRRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml") # dungeonItemId is from constants.js
+        self.spFFRRaceLobby.generateWithRequired(self.fillmoresFields.doId)
 
         self.holidayManager = HolidayManagerAI(self)
         # self.holidayManager.generateWithRequired(DUNGEON_INTEREST_HANDLE)
