@@ -424,6 +424,9 @@ function handlePlayerFriendsManager_setTalkAccount(participant, fieldId, data)
 
     local cleanMessage, modifications = filterWhitelist(message, false)
 
+    -- Log it for moderation purposes.
+    participant:writeServerEvent("chat-message-whisper", "PlayerFriendsManager", OTP_DO_ID_PLAYER_FRIENDS_MANAGER, string.format("%d|%d|%s|%s", senderId, otherAccountId, message, cleanMessage))
+
     participant:sendUpdateToAccountId(otherAccountId, OTP_DO_ID_PLAYER_FRIENDS_MANAGER,
             "PlayerFriendsManager", "setTalkAccount", {otherAccountId, senderId, data[3], cleanMessage, modifications, 0})
 end

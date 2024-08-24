@@ -619,6 +619,10 @@ function handleClientDistributedCarPlayer_setTalk(client, doId, fieldId, data)
     -- All other data are blank values, except for chat.
     local message = data[4] --chat
 
+    -- Log it for moderation purposes.
+    local cleanMessage, _ = filterWhitelist(message, false)
+    client:writeServerEvent("chat-message", "CarsClient", string.format("%d|%d|%s|%s", accountId, avatarId, message, cleanMessage))
+
     local dg = datagram:new()
     -- We set the sender field to the doId instead of our channel to make sure
     -- we can receive the broadcast.
