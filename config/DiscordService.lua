@@ -30,7 +30,7 @@ end
 
 function handleDatagram(participant, msgType, dgi)
     if msgType == CENTRAL_LOGGER_REQUEST then
-        handleCentralLoggerRequest(dgi)
+        handleCentralLoggerRequest(participant, dgi)
     else
         participant:warning(string.format("Got unknown message type: %d", msgType))
     end
