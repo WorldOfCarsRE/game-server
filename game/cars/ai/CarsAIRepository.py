@@ -38,7 +38,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.mongoInterface = MongoInterface(self)
 
         self.staffMembers: List[int] = []
-        self.accountMap: Dict[str] = {}
+        self.accountMap: Dict[int, str] = {}
 
     def getGameDoId(self):
         return OTP_DO_ID_CARS
