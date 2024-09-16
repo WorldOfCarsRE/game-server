@@ -77,6 +77,7 @@ class DistributedCarPuppetAI(DistributedCarGMAI):
             }, headers={
                 "User-Agent": "Sunrise Games - DistributedCarGMAI"
             })
+
             self.notify.info(f"Got response from API: {response.text}")
         except:
             self.notify.warning("Failed to ban account.")
