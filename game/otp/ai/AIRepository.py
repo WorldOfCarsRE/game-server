@@ -477,8 +477,8 @@ class AIRepository(ConnectionRepository):
         """
         pass
 
-    def handleAllowCommandUsage(self, di):
-        self.magicWordManager.setMagicWordApproved(di.getUint32(), di.getString())
+    def handleAllowModerationActions(self, di):
+        self.setAllowModerationActions(di.getUint32(), di.getString())
 
     def handleObjectDeleteDisk(self, di):
         pass
@@ -605,8 +605,8 @@ class AIRepository(ConnectionRepository):
             pass
         elif msgType == SERVER_PING:
             self.handleServerPing(di)
-        elif msgType == ALLOW_COMMAND_USAGE:
-            self.handleAllowCommandUsage(di)
+        elif msgType == ALLOW_MODERATION_ACTIONS:
+            self.handleAllowModerationActions(di)
         else:
             AIRepository.notify.warning(
                 "Ignoring unexpected message type: %s in state: %s" %
