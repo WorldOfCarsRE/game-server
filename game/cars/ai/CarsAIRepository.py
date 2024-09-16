@@ -24,6 +24,8 @@ from game.otp.server.ServerGlobals import WORLD_OF_CARS_ONLINE
 from game.cars.ai.DatabaseObject import DatabaseObject
 from game.cars.distributed.MongoInterface import MongoInterface
 
+from typing import Dict, List
+
 import requests
 
 class CarsAIRepository(AIDistrict, ServerBase):
@@ -34,6 +36,9 @@ class CarsAIRepository(AIDistrict, ServerBase):
         ServerBase.__init__(self)
 
         self.mongoInterface = MongoInterface(self)
+
+        self.staffMembers: List[int] = []
+        self.accountMap: Dict[str] = {}
 
     def getGameDoId(self):
         return OTP_DO_ID_CARS
@@ -192,3 +197,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
     def decrementPopulation(self):
         AIDistrict.decrementPopulation(self)
         self.updateShard()
+
+    def setAllowModerationActions(self, accountId: int, accountType: str) -> None:
+        self.staffMembers.append(accountId)
+        self.accountMap[accountId] = accountType

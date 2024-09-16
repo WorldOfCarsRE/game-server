@@ -21,6 +21,9 @@ uberdogs:
     - class: FriendManager
       id: 4501
 
+    - class: CentralLogger
+      id: 4688
+
     - class: HolidayManager
       id: 4756
 

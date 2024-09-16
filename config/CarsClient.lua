@@ -56,6 +56,10 @@ CLIENTAGENT_EJECT = 3004
 
 CENTRAL_LOGGER_REQUEST = 15000
 
+ALLOW_MODERATION_ACTIONS = 3007
+
+BROADCAST_MESSAGE_TO_ALL_AI = 4005
+
 local inspect = require("inspect")
 
 -- Load the TalkFilter
@@ -374,6 +378,16 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
 
     -- Log the event
     client:writeServerEvent("account-login", "CarsClient", string.format("%d", accountId))
+
+   -- Moderation handler
+    if accountType ~= "Player" then
+        -- This account is allowed to perform moderation actions.
+        local dg = datagram:new()
+        dg:addServerHeader(BROADCAST_MESSAGE_TO_ALL_AI, accountId, ALLOW_MODERATION_ACTIONS)
+        dg:addUint32(accountId)
+        dg:addString(accountType)
+        client:routeDatagram(dg)
+    end
 
     -- Prepare the login response.
     local avatarId = userTable.avatars[1]
