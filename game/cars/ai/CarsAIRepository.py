@@ -199,5 +199,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.updateShard()
 
     def setAllowModerationActions(self, accountId: int, accountType: str) -> None:
-        self.staffMembers.append(accountId)
-        self.accountMap[accountId] = accountType
+        if accountId not in self.staffMembers:
+            self.staffMembers.append(accountId)
+            self.accountMap[accountId] = accountType
