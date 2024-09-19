@@ -219,9 +219,9 @@ class UberDog(AIRepository):
             pass
         pass
 
-    def handleAllowCommandUsage(self, di):
+    def setAllowModerationActions(self, accountId: int, accountType: str) -> None:
         """
-        Should only be handled by the AI processes containing the ToontownMagicWordManagerAI
+        Should only be handled by the AI processes containing the CarsAIRepository
         """
         pass
 
