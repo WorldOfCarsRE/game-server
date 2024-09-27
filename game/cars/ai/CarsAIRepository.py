@@ -10,13 +10,12 @@ from game.otp.ai.AIDistrict import AIDistrict
 
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
-from game.cars.carplayer.npcs.Mater import Mater
+from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
 from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
 from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
 from game.cars.carplayer.DistributedRaceCarAI import DistributedRaceCarAI
-
 
 from game.cars.ai.ServerBase import ServerBase
 from game.cars.ai.ServerGlobals import WORLD_OF_CARS_ONLINE
@@ -96,7 +95,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.laSpeedway = DistributedZoneAI(self, "Los Angeles International Speedway", ZoneConstants.LA_SPEEDWAY)
         self.laSpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
-        self.mater = Mater(self)
+        self.mater = MaterAI(self)
         self.mater.generateWithRequired(self.downtownZone.doId)
 
         self.downtownZone.interactiveObjects.append(self.mater)
