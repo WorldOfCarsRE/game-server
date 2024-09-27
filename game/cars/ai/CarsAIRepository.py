@@ -10,7 +10,7 @@ from game.otp.ai.AIDistrict import AIDistrict
 
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
-from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
+from game.cars.carplayer.npcs.Mater import Mater
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
 from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
@@ -96,12 +96,14 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.laSpeedway = DistributedZoneAI(self, "Los Angeles International Speedway", ZoneConstants.LA_SPEEDWAY)
         self.laSpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
-        self.mater = InteractiveObjectAI(self)
-        self.mater.assetId = 31009 # materCatalogItemId
+        self.mater = Mater(self)
         self.mater.generateWithRequired(self.downtownZone.doId)
 
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.updateObjectCount()
+
+        # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
+        # self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
 
         self.spRHRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml") # dungeonItemId is from constants.js
         self.spRHRaceLobby.generateWithRequired(self.redhoodValley.doId)
