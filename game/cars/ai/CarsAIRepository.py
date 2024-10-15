@@ -92,7 +92,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.motorSpeedwaySouth = DistributedZoneAI(self, "Motor Speedway of the South", ZoneConstants.MOTOR_SOUTH_SPEEDWAY)
         self.motorSpeedwaySouth.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
-        self.laSpeedway = DistributedZoneAI(self, "Los Angeles International Speedway", ZoneConstants.LA_SPEEDWAY)
+        self.laSpeedway = DistributedZoneAI(self, "LA International Speedway", ZoneConstants.LA_SPEEDWAY)
         self.laSpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
         self.mater = MaterAI(self)
