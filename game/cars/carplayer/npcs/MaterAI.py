@@ -1,5 +1,5 @@
 from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
-from game.cars.carplayer.InteractiveObjectAI import COMMAND_OFFER_QUERY_INTERACTIONS, COMMAND_OFFER_QUEST_ACCEPT, CMD_TYPE_POSITIVE
+from game.cars.carplayer.InteractiveObjectAI import COMMAND_OFFER_QUERY_INTERACTIONS, COMMAND_SET_MAP_EFFECT, CMD_TYPE_POSITIVE
 from game.cars.carplayer.InteractiveObjectAI import TYPE_NPC
 
 class MaterAI(InteractiveObjectAI):
@@ -13,14 +13,14 @@ class MaterAI(InteractiveObjectAI):
 
         self.objType = TYPE_NPC
         self.assetId = 31009 # materCatalogItemId
-        self.catalogId = 25010
+        self.catalogId = 102
 
     def announceGenerate(self) -> None:
         InteractiveObjectAI.announceGenerate(self)
 
         # Experiments
-        self.d_setTelemetry(1806, 860, 0, 1522, 1329, 15022, -3515, 136708)
+        self.d_setTelemetry(280, 193, 0, -2511, -2297, -3254, -20104, 600979)
 
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
         if eventId == COMMAND_OFFER_QUERY_INTERACTIONS:
-            self.d_setInteractiveCommands(avatarId, eventId, [COMMAND_OFFER_QUEST_ACCEPT, self.getCatalogId(), CMD_TYPE_POSITIVE])
+            self.d_setInteractiveCommands(avatarId, eventId, [COMMAND_SET_MAP_EFFECT, self.getCatalogId(), CMD_TYPE_POSITIVE])
