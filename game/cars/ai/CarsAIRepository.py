@@ -11,6 +11,7 @@ from game.otp.ai.AIDistrict import AIDistrict
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
+from game.cars.carplayer.npcs.RamoneAI import RamoneAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
 from game.cars.ai.HolidayManagerAI import HolidayManagerAI
 
@@ -98,7 +99,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.mater = MaterAI(self)
         self.mater.generateWithRequired(self.downtownZone.doId)
 
+        self.ramone = RamoneAI(self)
+        self.ramone.generateWithRequired(self.downtownZone.doId)
+
         self.downtownZone.interactiveObjects.append(self.mater)
+        self.downtownZone.interactiveObjects.append(self.ramone)
         self.downtownZone.updateObjectCount()
 
         # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
