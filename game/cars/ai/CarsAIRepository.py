@@ -1,30 +1,3 @@
-from direct.directnotify import DirectNotifyGlobal
-from direct.distributed.PyDatagram import PyDatagram
-from direct.distributed.PyDatagramIterator import PyDatagramIterator
-
-from game.cars.ai.CarsAIMsgTypes import *
-from game.cars.distributed.CarsGlobals import *
-from game.cars.zone import ZoneConstants
-
-from game.otp.ai.AIDistrict import AIDistrict
-
-from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
-from game.cars.zone.DistributedZoneAI import DistributedZoneAI
-from game.cars.carplayer.npcs.MaterAI import MaterAI
-from game.cars.carplayer.npcs.RamoneAI import RamoneAI
-from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
-
-from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
-from game.cars.carplayer.DistributedRaceCarAI import DistributedRaceCarAI
-
-from game.cars.lobby.DistributedTutorialLobbyAI import DistributedTutorialLobbyAI
-
-from game.otp.server.ServerBase import ServerBase
-from game.otp.server.ServerGlobals import WORLD_OF_CARS_ONLINE
-
-from game.cars.ai.DatabaseObject import DatabaseObject
-from game.cars.distributed.MongoInterface import MongoInterface
-
 from typing import Dict, List
 
 import requests
@@ -44,11 +17,15 @@ from game.cars.carplayer.npcs.RamoneAI import RamoneAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
+from game.cars.lobby.DistributedTutorialLobbyAI import \
+    DistributedTutorialLobbyAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import \
     DistributedSinglePlayerRacingLobbyAI
 from game.cars.zone import ZoneConstants
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
 from game.otp.ai.AIDistrict import AIDistrict
+from game.otp.server.ServerBase import ServerBase
+from game.otp.server.ServerGlobals import WORLD_OF_CARS_ONLINE
 
 
 class CarsAIRepository(AIDistrict, ServerBase):
