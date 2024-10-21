@@ -1,32 +1,28 @@
-from direct.directnotify import DirectNotifyGlobal
-from direct.distributed.PyDatagram import PyDatagram
-from direct.distributed.PyDatagramIterator import PyDatagramIterator
-
-from game.cars.ai.CarsAIMsgTypes import *
-from game.cars.distributed.CarsGlobals import *
-from game.cars.zone import ZoneConstants
-
-from game.otp.ai.AIDistrict import AIDistrict
-
-from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
-from game.cars.zone.DistributedZoneAI import DistributedZoneAI
-from game.cars.carplayer.npcs.MaterAI import MaterAI
-from game.cars.carplayer.npcs.RamoneAI import RamoneAI
-from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import DistributedSinglePlayerRacingLobbyAI
-from game.cars.ai.HolidayManagerAI import HolidayManagerAI
-
-from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
-from game.cars.carplayer.DistributedRaceCarAI import DistributedRaceCarAI
-
-from game.cars.ai.ServerBase import ServerBase
-from game.cars.ai.ServerGlobals import WORLD_OF_CARS_ONLINE
-
-from game.cars.ai.DatabaseObject import DatabaseObject
-from game.cars.distributed.MongoInterface import MongoInterface
-
 from typing import Dict, List
 
 import requests
+from direct.directnotify import DirectNotifyGlobal
+from direct.distributed.PyDatagram import PyDatagram
+from direct.distributed.PyDatagramIterator import PyDatagramIterator
+from game.cars.ai.CarsAIMsgTypes import *
+from game.cars.ai.DatabaseObject import DatabaseObject
+from game.cars.ai.HolidayManagerAI import HolidayManagerAI
+from game.cars.ai.ServerBase import ServerBase
+from game.cars.ai.ServerGlobals import WORLD_OF_CARS_ONLINE
+from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
+from game.cars.carplayer.DistributedRaceCarAI import DistributedRaceCarAI
+from game.cars.carplayer.games.DocsClinicAI import DocsClinicAI
+from game.cars.carplayer.npcs.MaterAI import MaterAI
+from game.cars.carplayer.npcs.RamoneAI import RamoneAI
+from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
+from game.cars.distributed.CarsGlobals import *
+from game.cars.distributed.MongoInterface import MongoInterface
+from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import \
+    DistributedSinglePlayerRacingLobbyAI
+from game.cars.zone import ZoneConstants
+from game.cars.zone.DistributedZoneAI import DistributedZoneAI
+from game.otp.ai.AIDistrict import AIDistrict
+
 
 class CarsAIRepository(AIDistrict, ServerBase):
     notify = DirectNotifyGlobal.directNotify.newCategory("CarsAIRepository")
@@ -102,8 +98,13 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.ramone = RamoneAI(self)
         self.ramone.generateWithRequired(self.downtownZone.doId)
 
+        self.docsClinic = DocsClinicAI(self)
+        self.docsClinic.generateWithRequired(self.downtownZone.doId)
+
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.interactiveObjects.append(self.ramone)
+        self.downtownZone.interactiveObjects.append(self.docsClinic)
+
         self.downtownZone.updateObjectCount()
 
         # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js

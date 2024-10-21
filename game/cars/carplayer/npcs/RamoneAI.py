@@ -1,6 +1,7 @@
-from game.cars.carplayer.InteractiveObjectAI import InteractiveObjectAI
-from game.cars.carplayer.InteractiveObjectAI import COMMAND_OFFER_QUERY_INTERACTIONS, COMMAND_OFFER_QUEST_ACCEPT, CMD_TYPE_POSITIVE
-from game.cars.carplayer.InteractiveObjectAI import TYPE_NPC
+from game.cars.carplayer.InteractiveObjectAI import (
+    CMD_TYPE_POSITIVE, COMMAND_OFFER_QUERY_INTERACTIONS,
+    COMMAND_OFFER_QUEST_ACCEPT, TYPE_NPC, InteractiveObjectAI)
+
 
 class RamoneAI(InteractiveObjectAI):
     def __init__(self, air) -> None:
