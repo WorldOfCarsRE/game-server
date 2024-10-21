@@ -93,3 +93,6 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
     def addCoins(self, deltaCoins: int):
         self.b_setCarCoins(deltaCoins + self.getCarCoins())
+
+    def d_showDialogs(self, dialogId: int, args: List[str]):
+        self.sendUpdateToAvatarId(self.doId, 'showDialogs', [[[dialogId, args]]])
