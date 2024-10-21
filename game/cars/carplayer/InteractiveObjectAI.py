@@ -35,6 +35,7 @@ class InteractiveObjectAI(DistributedCarAvatarAI):
         self.objType = TYPE_MAP_SPRITE
         self.globalState = 0
         self.visible = 1
+        self.clientScript = 'scripts/interactive/default_npc.lua'
 
     def announceGenerate(self):
         DistributedCarAvatarAI.announceGenerate(self)
@@ -58,7 +59,7 @@ class InteractiveObjectAI(DistributedCarAvatarAI):
         return self.visible
 
     def getClientScript(self):
-        return 'scripts/interactive/default_npc.lua'
+        return self.clientScript
 
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
         """
