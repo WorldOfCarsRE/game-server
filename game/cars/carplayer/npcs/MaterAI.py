@@ -19,7 +19,7 @@ class MaterAI(InteractiveObjectAI):
         InteractiveObjectAI.announceGenerate(self)
 
         # Experiments
-        self.d_setTelemetry(280, 193, 0, -2511, -2297, -3254, -20104, 600979)
+        self.d_setTelemetry(3329, 1889, 0, 13073, 6027, 12847, -32722, 325026)
 
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
         if eventId == COMMAND_OFFER_QUERY_INTERACTIONS:
