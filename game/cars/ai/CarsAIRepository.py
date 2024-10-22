@@ -11,6 +11,7 @@ from game.cars.ai.ServerBase import ServerBase
 from game.cars.ai.ServerGlobals import WORLD_OF_CARS_ONLINE
 from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
 from game.cars.carplayer.DistributedRaceCarAI import DistributedRaceCarAI
+from game.cars.carplayer.games.LuigisCasaDellaTiresAI import LuigisCasaDellaTiresAI
 from game.cars.carplayer.games.DocsClinicAI import DocsClinicAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
@@ -105,9 +106,13 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.docsClinic = DocsClinicAI(self)
         self.docsClinic.generateWithRequired(self.downtownZone.doId)
 
+        self.luigisCasaDellaTires = LuigisCasaDellaTiresAI(self)
+        self.luigisCasaDellaTires.generateWithRequired(self.downtownZone.doId)
+
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.interactiveObjects.append(self.ramone)
         self.downtownZone.interactiveObjects.append(self.docsClinic)
+        self.downtownZone.interactiveObjects.append(self.luigisCasaDellaTires)
 
         self.downtownZone.updateObjectCount()
 
