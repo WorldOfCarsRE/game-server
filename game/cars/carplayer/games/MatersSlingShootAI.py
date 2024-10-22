@@ -2,19 +2,22 @@ from game.cars.carplayer.InteractiveObjectAI import (
     COMMAND_OFFER_PLAYER_APPROACH, InteractiveObjectAI)
 
 
-class DocsClinicAI(InteractiveObjectAI):
+class MatersSlingShootAI(InteractiveObjectAI):
     def __init__(self, air) -> None:
         # HACK: Renaming our class name here because
         # DistributedObjectAI will search dclassesByName
-        # for the non-existant DocsClinicAI dclass.
+        # for the non-existant MatersSlingShootAI dclass.
         self.__class__.__name__ = "InteractiveObjectAI"
 
         InteractiveObjectAI.__init__(self, air)
 
         self.assetId = 5000
-        self.catalogId = 61004
-        self.name = "landmark_docsclinic"
-        self.minigameId = 106
+        self.catalogId = 61005
+
+        # TODO: No landmark in XML for this minigame?
+        self.name = ""
+
+        self.minigameId = 108
 
         # NOTE: This does not work so we use the `default_npc` script.
         # self.clientScript = "scripts/interactive/minigame_entry.lua"
