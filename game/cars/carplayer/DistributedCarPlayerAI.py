@@ -1,3 +1,5 @@
+import math
+
 from typing import List
 
 from .DistributedCarAvatarAI import DistributedCarAvatarAI
@@ -80,11 +82,22 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         print(f'invokeRuleRequest - {eventId} - {rules} - {context}')
 
         if eventId in ZoneConstants.MINIGAMES:
-            # level, score = rules
+            if eventId == ZoneConstants.PAINT_BLASTER:
+                coins = 100 * len(rules)
+            elif eventId == ZoneConstants.LIGHTNING_STORM:
+                coins = sum(rules[1::2])
+            elif eventId == ZoneConstants.FILLMORES_FUEL_MIXIN_AREA_MAN:
+                coins = 10
+            elif eventId == ZoneConstants.DOCS_CLINIC:
+                coins = math.ceil(rules[1] / 20)
+            elif eventId == ZoneConstants.LUIGIS_CASA_DELLA_TIRES:
+                coins = math.ceil(rules[1] / 2)
+            elif eventId == ZoneConstants.MATERS_SLING_SHOOT:
+                coins = math.ceil(rules[1] / 5)
 
-            # self.addCoins(score)
+            rules = [coins]
 
-            self.addCoins(10)
+            self.addCoins(coins)
 
         self.d_invokeRuleResponse(eventId, rules, context)
 
