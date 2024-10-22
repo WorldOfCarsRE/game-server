@@ -12,7 +12,7 @@ class LuigisCasaDellaTiresAI(InteractiveObjectAI):
         InteractiveObjectAI.__init__(self, air)
 
         self.assetId = 5000
-        self.catalogId = 108
+        self.catalogId = 61005
         self.name = "landmark_luigitoss"
         self.minigameId = 107
 
