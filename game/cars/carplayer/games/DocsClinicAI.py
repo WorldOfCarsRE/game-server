@@ -15,6 +15,7 @@ class DocsClinicAI(InteractiveObjectAI):
         self.assetId = 5000
         self.catalogId = 103
         self.name = "landmark_docsclinic"
+        self.minigameId = 106
 
         # NOTE: This does not work so we use the `default_npc` script.
         # self.clientScript = "scripts/interactive/minigame_entry.lua"
@@ -22,4 +23,4 @@ class DocsClinicAI(InteractiveObjectAI):
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
         if eventId == COMMAND_OFFER_PLAYER_APPROACH:
             av = self.air.getDo(avatarId)
-            av.d_showDialogs(106, [str(self.catalogId)])
+            av.d_showDialogs(self.minigameId, [str(self.catalogId)])
