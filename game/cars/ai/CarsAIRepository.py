@@ -16,6 +16,7 @@ from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.games.DocsClinicAI import DocsClinicAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
+from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
@@ -113,11 +114,15 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.matersSlingShoot = MatersSlingShootAI(self)
         self.matersSlingShoot.generateWithRequired(self.downtownZone.doId)
 
+        self.redhoodValleyHotspot = RedhoodValleyAI(self)
+        self.redhoodValleyHotspot.generateWithRequired(self.downtownZone.doId)
+
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.interactiveObjects.append(self.ramone)
         self.downtownZone.interactiveObjects.append(self.docsClinic)
         self.downtownZone.interactiveObjects.append(self.luigisCasaDellaTires)
         self.downtownZone.interactiveObjects.append(self.matersSlingShoot)
+        self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
 
         self.downtownZone.updateObjectCount()
 
