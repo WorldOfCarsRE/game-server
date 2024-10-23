@@ -14,7 +14,7 @@ class RedhoodValleyAI(InteractiveObjectAI):
 
         self.assetId = 5000
         self.catalogId = 102
-        self.name = 'zone_redhoodValley'
+        self.name = "zone_redhoodValley"
 
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
         if eventId == COMMAND_OFFER_QUERY_INTERACTIONS:
