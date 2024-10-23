@@ -16,6 +16,13 @@ from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.games.DocsClinicAI import DocsClinicAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
+from game.cars.carplayer.tents.ShinyWaxAI import ShinyWaxAI
+from game.cars.carplayer.tents.LeakLessAI import LeakLessAI
+from game.cars.carplayer.tents.SputterStopAI import SputterStopAI
+from game.cars.carplayer.tents.SpareMintAI import SpareMintAI
+from game.cars.carplayer.tents.TrunkFreshAI import TrunkFreshAI
+from game.cars.carplayer.tents.LilTorqueyPistonsAI import LilTorqueyPistonsAI
+from game.cars.carplayer.tents.GaskitsAI import GaskitsAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
@@ -116,6 +123,37 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.downtownZone.interactiveObjects.append(self.matersSlingShoot)
 
         self.downtownZone.updateObjectCount()
+
+        self.shinyWax = ShinyWaxAI(self)
+        self.shinyWax.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.leakLess = LeakLessAI(self)
+        self.leakLess.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.sputterStop = SputterStopAI(self)
+        self.sputterStop.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.spareMint = SpareMintAI(self)
+        self.spareMint.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.trunkFresh = TrunkFreshAI(self)
+        self.trunkFresh.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.lilTorquey = LilTorqueyPistonsAI(self)
+        self.lilTorquey.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.gaskits = GaskitsAI(self)
+        self.gaskits.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.tailgatorSpeedway.interactiveObjects.append(self.shinyWax)
+        self.tailgatorSpeedway.interactiveObjects.append(self.leakLess)
+        self.tailgatorSpeedway.interactiveObjects.append(self.sputterStop)
+        self.tailgatorSpeedway.interactiveObjects.append(self.spareMint)
+        self.tailgatorSpeedway.interactiveObjects.append(self.trunkFresh)
+        self.tailgatorSpeedway.interactiveObjects.append(self.lilTorquey)
+        self.tailgatorSpeedway.interactiveObjects.append(self.gaskits)
+
+        self.tailgatorSpeedway.updateObjectCount()
 
         # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
         # self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
