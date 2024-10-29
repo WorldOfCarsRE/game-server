@@ -18,6 +18,9 @@ from game.cars.carplayer.games.LuigisCasaDellaTiresAI import \
 from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
+from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import \
+    FillmoreFizzyFuelHutAI
+from game.cars.carplayer.shops.MackShopAI import MackShopAI
 from game.cars.carplayer.tents.GaskitsAI import GaskitsAI
 from game.cars.carplayer.tents.LeakLessAI import LeakLessAI
 from game.cars.carplayer.tents.LilTorqueyPistonsAI import LilTorqueyPistonsAI
@@ -25,6 +28,7 @@ from game.cars.carplayer.tents.ShinyWaxAI import ShinyWaxAI
 from game.cars.carplayer.tents.SpareMintAI import SpareMintAI
 from game.cars.carplayer.tents.SputterStopAI import SputterStopAI
 from game.cars.carplayer.tents.TrunkFreshAI import TrunkFreshAI
+from game.cars.carplayer.zones.ConeAI import ConeAI
 from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
@@ -119,6 +123,15 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.matersSlingShoot = MatersSlingShootAI(self)
         self.matersSlingShoot.generateWithRequired(self.downtownZone.doId)
 
+        self.redhoodValleyHotspot = RedhoodValleyAI(self)
+        self.redhoodValleyHotspot.generateWithRequired(self.downtownZone.doId)
+
+        for i in range(0, 22):
+            cone = ConeAI(self)
+            cone.name = f"cone{i}"
+            cone.generateWithRequired(self.downtownZone.doId)
+            self.downtownZone.interactiveObjects.append(cone)
+
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.interactiveObjects.append(self.ramone)
         self.downtownZone.interactiveObjects.append(self.docsClinic)
@@ -157,6 +170,17 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.tailgatorSpeedway.interactiveObjects.append(self.gaskits)
 
         self.tailgatorSpeedway.updateObjectCount()
+
+        self.fillmoreFizzyHut = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHut.generateWithRequired(self.redhoodValley.doId)
+
+        self.mackShop = MackShopAI(self)
+        self.mackShop.generateWithRequired(self.redhoodValley.doId)
+
+        self.redhoodValley.interactiveObjects.append(self.fillmoreFizzyHut)
+        self.redhoodValley.interactiveObjects.append(self.mackShop)
+
+        self.redhoodValley.updateObjectCount()
 
         # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
         # self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
