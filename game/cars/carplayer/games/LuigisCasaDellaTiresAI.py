@@ -16,8 +16,7 @@ class LuigisCasaDellaTiresAI(InteractiveObjectAI):
         self.name = "landmark_luigitoss"
         self.minigameId = 107
 
-        # NOTE: This does not work so we use the `default_npc` script.
-        # self.clientScript = "scripts/interactive/minigame_entry.lua"
+        self.clientScript = "scripts/interactive/default_npc_no_physics.lua"
 
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
         if eventId == COMMAND_OFFER_PLAYER_APPROACH:
