@@ -28,6 +28,7 @@ from game.cars.carplayer.tents.ShinyWaxAI import ShinyWaxAI
 from game.cars.carplayer.tents.SpareMintAI import SpareMintAI
 from game.cars.carplayer.tents.SputterStopAI import SputterStopAI
 from game.cars.carplayer.tents.TrunkFreshAI import TrunkFreshAI
+from game.cars.carplayer.shops.SpyShopAI import SpyShopAI
 from game.cars.carplayer.zones.ConeAI import ConeAI
 from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
@@ -126,6 +127,10 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.redhoodValleyHotspot = RedhoodValleyAI(self)
         self.redhoodValleyHotspot.generateWithRequired(self.downtownZone.doId)
 
+        self.spyShopRS = SpyShopAI(self)
+        self.spyShopRS.name = "isostore_SpyStoreRS"
+        self.spyShopRS.generateWithRequired(self.downtownZone.doId)
+
         for i in range(0, 22):
             cone = ConeAI(self)
             cone.name = f"cone{i}"
@@ -173,12 +178,31 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.fillmoreFizzyHut = FillmoreFizzyFuelHutAI(self)
         self.fillmoreFizzyHut.generateWithRequired(self.redhoodValley.doId)
+        self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
+        self.downtownZone.interactiveObjects.append(self.spyShopRS)
+
+        self.downtownZone.updateObjectCount()
+
+        self.fillmoreFizzyHutFF = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHutFF.name = "isostore_FillmoreFizzyHutFF"
+        self.fillmoreFizzyHutFF.generateWithRequired(self.fillmoresFields.doId)
+
+        self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
+
+        self.fillmoresFields.updateObjectCount()
+
+        self.fillmoreFizzyHutRV = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHutRV.generateWithRequired(self.redhoodValley.doId)
 
         self.mackShop = MackShopAI(self)
         self.mackShop.generateWithRequired(self.redhoodValley.doId)
 
-        self.redhoodValley.interactiveObjects.append(self.fillmoreFizzyHut)
+        self.spyShopRV = SpyShopAI(self)
+        self.spyShopRV.generateWithRequired(self.redhoodValley.doId)
+
+        self.redhoodValley.interactiveObjects.append(self.fillmoreFizzyHutRV)
         self.redhoodValley.interactiveObjects.append(self.mackShop)
+        self.redhoodValley.interactiveObjects.append(self.spyShopRV)
 
         self.redhoodValley.updateObjectCount()
 
