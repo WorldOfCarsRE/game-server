@@ -139,8 +139,16 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.downtownZone.updateObjectCount()
 
-        self.fillmoreFizzyHut = FillmoreFizzyFuelHutAI(self)
-        self.fillmoreFizzyHut.generateWithRequired(self.redhoodValley.doId)
+        self.fillmoreFizzyHutFF = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHutFF.name = "isostore_FillmoreFizzyHutFF"
+        self.fillmoreFizzyHutFF.generateWithRequired(self.fillmoresFields.doId)
+
+        self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
+
+        self.fillmoresFields.updateObjectCount()
+
+        self.fillmoreFizzyHutRV = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHutRV.generateWithRequired(self.redhoodValley.doId)
 
         self.mackShop = MackShopAI(self)
         self.mackShop.generateWithRequired(self.redhoodValley.doId)
@@ -148,7 +156,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.spyShopRV = SpyShopAI(self)
         self.spyShopRV.generateWithRequired(self.redhoodValley.doId)
 
-        self.redhoodValley.interactiveObjects.append(self.fillmoreFizzyHut)
+        self.redhoodValley.interactiveObjects.append(self.fillmoreFizzyHutRV)
         self.redhoodValley.interactiveObjects.append(self.mackShop)
         self.redhoodValley.interactiveObjects.append(self.spyShopRV)
 
