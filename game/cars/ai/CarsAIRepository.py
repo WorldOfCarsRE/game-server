@@ -18,6 +18,7 @@ from game.cars.carplayer.games.LuigisCasaDellaTiresAI import \
 from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
+from game.cars.carplayer.shops.MackShopAI import MackShopAI
 from game.cars.carplayer.zones.ConeAI import ConeAI
 from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
@@ -131,6 +132,13 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
 
         self.downtownZone.updateObjectCount()
+
+        self.mackShop = MackShopAI(self)
+        self.mackShop.generateWithRequired(self.redhoodValley.doId)
+
+        self.redhoodValley.interactiveObjects.append(self.mackShop)
+
+        self.redhoodValley.updateObjectCount()
 
         # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
         # self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
