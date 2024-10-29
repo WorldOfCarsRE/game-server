@@ -18,6 +18,7 @@ from game.cars.carplayer.games.LuigisCasaDellaTiresAI import \
 from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
+from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import FillmoreFizzyFuelHutAI
 from game.cars.carplayer.shops.MackShopAI import MackShopAI
 from game.cars.carplayer.zones.ConeAI import ConeAI
 from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
@@ -133,9 +134,13 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.downtownZone.updateObjectCount()
 
+        self.fillmoreFizzyHut = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHut.generateWithRequired(self.redhoodValley.doId)
+
         self.mackShop = MackShopAI(self)
         self.mackShop.generateWithRequired(self.redhoodValley.doId)
 
+        self.redhoodValley.interactiveObjects.append(self.fillmoreFizzyHut)
         self.redhoodValley.interactiveObjects.append(self.mackShop)
 
         self.redhoodValley.updateObjectCount()
