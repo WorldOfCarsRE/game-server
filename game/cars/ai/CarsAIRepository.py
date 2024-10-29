@@ -123,7 +123,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
             cone.name = f"cone{i}"
             cone.generateWithRequired(self.downtownZone.doId)
             self.downtownZone.interactiveObjects.append(cone)
-            self.downtownZone.updateObjectCount()
 
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.interactiveObjects.append(self.ramone)
