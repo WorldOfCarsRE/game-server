@@ -67,7 +67,7 @@ end
 local http = require("http")
 
 if PRODUCTION_ENABLED then
-    API_BASE = "https://dxd.sunrise.games/carsds/api/internal/"
+    API_BASE = "https://woc.sunrise.games/carsds/api/internal/"
 else
     API_BASE = "http://localhost/carsds/api/internal/"
 end
