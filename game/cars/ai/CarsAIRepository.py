@@ -28,6 +28,10 @@ from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import \
     DistributedSinglePlayerRacingLobbyAI
+from game.cars.racing.DistributedFriendsLobbyAI import \
+    DistributedFriendsLobbyAI
+from game.cars.racing.DistributedCrossShardLobbyAI import \
+    DistributedCrossShardLobbyAI
 from game.cars.zone import ZoneConstants
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
 from game.otp.ai.AIDistrict import AIDistrict
@@ -167,6 +171,12 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.spRHRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml") # dungeonItemId is from constants.js
         self.spRHRaceLobby.generateWithRequired(self.redhoodValley.doId)
+
+        self.mpRHRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml")
+        self.mpRHRaceFriendsLobby.generateWithRequired(self.redhoodValley.doId)
+
+        self.mpRHRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml")
+        self.mpRHRaceCrossShardLobby.generateWithRequired(self.redhoodValley.doId)
 
         self.spWBRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_wb", 42005, "car_w_trk_wil_WillysButte_SS_phys.xml") # dungeonItemId is from constants.js
         self.spWBRaceLobby.generateWithRequired(self.willysButte.doId)

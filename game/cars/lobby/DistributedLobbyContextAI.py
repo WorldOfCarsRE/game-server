@@ -7,7 +7,7 @@ class DistributedLobbyContextAI(DistributedObjectAI):
 
         self.playersInDungeon: List[int] = []
         self.playersInContext: List[int] = []
-        self.owningAv: int = 0
+        self.owningLobby: int = 0
 
         self.destinationShard: int = 0
         self.destinationZone: int = 0
@@ -15,11 +15,29 @@ class DistributedLobbyContextAI(DistributedObjectAI):
     def getPlayersInDungeon(self):
         return self.playersInDungeon
 
+    def setPlayersInContext(self, players: List[int]):
+        self.playersInContext = players
+
+    def d_setPlayersInContext(self, players: List[int]):
+        self.sendUpdate("setPlayersInContext", (players,))
+
+    def b_setPlayersInContext(self, players: List[int]):
+        self.setPlayersInContext(players)
+        self.d_setPlayersInContext(players)
+
+    def addPlayerInContext(self, avId):
+        if avId in self.playersInContext:
+            return
+        self.playersInContext.append(avId)
+        if self.doId:
+            self.d_setPlayersInContext(self.playersInContext)
+            self.sendUpdate("setPlayerJoin", (avId,))
+
     def getPlayersInContext(self):
         return self.playersInContext
 
     def getOwner(self):
-        return self.owningAv
+        return self.owningLobby
 
     def b_setGotoDungeon(self, destinationShard: int, destinationZone: int):
         self.destinationShard = destinationShard
