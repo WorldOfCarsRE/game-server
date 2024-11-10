@@ -1,3 +1,5 @@
+from game.cars.racing.DistributedLobbyAI import DistributedLobbyAI
+
 from direct.distributed.DistributedObjectAI import DistributedObjectAI
 from typing import List
 
@@ -7,7 +9,7 @@ class DistributedLobbyContextAI(DistributedObjectAI):
 
         self.playersInDungeon: List[int] = []
         self.playersInContext: List[int] = []
-        self.owningLobby: int = 0
+        self.lobby: DistributedLobbyAI = None
 
         self.destinationShard: int = 0
         self.destinationZone: int = 0
@@ -25,6 +27,12 @@ class DistributedLobbyContextAI(DistributedObjectAI):
         self.setPlayersInContext(players)
         self.d_setPlayersInContext(players)
 
+    def isAcceptingNewPlayers(self) -> bool:
+        if self.playersInDungeon or len(self.playersInContext) >= 4:
+            return False
+
+        return True
+
     def addPlayerInContext(self, avId):
         if avId in self.playersInContext:
             return
@@ -37,7 +45,7 @@ class DistributedLobbyContextAI(DistributedObjectAI):
         return self.playersInContext
 
     def getOwner(self):
-        return self.owningLobby
+        return self.lobby.doId
 
     def b_setGotoDungeon(self, destinationShard: int, destinationZone: int):
         self.destinationShard = destinationShard

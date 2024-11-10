@@ -22,13 +22,13 @@ class DistributedCrossShardLobbyAI(DistributedLobbyAI):
         # TODO: Check with other shards, might require a UD and use NetMessenger.
 
         if self.activeContext:
-            if len(self.activeContext.playersInContext) < 4:
+            if self.activeContext.isAcceptingNewPlayers():
                 self.activeContext.addPlayerInContext(avatarId)
         else:
             # Maybe host it's own context zone allocation?
             contextZoneId = self.air.allocateZone()
             self.activeContext = DistributedCrossShardLobbyContextAI(self.air)
-            self.activeContext.owningLobby = self.doId
+            self.activeContext.lobby = self
             self.activeContext.playersInContext.append(avatarId)
             self.activeContext.generateOtpObject(self.doId, contextZoneId)
             self.contexts.append(self.activeContext)

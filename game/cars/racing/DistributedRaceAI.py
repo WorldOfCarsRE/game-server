@@ -115,13 +115,13 @@ class DistributedRaceAI(DistributedDungeonAI):
 
         if len(playerLapsAndSegmentsIds) == 0:
             # All players have finished/left. Just send the update now.
-            self.sendUpdate('setPlaces', [self.places])
+            self.sendUpdate('setPlaces', [list(i for i in self.places if i != 0)])
             return
 
         playersOnFurthestLap: List[int] = []
         playersInFurthestSegment: List[int] = []
 
-        for placeIndex in range(firstPlaceIndexToDetermine, (4 - numPlayersDidntFinish)):
+        for placeIndex in range(firstPlaceIndexToDetermine, (len(self.playerIds) - numPlayersDidntFinish)):
             # If we still have players to churn through on the furthest lap, we don't need to iterate again.
             if not playersOnFurthestLap:
                 furthestLap = -1
@@ -153,18 +153,17 @@ class DistributedRaceAI(DistributedDungeonAI):
             playersOnFurthestLap.remove(playerForThisPlace)
             playersInFurthestSegment.remove(playerForThisPlace)
 
-        self.sendUpdate('setPlaces', [self.places])
+        self.sendUpdate('setPlaces', [list(i for i in self.places if i != 0)])
 
     def raceStarted(self) -> bool:
         return self.countDown == 0
 
     def isEverybodyReady(self) -> bool:
-        if len(self.playerIds) == 4 and all(self.playerIdToReady.values()):
-            return True
-        return False
+        return all(self.playerIdToReady.values())
 
     def syncReady(self):
         playerId = self.air.getAvatarIdFromSender()
+        self.notify.debug(f"Player {playerId} is ready.")
         if playerId not in self.playerIds:
             self.notify.warning(f"Player {playerId} is not on the race!")
             return
