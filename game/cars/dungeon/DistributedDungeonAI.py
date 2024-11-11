@@ -28,7 +28,7 @@ class DistributedDungeonAI(DistributedObjectAI):
         return self.contextDoId
 
     def setAiCommand(self, command, args):
-        avatarId = self.air.currentAvatarSender
+        avatarId = self.air.getAvatarIdFromSender()
         print('setAICommand', command)
         # BUG: Supposidly VIDEO_DONE_COMMAND gets sent after video is finished, but
         # all command sent are 1003?  OTP Bug?
