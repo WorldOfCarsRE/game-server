@@ -41,16 +41,16 @@ class DistributedRaceAI(DistributedDungeonAI):
             self.playerIdToSegment[player] = self.track.segmentById[self.track.startingTrackSegment]
 
             self.accept(self.staticGetZoneChangeEvent(player), Functor(self._playerChangedZone, player))
-            self.acceptOnce(self.air.getDeleteDoIdEvent(player), self._playerDeleted, extraArgs=[player])
+            self.acceptOnce(self.air.getDeleteDoIdEvent(player), self.playerDeleted, extraArgs=[player])
 
     def _playerChangedZone(self, playerId, newZoneId, oldZoneId):
         self.notify.debug(f"_playerChangedZone: {playerId} - {newZoneId} - {oldZoneId}")
         # FIXME: Client seems to set their player's zone to the quiet zone
         # for single player races, how would this work for multiplayer races?
         if playerId in self.playerIds and oldZoneId == 1:
-            self._playerDeleted(playerId)
+            self.playerDeleted(playerId)
 
-    def _playerDeleted(self, playerId):
+    def playerDeleted(self, playerId):
         self.notify.debug(f"Player {playerId} have left the race!")
         self.playerIds.remove(playerId)
         self.playerIdsThatLeft.append(playerId)

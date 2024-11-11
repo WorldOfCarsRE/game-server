@@ -449,27 +449,27 @@ dclass DistributedRace : DistributedDungeon {
 
 // struct 88
 dclass DistributedMPRace : DistributedRace {
-    dropHazard(int32, int32, uint32) clsend; // 572
-    broadcastSpeed(int32, int32) clsend;
-    setSpeeds(int32, int32, int32);
-    startPhotoFinish();
-    gotoDungeon(int32, int32);
-    setRaceSummary() clsend;
-    setAvailable() clsend;
-    setReady() clsend;
-    setGearedUp() clsend;
-    setQuit() clsend;
-    setPlayersRacing(int32[]);
-    setPlayersRaceSummary(int32[]);
-    setPlayersAvailable(int32[]);
-    setPlayersReady(int32[]);
-    setPlayerQuit(int32);
-    setPlayerRaceSummary(int32);
-    setPlayerAvailable(int32);
-    setPlayerReady(int32);
-    startGearUp();
-    setGearUpTimeLeft(int8);
-    setTimeLeft(int8);
+    dropHazard(int32 x, int32 y, uint32 itemId) clsend airecv; // 572
+    broadcastSpeed(int32 topSpeed, int32 averageSpeed) clsend airecv;
+    setSpeeds(int32 playerId, int32 topSpeed, int32 averageSpeed) broadcast;
+    startPhotoFinish() broadcast;
+    gotoDungeon(int32 destinationShard, int32 destinationZone) broadcast;
+    setRaceSummary() clsend airecv;
+    setAvailable() clsend airecv;
+    setReady() clsend airecv;
+    setGearedUp() clsend airecv;
+    setQuit() clsend airecv;
+    setPlayersRacing(int32[] playerIds) broadcast;
+    setPlayersRaceSummary(int32[] playerIds) broadcast;
+    setPlayersAvailable(int32[] playerIds) broadcast;
+    setPlayersReady(int32[] playerIds) broadcast;
+    setPlayerQuit(int32 playerId) broadcast;
+    setPlayerRaceSummary(int32 playerId) broadcast;
+    setPlayerAvailable(int32 playerId) broadcast;
+    setPlayerReady(int32 playerId) broadcast;
+    startGearUp() broadcast;
+    setGearUpTimeLeft(int8 timeLeft) broadcast;
+    setTimeLeft(int8 timeLeft) broadcast;
 };
 
 // struct 89
