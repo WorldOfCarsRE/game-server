@@ -407,7 +407,7 @@ dclass InteractiveObject : DistributedCarAvatar {
     setInteractiveCommands(uint16, Command[]);
     broadcastInteractiveCommands(uint16, Command[]);
     setChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]);
-    broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]);
+    broadcastChoreography(AnimationChoreography[], Choreography[], Choreography[], Choreography[]) broadcast;
     playAnimations(int32[]);
 };
 
