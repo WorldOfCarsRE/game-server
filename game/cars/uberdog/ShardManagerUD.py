@@ -54,10 +54,10 @@ class ShardManagerUD(DistributedObjectGlobalUD):
     def getAllShardsRequest(self, context):
         self.notify.debug(f'getAllShardsRequest: {context}')
 
-        sender = self.air.getMsgSender()
+        avatarId = self.air.getAvatarIdFromSender()
         response = []
 
         for shard in self.shardInfo.values():
             response.append([shard.shardId, shard.shardName, self.getPopulationLevel(shard.avatarCount), shard.avatarCount, shard.active])
 
-        self.sendUpdateToChannel(sender, 'getAllShardsResponse', [context, response])
+        self.sendUpdateToAvatarId(avatarId, 'getAllShardsResponse', [context, response])
