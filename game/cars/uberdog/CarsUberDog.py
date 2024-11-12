@@ -4,14 +4,13 @@ The Cars Uber Distributed Object Globals server.
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
+from game.cars.ai.CarsAIMsgTypes import (SHARDMANAGER_REGISTER_SHARD,
+                                         SHARDMANAGER_UPDATE_SHARD)
+from game.cars.distributed.CarsGlobals import *
+from game.otp.ai.AIDistrict import AIDistrict
 from game.otp.distributed.OtpDoGlobals import OTP_DO_ID_CARS_HOLIDAY_MANAGER
 from game.otp.uberdog.UberDog import UberDog
 
-from game.otp.ai.AIDistrict import AIDistrict
-
-from game.cars.distributed.CarsGlobals import *
-
-from game.cars.ai.CarsAIMsgTypes import SHARDMANAGER_REGISTER_SHARD, SHARDMANAGER_UPDATE_SHARD
 
 class CarsUberDog(UberDog):
     notify = directNotify.newCategory("UberDog")
