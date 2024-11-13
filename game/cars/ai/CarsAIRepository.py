@@ -4,7 +4,6 @@ import requests
 from direct.directnotify import DirectNotifyGlobal
 from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
-
 from game.cars.ai.CarsAIMsgTypes import *
 from game.cars.ai.DatabaseObject import DatabaseObject
 from game.cars.ai.HolidayManagerAI import HolidayManagerAI
@@ -18,9 +17,11 @@ from game.cars.carplayer.games.LuigisCasaDellaTiresAI import \
 from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
+from game.cars.carplayer.npcs.TractorAI import TractorAI
 from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import \
     FillmoreFizzyFuelHutAI
 from game.cars.carplayer.shops.MackShopAI import MackShopAI
+from game.cars.carplayer.shops.SpyShopAI import SpyShopAI
 from game.cars.carplayer.tents.GaskitsAI import GaskitsAI
 from game.cars.carplayer.tents.LeakLessAI import LeakLessAI
 from game.cars.carplayer.tents.LilTorqueyPistonsAI import LilTorqueyPistonsAI
@@ -28,7 +29,6 @@ from game.cars.carplayer.tents.ShinyWaxAI import ShinyWaxAI
 from game.cars.carplayer.tents.SpareMintAI import SpareMintAI
 from game.cars.carplayer.tents.SputterStopAI import SputterStopAI
 from game.cars.carplayer.tents.TrunkFreshAI import TrunkFreshAI
-from game.cars.carplayer.shops.SpyShopAI import SpyShopAI
 from game.cars.carplayer.zones.ConeAI import ConeAI
 from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
@@ -187,7 +187,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.fillmoreFizzyHutFF.name = "isostore_FillmoreFizzyHutFF"
         self.fillmoreFizzyHutFF.generateWithRequired(self.fillmoresFields.doId)
 
+        self.tractor = TractorAI(self)
+        self.tractor.generateWithRequired(self.fillmoresFields.doId)
+
         self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
+        self.fillmoresFields.interactiveObjects.append(self.tractor)
 
         self.fillmoresFields.updateObjectCount()
 
