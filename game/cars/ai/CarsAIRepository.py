@@ -167,6 +167,14 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.redhoodValley.updateObjectCount()
 
+        self.fillmoreFizzyHutWB = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHutWB.name = "isostore_fillmoreFizzyHutWB"
+        self.fillmoreFizzyHutWB.generateWithRequired(self.willysButte.doId)
+        
+        self.willysButte.interactiveObjects.append(self.fillmoreFizzyHutWB)
+
+        self.willysButte.updateObjectCount()
+
         # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
         # self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
 
