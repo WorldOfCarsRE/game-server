@@ -16,6 +16,8 @@ from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
 from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import \
     FillmoreFizzyFuelHutAI
+from game.cars.carplayer.npcs.TractorAI import TractorAI
+from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import FillmoreFizzyFuelHutAI
 from game.cars.carplayer.shops.MackShopAI import MackShopAI
 from game.cars.carplayer.shops.SpyShopAI import SpyShopAI
 from game.cars.carplayer.zones.ConeAI import ConeAI
@@ -144,7 +146,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.fillmoreFizzyHutFF.name = "isostore_FillmoreFizzyHutFF"
         self.fillmoreFizzyHutFF.generateWithRequired(self.fillmoresFields.doId)
 
+        self.tractor = TractorAI(self)
+        self.tractor.generateWithRequired(self.fillmoresFields.doId)
+
         self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
+        self.fillmoresFields.interactiveObjects.append(self.tractor)
 
         self.fillmoresFields.updateObjectCount()
 
