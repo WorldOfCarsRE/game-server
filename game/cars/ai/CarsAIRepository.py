@@ -4,6 +4,7 @@ import requests
 from direct.directnotify import DirectNotifyGlobal
 from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
+
 from game.cars.ai.CarsAIMsgTypes import *
 from game.cars.ai.DatabaseObject import DatabaseObject
 from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
@@ -14,10 +15,9 @@ from game.cars.carplayer.games.LuigisCasaDellaTiresAI import \
 from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
+from game.cars.carplayer.npcs.TractorAI import TractorAI
 from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import \
     FillmoreFizzyFuelHutAI
-from game.cars.carplayer.npcs.TractorAI import TractorAI
-from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import FillmoreFizzyFuelHutAI
 from game.cars.carplayer.shops.MackShopAI import MackShopAI
 from game.cars.carplayer.shops.SpyShopAI import SpyShopAI
 from game.cars.carplayer.zones.ConeAI import ConeAI
