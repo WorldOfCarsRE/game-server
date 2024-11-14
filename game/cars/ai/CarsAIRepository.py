@@ -145,6 +145,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.fillmoreFizzyHutFF.generateWithRequired(self.fillmoresFields.doId)
 
         self.tractor = TractorAI(self)
+        self.tractor.name = 'tractor1'
         self.tractor.generateWithRequired(self.fillmoresFields.doId)
 
         self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
