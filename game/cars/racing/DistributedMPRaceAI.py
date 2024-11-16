@@ -4,9 +4,11 @@ from .DistributedRaceAI import DistributedRaceAI
 
 class DistributedMPRaceAI(DistributedRaceAI):
     notify = directNotify.newCategory("DistributedMPRaceAI")
+    notify.setDebug(1)
 
     def __init__(self, air, track):
         DistributedRaceAI.__init__(self, air, track)
+        self.waitForPlayers = []
         self.playersRacing: list[int] = []
         self.playersRaceSummary: list[int] = []
         self.playersAvailable: list[int] = []
@@ -14,7 +16,7 @@ class DistributedMPRaceAI(DistributedRaceAI):
         self.playerSpeeds: dict[int, tuple[int, int]] = {}
 
     def getWaitForObjects(self):
-        return self.playerIds
+        return self.waitForPlayers
 
     def shouldStartRace(self):
         DistributedRaceAI.shouldStartRace(self)
@@ -38,6 +40,18 @@ class DistributedMPRaceAI(DistributedRaceAI):
 
     def playerDeleted(self, playerId):
         self.sendUpdate("setPlayerQuit", (playerId,))
+
+        if playerId in self.waitForPlayers:
+            self.waitForPlayers.remove(playerId)
+            self.sendUpdate("waitForObjects", (self.waitForPlayers,))
+
+        if playerId in self.playersRacing:
+            self.playersRacing.remove(playerId)
+        if playerId in self.playersRaceSummary:
+            self.playersRaceSummary.remove(playerId)
+        if playerId in self.playersReady:
+            self.playersReady.remove(playerId)
+
         DistributedRaceAI.playerDeleted(self, playerId)
 
     def broadcastSpeeds(self, topSpeed, averageSpeed):

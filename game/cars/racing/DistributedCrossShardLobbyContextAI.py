@@ -37,7 +37,8 @@ class DistributedCrossShardLobbyContextAI(DistributedLobbyContextAI):
 
             zoneId = self.air.allocateZone()
             race = DistributedMPRaceAI(self.air, self.lobby.track)
-            race.playerIds = self.playersInContext
+            race.playerIds = self.playersInContext[:]
+            race.waitForPlayers = self.playersInContext[:]
             race.lobbyDoId = self.lobby.doId
             race.contextDoId = self.doId
             race.dungeonItemId = self.lobby.dungeonItemId

@@ -51,13 +51,19 @@ class DistributedRaceAI(DistributedDungeonAI):
             self.playerDeleted(playerId)
 
     def playerDeleted(self, playerId):
+        if playerId not in self.playerIds:
+            return 
         self.notify.debug(f"Player {playerId} have left the race!")
         self.playerIds.remove(playerId)
         self.playerIdsThatLeft.append(playerId)
         self.ignore(self.staticGetZoneChangeEvent(playerId))
         self.ignore(self.air.getDeleteDoIdEvent(playerId))
 
-        taskMgr.remove(f"playerLapTime-{playerId}")
+        taskMgr.remove(self.taskName(f"playerLapTime-{playerId}"))
+
+        if playerId in self.playerIdToReady:
+            del self.playerIdToReady[playerId]
+            self.shouldStartRace()
 
         if not self.getActualPlayers():
             self.notify.debug("Everybody has left, shutting down...")
@@ -88,6 +94,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         firstPlaceIndexToDetermine = 0
         numPlayersDidntFinish = 0
 
+        self.places = [0, 0, 0, 0]
+
         # Players that have finished must retain their position and increment the first position we check for other players.
         for player in self.finishedPlayerIds:
             finishedPlaceIndex = self.finishedPlayerIds.index(player)
@@ -96,11 +104,11 @@ class DistributedRaceAI(DistributedDungeonAI):
 
         # Players that left but didn't finish will display as the lowest position based on the index (e.g. the first player that leaves would be 4th).
         for player in self.playerIdsThatLeft:
-            if player in self.finishedPlayerIds:
+            # if player in self.finishedPlayerIds:
                 continue
 
-            self.places[self.playerIdsThatLeft.index(player)] = player
-            numPlayersDidntFinish += 1
+            # self.places[self.playerIdsThatLeft.index(player)] = player
+            # numPlayersDidntFinish += 1
 
         # Now we need to store and churn through lap and segment data from players that are still in the race and haven't finished yet.
         playerLapsAndSegmentsIds: Dict[int, tuple] = {}
@@ -159,6 +167,7 @@ class DistributedRaceAI(DistributedDungeonAI):
         return self.countDown == 0
 
     def isEverybodyReady(self) -> bool:
+        self.notify.debug(f"isEverybodyReady: {self.playerIdToReady}")
         return all(self.playerIdToReady.values())
 
     def syncReady(self):
@@ -279,6 +288,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         return task.cont
 
     def __doPlayerLapTime(self, playerId: int, task: Task):
+        if playerId not in self.playerIds:
+            return task.done
         self.playerIdToCurrentLapTime[playerId] = int(task.time * 1000)
         return task.cont
 

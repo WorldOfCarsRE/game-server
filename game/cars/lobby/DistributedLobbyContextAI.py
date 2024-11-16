@@ -18,11 +18,12 @@ class DistributedLobbyContextAI(DistributedObjectAI):
         self.destinationZone: int = 0
     
     def delete(self):
-        DistributedObjectAI.delete(self)
         if self in self.lobby.contexts:
             self.lobby.contexts.remove(self)
         for avId in self.playersInContext:
-            self.ignore(self.air.getDeletedDoIdEvent(avId))
+            self.ignore(self.air.getDeleteDoIdEvent(avId))
+
+        DistributedObjectAI.delete(self)
 
     def getPlayersInDungeon(self):
         return self.playersInDungeon
