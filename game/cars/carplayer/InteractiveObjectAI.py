@@ -9,6 +9,7 @@ CMD_TYPE_NEGATIVE = 0
 CMD_TYPE_POSITIVE = 1
 
 COMMAND_OFFER_QUERY_INTERACTIONS = 1
+COMMAND_OFFER_PLAYER_HONK = 52
 COMMAND_OFFER_PLAYER_APPROACH = 54
 COMMAND_OFFER_PLAYER_RETREAT = 55
 COMMAND_OFFER_PLAYER_CLICK = 57
@@ -72,6 +73,9 @@ class InteractiveObjectAI(DistributedCarAvatarAI):
         print(f'triggerInteraction - {eventId} - {args}')
 
         self.handleInteraction(avatarId, eventId, args)
+
+    def d_broadcastChoreography(self, animation: list, sound: list, effect: list, dialogue: list):
+        self.sendUpdate('broadcastChoreography', [[animation], [sound], [effect], [dialogue]])
 
     def d_setInteractiveCommands(self, avatarId: int, eventId: int, args: list):
         self.sendUpdateToAvatarId(avatarId, 'setInteractiveCommands', [eventId, [args]])
