@@ -14,27 +14,33 @@ class DistributedCrossShardLobbyAI(DistributedLobbyAI):
         self.track.totalLaps = 3
 
         self.contexts: list[DistributedCrossShardLobbyContextAI] = []
-        self.activeContext: DistributedCrossShardLobbyContextAI = None
 
     def join(self):
         avatarId = self.air.getAvatarIdFromSender()
 
         # TODO: Check with other shards, might require a UD and use NetMessenger.
 
-        if self.activeContext:
-            if self.activeContext.isAcceptingNewPlayers():
-                self.activeContext.addPlayerInContext(avatarId)
-        else:
+        activeContext: DistributedCrossShardLobbyContextAI = None
+        for context in self.contexts:
+            if context.isAcceptingNewPlayers():
+                activeContext = context
+                context.addPlayerInContext(avatarId)
+                break
+        
+        if not activeContext:
             # Maybe host it's own context zone allocation?
             contextZoneId = self.air.allocateZone()
-            self.activeContext = DistributedCrossShardLobbyContextAI(self.air)
-            self.activeContext.lobby = self
-            self.activeContext.playersInContext.append(avatarId)
-            self.activeContext.generateOtpObject(self.doId, contextZoneId)
-            self.contexts.append(self.activeContext)
+            activeContext = DistributedCrossShardLobbyContextAI(self.air)
+            activeContext.lobby = self
+            activeContext.addPlayerInContext(avatarId)
+            activeContext.generateOtpObject(self.doId, contextZoneId)
+            self.contexts.append(activeContext)
 
-        self.sendUpdateToAvatarId(avatarId, 'gotoLobbyContext', [self.activeContext.zoneId])
+        self.sendUpdateToAvatarId(avatarId, 'gotoLobbyContext', [activeContext.zoneId])
 
     def quit(self):
         avatarId = self.air.getAvatarIdFromSender()
-        print(f"TODO: quit: {avatarId}")
+        for context in self.contexts:
+            if avatarId in context.playersInContext:
+                context.removePlayerInContext(avatarId)
+                break
