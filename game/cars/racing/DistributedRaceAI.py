@@ -45,14 +45,15 @@ class DistributedRaceAI(DistributedDungeonAI):
 
     def _playerChangedZone(self, playerId, newZoneId, oldZoneId):
         self.notify.debug(f"_playerChangedZone: {playerId} - {newZoneId} - {oldZoneId}")
-        # FIXME: Client seems to set their player's zone to the quiet zone
-        # for single player races, how would this work for multiplayer races?
+        # Client seems to set their player's zone to the quiet zone
+        # for all races, yet communicating with all of their opponents seem
+        # to magically work, even when there are multiple racing running...
         if playerId in self.playerIds and oldZoneId == 1:
             self.playerDeleted(playerId)
 
     def playerDeleted(self, playerId):
         if playerId not in self.playerIds:
-            return 
+            return
         self.notify.debug(f"Player {playerId} have left the race!")
         self.playerIds.remove(playerId)
         self.playerIdsThatLeft.append(playerId)
@@ -75,6 +76,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         taskMgr.remove(self.taskName("totalRaceTime"))
         taskMgr.remove(self.taskName("placeUpdate"))
         for playerId in self.playerIds:
+            self.ignore(self.staticGetZoneChangeEvent(playerId))
+            self.ignore(self.air.getDeleteDoIdEvent(playerId))
             taskMgr.remove(self.taskName(f"playerLapTime-{playerId}"))
 
         # Delete the lobby context if it still exists.
