@@ -149,6 +149,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.fillmoreFizzyHutFF.generateWithRequired(self.fillmoresFields.doId)
 
         self.tractor = TractorAI(self)
+        self.tractor.name = 'tractor1'
         self.tractor.generateWithRequired(self.fillmoresFields.doId)
 
         self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
@@ -170,6 +171,14 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.redhoodValley.interactiveObjects.append(self.spyShopRV)
 
         self.redhoodValley.updateObjectCount()
+
+        self.fillmoreFizzyHutWB = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHutWB.name = "isostore_fillmoreFizzyHutWB"
+        self.fillmoreFizzyHutWB.generateWithRequired(self.willysButte.doId)
+        
+        self.willysButte.interactiveObjects.append(self.fillmoreFizzyHutWB)
+
+        self.willysButte.updateObjectCount()
 
         # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
         # self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
