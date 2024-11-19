@@ -80,6 +80,32 @@ class DistributedMPRaceAI(DistributedRaceAI):
         if len(self.getRemainingPlayers()) > 1:
             self.shouldStartGearUp()
 
+    def handleSegmentEnter(self, playerId, segment, fromSegment, forward):
+        DistributedRaceAI.handleSegmentEnter(self, playerId, segment, fromSegment, forward)
+
+        if playerId in self.finishedPlayerIds:
+            return
+
+        currentSegment = self.playerIdToSegment.get(playerId)
+        if not currentSegment:
+            return
+
+        if self.playerIdToLap.get(playerId) != self.track.totalLaps:
+            return
+
+        if self.track.startingTrackSegment in currentSegment.childrenById:
+            # This player is about to finish, check for other players for
+            # photo finish.
+            for otherPlayerId in self.playerIds:
+                if otherPlayerId == playerId:
+                    continue
+                if self.playerIdToSegment.get(otherPlayerId) is currentSegment and \
+                    self.playerIdToLap.get(otherPlayerId) == self.track.totalLaps:
+                    if self.playerEnterPhotoFinish(playerId):
+                        self.sendUpdateToAvatarId(playerId, "startPhotoFinish", ())
+                    if self.playerEnterPhotoFinish(otherPlayerId):
+                        self.sendUpdateToAvatarId(otherPlayerId, "startPhotoFinish", ())
+
     def broadcastSpeeds(self, topSpeed, averageSpeed):
         playerId = self.air.getAvatarIdFromSender()
         self.notify.debug(f"broadcastSpeeds: {playerId}, {topSpeed}, {averageSpeed}")

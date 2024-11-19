@@ -30,6 +30,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         self.playerIdToCurrentLapTime: Dict[int, int] = {}
         self.playerIdToMaxLap: Dict[int, int] = {}
 
+        self.playerIdInPhotoFinish: List[int] = []
+
         self.places: List[int] = [0, 0, 0, 0]
 
     def announceGenerate(self):
@@ -244,6 +246,13 @@ class DistributedRaceAI(DistributedDungeonAI):
         if self.playerIdToLap[playerId] > self.track.totalLaps:
             self.playerFinishedRace(playerId)
 
+    def playerEnterPhotoFinish(self, playerId) -> bool:
+        if playerId in self.playerIdInPhotoFinish:
+            return False
+
+        self.playerIdInPhotoFinish.append(playerId)
+        return True
+
     def playerFinishedRace(self, playerId):
         if playerId in self.finishedPlayerIds:
             return
@@ -253,8 +262,7 @@ class DistributedRaceAI(DistributedDungeonAI):
 
         place = self.finishedPlayerIds.index(playerId) + 1
 
-        # TODO: Photo finish?
-        self.sendUpdate('setRacerResult', (playerId, place, self.playerIdToBestLapTime[playerId], self.totalRaceTime, 0, 0))
+        self.sendUpdate('setRacerResult', (playerId, place, self.playerIdToBestLapTime[playerId], self.totalRaceTime, playerId in self.playerIdInPhotoFinish, 0))
 
         if self.isNPC(playerId):
             # We don't give out rewards to NPCs.
