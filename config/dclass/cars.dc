@@ -307,9 +307,9 @@ struct Dialog {
 // struct 77
 dclass CarPlayerStatus {
     // field 477 (ok)
-    setLocationType(int16 = 0) required ownrequired db ownrecv ownsend;
+    setLocationType(int16 = 0) required broadcast ownrequired db ownrecv ownsend;
     // !! uint8/int8 type clash
-    setPrivacySettings(uint8 = 0) required ownrequired db ownrecv ownsend;
+    setPrivacySettings(uint8 = 0) required broadcast ownrequired db ownrecv ownsend;
     hi();
 };
 
