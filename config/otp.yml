@@ -60,6 +60,11 @@ roles:
           - class: CentralLogger
             id: 4688
 
+          # Client send interets requests there to get
+          # CarPlayerStatus objects for their friends.
+          - class: DistributedDirectory
+            id: 4683
+
     # The OTP database has been replaced in favor
     # of the one hosting in the API server.
     # GET_STORED_VALUES and SET_STORED_VALUES OTP messages

@@ -1,6 +1,11 @@
+from direct.task.Task import Task
+
 from game.cars.carplayer.InteractiveObjectAI import (
     COMMAND_OFFER_PLAYER_HONK,
     TYPE_NPC, InteractiveObjectAI)
+
+STATE_NORMAL = 1
+STATE_TIPPED = 2
 
 class TractorAI(InteractiveObjectAI):
     def __init__(self, air) -> None:
@@ -22,7 +27,13 @@ class TractorAI(InteractiveObjectAI):
 
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
         if eventId == COMMAND_OFFER_PLAYER_HONK:
-            # TODO: Fix smoke effect loop
-            self.d_broadcastChoreography([33269, 1], [54010, 1], [32010, 0], [0, 0])
-            self.d_broadcastChoreography([33271, 5], [54010, 1], [0, 0], [0, 0])
-            self.d_broadcastChoreography([33272, 1], [54010, 1], [0, 0], [0, 0])
+            if self.getState() != STATE_TIPPED:
+                self.setState(STATE_TIPPED)
+                self.d_broadcastChoreography([[33269, 1], [33271, 5], [33272, 1]], [[54010, 1], [54011, 1]], [[32010, 1]], [[0, 0]])
+
+                taskMgr.doMethodLater(12, self._returnToNormalState, self.taskName(f"returnToNormalState-{self.getName()}"))
+
+    def _returnToNormalState(self, task: Task):
+        self.setState(STATE_NORMAL)
+
+        return task.done

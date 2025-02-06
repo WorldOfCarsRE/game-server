@@ -51,6 +51,7 @@ DATABASE_OBJECT_TYPE_CAR_STATUS = 4
 -- Internal message types
 STATESERVER_OBJECT_UPDATE_FIELD = 2004
 STATESERVER_OBJECT_DELETE_RAM = 2007
+STATESERVER_OBJECT_SET_ZONE = 2008
 
 CLIENTAGENT_EJECT = 3004
 
@@ -501,6 +502,12 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
 
     client:sendActivateObject(statusId, "CarPlayerStatus", {})
     client:objectSetOwner(statusId, true)
+    -- Set the location for the status object so that our friends can find it
+    local dg = datagram:new()
+    client:addServerHeader(dg, statusId, STATESERVER_OBJECT_SET_ZONE)
+    dg:addUint32(4683)
+    dg:addUint32(accountId)
+    client:routeDatagram(dg)
 
     avatarSpeedChatPlusStates[avatarId] = userTable.speedChatPlus
 end

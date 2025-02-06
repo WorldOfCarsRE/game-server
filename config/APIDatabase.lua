@@ -228,7 +228,7 @@ function handleGetStoredValues(participant, dgi)
                 data.tire,
                 data.detailingId,
                 data.profileBackgroundId,
-                data.stretches[1],
+                data.stretches,
                 data.decalSlots,
                 data.addonItemList,
                 data.costumeId

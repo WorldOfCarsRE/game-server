@@ -23,7 +23,7 @@ class DistributedSinglePlayerRacingLobbyAI(DistributedLobbyAI):
         zoneId = self.air.allocateZone()
 
         lobbyContext = DistributedSinglePlayerRacingLobbyContextAI(self.air)
-        lobbyContext.owningAv = avatarId
+        lobbyContext.lobby = self
         lobbyContext.playersInContext.append(avatarId)
         lobbyContext.generateOtpObject(self.doId, contextZoneId)
 

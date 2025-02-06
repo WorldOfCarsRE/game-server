@@ -6,6 +6,8 @@ class DistributedLobbyAI(DistributedObjectAI):
         self.dungeonItemId: int = 0
         self.hotSpotName: str = ''
 
+        self.contexts = []
+
     def getDungeonItemId(self):
         return self.dungeonItemId
 
