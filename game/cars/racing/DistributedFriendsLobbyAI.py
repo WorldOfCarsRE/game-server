@@ -1,4 +1,4 @@
-from game.cars.racing.DistributedLobbyAI import DistributedLobbyAI
+from game.cars.lobby.DistributedLobbyAI import DistributedLobbyAI
 
 from .Track import Track
 

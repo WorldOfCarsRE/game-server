@@ -1,4 +1,4 @@
-from game.cars.racing.DistributedLobbyAI import DistributedLobbyAI
+from game.cars.lobby.DistributedLobbyAI import DistributedLobbyAI
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectAI import DistributedObjectAI
@@ -16,7 +16,7 @@ class DistributedLobbyContextAI(DistributedObjectAI):
 
         self.destinationShard: int = 0
         self.destinationZone: int = 0
-    
+
     def delete(self):
         if self in self.lobby.contexts:
             self.lobby.contexts.remove(self)
@@ -53,7 +53,7 @@ class DistributedLobbyContextAI(DistributedObjectAI):
         if self.isGenerated():
             self.d_setPlayersInContext(self.playersInContext)
             self.sendUpdate("setPlayerJoin", (avId,))
-    
+
     def removePlayerInContext(self, avId):
         if avId not in self.playersInContext:
             return
@@ -63,7 +63,7 @@ class DistributedLobbyContextAI(DistributedObjectAI):
         if self.isGenerated():
             self.d_setPlayersInContext(self.playersInContext)
             self.sendUpdate("setPlayerQuit", (avId,))
-        
+
             if not self.playersInContext:
                 self.notify.debug("Everybody left, deleting.")
                 if self in self.lobby.contexts:

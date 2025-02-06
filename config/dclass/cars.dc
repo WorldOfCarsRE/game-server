@@ -15,7 +15,6 @@ from game.cars.racing import DistributedFriendsLobby/AI
 from game.cars.racing import DistributedCrossShardLobby/AI
 from game.cars.racing import DistributedCrossShardLobbyContext/AI
 from game.cars.racing import DistributedMPRace/AI
-from game.cars.ai import HolidayManager/AI
 
 // cars start at struct 45 and field 331
 

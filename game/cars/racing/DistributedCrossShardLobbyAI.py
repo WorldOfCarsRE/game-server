@@ -1,4 +1,4 @@
-from game.cars.racing.DistributedLobbyAI import DistributedLobbyAI
+from game.cars.lobby.DistributedLobbyAI import DistributedLobbyAI
 from game.cars.racing.DistributedCrossShardLobbyContextAI import DistributedCrossShardLobbyContextAI
 
 from .Track import Track
@@ -26,7 +26,7 @@ class DistributedCrossShardLobbyAI(DistributedLobbyAI):
                 activeContext = context
                 context.addPlayerInContext(avatarId)
                 break
-        
+
         if not activeContext:
             # Maybe host it's own context zone allocation?
             contextZoneId = self.air.allocateZone()
