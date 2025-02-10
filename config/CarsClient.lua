@@ -458,7 +458,6 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     client:setChannel(accountId, avatarId)
     client:subscribePuppetChannel(avatarId, 1)
 
-    -- TODO: Re-enable membership after we implement sponsors
     local setAccess = 1
     if userTable.isPaid then
         setAccess = 2
