@@ -36,6 +36,10 @@ from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import \
     DistributedSinglePlayerRacingLobbyAI
+from game.cars.racing.DistributedFriendsLobbyAI import \
+    DistributedFriendsLobbyAI
+from game.cars.racing.DistributedCrossShardLobbyAI import \
+    DistributedCrossShardLobbyAI
 from game.cars.zone import ZoneConstants
 from game.cars.zone.DistributedZoneAI import DistributedZoneAI
 from game.otp.ai.AIDistrict import AIDistrict
@@ -188,6 +192,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.fillmoreFizzyHutFF.generateWithRequired(self.fillmoresFields.doId)
 
         self.tractor = TractorAI(self)
+        self.tractor.name = 'tractor1'
         self.tractor.generateWithRequired(self.fillmoresFields.doId)
 
         self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
@@ -210,17 +215,49 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.redhoodValley.updateObjectCount()
 
+        self.fillmoreFizzyHutWB = FillmoreFizzyFuelHutAI(self)
+        self.fillmoreFizzyHutWB.name = "isostore_fillmoreFizzyHutWB"
+        self.fillmoreFizzyHutWB.generateWithRequired(self.willysButte.doId)
+        
+        self.willysButte.interactiveObjects.append(self.fillmoreFizzyHutWB)
+
+        self.willysButte.updateObjectCount()
+
         # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
         # self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
+
+        # self.mpCCSRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml")
+        # self.mpCCSRaceFriendsLobby.generateWithRequired(self.downtownZone.doId)
+
+        # self.mpCCSRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml")
+        # self.mpCCSRaceCrossShardLobby.generateWithRequired(self.downtownZone.doId)
 
         self.spRHRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml") # dungeonItemId is from constants.js
         self.spRHRaceLobby.generateWithRequired(self.redhoodValley.doId)
 
+        self.mpRHRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml")
+        self.mpRHRaceFriendsLobby.generateWithRequired(self.redhoodValley.doId)
+
+        self.mpRHRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml")
+        self.mpRHRaceCrossShardLobby.generateWithRequired(self.redhoodValley.doId)
+
         self.spWBRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_wb", 42005, "car_w_trk_wil_WillysButte_SS_phys.xml") # dungeonItemId is from constants.js
         self.spWBRaceLobby.generateWithRequired(self.willysButte.doId)
 
+        self.mpWBRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_wb", 42005, "car_w_trk_wil_WillysButte_SS_phys.xml")
+        self.mpWBRaceFriendsLobby.generateWithRequired(self.willysButte.doId)
+
+        self.mpWBRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_wb", 42005, "car_w_trk_wil_WillysButte_SS_phys.xml")
+        self.mpWBRaceCrossShardLobby.generateWithRequired(self.willysButte.doId)
+
         self.spFFRRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml") # dungeonItemId is from constants.js
         self.spFFRRaceLobby.generateWithRequired(self.fillmoresFields.doId)
+
+        self.mpFFRRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml")
+        self.mpFFRRaceFriendsLobby.generateWithRequired(self.fillmoresFields.doId)
+
+        self.mpFFRRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml")
+        self.mpFFRRaceCrossShardLobby.generateWithRequired(self.fillmoresFields.doId)
 
         self.holidayManager = HolidayManagerAI(self)
         # self.holidayManager.generateWithRequired(DUNGEON_INTEREST_HANDLE)

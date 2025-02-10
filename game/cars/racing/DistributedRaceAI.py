@@ -30,6 +30,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         self.playerIdToCurrentLapTime: Dict[int, int] = {}
         self.playerIdToMaxLap: Dict[int, int] = {}
 
+        self.playerIdInPhotoFinish: List[int] = []
+
         self.places: List[int] = [0, 0, 0, 0]
 
     def announceGenerate(self):
@@ -41,23 +43,30 @@ class DistributedRaceAI(DistributedDungeonAI):
             self.playerIdToSegment[player] = self.track.segmentById[self.track.startingTrackSegment]
 
             self.accept(self.staticGetZoneChangeEvent(player), Functor(self._playerChangedZone, player))
-            self.acceptOnce(self.air.getDeleteDoIdEvent(player), self._playerDeleted, extraArgs=[player])
+            self.acceptOnce(self.air.getDeleteDoIdEvent(player), self.playerDeleted, extraArgs=[player])
 
     def _playerChangedZone(self, playerId, newZoneId, oldZoneId):
         self.notify.debug(f"_playerChangedZone: {playerId} - {newZoneId} - {oldZoneId}")
-        # FIXME: Client seems to set their player's zone to the quiet zone
-        # for single player races, how would this work for multiplayer races?
+        # Client seems to set their player's zone to the quiet zone
+        # for all races, yet communicating with all of their opponents seem
+        # to magically work, even when there are multiple racing running...
         if playerId in self.playerIds and oldZoneId == 1:
-            self._playerDeleted(playerId)
+            self.playerDeleted(playerId)
 
-    def _playerDeleted(self, playerId):
+    def playerDeleted(self, playerId):
+        if playerId not in self.playerIds:
+            return
         self.notify.debug(f"Player {playerId} have left the race!")
         self.playerIds.remove(playerId)
         self.playerIdsThatLeft.append(playerId)
         self.ignore(self.staticGetZoneChangeEvent(playerId))
         self.ignore(self.air.getDeleteDoIdEvent(playerId))
 
-        taskMgr.remove(f"playerLapTime-{playerId}")
+        taskMgr.remove(self.taskName(f"playerLapTime-{playerId}"))
+
+        if playerId in self.playerIdToReady:
+            del self.playerIdToReady[playerId]
+            self.shouldStartRace()
 
         if not self.getActualPlayers():
             self.notify.debug("Everybody has left, shutting down...")
@@ -69,6 +78,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         taskMgr.remove(self.taskName("totalRaceTime"))
         taskMgr.remove(self.taskName("placeUpdate"))
         for playerId in self.playerIds:
+            self.ignore(self.staticGetZoneChangeEvent(playerId))
+            self.ignore(self.air.getDeleteDoIdEvent(playerId))
             taskMgr.remove(self.taskName(f"playerLapTime-{playerId}"))
 
         # Delete the lobby context if it still exists.
@@ -88,6 +99,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         firstPlaceIndexToDetermine = 0
         numPlayersDidntFinish = 0
 
+        self.places = [0, 0, 0, 0]
+
         # Players that have finished must retain their position and increment the first position we check for other players.
         for player in self.finishedPlayerIds:
             finishedPlaceIndex = self.finishedPlayerIds.index(player)
@@ -96,11 +109,11 @@ class DistributedRaceAI(DistributedDungeonAI):
 
         # Players that left but didn't finish will display as the lowest position based on the index (e.g. the first player that leaves would be 4th).
         for player in self.playerIdsThatLeft:
-            if player in self.finishedPlayerIds:
+            # if player in self.finishedPlayerIds:
                 continue
 
-            self.places[self.playerIdsThatLeft.index(player)] = player
-            numPlayersDidntFinish += 1
+            # self.places[self.playerIdsThatLeft.index(player)] = player
+            # numPlayersDidntFinish += 1
 
         # Now we need to store and churn through lap and segment data from players that are still in the race and haven't finished yet.
         playerLapsAndSegmentsIds: Dict[int, tuple] = {}
@@ -115,13 +128,13 @@ class DistributedRaceAI(DistributedDungeonAI):
 
         if len(playerLapsAndSegmentsIds) == 0:
             # All players have finished/left. Just send the update now.
-            self.sendUpdate('setPlaces', [self.places])
+            self.sendUpdate('setPlaces', [list(i for i in self.places if i != 0)])
             return
 
         playersOnFurthestLap: List[int] = []
         playersInFurthestSegment: List[int] = []
 
-        for placeIndex in range(firstPlaceIndexToDetermine, (4 - numPlayersDidntFinish)):
+        for placeIndex in range(firstPlaceIndexToDetermine, (len(self.playerIds) - numPlayersDidntFinish)):
             # If we still have players to churn through on the furthest lap, we don't need to iterate again.
             if not playersOnFurthestLap:
                 furthestLap = -1
@@ -153,18 +166,18 @@ class DistributedRaceAI(DistributedDungeonAI):
             playersOnFurthestLap.remove(playerForThisPlace)
             playersInFurthestSegment.remove(playerForThisPlace)
 
-        self.sendUpdate('setPlaces', [self.places])
+        self.sendUpdate('setPlaces', [list(i for i in self.places if i != 0)])
 
     def raceStarted(self) -> bool:
         return self.countDown == 0
 
     def isEverybodyReady(self) -> bool:
-        if len(self.playerIds) == 4 and all(self.playerIdToReady.values()):
-            return True
-        return False
+        self.notify.debug(f"isEverybodyReady: {self.playerIdToReady}")
+        return all(self.playerIdToReady.values())
 
     def syncReady(self):
         playerId = self.air.getAvatarIdFromSender()
+        self.notify.debug(f"Player {playerId} is ready.")
         if playerId not in self.playerIds:
             self.notify.warning(f"Player {playerId} is not on the race!")
             return
@@ -233,6 +246,13 @@ class DistributedRaceAI(DistributedDungeonAI):
         if self.playerIdToLap[playerId] > self.track.totalLaps:
             self.playerFinishedRace(playerId)
 
+    def playerEnterPhotoFinish(self, playerId) -> bool:
+        if playerId in self.playerIdInPhotoFinish:
+            return False
+
+        self.playerIdInPhotoFinish.append(playerId)
+        return True
+
     def playerFinishedRace(self, playerId):
         if playerId in self.finishedPlayerIds:
             return
@@ -242,8 +262,7 @@ class DistributedRaceAI(DistributedDungeonAI):
 
         place = self.finishedPlayerIds.index(playerId) + 1
 
-        # TODO: Photo finish?
-        self.sendUpdate('setRacerResult', (playerId, place, self.playerIdToBestLapTime[playerId], self.totalRaceTime, 0, 0))
+        self.sendUpdate('setRacerResult', (playerId, place, self.playerIdToBestLapTime[playerId], self.totalRaceTime, playerId in self.playerIdInPhotoFinish, 0))
 
         if self.isNPC(playerId):
             # We don't give out rewards to NPCs.
@@ -280,6 +299,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         return task.cont
 
     def __doPlayerLapTime(self, playerId: int, task: Task):
+        if playerId not in self.playerIds:
+            return task.done
         self.playerIdToCurrentLapTime[playerId] = int(task.time * 1000)
         return task.cont
 

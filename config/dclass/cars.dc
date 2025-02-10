@@ -8,6 +8,10 @@ from game.cars.carplayer import InteractiveObject/AI
 from game.cars.racing import DistributedSinglePlayerRacingLobby/AI
 from game.cars.racing import DistributedSinglePlayerRacingLobbyContext/AI
 from game.cars.racing import DistributedSPRace/AI
+from game.cars.racing import DistributedFriendsLobby/AI
+from game.cars.racing import DistributedCrossShardLobby/AI
+from game.cars.racing import DistributedCrossShardLobbyContext/AI
+from game.cars.racing import DistributedMPRace/AI
 from game.cars.ai import HolidayManager/AI
 
 // cars start at struct 45 and field 331
@@ -89,9 +93,9 @@ dclass DistributedCrossShardLobby : DistributedLobby {
 
 // struct 53
 dclass DistributedFriendsLobby : DistributedLobby {
-    inviteFriendRequest(int32) clsend clrecv; // 368
-    friendResponse(int32, int8);
-    inviteResponse(int8) clsend clrecv;
+    inviteFriendRequest(int32 friendId) clsend airecv; // 368
+    friendResponse(int32 friendId, int8 response);
+    inviteResponse(int8 response) clsend airecv;
 };
 
 // struct 54
@@ -104,12 +108,12 @@ dclass DistributedTutorialLobby : DistributedLobby {
 
 // struct 56
 dclass DistributedLobbyContext {
-    setPlayersInDungeon(int32[]) required broadcast; // 371
-    setPlayersInContext(int32[]) required broadcast;
-    setOwner(int32) required broadcast;
-    gotoDungeon(int32, int32) required broadcast;
-    setPlayerJoin(int32);
-    setPlayerQuit(int32); // 376
+    setPlayersInDungeon(int32[] players) required broadcast; // 371
+    setPlayersInContext(int32[] players) required broadcast;
+    setOwner(int32 ownerId) required broadcast;
+    gotoDungeon(int32 destinationShard, int32 destinationZone) required broadcast;
+    setPlayerJoin(int32 playerId) broadcast;
+    setPlayerQuit(int32 playerId) broadcast; // 376
 };
 
 // struct 57
@@ -122,14 +126,14 @@ dclass unk_57 {
 // struct 58
 dclass DistributedCrossShardLobbyContext : DistributedLobbyContext {
     // field 378 (ok)
-    setTimeLeft(int8) required;
+    setTimeLeft(int8 timeLeft) required broadcast;
 };
 
 // struct 59
 dclass DistributedFriendsLobbyContext : DistributedLobbyContext {
-    setTimeLeft(int8) required; // 379
-    setPlayersGearingUp(int32[]) required;
-    setPlayersWaitingForReply(int32[]) required;
+    setTimeLeft(int8 timeLeft) required broadcast; // 379
+    setPlayersGearingUp(int32[]) required broadcast;
+    setPlayersWaitingForReply(int32[]) required broadcast;
     setPlayerGearingUp(int32);
     setPlayerWaitingForReply(int32);
     setGearUpTimeLeft(int8);
@@ -303,9 +307,9 @@ struct Dialog {
 // struct 77
 dclass CarPlayerStatus {
     // field 477 (ok)
-    setLocationType(int16 = 0) required ownrequired db ownrecv ownsend;
+    setLocationType(int16 = 0) required broadcast ownrequired db ownrecv ownsend;
     // !! uint8/int8 type clash
-    setPrivacySettings(uint8 = 0) required ownrequired db ownrecv ownsend;
+    setPrivacySettings(uint8 = 0) required broadcast ownrequired db ownrecv ownsend;
     hi();
 };
 
@@ -327,8 +331,8 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     teleportResponseToZone(uint32, uint32, uint32, int32, int32) clsend ownrecv;
     teleportResponseUnavailable(uint32) clsend ownrecv;
     teleportResponseToYard(uint32, uint32) clsend ownrecv;
-    raceInviteRequest(int32, int32, int32, int32, int32);
-    gotoFriendsContext(int32, int32);
+    raceInviteRequest(int32 lobbyDoid, int32 contextDoid, int32 trackId, int32 fromDoid, int32 zoneId);
+    gotoFriendsContext(int32 lobbyDoid, int32 zoneId);
     generateComplete();
     setDISLname(string) broadcast ram;
     setDISLid(uint32 = 0) required ownrequired broadcast db ownrecv;
@@ -445,27 +449,27 @@ dclass DistributedRace : DistributedDungeon {
 
 // struct 88
 dclass DistributedMPRace : DistributedRace {
-    dropHazard(int32, int32, uint32) clsend; // 572
-    broadcastSpeed(int32, int32) clsend;
-    setSpeeds(int32, int32, int32);
-    startPhotoFinish();
-    gotoDungeon(int32, int32);
-    setRaceSummary() clsend;
-    setAvailable() clsend;
-    setReady() clsend;
-    setGearedUp() clsend;
-    setQuit() clsend;
-    setPlayersRacing(int32[]);
-    setPlayersRaceSummary(int32[]);
-    setPlayersAvailable(int32[]);
-    setPlayersReady(int32[]);
-    setPlayerQuit(int32);
-    setPlayerRaceSummary(int32);
-    setPlayerAvailable(int32);
-    setPlayerReady(int32);
-    startGearUp();
-    setGearUpTimeLeft(int8);
-    setTimeLeft(int8);
+    dropHazard(int32 x, int32 y, uint32 itemId) clsend airecv; // 572
+    broadcastSpeed(int32 topSpeed, int32 averageSpeed) clsend airecv;
+    setSpeeds(int32 playerId, int32 topSpeed, int32 averageSpeed) broadcast;
+    startPhotoFinish() broadcast;
+    gotoDungeon(int32 destinationShard, int32 destinationZone) broadcast;
+    setRaceSummary() clsend airecv;
+    setAvailable() clsend airecv;
+    setReady() clsend airecv;
+    setGearedUp() clsend airecv;
+    setQuit() clsend airecv;
+    setPlayersRacing(int32[] playerIds) broadcast;
+    setPlayersRaceSummary(int32[] playerIds) broadcast;
+    setPlayersAvailable(int32[] playerIds) broadcast;
+    setPlayersReady(int32[] playerIds) broadcast;
+    setPlayerQuit(int32 playerId) broadcast;
+    setPlayerRaceSummary(int32 playerId) broadcast;
+    setPlayerAvailable(int32 playerId) broadcast;
+    setPlayerReady(int32 playerId) broadcast;
+    startGearUp() broadcast;
+    setGearUpTimeLeft(int8 timeLeft) broadcast;
+    setTimeLeft(int8 timeLeft) broadcast;
 };
 
 // struct 89
