@@ -6,7 +6,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
         self.racingPoints: int = 0
         self.animations: list = []
         self.consumables: list = []
-        self.animations: list = []
+        self.detailings: list = []
 
     def setRacingPoints(self, racingPoints: int):
         self.racingPoints = racingPoints
