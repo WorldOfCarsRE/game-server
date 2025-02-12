@@ -20,4 +20,4 @@ class TutorialTruckAI(InteractiveObjectAI):
         InteractiveObjectAI.announceGenerate(self)
 
         # Experiments
-        self.d_setTelemetry(881, 578, 0, 0, 0, -13499, 5, 25378)
+        self.d_setTelemetry(963, 525, 0, 318, -184, 4074, 377, 78737)

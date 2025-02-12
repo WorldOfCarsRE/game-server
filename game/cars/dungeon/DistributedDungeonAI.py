@@ -31,6 +31,6 @@ class DistributedDungeonAI(DistributedObjectAI):
         avatarId = self.air.getAvatarIdFromSender()
         print('setAICommand', command, args)
 
-        # if args[0] == VIDEO_DONE_COMMAND:
+        if args[0] == VIDEO_DONE_COMMAND:
             # self.sendUpdateToAvatarId(avatarId, 'setClientCommand', [SHOW_DRIVING_CONTROLS, []])
-            # self.sendUpdateToAvatarId(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])
+            self.sendUpdateToAvatarId(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])
