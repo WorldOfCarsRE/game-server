@@ -1,4 +1,4 @@
-from direct.distributed.DistributedObjectGlobalUD import DistributedObjectGlobalUD
+from direct.distributed.DistributedObjectUD import DistributedObjectUD
 from . import ShardGlobals
 from typing import Dict
 
@@ -9,12 +9,12 @@ class Shard:
     avatarCount: int
     active: int
 
-class ShardManagerUD(DistributedObjectGlobalUD):
+class ShardManagerUD(DistributedObjectUD):
     notify = directNotify.newCategory('ShardManagerUD')
     notify.setDebug(True)
 
     def __init__(self, air):
-        DistributedObjectGlobalUD.__init__(self, air)
+        DistributedObjectUD.__init__(self, air)
 
         self.shardInfo: Dict[int, Shard] = {}
 
@@ -22,11 +22,9 @@ class ShardManagerUD(DistributedObjectGlobalUD):
         # TODO
         return ShardGlobals.POPULATION_LEVEL_NONE
 
-    def handleRegister(self, di):
+    # AI -> UD
+    def registerShard(self, shardId, shardName):
         sender = self.air.getMsgSender()
-
-        shardId = di.getUint32()
-        shardName = di.getString()
 
         shard = Shard()
         shard.shardId = shardId
@@ -37,27 +35,37 @@ class ShardManagerUD(DistributedObjectGlobalUD):
 
         self.shardInfo[sender] = shard
 
-        self.notify.debug(f'Registered shard: {shardName}!')
+        self.notify.debug(f'Registered shard: {shardName}!  Sender: {sender}')
 
-    def handleUpdate(self, di):
+    def updateShard(self, avatarCount, active):
         sender = self.air.getMsgSender()
-
-        avatarCount = di.getUint16()
-        active = di.getUint8()
 
         if sender in self.shardInfo:
             shard = self.shardInfo[sender]
 
             shard.avatarCount = avatarCount
             shard.active = active
+            self.notify.debug(f"Shard {shard.shardName} has been updated.  avatarCount: {avatarCount}, active: {active}")
+        else:
+            self.notify.warning(f"No shard under sender: {sender}")
 
+    def deleteShard(self):
+        sender = self.air.getMsgSender()
+
+        if sender in self.shardInfo:
+            self.notify.debug(f"Deleting shard {self.shardInfo[sender].shardName}.")
+            del self.shardInfo[sender]
+        else:
+            self.notify.warning(f"Got \"deleteShard\" from unknown sender: {sender}")
+
+    # CLIENT -> UD
     def getAllShardsRequest(self, context):
         self.notify.debug(f'getAllShardsRequest: {context}')
 
-        avatarId = self.air.getAvatarIdFromSender()
+        sender = self.air.getMsgSender()
         response = []
 
         for shard in self.shardInfo.values():
             response.append([shard.shardId, shard.shardName, self.getPopulationLevel(shard.avatarCount), shard.avatarCount, shard.active])
 
-        self.sendUpdateToAvatarId(avatarId, 'getAllShardsResponse', [context, response])
+        self.sendUpdateToChannel(sender, 'getAllShardsResponse', [context, response])

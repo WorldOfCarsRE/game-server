@@ -72,6 +72,8 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
     def createObjects(self):
         # Create a new district (aka shard) for this AI:
+        self.shardManagerClass = self.dclassesByName["ShardManager"]
+
         self.district = CarsDistrictAI(self, self.districtName)
         self.district.generateOtpObject(
                 OTP_DO_ID_CARS, OTP_ZONE_ID_DISTRICTS,
@@ -233,15 +235,19 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.notify.info("Ready!")
 
     def registerShard(self):
-        dg = PyDatagram()
-        dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_REGISTER_SHARD)
-        dg.addUint32(self.districtId)
-        dg.addString(self.districtName)
+        # dg = PyDatagram()
+        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_REGISTER_SHARD)
+        # dg.addUint32(self.districtId)
+        # dg.addString(self.districtName)
+
+        # Send update to the ShardManager UberDOG
+        dg = self.shardManagerClass.aiFormatUpdate("registerShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, (self.districtId, self.districtName))
         self.send(dg)
 
         # Set up the delete message as a post remove
-        dg = PyDatagram()
-        dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_DELETE_SHARD)
+        # dg = PyDatagram()
+        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_DELETE_SHARD)
+        dg = self.shardManagerClass.aiFormatUpdate("deleteShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, [])
         self.addPostSocketClose(dg)
 
     def updateShard(self):
@@ -250,10 +256,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
             # Send our population update.
             self.sendPopulation()
 
-        dg = PyDatagram()
-        dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_UPDATE_SHARD)
-        dg.addUint16(self.getPopulation())
-        dg.addUint8(self.district.getEnabled())
+        # dg = PyDatagram()
+        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_UPDATE_SHARD)
+        # dg.addUint16(self.getPopulation())
+        # dg.addUint8(self.district.getEnabled())
+        dg = self.shardManagerClass.aiFormatUpdate("updateShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, (self.getPopulation(), self.district.getEnabled()))
         self.send(dg)
 
     def sendFriendManagerAccountOnline(self, accountId):

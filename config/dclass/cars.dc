@@ -59,9 +59,12 @@ dclass ShardManager {
     unk_345();
     getYardRequest(int32) clsend airecv;
     getYardResponse(int32, int32);
-    unk_348();
-    unk_349();
-    unk_350();
+
+    // These fields are unused on the client, so it's assumed these are
+    // used internally.
+    registerShard(uint32 shardId, string shardName) airecv;
+    updateShard(uint16 avatarCount, uint8 active) airecv;
+    deleteShard() airecv;
     unk_351();
     unk_352();
     unk_353();
