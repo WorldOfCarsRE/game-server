@@ -502,6 +502,7 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
 
     client:sendActivateObject(statusId, "CarPlayerStatus", {})
     client:objectSetOwner(statusId, true)
+
     -- Set the location for the status object so that our friends can find it
     local dg = datagram:new()
     client:addServerHeader(dg, statusId, STATESERVER_OBJECT_SET_ZONE)
