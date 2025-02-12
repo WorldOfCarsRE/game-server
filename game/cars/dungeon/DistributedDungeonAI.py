@@ -29,9 +29,8 @@ class DistributedDungeonAI(DistributedObjectAI):
 
     def setAiCommand(self, command, args):
         avatarId = self.air.getAvatarIdFromSender()
-        print('setAICommand', command)
-        # BUG: Supposidly VIDEO_DONE_COMMAND gets sent after video is finished, but
-        # all command sent are 1003?  OTP Bug?
-        if command == 1003:
-            # self.sendUpdateToAvatar(avatarId, 'setClientCommand', [SHOW_DRIVING_CONTROLS, []])
-            self.sendUpdateToAvatar(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])
+        print('setAICommand', command, args)
+
+        # if args[0] == VIDEO_DONE_COMMAND:
+            # self.sendUpdateToAvatarId(avatarId, 'setClientCommand', [SHOW_DRIVING_CONTROLS, []])
+            # self.sendUpdateToAvatarId(avatarId, 'setClientCommand', [GIVE_PLAYER_CAR_CONTROL, []])

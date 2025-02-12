@@ -215,6 +215,8 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.spFFRRaceLobby.generateWithRequired(self.fillmoresFields.doId)
 
         self.tutorialLobby = DistributedTutorialLobbyAI(self)
+        self.tutorialLobby.generateOtpObject(OTP_DO_ID_CARS_SHARD_MANAGER, 100)
+        self.setAIReceiver(self.tutorialLobby.doId)
 
         # TODO: Tutorial lobby generate
         self.mpFFRRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml")
