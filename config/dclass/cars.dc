@@ -240,7 +240,7 @@ dclass DistributedRaceCar : Persistent {
     setDecals(int32[] = []) ownrequired db ownrecv;
     setWheels(int32[] = []) ownrequired db ownrecv;
     setTires(int32[] = []) ownrequired db ownrecv;
-    setDetailings(int32[] = []) ownrequired db ownrecv;
+    setDetailings(int32[] = []) ownrequired broadcast db ownrecv;
     setAnimations(int32[] = []) ownrequired db ownrecv;
     setTrophies(int32[] = []) ownrequired db ownrecv;
     setDashboardTextures(int32[] = []) ownrequired db ownrecv;
