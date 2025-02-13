@@ -11,7 +11,6 @@ class Shard:
 
 class ShardManagerUD(DistributedObjectUD):
     notify = directNotify.newCategory('ShardManagerUD')
-    notify.setDebug(True)
 
     def __init__(self, air):
         DistributedObjectUD.__init__(self, air)

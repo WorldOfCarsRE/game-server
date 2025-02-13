@@ -2,6 +2,7 @@ from game.cars.lobby.DistributedLobbyAI import DistributedLobbyAI
 from game.cars.dungeon.DistributedDungeonAI import DistributedDungeonAI
 from game.cars.lobby.DistributedTutorialLobbyContextAI import DistributedTutorialLobbyContextAI
 from game.cars.carplayer.npcs.TutorialTruckAI import TutorialTruckAI
+from game.cars.carplayer.npcs.TutorialMaterAI import TutorialMaterAI
 from game.cars.distributed.CarsGlobals import DEFAULT_DUNGEON_ZONE
 
 class DistributedTutorialLobbyAI(DistributedLobbyAI):
@@ -29,6 +30,11 @@ class DistributedTutorialLobbyAI(DistributedLobbyAI):
 
         truck = TutorialTruckAI(self.air)
         truck.generateOtpObject(dungeon.doId, DEFAULT_DUNGEON_ZONE)
+        dungeon.interactiveObjects.append(truck)
+
+        mater = TutorialMaterAI(self.air)
+        mater.generateOtpObject(dungeon.doId, DEFAULT_DUNGEON_ZONE)
+        dungeon.interactiveObjects.append(mater)
 
         lobbyContext.b_setGotoDungeon(self.air.district.doId, dungeon.zoneId)
         self.sendUpdateToAvatarId(avatarId, 'gotoLobbyContext', [contextZoneId])
