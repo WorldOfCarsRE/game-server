@@ -1869,7 +1869,6 @@ class AIRepository(ConnectionRepository):
         else:
             self.notify.warning("Ignoring unexpected context %d for STATESERVER_OBJECT_LOCATE" % context)
 
-
     # LEADERBOARD
     def setLeaderboardValue(self, category, whoId, whoName, value, senderId=None):
         self.writeServerEvent('setLeaderboardValue', whoId,

@@ -13,7 +13,7 @@ class DistributedTutorialDungeonAI(DistributedDungeonAI):
     def __init__(self, air):
         # HACK: Renaming our class name here because
         # DistributedObjectAI will search dclassesByName
-        # for the non-existant TutorialMaterAI dclass.
+        # for the non-existant DistributedTutorialDungeonAI dclass.
         self.__class__.__name__ = "DistributedDungeonAI"
         DistributedDungeonAI.__init__(self, air)
 
@@ -40,5 +40,3 @@ class DistributedTutorialDungeonAI(DistributedDungeonAI):
         mater = TutorialMaterAI(self.air)
         mater.generateOtpObject(self.doId, DEFAULT_DUNGEON_ZONE)
         self.interactiveObjects.append(mater)
-
-

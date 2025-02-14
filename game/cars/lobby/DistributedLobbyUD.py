@@ -9,7 +9,7 @@ class DistributedLobbyUD(DistributedObjectUD):
         self.dungeonItemId: int = 0
         self.hotSpotName: str = ''
 
-        self.contexts = []
+        self.contexts: list = []
 
     def getDungeonItemId(self):
         return self.dungeonItemId

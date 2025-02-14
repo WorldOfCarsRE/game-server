@@ -219,7 +219,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.spFFRRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml") # dungeonItemId is from constants.js
         self.spFFRRaceLobby.generateWithRequired(self.fillmoresFields.doId)
 
-        # TODO: Tutorial lobby generate
         self.mpFFRRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml")
         self.mpFFRRaceFriendsLobby.generateWithRequired(self.fillmoresFields.doId)
 
@@ -322,7 +321,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
     def handleGenerateDungeon(self, di):
         sender = self.getMsgSender()
         context = di.getUint32()
-        type = di.getUint8()
+        _type = di.getUint8()
         lobbyDoId = di.getUint32()
         contextDoId = di.getUint32()
         playerIds = []
@@ -330,7 +329,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
             playerIds.append(di.getUint32())
 
         dungeon = None
-        if type == DUNGEON_TYPE_TUTORIAL:
+        if _type == DUNGEON_TYPE_TUTORIAL:
             dungeon = DistributedTutorialDungeonAI(self)
 
             dungeon.playerIds = playerIds
@@ -340,11 +339,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
             zoneId = self.allocateZone()
             dungeon.generateWithRequired(zoneId)
             dungeon.createObjects()
-        elif type == DUNGEON_TYPE_RACE:
+        elif _type == DUNGEON_TYPE_RACE:
             self.notify.warning("TODO: DUNGEON_TYPE_RACE")
             return
         else:
-            self.notify.warning(f"Ignoring unknown dungeon type {type} from CARS_GENERATE_DUNGEON")
+            self.notify.warning(f"Ignoring unknown dungeon type {_type} from CARS_GENERATE_DUNGEON")
             return
 
         dg = PyDatagram()
@@ -354,5 +353,3 @@ class CarsAIRepository(AIDistrict, ServerBase):
         dg.addUint32(dungeon.parentId)
         dg.addUint32(dungeon.zoneId)
         self.send(dg)
-
-

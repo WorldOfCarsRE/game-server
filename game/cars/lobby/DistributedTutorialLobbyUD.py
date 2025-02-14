@@ -8,12 +8,11 @@ class DistributedTutorialLobbyUD(DistributedLobbyUD):
 
     def __init__(self, air):
         DistributedLobbyUD.__init__(self, air)
-        self.dungeonItemId = 1000
-        self.zoneContext = 0
+        self.dungeonItemId: int = 1000
+        self.zoneContext: int = 0
 
     def join(self):
         avatarId = self.air.getAvatarIdFromSender()
-        print("join", avatarId)
 
         def gotAvatarLocation(doId, parentId, zoneId):
             if avatarId != doId:

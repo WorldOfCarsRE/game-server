@@ -86,5 +86,3 @@ class CarsUberDog(UberDog):
             callback(doId, parentId, zoneId)
         else:
             self.notify.warning("Ignoring unexpected context %d for CARS_GENERATE_DUNGEON" % context)
-
-
