@@ -1,3 +1,4 @@
+from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectUD import DistributedObjectUD
 from . import ShardGlobals
 from typing import Dict
@@ -20,6 +21,14 @@ class ShardManagerUD(DistributedObjectUD):
     def getPopulationLevel(self, shardPop) -> int:
         # TODO
         return ShardGlobals.POPULATION_LEVEL_NONE
+
+    def getShardChannel(self, shardId) -> int:
+        for sender, shard in self.shardInfo.items():
+            if shard.shardId == shardId:
+                return sender
+
+        self.notify.warning(f"Couldn't find AI Channel for shard: {shardId}")
+        return 0
 
     # AI -> UD
     def registerShard(self, shardId, shardName):

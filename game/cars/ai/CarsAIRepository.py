@@ -25,8 +25,7 @@ from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
-from game.cars.lobby.DistributedTutorialLobbyAI import \
-    DistributedTutorialLobbyAI
+from game.cars.dungeon.DistributedTutorialDungeonAI import DistributedTutorialDungeonAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import \
     DistributedSinglePlayerRacingLobbyAI
 from game.cars.racing.DistributedFriendsLobbyAI import \
@@ -69,6 +68,12 @@ class CarsAIRepository(AIDistrict, ServerBase):
         # greater than or equal to self.minChannel - self.districtId,
         # which is our first allocated doId.
         return min(self.minChannel - self.districtId, DynamicZonesEnd) - 1
+
+    def handlePlayGame(self, msgType, di):
+        if msgType == CARS_GENERATE_DUNGEON:
+            self.handleGenerateDungeon(di)
+        else:
+            AIDistrict.handlePlayGame(self, msgType, di)
 
     def createObjects(self):
         # Create a new district (aka shard) for this AI:
@@ -214,10 +219,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.spFFRRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml") # dungeonItemId is from constants.js
         self.spFFRRaceLobby.generateWithRequired(self.fillmoresFields.doId)
 
-        self.tutorialLobby = DistributedTutorialLobbyAI(self)
-        self.tutorialLobby.generateOtpObject(OTP_DO_ID_CARS_SHARD_MANAGER, 100)
-        self.setAIReceiver(self.tutorialLobby.doId)
-
         # TODO: Tutorial lobby generate
         self.mpFFRRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml")
         self.mpFFRRaceFriendsLobby.generateWithRequired(self.fillmoresFields.doId)
@@ -317,3 +318,41 @@ class CarsAIRepository(AIDistrict, ServerBase):
         if accountId not in self.staffMembers:
             self.staffMembers.append(accountId)
             self.accountMap[accountId] = accountType
+
+    def handleGenerateDungeon(self, di):
+        sender = self.getMsgSender()
+        context = di.getUint32()
+        type = di.getUint8()
+        lobbyDoId = di.getUint32()
+        contextDoId = di.getUint32()
+        playerIds = []
+        while di.getRemainingSize() > 0:
+            playerIds.append(di.getUint32())
+
+        dungeon = None
+        if type == DUNGEON_TYPE_TUTORIAL:
+            dungeon = DistributedTutorialDungeonAI(self)
+
+            dungeon.playerIds = playerIds
+            dungeon.lobbyDoId = lobbyDoId
+            dungeon.contextDoId = contextDoId
+
+            zoneId = self.allocateZone()
+            dungeon.generateWithRequired(zoneId)
+            dungeon.createObjects()
+        elif type == DUNGEON_TYPE_RACE:
+            self.notify.warning("TODO: DUNGEON_TYPE_RACE")
+            return
+        else:
+            self.notify.warning(f"Ignoring unknown dungeon type {type} from CARS_GENERATE_DUNGEON")
+            return
+
+        dg = PyDatagram()
+        dg.addServerHeader(sender, self.ourChannel, CARS_GENERATE_DUNGEON_RESP)
+        dg.addUint32(context)
+        dg.addUint32(dungeon.doId)
+        dg.addUint32(dungeon.parentId)
+        dg.addUint32(dungeon.zoneId)
+        self.send(dg)
+
+

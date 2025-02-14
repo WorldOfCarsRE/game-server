@@ -9,6 +9,9 @@ YARD_INTEREST_HANDLE = 69
 
 OTP_DO_ID_CARS_SHARD_MANAGER = 4757
 
+DUNGEON_TYPE_RACE = 1
+DUNGEON_TYPE_TUTORIAL = 2
+
 # Everything from this zone up to the top of the available range is
 # reserved for the dynamic zone pool.  Note that our effective maximum
 # zone may be less than DynamicZonesEnd, depending on the assignment

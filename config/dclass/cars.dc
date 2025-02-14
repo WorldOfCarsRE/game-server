@@ -10,8 +10,8 @@ from game.cars.racing import DistributedSinglePlayerRacingLobbyContext/AI
 from game.cars.racing import DistributedSPRace/AI
 from game.cars.uberdog import HolidayManagerUD
 from game.cars.uberdog import ShardManagerUD
-from game.cars.lobby import DistributedTutorialLobby/AI
-from game.cars.lobby import DistributedTutorialLobbyContext/AI
+from game.cars.lobby import DistributedTutorialLobbyUD
+from game.cars.lobby import DistributedTutorialLobbyContextUD
 from game.cars.racing import DistributedFriendsLobby/AI
 from game.cars.racing import DistributedCrossShardLobby/AI
 from game.cars.racing import DistributedCrossShardLobbyContext/AI

@@ -149,6 +149,8 @@ class AIRepository(ConnectionRepository):
         self.dbObjContext = 0
         self.dbObjMap = {}
 
+        self.objectLocateMap = {}
+
         # The UtilityAIRepository sets this to 0 to indicate we should
         # not do things like issue new catalogs to toons that we load
         # in.  However, in the normal AI repository, we should do
@@ -607,6 +609,8 @@ class AIRepository(ConnectionRepository):
             self.handleServerPing(di)
         elif msgType == ALLOW_MODERATION_ACTIONS:
             self.handleAllowModerationActions(di)
+        elif msgType == STATESERVER_OBJECT_LOCATE_RESP:
+            self._handleObjectLocateResp(di)
         else:
             AIRepository.notify.warning(
                 "Ignoring unexpected message type: %s in state: %s" %
@@ -1843,6 +1847,28 @@ class AIRepository(ConnectionRepository):
             AIRepository.notify.warning(
                 "Ignoring unexpected context %d for DBSERVER_CREATE_STORED_OBJECT" %
                  context)
+
+    def getObjectLocation(self, doId, callback):
+        context = self.allocateContext()
+        self.objectLocateMap[context] = callback
+
+        dg = PyDatagram()
+        dg.addServerHeader(doId, self.ourChannel, STATESERVER_OBJECT_LOCATE)
+        dg.addUint32(context)
+        self.send(dg)
+
+    def _handleObjectLocateResp(self, di):
+        context = di.getUint32()
+        doId = di.getUint32()
+        parentId = di.getUint32()
+        zoneId = di.getUint32()
+        callback = self.objectLocateMap.get(context)
+        if callback:
+            del self.objectLocateMap[context]
+            callback(doId, parentId, zoneId)
+        else:
+            self.notify.warning("Ignoring unexpected context %d for STATESERVER_OBJECT_LOCATE" % context)
+
 
     # LEADERBOARD
     def setLeaderboardValue(self, category, whoId, whoName, value, senderId=None):
