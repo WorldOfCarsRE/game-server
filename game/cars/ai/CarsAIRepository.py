@@ -70,7 +70,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
         return min(self.minChannel - self.districtId, DynamicZonesEnd) - 1
 
     def handlePlayGame(self, msgType, di):
-        if msgType == CARS_GENERATE_DUNGEON:
+        if msgType == SHARDMANAGER_ONLINE:
+            # Re-transmit our shard information
+            self.registerShard()
+            self.updateShard()
+        elif msgType == CARS_GENERATE_DUNGEON:
             self.handleGenerateDungeon(di)
         else:
             AIDistrict.handlePlayGame(self, msgType, di)

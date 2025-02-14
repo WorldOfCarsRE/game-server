@@ -33,7 +33,14 @@ class CarsUberDog(UberDog):
         return OTP_DO_ID_CARS
 
     def createObjects(self):
-        UberDog.createObjects(self)
+        # Since we'll be generating objects to the State Server, we should
+        # tell it to delete objects when this server goes down.
+        datagram = PyDatagram()
+        datagram.addServerHeader(
+            self.serverId, self.ourChannel, STATESERVER_SHARD_REST)
+        datagram.addChannel(self.ourChannel)
+        # schedule for execution on socket close
+        self.addPostSocketClose(datagram)
 
         # Ask for the ObjectServer so we can check the dc hash value
         context = self.allocateContext()
@@ -59,6 +66,12 @@ class CarsUberDog(UberDog):
             self.handleGenerateDungeonResp(di)
         else:
             AIDistrict.handlePlayGame(self, msgType, di)
+
+    def sendOnline(self):
+        # Tell the AI servers that the ShardManager just went online
+        dg = PyDatagram()
+        dg.addServerHeader(BROADCAST_MESSAGE_TO_ALL_AI, self.ourChannel, SHARDMANAGER_ONLINE)
+        self.send(dg)
 
     def remoteGenerateDungeon(self, aiChannel, dungeonType, lobbyDoId, contextDoId, playerIds, callback):
         context = self.allocateContext()

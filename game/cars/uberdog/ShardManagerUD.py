@@ -30,6 +30,10 @@ class ShardManagerUD(DistributedObjectUD):
         self.notify.warning(f"Couldn't find AI Channel for shard: {shardId}")
         return 0
 
+    def announceGenerate(self):
+        DistributedObjectUD.announceGenerate(self)
+        self.air.sendOnline()
+
     # AI -> UD
     def registerShard(self, shardId, shardName):
         sender = self.air.getMsgSender()
