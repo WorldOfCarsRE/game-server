@@ -801,7 +801,7 @@ function handleClientDistributedRaceCar_modifyDNA(client, doId, fieldId, data)
     toUpdate["stretches"] = stretches
     toUpdate["decalSlots"] = decalSlots
 
-    updateObject(participant, doId, toUpdate)
+    updateObject(participant, avatarId, toUpdate)
 
     local car = json.decode(retrieveCar(client, "playToken=" .. playToken))
 
@@ -810,7 +810,29 @@ function handleClientDistributedRaceCar_modifyDNA(client, doId, fieldId, data)
     -- we can receive the broadcast.
     dg:addServerHeader(avatarId, avatarId, STATESERVER_OBJECT_UPDATE_FIELD)
     dg:addUint32(avatarId)
-    client:packFieldToDatagram(dg, "DistributedCarPlayer", "setDNA", {{carName, carNumber, logoBackgroundId, logoBackgroundColor, logoFontId, logoFontColor, gender, car.carData.careerType, chassis, color, eyeColor, wheel, tire, detailing, profileBackgroundId, stretches, decalSlots, car.carData.addonItemList, costumeId}}, true)
+
+    client:packFieldToDatagram(dg, "DistributedCarPlayer", "setDNA", {{
+        carName,
+        carNumber,
+        logoBackgroundId,
+        logoBackgroundColor,
+        logoFontId,
+        logoFontColor,
+        gender,
+        car.carData.careerType,
+        chassis,
+        color,
+        eyeColor,
+        wheel,
+        tire,
+        detailing,
+        profileBackgroundId,
+        stretches,
+        decalSlots,
+        car.carData.addonItemList,
+        costumeId
+    }}, true)
+
     client:routeDatagram(dg)
 end
 
