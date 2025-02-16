@@ -57,6 +57,16 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.staffMembers: List[int] = []
         self.accountMap: Dict[int, str] = {}
 
+        self.shopItems = requests.get("http://127.0.0.1:8013/getShopItemData").json()
+        self.notify.info(f"Loaded {len(self.shopItems)} shop items.")
+
+    def getShopItem(self, shopId: str, itemId: int) -> None | dict:
+        for item in self.shopItems[shopId]:
+            if item.get("itemId", 0) == itemId:
+                return item
+
+        return None
+
     def getGameDoId(self):
         return OTP_DO_ID_CARS
 
