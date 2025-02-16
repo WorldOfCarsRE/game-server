@@ -21,7 +21,7 @@ class DistributedCrossShardLobbyContextAI(DistributedLobbyContextAI):
             self.notify.debug("Starting countdown...")
             self.timeLeft = 11
             self.doMethodLater(0, self.__doCountDown, self.taskName("countDown"))
-    
+
     def removePlayerInContext(self, avId):
         DistributedLobbyContextAI.removePlayerInContext(self, avId)
         if len(self.playersInContext) < 2 and taskMgr.hasTaskNamed(self.taskName("countDown")):

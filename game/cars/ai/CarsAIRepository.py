@@ -218,7 +218,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.fillmoreFizzyHutWB = FillmoreFizzyFuelHutAI(self)
         self.fillmoreFizzyHutWB.name = "isostore_fillmoreFizzyHutWB"
         self.fillmoreFizzyHutWB.generateWithRequired(self.willysButte.doId)
-        
+
         self.willysButte.interactiveObjects.append(self.fillmoreFizzyHutWB)
 
         self.willysButte.updateObjectCount()
@@ -258,6 +258,9 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.mpFFRRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml")
         self.mpFFRRaceCrossShardLobby.generateWithRequired(self.fillmoresFields.doId)
+
+        self.tgsRaceLobby = DistributedCrossShardLobbyAI(self, "race_tgs", 42004, "car_w_trk_prf_tailgator_SS_phys.xml")
+        self.tgsRaceLobby.generateWithRequired(self.tailgatorSpeedway.doId)
 
         self.holidayManager = HolidayManagerAI(self)
         # self.holidayManager.generateWithRequired(DUNGEON_INTEREST_HANDLE)

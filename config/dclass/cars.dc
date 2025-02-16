@@ -323,8 +323,8 @@ dclass DistributedCarPlayer : DistributedCarAvatar, DistributedRacer, Persistent
     setRuleStates(RuleState[]);
     deleteRuleStates(int32[]);
     setCurrentCar(int32);
-    buyItemRequest(int32, int32) ownsend;
-    buyItemResponse(int32, int8);
+    buyItemRequest(int32 shopId, int32 itemId) ownsend airecv;
+    buyItemResponse(int32 itemId, int8 respCode);
     invokeRuleRequest(int32, int32[], int32) ownsend airecv;
     invokeRuleResponse(int32, int32[], int32);
     teleportRequest(uint32) clsend ownrecv;

@@ -7,6 +7,8 @@ from game.cars.zone import ZoneConstants
 
 from .DistributedRaceCarAI import DistributedRaceCarAI
 
+BUY_RESP_CODE_SUCCESS = 0
+
 class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
@@ -16,6 +18,10 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.carCount = 0
         self.racecarId = 0
         self.racecar: DistributedRaceCarAI = None
+
+    def buyItemRequest(self, shopId: int, itemId: int) -> None:
+        # TODO: Implement me
+        self.sendUpdateToAvatarId(self.doId, 'buyItemResponse', [itemId, BUY_RESP_CODE_SUCCESS])
 
     def setCars(self, carCount: int, cars: list):
         self.carCount = carCount

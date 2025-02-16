@@ -26,7 +26,7 @@ class DistributedCrossShardLobbyAI(DistributedLobbyAI):
                 activeContext = context
                 context.addPlayerInContext(avatarId)
                 break
-        
+
         if not activeContext:
             # Maybe host it's own context zone allocation?
             contextZoneId = self.air.allocateZone()
