@@ -79,8 +79,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         self.racecar.setDetailings(detailings)
 
-    def d_buyItemResponse(self, itemId: int, returnCode: int) -> None:
-        self.sendUpdateToAvatarId(self.doId, 'buyItemResponse', [itemId, returnCode])
+    def d_buyItemResponse(self, itemId: int, responseCode: int) -> None:
+        self.sendUpdateToAvatarId(self.doId, 'buyItemResponse', [itemId, responseCode])
 
     def setCars(self, carCount: int, cars: list):
         self.carCount = carCount
