@@ -8,6 +8,7 @@ from game.cars.zone import ZoneConstants
 from .DistributedRaceCarAI import DistributedRaceCarAI
 
 BUY_RESP_CODE_SUCCESS = 0
+BUY_RESP_CODE_ALREADY_OWNED = 1
 BUY_RESP_CODE_INVALID_STORE_ITEM = 4
 BUY_RESP_CODE_NOT_ENOUGH_CARCOIN = 8
 BUY_RESP_CODE_NOT_PURCHASEABLE = 12
@@ -24,44 +25,59 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
     def buyItemRequest(self, shopId: int, itemId: int) -> None:
         item: None | dict = self.air.getShopItem(str(shopId), itemId)
-        returnCode: int = BUY_RESP_CODE_SUCCESS
 
         if item is None:
-            returnCode: int = BUY_RESP_CODE_INVALID_STORE_ITEM
-            self.d_buyItemResponse(itemId, returnCode)
+            self.d_buyItemResponse(itemId, BUY_RESP_CODE_INVALID_STORE_ITEM)
+            return
+
+        if not self.takeCoins(item["storePrice"]):
+            self.d_buyItemResponse(itemId, BUY_RESP_CODE_NOT_ENOUGH_CARCOIN)
             return
 
         itemType: str = item["storeThumbnail"].split("_")[3]
 
-        if not self.takeCoins(item["storePrice"]):
-            returnCode: int = BUY_RESP_CODE_NOT_ENOUGH_CARCOIN
-            self.d_buyItemResponse(itemId, returnCode)
-            return
-
         if itemType == "cns":
             # Consumable
-            consumableInInventory: bool = False
-
-            for consumable in self.racecar.getConsumables():
-                if consumable[0] == itemId:
-                    consumableInInventory: bool = True
-
-                    if consumable[1] >= item["maximumOwnable"]:
-                        returnCode: int = BUY_RESP_CODE_NOT_PURCHASEABLE
-                        self.d_buyItemResponse(itemId, returnCode)
-                        return
-                    else:
-                        consumable[1] += 1
+            self.handleConsumablePurchase(item, itemId)
 
         elif itemType == "pjb":
-            pass # TODO
+            # PaintJob
+            self.handlePaintJobPurchase(item, itemId)
+
+        self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
+
+    def handleConsumablePurchase(self, item: dict, itemId: int) -> None:
+        consumableInInventory: bool = False
+
+        consumables: list = self.racecar.getConsumables()
+
+        for i, consumable in enumerate(consumables):
+            inventoryItemId, quantity = consumable
+
+            if inventoryItemId == itemId:
+                consumableInInventory: bool = True
+
+                if quantity >= item["maximumOwnable"]:
+                    self.d_buyItemResponse(itemId, BUY_RESP_CODE_NOT_PURCHASEABLE)
+                    return
+
+                consumables[i] = (itemId, quantity + 1)
 
             if not consumableInInventory:
-                self.racecar.getConsumables().append([itemId, 1])
+                consumables.append((itemId, 1))
 
-            self.racecar.d_setConsumables(self.racecar.getConsumables())
+        self.racecar.setConsumables(consumables)
 
-        self.d_buyItemResponse(itemId, returnCode)
+    def handlePaintJobPurchase(self, item: dict, itemId: int) -> None:
+        detailings: list = self.racecar.getDetailings()
+
+        if itemId in detailings:
+            self.d_buyItemResponse(itemId, BUY_RESP_CODE_ALREADY_OWNED)
+            return
+
+        detailings.append(itemId)
+
+        self.racecar.setDetailings(detailings)
 
     def d_buyItemResponse(self, itemId: int, returnCode: int) -> None:
         self.sendUpdateToAvatarId(self.doId, 'buyItemResponse', [itemId, returnCode])
