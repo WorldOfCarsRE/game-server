@@ -32,6 +32,7 @@ from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
 from game.cars.dungeon.DistributedTutorialDungeonAI import DistributedTutorialDungeonAI
+from game.cars.dungeon.DistributedYardAI import DistributedYardAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import \
     DistributedSinglePlayerRacingLobbyAI
 from game.cars.racing.DistributedFriendsLobbyAI import \
@@ -398,6 +399,12 @@ class CarsAIRepository(AIDistrict, ServerBase):
             zoneId = self.allocateZone()
             dungeon.generateWithRequired(zoneId)
             dungeon.createObjects()
+        elif _type == DUNGEON_TYPE_YARD:
+            dungeon = DistributedYardAI(self)
+
+            dungeon.owner = playerIds[0]
+
+            dungeon.generateOtpObject(self.districtId, dungeon.owner)
         elif _type == DUNGEON_TYPE_RACE:
             self.notify.warning("TODO: DUNGEON_TYPE_RACE")
             return

@@ -121,7 +121,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def announceGenerate(self):
         self.air.sendFriendManagerAccountOnline(self.DISLid)
 
-        # self.sendUpdateToAvatarId(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
+        self.sendUpdateToAvatarId(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
         self.sendUpdateToAvatarId(self.doId, 'generateComplete', [])
 
         self.air.incrementPopulation()
