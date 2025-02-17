@@ -22,7 +22,7 @@ class DistributedYardAI(DistributedDungeonAI):
     def addItemRequest(self, itemId: int, x: int, y: int, handle: int) -> None:
         av = self.air.getDo(self.getOwner())
 
-        yardStocks = av.getYardStocks()
+        yardStocks: list = av.getYardStocks()
 
         for i, yardItem in enumerate(yardStocks):
             catalogItemId, quantity, usedQuantity = yardItem
@@ -30,6 +30,16 @@ class DistributedYardAI(DistributedDungeonAI):
 
             if catalogItemId == itemId and hasSomeOfItem:
                 yardStocks[i] = (itemId, quantity - 1, usedQuantity + 1)
+
+                self.air.mongoInterface.mongodb.activeyarditems.insert_one(
+                    {
+                        "ownerDoId": self.getOwner(),
+                        "itemId": catalogItemId,
+                        "catalogItemId": catalogItemId,
+                        "x": x,
+                        "y": y
+                    }
+                )
 
                 item = DistributedYardItemAI(self.air, catalogItemId, catalogItemId, (x, y))
                 item.generateOtpObject(self.doId, DEFAULT_DUNGEON_ZONE)
@@ -40,12 +50,9 @@ class DistributedYardAI(DistributedDungeonAI):
         self.sendUpdateToAvatarId(self.getOwner(), "addItemResponse", [RESPONSE_SUCCESS if hasSomeOfItem else RESPONSE_NO_MORE_OF_THAT_ITEM, handle])
 
     def createObjects(self) -> None:
-        av = self.air.getDo(self.getOwner())
+        activeYardItems = self.air.mongoInterface.retrieveFields("activeyarditems", self.getOwner())
 
-        for i, yardItem in enumerate(av.getYardStocks()):
-            catalogItemId, quantity, usedQuantity = yardItem
-
-            for i in range(usedQuantity):
-                item = DistributedYardItemAI(self.air, catalogItemId, catalogItemId, (0, 0)) # TODO: Get position somehow?
-                item.generateOtpObject(self.doId, DEFAULT_DUNGEON_ZONE)
-                self.objects.append(item)
+        for yardItem in activeYardItems:
+            item = DistributedYardItemAI(self.air, yardItem["itemId"], yardItem["catalogItemId"], (yardItem["x"], yardItem["y"]))
+            item.generateOtpObject(self.doId, DEFAULT_DUNGEON_ZONE)
+            self.objects.append(item)

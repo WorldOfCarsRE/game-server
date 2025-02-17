@@ -6,11 +6,10 @@ class MongoInterface:
 
         client = MongoClient(config.GetString('mongodb-host'))
         self.mongodb = client[config.GetString('mongodb-name')]
-        self.webMongo = client['woc']
 
     def retrieveFields(self, dclass: str, doId: int) -> list:
         cursor = getattr(self.mongodb, dclass)
-        return cursor.find_one({'_id': doId})
+        return cursor.find({'ownerDoId': doId}) or []
 
     def updateField(self, dclass: str, fieldName: str, doId: int, value: list):
         queryData = {'_id': doId}
