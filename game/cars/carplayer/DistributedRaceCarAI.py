@@ -45,7 +45,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
 
     def getConsumables(self) -> list:
         return self.consumables
-    
+
     def setDetailings(self, detailings: list):
         self.detailings = detailings
         self.d_setDetailings(self.detailings)

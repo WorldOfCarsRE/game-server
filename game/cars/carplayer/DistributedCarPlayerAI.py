@@ -7,6 +7,12 @@ from game.cars.zone import ZoneConstants
 
 from .DistributedRaceCarAI import DistributedRaceCarAI
 
+BUY_RESP_CODE_SUCCESS = 0
+BUY_RESP_CODE_ALREADY_OWNED = 1
+BUY_RESP_CODE_INVALID_STORE_ITEM = 4
+BUY_RESP_CODE_NOT_ENOUGH_CARCOIN = 8
+BUY_RESP_CODE_NOT_PURCHASEABLE = 12
+
 class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
@@ -16,6 +22,65 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.carCount = 0
         self.racecarId = 0
         self.racecar: DistributedRaceCarAI = None
+
+    def buyItemRequest(self, shopId: int, itemId: int) -> None:
+        item: None | dict = self.air.getShopItem(str(shopId), itemId)
+
+        if item is None:
+            self.d_buyItemResponse(itemId, BUY_RESP_CODE_INVALID_STORE_ITEM)
+            return
+
+        if not self.takeCoins(item["storePrice"]):
+            self.d_buyItemResponse(itemId, BUY_RESP_CODE_NOT_ENOUGH_CARCOIN)
+            return
+
+        itemType: str = item["storeThumbnail"].split("_")[3]
+
+        if itemType == "cns":
+            # Consumable
+            self.handleConsumablePurchase(item, itemId)
+
+        elif itemType == "pjb":
+            # PaintJob
+            self.handlePaintJobPurchase(itemId)
+
+        self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
+
+    def handleConsumablePurchase(self, item: dict, itemId: int) -> None:
+        consumableInInventory: bool = False
+
+        consumables: list = self.racecar.getConsumables()
+
+        for i, consumable in enumerate(consumables):
+            inventoryItemId, quantity = consumable
+
+            if inventoryItemId == itemId:
+                consumableInInventory: bool = True
+
+                if quantity >= item["maximumOwnable"]:
+                    self.d_buyItemResponse(itemId, BUY_RESP_CODE_NOT_PURCHASEABLE)
+                    return
+
+                consumables[i] = (itemId, quantity + 1)
+
+            if not consumableInInventory:
+                consumables.append((itemId, 1))
+
+        self.racecar.setConsumables(consumables)
+
+    def handlePaintJobPurchase(self, itemId: int) -> None:
+        detailings: list = self.racecar.getDetailings()
+
+        if itemId in detailings:
+            self.d_buyItemResponse(itemId, BUY_RESP_CODE_ALREADY_OWNED)
+            return
+
+        detailings.append(itemId)
+
+        self.racecar.setDetailings(detailings)
+
+    def d_buyItemResponse(self, itemId: int, responseCode: int) -> None:
+        self.sendUpdateToAvatarId(self.doId, 'buyItemResponse', [itemId, responseCode])
 
     def setCars(self, carCount: int, cars: list):
         self.carCount = carCount
@@ -106,6 +171,16 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
     def addCoins(self, deltaCoins: int):
         self.b_setCarCoins(deltaCoins + self.getCarCoins())
+
+    def takeCoins(self, deltaCoins: int) -> bool:
+        totalCoins = self.carCoins
+
+        if deltaCoins > totalCoins:
+            return False
+
+        self.b_setCarCoins(self.carCoins - deltaCoins)
+
+        return True
 
     def d_showDialogs(self, dialogId: int, args: List[str]):
         self.sendUpdateToAvatarId(self.doId, 'showDialogs', [[[dialogId, args]]])

@@ -90,6 +90,7 @@ dofile("config.lua")
 local API_BASE
 
 local http = require("http")
+local json = require("json")
 
 if PRODUCTION_ENABLED then
     API_BASE = "https://woc.sunrise.games/carsds/api/internal/"
@@ -99,7 +100,7 @@ end
 
 avatarSpeedChatPlusStates = {}
 
--- TODO: These two functions should be moved to their own
+-- TODO: These three functions should be moved to their own
 -- Lua role.
 function retrieveAccount(data)
     -- TODO: Retries
@@ -157,6 +158,44 @@ function retrieveCar(client, data)
 
     -- If we're here, then we failed to get valid car data. Disconnect here
     client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to retrieveCar.", false)
+end
+
+function updateObject(participant, doId, data)
+    local connAttempts = 0
+
+    while (connAttempts < 3) do
+        local response, error_message = http.post(API_BASE .. string.format("updateObject/%d", doId), {
+            body=json.encode(data),
+            headers={
+                ["User-Agent"]=USER_AGENT,
+                ["Authorization"]=API_TOKEN,
+                ["Content-Type"]="application/json"
+            }
+        })
+
+        if error_message then
+            participant:error(string.format("updateObject returned an error! \"%s\"", error_message))
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        if response.status_code ~= 200 then
+            participant:error(string.format("updateObject returned %d!, \"%s\"", response.status_code, response.body))
+            connAttempts = connAttempts + 1
+            goto retry
+        end
+
+        do
+            -- If we're here, then we can return the response body.
+            return true, response.body
+        end
+
+        -- retry goto to iterate again if we failed to retrieve our car data.
+        ::retry::
+    end
+
+    -- If we're here, then we failed to get valid car data. Send an error response
+    return false, ""
 end
 
 function handleDatagram(client, msgType, dgi)
@@ -458,11 +497,10 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     client:setChannel(accountId, avatarId)
     client:subscribePuppetChannel(avatarId, 1)
 
-    -- TODO: Re-enable membership after we implement sponsors
     local setAccess = 1
-    -- if userTable.isPaid then
-        -- setAccess = 2
-    -- end
+    if userTable.isPaid then
+        setAccess = 2
+    end
 
     local chatLevel = 0
     if userTable.speedChatPlus then
@@ -716,6 +754,106 @@ end
 handleClientDistributedCarPuppet_setTalk = handleClientDistributedCarPlayer_setTalk
 handleDistributedCarPuppet_setTalk = handleDistributedCarPlayer_setTalk
 handleClientDistributedCarPuppet_setTalkWhisper = handleClientDistributedCarPlayer_setTalkWhisper
+
+function handleClientDistributedRaceCar_modifyDNA(client, doId, fieldId, data)
+    -- The data is safe to use, as the ranges has already been
+    -- verified by the server prior to calling this function.
+
+    local userTable = client:userTable()
+    local playToken = userTable.playToken
+    local avatarId = userTable.avatarId
+
+    local carName = data[1]
+    local carNumber = data[2]
+    local logoBackgroundId = data[3]
+    local logoBackgroundColor = data[4]
+    local logoFontId = data[5]
+    local logoFontColor = data[6]
+    local gender = data[7]
+    local chassis = data[8]
+    local color = data[9]
+    local eyeColor = data[10]
+    local wheel = data[11]
+    local tire = data[12]
+    local detailing = data[13]
+    local profileBackgroundId = data[14]
+    local costumeId = data[15]
+    local stretches = data[16]
+    local decalSlots = data[17]
+
+    local toUpdate = {}
+
+    toUpdate["carName"] = carName
+    toUpdate["carNumber"] = carNumber
+    toUpdate["logoBackgroundId"] = logoBackgroundId
+    toUpdate["logoBackgroundColor"] = logoBackgroundColor
+    toUpdate["logoFontId"] = logoFontId
+    toUpdate["logoFontColor"] = logoFontColor
+    toUpdate["gender"] = gender
+    toUpdate["chassis"] = chassis
+    toUpdate["color"] = color
+    toUpdate["eyeColor"] = eyeColor
+    toUpdate["wheel"] = wheel
+    toUpdate["tire"] = tire
+    toUpdate["detailing"] = detailing
+    toUpdate["profileBackgroundId"] = profileBackgroundId
+    toUpdate["costumeId"] = costumeId
+    toUpdate["stretches"] = stretches
+    toUpdate["decalSlots"] = decalSlots
+
+    updateObject(participant, avatarId, toUpdate)
+
+    local car = json.decode(retrieveCar(client, "playToken=" .. playToken))
+
+    local dg = datagram:new()
+    -- We set the sender field to the avatarId instead of our channel to make sure
+    -- we can receive the broadcast.
+    dg:addServerHeader(avatarId, avatarId, STATESERVER_OBJECT_UPDATE_FIELD)
+    dg:addUint32(avatarId)
+
+    client:packFieldToDatagram(dg, "DistributedCarPlayer", "setDNA", {{
+        carName,
+        carNumber,
+        logoBackgroundId,
+        logoBackgroundColor,
+        logoFontId,
+        logoFontColor,
+        gender,
+        car.carData.careerType,
+        chassis,
+        color,
+        eyeColor,
+        wheel,
+        tire,
+        detailing,
+        profileBackgroundId,
+        stretches,
+        decalSlots,
+        car.carData.addonItemList,
+        costumeId
+    }}, true)
+
+    client:routeDatagram(dg)
+end
+
+function handleClientDistributedRaceCar_modifyActiveSponsor(client, doId, fieldId, data)
+    -- The data is safe to use, as the ranges has already been
+    -- verified by the server prior to calling this function.
+
+    local sponsorId = data[1]
+
+    updateObject(participant, doId, {
+        activeSponsorId = sponsorId
+    })
+
+    local dg = datagram:new()
+    -- We set the sender field to the doId instead of our channel to make sure
+    -- we can receive the broadcast.
+    dg:addServerHeader(doId, doId, STATESERVER_OBJECT_UPDATE_FIELD)
+    dg:addUint32(doId)
+    client:packFieldToDatagram(dg, "DistributedRaceCar", "setActiveSponsor", {sponsorId}, true)
+    client:routeDatagram(dg)
+end
 
 function getCategoryDescription(category)
     if category == "MODERATION_FOUL_LANGUAGE" then
