@@ -42,7 +42,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         elif itemType == "pjb":
             # PaintJob
-            self.handlePaintJobPurchase(item, itemId)
+            self.handlePaintJobPurchase(itemId)
 
         self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
 
@@ -68,7 +68,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         self.racecar.setConsumables(consumables)
 
-    def handlePaintJobPurchase(self, item: dict, itemId: int) -> None:
+    def handlePaintJobPurchase(self, itemId: int) -> None:
         detailings: list = self.racecar.getDetailings()
 
         if itemId in detailings:
