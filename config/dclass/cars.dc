@@ -18,6 +18,7 @@ from game.cars.racing import DistributedCrossShardLobbyContext/AI
 from game.cars.racing import DistributedMPRace/AI
 from game.cars.dungeon import DistributedDungeon/AI
 from game.cars.dungeon import DistributedYard/AI
+from game.cars.dungeon import DistributedYardItem/AI
 
 // cars start at struct 45 and field 331
 
@@ -425,8 +426,8 @@ dclass InteractiveObject : DistributedCarAvatar {
 
 // struct 85
 dclass YardInteractiveObject : InteractiveObject {
-    setCatalogItemId(int32) required; // 552
-    setOffset(int32, int32) required;
+    setCatalogItemId(int32 catalogItemId) required; // 552
+    setOffset(int32 x, int32 y) required;
 };
 
 // struct 86
@@ -490,8 +491,8 @@ dclass DistributedSPRace : DistributedRace {
 dclass DistributedYard : DistributedDungeon {
     setOwner(uint32) required broadcast; // 595
     setItemPosition(int32, int32, int32) clsend;
-    addItemRequest(int32, int32, int32, int32) clsend;
-    addItemResponse(int8, int32);
+    addItemRequest(int32 itemId, int32 x, int32 y, int32 handle) clsend airecv;
+    addItemResponse(int8 responseCode, int32 handle);
     removeItemRequest(int32, int32) clsend;
     removeItemResponse(int8, int32);
 };
@@ -516,9 +517,9 @@ dclass YardManager {
 
 // struct 93
 dclass DistributedYardItem {
-    setItemId(int32) required; // 609
-    setCatalogItemId(uint16) required;
-    setPosition(int32, int32) required clsend;
+    setItemId(int32 itemId) required broadcast; // 609
+    setCatalogItemId(uint16 catalogItemId) required broadcast;
+    setPosition(int32 x, int32 y) required broadcast clsend;
 };
 
 // struct 94

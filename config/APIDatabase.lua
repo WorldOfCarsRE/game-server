@@ -122,6 +122,7 @@ Api2Field = {
     -- DistributedCarPlayer
     carCoins = "setCarCoins",
     userId = "setDISLid",
+    customItemList = "setYardStocks",
 
     -- CarPlayerStatus
     setLocationType = "setLocationType",

@@ -297,18 +297,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.notify.info("Ready!")
 
     def registerShard(self):
-        # dg = PyDatagram()
-        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_REGISTER_SHARD)
-        # dg.addUint32(self.districtId)
-        # dg.addString(self.districtName)
-
         # Send update to the ShardManager UberDOG
         dg = self.shardManagerClass.aiFormatUpdate("registerShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, (self.districtId, self.districtName))
         self.send(dg)
 
         # Set up the delete message as a post remove
-        # dg = PyDatagram()
-        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_DELETE_SHARD)
         dg = self.shardManagerClass.aiFormatUpdate("deleteShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, [])
         self.addPostSocketClose(dg)
 
@@ -318,10 +311,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
             # Send our population update.
             self.sendPopulation()
 
-        # dg = PyDatagram()
-        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_UPDATE_SHARD)
-        # dg.addUint16(self.getPopulation())
-        # dg.addUint8(self.district.getEnabled())
         dg = self.shardManagerClass.aiFormatUpdate("updateShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, (self.getPopulation(), self.district.getEnabled()))
         self.send(dg)
 
@@ -341,7 +330,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         dbo = DatabaseObject(self, carPlayer.doId)
         # Add more fields if needed. (Good spot to look if the field you want
         # is an ownrequired field, but no required or ram.)
-        dbo.readObject(carPlayer, ["setCarCoins"])
+        dbo.readObject(carPlayer, ["setCarCoins", "setYardStocks"])
 
     def readRaceCar(self, racecarId, fields = None) -> DistributedRaceCarAI:
         dbo = DatabaseObject(self, racecarId)
@@ -400,11 +389,9 @@ class CarsAIRepository(AIDistrict, ServerBase):
             dungeon.generateWithRequired(zoneId)
             dungeon.createObjects()
         elif _type == DUNGEON_TYPE_YARD:
-            dungeon = DistributedYardAI(self)
-
-            dungeon.owner = playerIds[0]
-
+            dungeon = DistributedYardAI(self, playerIds[0])
             dungeon.generateOtpObject(self.districtId, dungeon.owner)
+            dungeon.createObjects()
         elif _type == DUNGEON_TYPE_RACE:
             self.notify.warning("TODO: DUNGEON_TYPE_RACE")
             return
