@@ -19,6 +19,17 @@ class DistributedYardAI(DistributedDungeonAI):
     def getOwner(self) -> int:
         return self.owner
 
+    def setItemPosition(self, doId: int, x: int, y: int) -> None:
+        item: DistributedYardItemAI | None = self.air.getDo(doId)
+
+        if item is None:
+            return
+
+        item.setPosition(x, y)
+
+        self.air.mongoInterface.updateField("activeyarditems", "x", item.objectId, x)
+        self.air.mongoInterface.updateField("activeyarditems", "y", item.objectId, y)
+
     def addItemRequest(self, itemId: int, x: int, y: int, handle: int) -> None:
         av = self.air.getDo(self.getOwner())
 
@@ -31,7 +42,7 @@ class DistributedYardAI(DistributedDungeonAI):
             if catalogItemId == itemId and hasSomeOfItem:
                 yardStocks[i] = (itemId, quantity - 1, usedQuantity + 1)
 
-                self.air.mongoInterface.mongodb.activeyarditems.insert_one(
+                insertedItem = self.air.mongoInterface.mongodb.activeyarditems.insert_one(
                     {
                         "ownerDoId": self.getOwner(),
                         "itemId": catalogItemId,
@@ -43,6 +54,7 @@ class DistributedYardAI(DistributedDungeonAI):
 
                 item = DistributedYardItemAI(self.air, catalogItemId, catalogItemId, (x, y))
                 item.generateOtpObject(self.doId, DEFAULT_DUNGEON_ZONE)
+                item.objectId = insertedItem.inserted_id
                 self.objects.append(item)
 
         av.setYardStocks(yardStocks)
@@ -55,4 +67,5 @@ class DistributedYardAI(DistributedDungeonAI):
         for yardItem in activeYardItems:
             item = DistributedYardItemAI(self.air, yardItem["itemId"], yardItem["catalogItemId"], (yardItem["x"], yardItem["y"]))
             item.generateOtpObject(self.doId, DEFAULT_DUNGEON_ZONE)
+            item.objectId = yardItem["_id"]
             self.objects.append(item)
