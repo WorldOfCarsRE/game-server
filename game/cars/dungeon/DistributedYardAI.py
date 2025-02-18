@@ -28,7 +28,7 @@ class DistributedYardAI(DistributedDungeonAI):
             self.sendUpdateToAvatarId(self.getOwner(), "removeItemResponse", [RESPONSE_FAILED, handle])
             return
 
-        av: DistributedCarPlayerAI = self.air.getDo(self.getOwner())
+        av: DistributedCarPlayerAI | None = self.air.getDo(self.getOwner())
 
         yardStocks: list = av.getYardStocks()
 
@@ -58,7 +58,7 @@ class DistributedYardAI(DistributedDungeonAI):
         self.air.mongoInterface.updateField("activeyarditems", "y", item.objectId, y)
 
     def addItemRequest(self, itemId: int, x: int, y: int, handle: int) -> None:
-        av: DistributedCarPlayerAI = self.air.getDo(self.getOwner())
+        av: DistributedCarPlayerAI | None = self.air.getDo(self.getOwner())
 
         yardStocks: list = av.getYardStocks()
 
