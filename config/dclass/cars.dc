@@ -489,12 +489,12 @@ dclass DistributedSPRace : DistributedRace {
 
 // struct 90
 dclass DistributedYard : DistributedDungeon {
-    setOwner(uint32) required broadcast; // 595
+    setOwner(uint32 ownerId) required broadcast; // 595
     setItemPosition(int32 doId, int32 x, int32 y) clsend airecv;
     addItemRequest(int32 itemId, int32 x, int32 y, int32 handle) clsend airecv;
     addItemResponse(int8 responseCode, int32 handle);
-    removeItemRequest(int32, int32) clsend;
-    removeItemResponse(int8, int32);
+    removeItemRequest(int32 doId, int32 handle) clsend airecv;
+    removeItemResponse(int8 responseCode, int32 handle);
 };
 
 // struct 91

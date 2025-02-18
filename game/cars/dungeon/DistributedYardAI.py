@@ -1,7 +1,9 @@
 from .DistributedDungeonAI import DistributedDungeonAI
 from .DistributedYardItemAI import DistributedYardItemAI
 from game.cars.distributed.CarsGlobals import DEFAULT_DUNGEON_ZONE
+from game.cars.carplayer.DistributedCarPlayerAI import DistributedCarPlayerAI
 
+RESPONSE_FAILED = 0
 RESPONSE_SUCCESS = 1
 RESPONSE_NO_MORE_OF_THAT_ITEM = 2
 RESPONSE_CANT_ADD_MORE_ITEMS = 3
@@ -19,6 +21,31 @@ class DistributedYardAI(DistributedDungeonAI):
     def getOwner(self) -> int:
         return self.owner
 
+    def removeItemRequest(self, doId: int, handle: int) -> None:
+        item: DistributedYardItemAI | None = self.air.getDo(doId)
+
+        if item is None:
+            self.sendUpdateToAvatarId(self.getOwner(), "removeItemResponse", [RESPONSE_FAILED, handle])
+            return
+
+        av: DistributedCarPlayerAI = self.air.getDo(self.getOwner())
+
+        yardStocks: list = av.getYardStocks()
+
+        for i, yardItem in enumerate(yardStocks):
+            catalogItemId, quantity, usedQuantity = yardItem
+
+            if catalogItemId == item.catalogItemId:
+                yardStocks[i] = (catalogItemId, quantity + 1, usedQuantity - 1)
+
+        av.setYardStocks(yardStocks)
+
+        self.air.mongoInterface.mongodb.activeyarditems.delete_one({"_id": item.objectId})
+
+        item.requestDelete()
+
+        self.sendUpdateToAvatarId(self.getOwner(), "removeItemResponse", [RESPONSE_SUCCESS, handle])
+
     def setItemPosition(self, doId: int, x: int, y: int) -> None:
         item: DistributedYardItemAI | None = self.air.getDo(doId)
 
@@ -31,7 +58,7 @@ class DistributedYardAI(DistributedDungeonAI):
         self.air.mongoInterface.updateField("activeyarditems", "y", item.objectId, y)
 
     def addItemRequest(self, itemId: int, x: int, y: int, handle: int) -> None:
-        av = self.air.getDo(self.getOwner())
+        av: DistributedCarPlayerAI = self.air.getDo(self.getOwner())
 
         yardStocks: list = av.getYardStocks()
 

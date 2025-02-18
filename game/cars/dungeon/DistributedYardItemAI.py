@@ -22,7 +22,7 @@ class DistributedYardItemAI(InteractiveObjectAI):
         self.d_setPosition(x, y)
 
     def d_setPosition(self, x: int, y: int) -> None:
-        self.sendUpdate('setPosition', [x, y])
+        self.sendUpdate("setPosition", [x, y])
 
     def getPosition(self) -> tuple:
         return self.position
