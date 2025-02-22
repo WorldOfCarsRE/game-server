@@ -312,13 +312,42 @@ function handleSetStoredValues(participant, dgi)
         if dcField:isAtomic() then
             value = value[1]
         end
-        if Field2Api[field] ~= nil then
-            Api2Value[Field2Api[field]] = value
+        if field == "setDNA" then
+            -- We do the objectName check to ensure that the DNA gets updated once on the API
+            -- in case setDNA is updated is both DistributedCarPLayer and DistributedRaceCar.
+            -- (It's still a good idea to call both setDNA calls on the AI)
+            if data.objectName == "DistributedCarPlayer" then
+                goto finish
+            end
+            Api2Value["carName"] = value[1]
+            Api2Value["carNumber"] = value[2]
+            Api2Value["logoBackgroundId"] = value[3]
+            Api2Value["logoBackgroundColor"] = value[4]
+            Api2Value["logoFontId"] = value[5]
+            Api2Value["logoFontColor"] = value[6]
+            Api2Value["gender"] = value[7]
+            Api2Value["careerType"] = value[8]
+            Api2Value["chassis"] = value[9]
+            Api2Value["color"] = value[10]
+            Api2Value["eyeColor"] = value[11]
+            Api2Value["wheel"] = value[12]
+            Api2Value["tire"] = value[13]
+            Api2Value["detailing"] = value[14]
+            Api2Value["profileBackgroundId"] = value[15]
+            Api2Value["stretches"] = value[16]
+            Api2Value["decalSlots"] = value[17]
+            Api2Value["onAddons"] = value[18]
+            Api2Value["costumeId"] = value[19]
         else
-            participant:warn(string.format("SetStoredValues: %s is not in Field2Api, ignoring.", field))
+            if Field2Api[field] ~= nil then
+                Api2Value[Field2Api[field]] = value
+            else
+                participant:warn(string.format("SetStoredValues: %s is not in Field2Api, ignoring.", field))
+            end
         end
     end
 
+    ::finish::
     unpacker:delete()
     if Api2Value ~= {} then
         participant:debug(string.format("Sending update to %s(%d): %s", data.objectName, doId, inspect(Api2Value)))

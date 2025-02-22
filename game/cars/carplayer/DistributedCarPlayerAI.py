@@ -1,11 +1,11 @@
 import math
-
 from typing import List
 
 from .DistributedCarAvatarAI import DistributedCarAvatarAI
 from game.cars.zone import ZoneConstants
 
 from .DistributedRaceCarAI import DistributedRaceCarAI
+from .CarDNA import CarDNA
 
 BUY_RESP_CODE_SUCCESS = 0
 BUY_RESP_CODE_ALREADY_OWNED = 1
@@ -23,6 +23,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.racecarId = 0
         self.yardStocks: list = []
         self.racecar: DistributedRaceCarAI = None
+        self.dna: CarDNA = None
 
     def buyItemRequest(self, shopId: int, itemId: int) -> None:
         item: None | dict = self.air.getShopItem(str(shopId), itemId)
@@ -109,13 +110,41 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def d_buyItemResponse(self, itemId: int, responseCode: int) -> None:
         self.sendUpdateToAvatarId(self.doId, 'buyItemResponse', [itemId, responseCode])
 
+    def setDNA(self, carDNA: CarDNA):
+        if carDNA.validateDNA():
+            self.dna = carDNA
+
+    def d_setDNA(self, carDNA: CarDNA):
+        if carDNA.validateDNA():
+            self.sendUpdate("setDNA", [carDNA])
+
+    def b_setDNA(self, carDNA: CarDNA):
+        if carDNA.validateDNA():
+            self.setDNA(carDNA)
+            self.d_setDNA(carDNA)
+
     def setCars(self, carCount: int, cars: list):
         self.carCount = carCount
         self.racecarId = cars[0]
 
         if self.racecarId:
             # Retrieve their DistributedRaceCar object.
-            self.racecar = self.air.readRaceCar(self.racecarId)
+            def callback(dbo, retCode):
+                if retCode == 0:
+                    self.racecar = dbo.do
+                    self.racecar.player = self
+                    if self.racecarId not in self.air.doId2do:
+                        self.air.addDOToTables(dbo.do, (self.parentId, 0))
+
+                        # Call the local generate methods to prevent a warning on delete
+                        dbo.do.generate()
+                        dbo.do.announceGenerate()
+                        dbo.do.postGenerateMessage()
+
+                        self.air.setAIReceiver(self.racecarId)
+
+            self.acceptOnce(self.taskName("getRaceCar"), callback)
+            self.air.readRaceCar(self.racecarId, doneEvent = self.taskName("getRaceCar"))
 
     def getRaceCarId(self) -> int:
         return self.racecarId
