@@ -1,4 +1,5 @@
 from game.cars.distributed import CarsDistrict/AI
+from game.cars.carplayer import CarDNA
 from game.cars.carplayer import DistributedCarPlayer/AI
 from game.cars.carplayer import DistributedCarGM/AI
 from game.cars.carplayer import DistributedCarPuppet/AI
@@ -248,10 +249,10 @@ dclass DistributedRaceCar : Persistent {
     setPrintableBackgrounds(int32[] = []) ownrequired db ownrecv;
     setGears(int32[] = [1]) ownrequired db ownrecv;
     setCostumes(int32[] = []) ownrequired db ownrecv;
-    modifyActiveSponsor(int32) ownsend;
-    modifyDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[]) ownsend;
+    modifyActiveSponsor(int32) ownsend airecv;
+    modifyDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[]) ownsend airecv;
     modifyAddon(int32[], int32[]) ownsend;
-    modifyAllDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[], int32[], int32[]) ownsend;
+    modifyAllDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[], int32[], int32[]) ownsend airecv;
     modifyActiveGear(int32) ownsend;
     deformAddons(Addon[]) ownsend;
     consume(Consumable) ownsend airecv;

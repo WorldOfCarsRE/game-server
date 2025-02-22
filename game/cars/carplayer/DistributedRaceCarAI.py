@@ -1,12 +1,26 @@
 from direct.distributed.DistributedObjectAI import DistributedObjectAI
+from direct.directnotify.DirectNotifyGlobal import directNotify
+
+from .CarDNA import CarDNA
+
+# To prevent circular import from CarPlayerAI on runtime
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .DistributedCarPlayerAI import DistributedCarPlayerAI
 
 class DistributedRaceCarAI(DistributedObjectAI):
+    notify = directNotify.newCategory("DistributedRaceCarAI")
+    notify.setDebug(True)
+
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
+        self.dna: CarDNA = None
         self.racingPoints: int = 0
-        self.animations: list = []
+        self.animations: list[int] = []
         self.consumables: list = []
-        self.detailings: list = []
+        self.detailings: list[int] = []
+        self.activeSponsor: int = 0
+        self.player: DistributedCarPlayerAI = None
 
     def consume(self, usedConsumable) -> None:
         itemId: int = usedConsumable[0]
@@ -15,7 +29,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
         for i, consumable in enumerate(consumables):
             inventoryItemId, quantity = consumable
 
-            if inventoryItemId == itemId:                
+            if inventoryItemId == itemId:
                 if quantity == 1:
                     consumables.pop(i)
                 else:
@@ -23,8 +37,86 @@ class DistributedRaceCarAI(DistributedObjectAI):
 
                 self.setConsumables(consumables)
                 return
-            
+
         self.notify.warning(f"Consumable {itemId} not found in inventory")
+
+    def setDNA(self, carDNA: CarDNA):
+        if carDNA.validateDNA():
+            self.dna = carDNA
+
+    def d_setDNA(self, carDNA: CarDNA):
+        if carDNA.validateDNA():
+            self.sendUpdate("setDNA", [carDNA])
+
+    def b_setDNA(self, carDNA: CarDNA):
+        if carDNA.validateDNA():
+            self.setDNA(carDNA)
+            self.d_setDNA(carDNA)
+
+    def modifyDNA(self, carName, carNumber, logoBackgroundId, logoBackgroundColor,
+                  logoFontId, logoFontColor, gender, chassis, color, eyeColor,
+                  wheel, tire, detailing, profileBackgroundId, costumeId,
+                  stretches, decalSlots):
+        self.modifyAllDNA(carName, carNumber, logoBackgroundId, logoBackgroundColor,
+                          logoFontId, logoFontColor, gender, chassis, color, eyeColor,
+                          wheel, tire, detailing, profileBackgroundId, costumeId,
+                          stretches, decalSlots, self.dna.onAddons, [])
+
+    def modifyAllDNA(self, carName, carNumber, logoBackgroundId, logoBackgroundColor,
+                     logoFontId, logoFontColor, gender, chassis, color, eyeColor,
+                     wheel, tire, detailing, profileBackgroundId, costumeId,
+                     stretches, decalSlots, onAddons, offAddons):
+        sender = self.air.getAvatarIdFromSender()
+
+        dna = CarDNA()
+
+        dna.carName = carName
+        dna.carNumber = carNumber
+        dna.logoBackgroundId = logoBackgroundId
+        dna.logoBackgroundColor = logoBackgroundColor
+        dna.logoFontId = logoFontId
+        dna.logoFontColor = logoFontColor
+        dna.gender = gender
+        dna.careerType = self.dna.careerType
+        dna.chassis = chassis
+        dna.color = color
+        dna.eyeColor = eyeColor
+        dna.wheel = wheel
+        dna.tire = tire
+        dna.detailing = detailing
+        dna.profileBackgroundId = profileBackgroundId
+        dna.costumeId = costumeId
+        dna.stretches = stretches.copy()
+        dna.onAddons = onAddons.copy()
+        dna.decalSlots = decalSlots.copy()
+
+        # TODO: offAddons (disabled addons?)
+
+        self.notify.debug(f"modifyDNA: {str(dna)}")
+
+        # TODO: Confirm what can be changed by the client and reject attempt if suspicious.
+        if not dna.validateDNA():
+            self.notify.warning(f"Player {sender} attempted to modifyDNA with invalid values.  Halting.")
+            self.air.writeServerEvent('suspicious', sender, 'modifyDNA: dna.validateDNA() = false')
+            return
+
+        # call setDNA for both CarPlayerAI and RaceCarAI
+        self.b_setDNA(dna)
+        self.player.b_setDNA(dna)
+
+    def setActiveSponsor(self, sponsor: int):
+        self.activeSponsor = sponsor
+
+    def d_setActiveSponsor(self, sponsor: int):
+        self.sendUpdate("setActiveSponsor", [sponsor])
+
+    def b_setActiveSponsor(self, sponsor: int):
+        self.setActiveSponsor(sponsor)
+        self.d_setActiveSponsor(sponsor)
+
+    def modifySponsor(self, sponsor):
+        # TODO: Check if sponsorId is valid.
+        self.b_setActiveSponsor(sponsor)
 
     def setRacingPoints(self, racingPoints: int):
         self.racingPoints = racingPoints
