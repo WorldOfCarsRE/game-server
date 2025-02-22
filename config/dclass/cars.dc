@@ -254,7 +254,7 @@ dclass DistributedRaceCar : Persistent {
     modifyAllDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[], int32[], int32[]) ownsend;
     modifyActiveGear(int32) ownsend;
     deformAddons(Addon[]) ownsend;
-    consume(Consumable) ownsend;
+    consume(Consumable) ownsend airecv;
     setDashboardTextureRequest(int32) ownsend;
 };
 

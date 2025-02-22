@@ -63,8 +63,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
                 consumables[i] = (itemId, quantity + 1)
 
-            if not consumableInInventory:
-                consumables.append((itemId, 1))
+        if not consumableInInventory:
+            consumables.append((itemId, 1))
 
         self.racecar.setConsumables(consumables)
 
@@ -89,6 +89,9 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         if self.racecarId:
             # Retrieve their DistributedRaceCar object.
             self.racecar = self.air.readRaceCar(self.racecarId)
+            if self.racecarId not in self.air.doId2do:
+                self.air.doId2do[self.racecarId] = self.racecar
+                self.air.setAIReceiver(self.racecarId)
 
     def getRaceCarId(self) -> int:
         return self.racecarId
@@ -134,6 +137,9 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.air.sendFriendManagerAccountOffline(self.DISLid)
 
         self.air.decrementPopulation()
+
+        if self.racecarId and self.racecarId in self.air.doId2do:
+            del self.air.doId2do[self.racecarId]
 
         DistributedCarAvatarAI.delete(self)
 

@@ -8,6 +8,24 @@ class DistributedRaceCarAI(DistributedObjectAI):
         self.consumables: list = []
         self.detailings: list = []
 
+    def consume(self, usedConsumable) -> None:
+        itemId: int = usedConsumable[0]
+        consumables: list = self.getConsumables()
+
+        for i, consumable in enumerate(consumables):
+            inventoryItemId, quantity = consumable
+
+            if inventoryItemId == itemId:                
+                if quantity == 1:
+                    consumables.pop(i)
+                else:
+                    consumables[i] = (itemId, quantity - 1)
+
+                self.setConsumables(consumables)
+                return
+            
+        self.notify.warning(f"Consumable {itemId} not found in inventory")
+
     def setRacingPoints(self, racingPoints: int):
         self.racingPoints = racingPoints
 
