@@ -190,8 +190,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.tailgatorSpeedway.updateObjectCount()
 
-        self.fillmoreFizzyHut = FillmoreFizzyFuelHutAI(self)
-        self.fillmoreFizzyHut.generateWithRequired(self.redhoodValley.doId)
         self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
         self.downtownZone.interactiveObjects.append(self.spyShopRS)
 
