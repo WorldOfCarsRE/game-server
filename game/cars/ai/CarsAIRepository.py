@@ -202,8 +202,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.tailgatorSpeedway.updateObjectCount()
 
-        self.fillmoreFizzyHut = FillmoreFizzyFuelHutAI(self)
-        self.fillmoreFizzyHut.generateWithRequired(self.redhoodValley.doId)
         self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
         self.downtownZone.interactiveObjects.append(self.spyShopRS)
 
@@ -213,11 +211,16 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.fillmoreFizzyHutFF.name = "isostore_FillmoreFizzyHutFF"
         self.fillmoreFizzyHutFF.generateWithRequired(self.fillmoresFields.doId)
 
+        self.spyShopFF = SpyShopAI(self)
+        self.spyShopFF.name = "isostore_SpyStoreFF"
+        self.spyShopFF.generateWithRequired(self.fillmoresFields.doId)
+
         self.tractor = TractorAI(self)
         self.tractor.name = 'tractor1'
         self.tractor.generateWithRequired(self.fillmoresFields.doId)
 
         self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
+        self.fillmoresFields.interactiveObjects.append(self.spyShopFF)
         self.fillmoresFields.interactiveObjects.append(self.tractor)
 
         self.fillmoresFields.updateObjectCount()
@@ -245,14 +248,14 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.willysButte.updateObjectCount()
 
-        # self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
-        # self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
+        self.spCCSRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml") # dungeonItemId is from constants.js
+        self.spCCSRaceLobby.generateWithRequired(self.downtownZone.doId)
 
-        # self.mpCCSRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml")
-        # self.mpCCSRaceFriendsLobby.generateWithRequired(self.downtownZone.doId)
+        self.mpCCSRaceFriendsLobby = DistributedFriendsLobbyAI(self, "mpRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml")
+        self.mpCCSRaceFriendsLobby.generateWithRequired(self.downtownZone.doId)
 
-        # self.mpCCSRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml")
-        # self.mpCCSRaceCrossShardLobby.generateWithRequired(self.downtownZone.doId)
+        self.mpCCSRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_ccs", 42001, "car_w_trk_rsp_ccSpeedway_SS_phys.xml")
+        self.mpCCSRaceCrossShardLobby.generateWithRequired(self.downtownZone.doId)
 
         self.spRHRaceLobby = DistributedSinglePlayerRacingLobbyAI(self, "spRace_rh", 42002, "car_w_trk_tfn_twistinTailfin_SS_V1_phys.xml") # dungeonItemId is from constants.js
         self.spRHRaceLobby.generateWithRequired(self.redhoodValley.doId)
