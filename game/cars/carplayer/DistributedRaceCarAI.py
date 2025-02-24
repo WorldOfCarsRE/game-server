@@ -114,7 +114,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
         self.setActiveSponsor(sponsor)
         self.d_setActiveSponsor(sponsor)
 
-    def modifySponsor(self, sponsor):
+    def modifyActiveSponsor(self, sponsor):
         # TODO: Check if sponsorId is valid.
         self.b_setActiveSponsor(sponsor)
 
