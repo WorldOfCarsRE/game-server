@@ -64,27 +64,29 @@ class DistributedYardAI(DistributedDungeonAI):
 
         for i, yardItem in enumerate(yardStocks):
             catalogItemId, quantity, usedQuantity = yardItem
-            hasSomeOfItem: bool = quantity > 0
 
-            if catalogItemId == itemId and hasSomeOfItem:
-                yardStocks[i] = (itemId, quantity - 1, usedQuantity + 1)
+            if catalogItemId == itemId:
+                hasSomeOfItem: bool = quantity > 0
 
-                insertedItem = self.air.mongoInterface.mongodb.activeyarditems.insert_one(
-                    {
-                        "ownerDoId": self.getOwner(),
-                        "itemId": catalogItemId,
-                        "catalogItemId": catalogItemId,
-                        "x": x,
-                        "y": y
-                    }
-                )
+                if hasSomeOfItem:
+                    yardStocks[i] = (itemId, quantity - 1, usedQuantity + 1)
 
-                item = DistributedYardItemAI(self.air, catalogItemId, catalogItemId, (x, y))
-                item.generateOtpObject(self.doId, DEFAULT_DUNGEON_ZONE)
-                item.objectId = insertedItem.inserted_id
-                self.objects.append(item)
+                    insertedItem = self.air.mongoInterface.mongodb.activeyarditems.insert_one(
+                        {
+                            "ownerDoId": self.getOwner(),
+                            "itemId": catalogItemId,
+                            "catalogItemId": catalogItemId,
+                            "x": x,
+                            "y": y
+                        }
+                    )
 
-        av.setYardStocks(yardStocks)
+                    item = DistributedYardItemAI(self.air, catalogItemId, catalogItemId, (x, y))
+                    item.generateOtpObject(self.doId, DEFAULT_DUNGEON_ZONE)
+                    item.objectId = insertedItem.inserted_id
+                    self.objects.append(item)
+
+                    av.setYardStocks(yardStocks)
 
         self.sendUpdateToAvatarId(self.getOwner(), "addItemResponse", [RESPONSE_SUCCESS if hasSomeOfItem else RESPONSE_NO_MORE_OF_THAT_ITEM, handle])
 
