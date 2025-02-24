@@ -9,14 +9,14 @@ class ObjectServerAI(DistributedObjectAI):
     This is an object to represent the OTP Object Server itself.  You might
     not get a create for this object, but at some point you'll probably
     make contact with it to start an AI or some such.
-    
+
     The server version of this object is created by Roger's code.
     """
     notify = directNotify.newCategory("ObjectServerAI")
 
     def __init__(self, air):
         DistributedObjectAI.__init__(self, air)
-    
+
     def delete(self):
         self.air.removeDOFromTables(self)
         DistributedObjectAI.delete(self)
@@ -29,4 +29,5 @@ class ObjectServerAI(DistributedObjectAI):
         if dcHash != self.air.hashVal:
             self.notify.error(f"\nBad DC Version compare -- hash value mismatch (district {self.air.hashVal}, otp_server {dcHash})")
         else:
-            print("DC hash matches.")
+            self.notify.info("DC hash matches.")
+            self.air.hashCheckPassed()

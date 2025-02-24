@@ -29,4 +29,5 @@ class ObjectServerUD(DistributedObjectUD):
         if dcHash != self.air.hashVal:
             self.notify.error(f"\nBad DC Version compare -- hash value mismatch (district {self.air.hashVal}, otp_server {dcHash})")
         else:
-            print("DC hash matches.")
+            self.notify.info("DC hash matches.")
+            self.air.hashCheckPassed()

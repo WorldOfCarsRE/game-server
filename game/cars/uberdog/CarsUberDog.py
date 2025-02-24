@@ -42,10 +42,6 @@ class CarsUberDog(UberDog):
         # schedule for execution on socket close
         self.addPostSocketClose(datagram)
 
-        # Ask for the ObjectServer so we can check the dc hash value
-        context = self.allocateContext()
-        self.queryObjectAll(self.serverId, context)
-
         self.holidayManager = self.generateGlobalObject(OTP_DO_ID_CARS_HOLIDAY_MANAGER, "HolidayManager")
 
         # ShardManager has to be an object on the state server because the game
@@ -53,7 +49,7 @@ class CarsUberDog(UberDog):
         # parent.
         self.shardManager = ShardManagerUD(self)
         # HACK: parentId has to be set as at least something to prevent message truncation.
-        self.shardManager.generateWithRequiredAndId(OTP_DO_ID_CARS_SHARD_MANAGER, 1, 0)
+        self.shardManager.generateWithRequiredAndId(OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS, 0)
         self.setAIReceiver(OTP_DO_ID_CARS_SHARD_MANAGER)
 
         self.tutorialLobby = DistributedTutorialLobbyUD(self)
