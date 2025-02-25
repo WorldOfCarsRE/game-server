@@ -15,6 +15,7 @@ from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
 from game.cars.carplayer.npcs.TractorAI import TractorAI
+from game.cars.carplayer.npcs.LightningMcQueenAI import LightningMcQueenAI
 from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import \
     FillmoreFizzyFuelHutAI
 from game.cars.carplayer.shops.MackShopAI import MackShopAI
@@ -170,6 +171,14 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.downtownZone.interactiveObjects.append(self.luigisCasaDellaTires)
         self.downtownZone.interactiveObjects.append(self.matersSlingShoot)
 
+        self.lightningMcQueen = LightningMcQueenAI(self)
+        self.lightningMcQueen.generateWithRequired(self.downtownZone.doId)
+
+        self.downtownZone.interactiveObjects.append(self.lightningMcQueen)
+
+        self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
+        self.downtownZone.interactiveObjects.append(self.spyShopRS)
+
         self.downtownZone.updateObjectCount()
 
         self.shinyWax = ShinyWaxAI(self)
@@ -202,11 +211,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.tailgatorSpeedway.interactiveObjects.append(self.gaskits)
 
         self.tailgatorSpeedway.updateObjectCount()
-
-        self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
-        self.downtownZone.interactiveObjects.append(self.spyShopRS)
-
-        self.downtownZone.updateObjectCount()
 
         self.fillmoreFizzyHutFF = FillmoreFizzyFuelHutAI(self)
         self.fillmoreFizzyHutFF.name = "isostore_FillmoreFizzyHutFF"

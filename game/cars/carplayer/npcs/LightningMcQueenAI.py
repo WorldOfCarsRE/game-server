@@ -2,20 +2,22 @@ from game.cars.carplayer.InteractiveObjectAI import (
     TYPE_NPC, InteractiveObjectAI)
 
 
-class MaterAI(InteractiveObjectAI):
+class LightningMcQueenAI(InteractiveObjectAI):
     def __init__(self, air) -> None:
         # HACK: Renaming our class name here because
         # DistributedObjectAI will search dclassesByName
-        # for the non-existant MaterAI dclass.
+        # for the non-existant LightningMcQueenAI dclass.
         self.__class__.__name__ = "InteractiveObjectAI"
 
         InteractiveObjectAI.__init__(self, air)
 
         self.objType = TYPE_NPC
-        self.assetId = 31009 # materCatalogItemId
+        self.assetId = 31010
+        self.catalogId = 102
 
     def announceGenerate(self) -> None:
         InteractiveObjectAI.announceGenerate(self)
 
         # Experiments
-        self.d_setTelemetry(3329, 1889, 0, 13073, 6027, 12847, -32722, 325026)
+        # TODO: More accurate placement?
+        self.d_setTelemetry(3548, 1812, 0, 551, 854, 16213, 16156, 259154)
