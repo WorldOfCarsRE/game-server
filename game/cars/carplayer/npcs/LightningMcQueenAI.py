@@ -13,7 +13,6 @@ class LightningMcQueenAI(InteractiveObjectAI):
 
         self.objType = TYPE_NPC
         self.assetId = 31010
-        self.catalogId = 102
 
     def announceGenerate(self) -> None:
         InteractiveObjectAI.announceGenerate(self)
