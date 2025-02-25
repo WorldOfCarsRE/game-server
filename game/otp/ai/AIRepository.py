@@ -434,6 +434,11 @@ class AIRepository(ConnectionRepository):
 
     def enterPlayGame(self):
         self.handler = self.handlePlayGame
+        #  First, ask for the ObjectServer so we can check the dc hash value.
+        context = self.allocateContext()
+        self.queryObjectAll(self.serverId, context)
+
+    def hashCheckPassed(self):
         self.createObjects()
 
     def handleConnect(self, msgType, di):

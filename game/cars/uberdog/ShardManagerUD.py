@@ -2,6 +2,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectUD import DistributedObjectUD
 from . import ShardGlobals
 from typing import Dict
+from game.cars.distributed.CarsGlobals import DUNGEON_TYPE_YARD
 
 class Shard:
     shardId: int
@@ -81,3 +82,22 @@ class ShardManagerUD(DistributedObjectUD):
             response.append([shard.shardId, shard.shardName, self.getPopulationLevel(shard.avatarCount), shard.avatarCount, shard.active])
 
         self.sendUpdateToChannel(sender, 'getAllShardsResponse', [context, response])
+
+    def getYardRequest(self, ownerDoId: int) -> None:
+        def gotAvatarLocation(doId: int, parentId: int, zoneId: int) -> None:
+            if ownerDoId != doId:
+                self.notify.warning(f"Got unexpected location for doId {doId}, was expecting {ownerDoId}!")
+                return
+
+            # Get the AI channel of the avatar's shard:
+            shardChannel = self.getShardChannel(parentId)
+            if not shardChannel:
+                self.notify.warning(f"No shardChannel")
+                return
+
+            def gotYard(doId: int, parentId: int, zoneId: int) -> None:
+                self.sendUpdateToAvatarId(ownerDoId, "getYardResponse", [parentId, doId])
+
+            self.air.remoteGenerateDungeon(shardChannel, DUNGEON_TYPE_YARD, self.doId, 0, [ownerDoId], gotYard)
+
+        self.air.getObjectLocation(ownerDoId, gotAvatarLocation)

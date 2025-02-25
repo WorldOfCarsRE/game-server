@@ -21,6 +21,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.carCoins = 0
         self.carCount = 0
         self.racecarId = 0
+        self.yardStocks: list = []
         self.racecar: DistributedRaceCarAI = None
         self.dna: CarDNA = None
 
@@ -44,6 +45,10 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         elif itemType == "pjb":
             # PaintJob
             self.handlePaintJobPurchase(itemId)
+
+        elif itemType == "yar":
+            # Yard
+            self.handleYardPurchase(item, itemId)
 
         self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
 
@@ -79,6 +84,28 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         detailings.append(itemId)
 
         self.racecar.setDetailings(detailings)
+
+    def handleYardPurchase(self, item: dict, itemId: int) -> None:
+        itemInInventory: bool = False
+
+        yardStocks: list = self.getYardStocks()
+
+        for i, yardItem in enumerate(yardStocks):
+            catalogItemId, quantity, usedQuantity = yardItem
+
+            if catalogItemId == itemId:
+                itemInInventory: bool = True
+
+                if quantity >= item["maximumOwnable"]:
+                    self.d_buyItemResponse(itemId, BUY_RESP_CODE_NOT_PURCHASEABLE)
+                    return
+
+                yardStocks[i] = (itemId, quantity + 1, usedQuantity)
+
+        if not itemInInventory:
+            yardStocks.append((itemId, 1, 0))
+
+        self.setYardStocks(yardStocks)
 
     def d_buyItemResponse(self, itemId: int, responseCode: int) -> None:
         self.sendUpdateToAvatarId(self.doId, 'buyItemResponse', [itemId, responseCode])
@@ -150,7 +177,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def announceGenerate(self):
         self.air.sendFriendManagerAccountOnline(self.DISLid)
 
-        # self.sendUpdateToAvatarId(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
+        self.sendUpdateToAvatarId(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
         self.sendUpdateToAvatarId(self.doId, 'generateComplete', [])
 
         self.air.incrementPopulation()
@@ -213,3 +240,13 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
     def d_showDialogs(self, dialogId: int, args: List[str]):
         self.sendUpdateToAvatarId(self.doId, 'showDialogs', [[[dialogId, args]]])
+
+    def d_setYardStocks(self, yardStocks: list) -> None:
+        self.sendUpdate('setYardStocks', [yardStocks])
+
+    def setYardStocks(self, yardStocks: list) -> None:
+        self.yardStocks = yardStocks
+        self.d_setYardStocks(self.yardStocks)
+
+    def getYardStocks(self) -> list:
+        return self.yardStocks

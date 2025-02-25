@@ -15,6 +15,7 @@ from game.cars.carplayer.games.MatersSlingShootAI import MatersSlingShootAI
 from game.cars.carplayer.npcs.MaterAI import MaterAI
 from game.cars.carplayer.npcs.RamoneAI import RamoneAI
 from game.cars.carplayer.npcs.TractorAI import TractorAI
+from game.cars.carplayer.npcs.LightningMcQueenAI import LightningMcQueenAI
 from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import \
     FillmoreFizzyFuelHutAI
 from game.cars.carplayer.shops.MackShopAI import MackShopAI
@@ -32,6 +33,7 @@ from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
 from game.cars.dungeon.DistributedTutorialDungeonAI import DistributedTutorialDungeonAI
+from game.cars.dungeon.DistributedYardAI import DistributedYardAI
 from game.cars.racing.DistributedSinglePlayerRacingLobbyAI import \
     DistributedSinglePlayerRacingLobbyAI
 from game.cars.racing.DistributedFriendsLobbyAI import \
@@ -169,6 +171,14 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.downtownZone.interactiveObjects.append(self.luigisCasaDellaTires)
         self.downtownZone.interactiveObjects.append(self.matersSlingShoot)
 
+        self.lightningMcQueen = LightningMcQueenAI(self)
+        self.lightningMcQueen.generateWithRequired(self.downtownZone.doId)
+
+        self.downtownZone.interactiveObjects.append(self.lightningMcQueen)
+
+        self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
+        self.downtownZone.interactiveObjects.append(self.spyShopRS)
+
         self.downtownZone.updateObjectCount()
 
         self.shinyWax = ShinyWaxAI(self)
@@ -201,11 +211,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.tailgatorSpeedway.interactiveObjects.append(self.gaskits)
 
         self.tailgatorSpeedway.updateObjectCount()
-
-        self.downtownZone.interactiveObjects.append(self.redhoodValleyHotspot)
-        self.downtownZone.interactiveObjects.append(self.spyShopRS)
-
-        self.downtownZone.updateObjectCount()
 
         self.fillmoreFizzyHutFF = FillmoreFizzyFuelHutAI(self)
         self.fillmoreFizzyHutFF.name = "isostore_FillmoreFizzyHutFF"
@@ -299,18 +304,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.notify.info("Ready!")
 
     def registerShard(self):
-        # dg = PyDatagram()
-        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_REGISTER_SHARD)
-        # dg.addUint32(self.districtId)
-        # dg.addString(self.districtName)
-
         # Send update to the ShardManager UberDOG
         dg = self.shardManagerClass.aiFormatUpdate("registerShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, (self.districtId, self.districtName))
         self.send(dg)
 
         # Set up the delete message as a post remove
-        # dg = PyDatagram()
-        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_DELETE_SHARD)
         dg = self.shardManagerClass.aiFormatUpdate("deleteShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, [])
         self.addPostSocketClose(dg)
 
@@ -320,10 +318,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
             # Send our population update.
             self.sendPopulation()
 
-        # dg = PyDatagram()
-        # dg.addServerHeader(OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, SHARDMANAGER_UPDATE_SHARD)
-        # dg.addUint16(self.getPopulation())
-        # dg.addUint8(self.district.getEnabled())
         dg = self.shardManagerClass.aiFormatUpdate("updateShard", OTP_DO_ID_CARS_SHARD_MANAGER, OTP_DO_ID_CARS_SHARD_MANAGER, self.ourChannel, (self.getPopulation(), self.district.getEnabled()))
         self.send(dg)
 
@@ -343,7 +337,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         dbo = DatabaseObject(self, carPlayer.doId)
         # Add more fields if needed. (Good spot to look if the field you want
         # is an ownrequired field, but no required or ram.)
-        dbo.readObject(carPlayer, ["setCarCoins"])
+        dbo.readObject(carPlayer, ["setCarCoins", "setYardStocks"])
 
     def readRaceCar(self, racecarId, fields = None, doneEvent = '') -> DistributedRaceCarAI:
         dbo = DatabaseObject(self, racecarId, doneEvent)
@@ -400,6 +394,10 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
             zoneId = self.allocateZone()
             dungeon.generateWithRequired(zoneId)
+            dungeon.createObjects()
+        elif _type == DUNGEON_TYPE_YARD:
+            dungeon = DistributedYardAI(self, playerIds[0])
+            dungeon.generateOtpObject(self.districtId, dungeon.owner)
             dungeon.createObjects()
         elif _type == DUNGEON_TYPE_RACE:
             self.notify.warning("TODO: DUNGEON_TYPE_RACE")
