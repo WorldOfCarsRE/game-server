@@ -28,7 +28,10 @@ from game.cars.carplayer.tents.SpareMintAI import SpareMintAI
 from game.cars.carplayer.tents.SputterStopAI import SputterStopAI
 from game.cars.carplayer.tents.TrunkFreshAI import TrunkFreshAI
 from game.cars.carplayer.zones.ConeAI import ConeAI
+from game.cars.carplayer.zones.HayBaleBombAI import HayBaleBombAI
+from game.cars.carplayer.zones.MessyMixAI import MessyMixAI
 from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
+from game.cars.carplayer.zones.WaterTowerAI import WaterTowerAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
 from game.cars.distributed.MongoInterface import MongoInterface
@@ -223,6 +226,24 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.tractor = TractorAI(self)
         self.tractor.name = 'tractor1'
         self.tractor.generateWithRequired(self.fillmoresFields.doId)
+
+        for i in range(1, 14):
+            hayBaleBomb = HayBaleBombAI(self)
+            hayBaleBomb.name = f"hayBaleBomb_{i}"
+            hayBaleBomb.generateWithRequired(self.fillmoresFields.doId)
+            self.fillmoresFields.interactiveObjects.append(hayBaleBomb)
+
+        for i in range(1, 4):
+            waterTower = WaterTowerAI(self)
+            waterTower.name = f"tower{i}"
+            waterTower.generateWithRequired(self.fillmoresFields.doId)
+            self.fillmoresFields.interactiveObjects.append(waterTower)
+
+        for i in range(1, 10):
+            messyMix = MessyMixAI(self)
+            messyMix.name = f"ff_messy_mix_A_{i}"
+            messyMix.generateWithRequired(self.fillmoresFields.doId)
+            self.fillmoresFields.interactiveObjects.append(messyMix)
 
         self.fillmoresFields.interactiveObjects.append(self.fillmoreFizzyHutFF)
         self.fillmoresFields.interactiveObjects.append(self.spyShopFF)
