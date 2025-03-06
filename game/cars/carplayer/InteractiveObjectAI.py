@@ -1,3 +1,4 @@
+from direct.directnotify import DirectNotifyGlobal
 from .DistributedCarAvatarAI import DistributedCarAvatarAI
 
 TYPE_NPC = 0
@@ -28,6 +29,8 @@ COMMAND_SET_MAP_EFFECT = 78
 COMMAND_SHOW_GPS = 72
 
 class InteractiveObjectAI(DistributedCarAvatarAI):
+    notify = directNotify.newCategory('InteractiveObjectAI')
+
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
         self.name = ''
@@ -62,6 +65,9 @@ class InteractiveObjectAI(DistributedCarAvatarAI):
     def getClientScript(self):
         return self.clientScript
 
+    def getState(self):
+        return 0
+
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
         """
         Classes inheriting us will override this function.
@@ -70,12 +76,15 @@ class InteractiveObjectAI(DistributedCarAvatarAI):
 
     def triggerInteraction(self, eventId: int, args: list):
         avatarId = self.air.getAvatarIdFromSender()
-        print(f'triggerInteraction - {eventId} - {args}')
+        self.notify.debug(f'triggerInteraction - {eventId} - {args}')
 
         self.handleInteraction(avatarId, eventId, args)
 
     def d_broadcastChoreography(self, animation: list, sound: list, effect: list, dialogue: list):
         self.sendUpdate('broadcastChoreography', [[*animation], [*sound], [*effect], [*dialogue]])
+
+    def d_broadcastChoreographyToPlayer(self, playerId: int, animation: list, sound: list, effect: list, dialogue: list):
+        self.sendUpdateToAvatarId(playerId, 'broadcastChoreography', [[*animation], [*sound], [*effect], [*dialogue]])
 
     def d_setInteractiveCommands(self, avatarId: int, eventId: int, args: list):
         self.sendUpdateToAvatarId(avatarId, 'setInteractiveCommands', [eventId, [args]])
