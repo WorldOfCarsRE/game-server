@@ -90,7 +90,6 @@ dofile("config.lua")
 local API_BASE
 
 local http = require("http")
-local json = require("json")
 
 if PRODUCTION_ENABLED then
     API_BASE = "https://woc.sunrise.games/carsds/api/internal/"
@@ -100,7 +99,7 @@ end
 
 avatarSpeedChatPlusStates = {}
 
--- TODO: These three functions should be moved to their own
+-- TODO: These two functions should be moved to their own
 -- Lua role.
 function retrieveAccount(data)
     -- TODO: Retries
@@ -158,44 +157,6 @@ function retrieveCar(client, data)
 
     -- If we're here, then we failed to get valid car data. Disconnect here
     client:sendDisconnect(CLIENT_DISCONNECT_ACCOUNT_ERROR, "Failed to retrieveCar.", false)
-end
-
-function updateObject(participant, doId, data)
-    local connAttempts = 0
-
-    while (connAttempts < 3) do
-        local response, error_message = http.post(API_BASE .. string.format("updateObject/%d", doId), {
-            body=json.encode(data),
-            headers={
-                ["User-Agent"]=USER_AGENT,
-                ["Authorization"]=API_TOKEN,
-                ["Content-Type"]="application/json"
-            }
-        })
-
-        if error_message then
-            participant:error(string.format("updateObject returned an error! \"%s\"", error_message))
-            connAttempts = connAttempts + 1
-            goto retry
-        end
-
-        if response.status_code ~= 200 then
-            participant:error(string.format("updateObject returned %d!, \"%s\"", response.status_code, response.body))
-            connAttempts = connAttempts + 1
-            goto retry
-        end
-
-        do
-            -- If we're here, then we can return the response body.
-            return true, response.body
-        end
-
-        -- retry goto to iterate again if we failed to retrieve our car data.
-        ::retry::
-    end
-
-    -- If we're here, then we failed to get valid car data. Send an error response
-    return false, ""
 end
 
 function handleDatagram(client, msgType, dgi)
