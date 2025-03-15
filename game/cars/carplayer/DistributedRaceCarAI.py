@@ -143,9 +143,9 @@ class DistributedRaceCarAI(DistributedObjectAI):
 
         if finalAmount < MAX_RACING_POINTS:
             self.b_setRacingPoints(finalAmount)
-            return 5
+            return 1
 
-        return 1
+        return 5
 
     def setAnimations(self, animations: list):
         self.animations = animations
