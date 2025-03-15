@@ -1,3 +1,5 @@
+import json
+
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed.DistributedObjectUD import DistributedObjectUD
 from . import ShardGlobals
@@ -19,11 +21,23 @@ class ShardManagerUD(DistributedObjectUD):
 
         self.shardInfo: Dict[int, Shard] = {}
 
-    def getPopulationLevel(self, shardPop) -> int:
-        # TODO
-        return ShardGlobals.POPULATION_LEVEL_NONE
+    def getPopulationLevel(self, shardPop: int) -> int:
+        levels: list[int] = json.loads(config.GetString('shard-population-levels'))
 
-    def getShardChannel(self, shardId) -> int:
+        popLevel = ShardGlobals.POPULATION_LEVEL_NONE
+        if shardPop >= levels[ShardGlobals.POPULATION_LEVEL_VERY_FULL]:
+            popLevel = ShardGlobals.POPULATION_LEVEL_VERY_FULL
+        elif shardPop >= levels[ShardGlobals.POPULATION_LEVEL_FULL] and shardPop <= levels[ShardGlobals.POPULATION_LEVEL_VERY_FULL]:
+            popLevel = ShardGlobals.POPULATION_LEVEL_FULL
+        elif shardPop >= levels[ShardGlobals.POPULATION_LEVEL_MEDIUM] and shardPop <= levels[ShardGlobals.POPULATION_LEVEL_FULL]:
+            popLevel = ShardGlobals.POPULATION_LEVEL_MEDIUM
+        elif shardPop >= levels[ShardGlobals.POPULATION_LEVEL_LIGHT] and shardPop <= levels[ShardGlobals.POPULATION_LEVEL_MEDIUM]:
+            popLevel = ShardGlobals.POPULATION_LEVEL_LIGHT
+        elif shardPop >= levels[ShardGlobals.POPULATION_LEVEL_VERY_LIGHT] and shardPop <= levels[ShardGlobals.POPULATION_LEVEL_LIGHT]:
+            popLevel = ShardGlobals.POPULATION_LEVEL_VERY_LIGHT
+        return popLevel
+
+    def getShardChannel(self, shardId: int) -> int:
         for sender, shard in self.shardInfo.items():
             if shard.shardId == shardId:
                 return sender
