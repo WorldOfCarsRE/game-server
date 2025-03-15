@@ -121,17 +121,17 @@ class DistributedRaceCarAI(DistributedObjectAI):
         self.b_setActiveSponsor(sponsor)
 
     def setRacingPoints(self, racingPoints: int):
+        if racingPoints > MAX_RACING_POINTS:
+            self.notify.warning(f"Player {self.player.getDISLid()} is over the racing points limit {racingPoints}, capping at {MAX_RACING_POINTS}.")
+            self.b_setRacingPoints(MAX_RACING_POINTS)
+            return
+
         self.racingPoints = racingPoints
 
     def getRacingPoints(self) -> int:
         return self.racingPoints
 
     def d_setRacingPoints(self, racingPoints: int):
-        if racingPoints > MAX_RACING_POINTS:
-            self.notify.warning(f"Player {self.player.getDISLid()} is over the racing points limit {racingPoints}, capping at {MAX_RACING_POINTS}.")
-            self.b_setRacingPoints(MAX_RACING_POINTS)
-            return
-
         self.sendUpdate('setRacingPoints', [racingPoints])
 
     def b_setRacingPoints(self, racingPoints: int):
