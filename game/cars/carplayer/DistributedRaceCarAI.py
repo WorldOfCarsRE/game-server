@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .DistributedCarPlayerAI import DistributedCarPlayerAI
 
+MAX_RACING_POINTS = 1000001
+
 class DistributedRaceCarAI(DistributedObjectAI):
     notify = directNotify.newCategory("DistributedRaceCarAI")
     notify.setDebug(True)
@@ -125,6 +127,11 @@ class DistributedRaceCarAI(DistributedObjectAI):
         return self.racingPoints
 
     def d_setRacingPoints(self, racingPoints: int):
+        if racingPoints > MAX_RACING_POINTS:
+            self.notify.warning(f"Player {self.player.getDISLid()} is over the racing points limit {racingPoints}, capping at {MAX_RACING_POINTS}.")
+            self.b_setRacingPoints(MAX_RACING_POINTS)
+            return
+
         self.sendUpdate('setRacingPoints', [racingPoints])
 
     def b_setRacingPoints(self, racingPoints: int):
