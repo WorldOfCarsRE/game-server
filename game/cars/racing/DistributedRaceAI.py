@@ -278,7 +278,8 @@ class DistributedRaceAI(DistributedDungeonAI):
         flowPath = player.racecar.addRacingPoints(racingPoints)
 
         # See com.disney.cars.states.isoworld.ISOInstance
-        player.d_invokeRuleResponse(0, [flowPath, place, racingPoints, coins], -self.dungeonItemId)
+        questId = 0
+        player.d_invokeRuleResponse(0, [flowPath, place, racingPoints if flowPath == 1 else coins, coins if flowPath == 1 else questId], -self.dungeonItemId)
 
     def __doCountDown(self, task: Task):
         self.countDown -= 1
