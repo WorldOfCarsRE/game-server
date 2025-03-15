@@ -145,7 +145,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
             self.b_setRacingPoints(finalAmount)
             return 1
 
-        return 5
+        return 9
 
     def setAnimations(self, animations: list):
         self.animations = animations
