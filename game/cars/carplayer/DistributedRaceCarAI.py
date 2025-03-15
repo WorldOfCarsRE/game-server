@@ -122,7 +122,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
 
     def setRacingPoints(self, racingPoints: int):
         if racingPoints > MAX_RACING_POINTS:
-            self.notify.warning(f"Player {self.player.getDISLid()} is over the racing points limit {racingPoints}, capping at {MAX_RACING_POINTS}.")
+            self.notify.warning(f"Car {self.doId} is over the racing points limit {racingPoints}, capping at {MAX_RACING_POINTS}.")
             self.b_setRacingPoints(MAX_RACING_POINTS)
             return
 
@@ -139,7 +139,10 @@ class DistributedRaceCarAI(DistributedObjectAI):
         self.d_setRacingPoints(racingPoints)
 
     def addRacingPoints(self, deltaPoints: int):
-        self.b_setRacingPoints(deltaPoints + self.getRacingPoints())
+        finalAmount = deltaPoints + self.getRacingPoints()
+
+        if finalAmount < MAX_RACING_POINTS:
+            self.b_setRacingPoints(finalAmount)
 
     def setAnimations(self, animations: list):
         self.animations = animations
