@@ -3,8 +3,13 @@ from direct.task.Task import Task
 
 from .DistributedRaceAI import DistributedRaceAI
 
+from game.cars.carplayer.racing.HazardAI import HazardAI
+
 from collections import Counter
 from copy import copy
+
+HAZARD_HAY_BALE_BOMB_ITEM = 502
+HAZARD_SMOKE_SCREEN_ITEM = 503
 
 class DistributedMPRaceAI(DistributedRaceAI):
     notify = directNotify.newCategory("DistributedMPRaceAI")
@@ -43,7 +48,20 @@ class DistributedMPRaceAI(DistributedRaceAI):
         if playerId not in self.playerIds:
             self.notify.warning(f"Player {playerId} is not on the race!")
             return
-        self.notify.warning(f"TODO: dropHazard - {x}, {y}, {itemId}")
+        
+        hazard = HazardAI(self.air)
+
+        if itemId == HAZARD_HAY_BALE_BOMB_ITEM:
+            hazard.assetId = 5002
+            hazard.clientScript = "scripts/interactive/racing_hazard_hayBaleBomb.lua"
+        elif itemId == HAZARD_SMOKE_SCREEN_ITEM:
+            hazard.assetId = 5003
+            hazard.clientScript = "scripts/interactive/racing_hazard_smokeScreen.lua"
+
+        hazard.x, hazard.y = x, y
+        hazard.generateWithRequired(self.zoneId)
+
+        self.interactiveObjects.append(hazard)
 
     def setQuit(self):
         playerId = self.air.getAvatarIdFromSender()
