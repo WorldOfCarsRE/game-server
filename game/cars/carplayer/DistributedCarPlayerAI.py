@@ -38,9 +38,14 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         itemType: str = item["storeThumbnail"].split("_")[3]
 
-        if itemType == "cns":
+        if itemType in ("cns", "ger"):
             # Consumable
-            self.handleConsumablePurchase(item, itemId)
+            quantity = 1
+
+            if itemType == "ger":
+                itemId, quantity = item["stackItemId"], item["quantity"]
+
+            self.handleConsumablePurchase(item, itemId, quantity)
 
         elif itemType == "pjb":
             # PaintJob
@@ -52,7 +57,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
 
-    def handleConsumablePurchase(self, item: dict, itemId: int) -> None:
+    def handleConsumablePurchase(self, item: dict, itemId: int, count: int) -> None:
         consumableInInventory: bool = False
 
         consumables: list = self.racecar.getConsumables()
@@ -67,10 +72,10 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
                     self.d_buyItemResponse(itemId, BUY_RESP_CODE_NOT_PURCHASEABLE)
                     return
 
-                consumables[i] = (itemId, quantity + 1)
+                consumables[i] = (itemId, quantity + count)
 
         if not consumableInInventory:
-            consumables.append((itemId, 1))
+            consumables.append((itemId, count))
 
         self.racecar.setConsumables(consumables)
 
