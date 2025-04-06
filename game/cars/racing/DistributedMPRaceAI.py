@@ -48,7 +48,7 @@ class DistributedMPRaceAI(DistributedRaceAI):
         if playerId not in self.playerIds:
             self.notify.warning(f"Player {playerId} is not on the race!")
             return
-        
+
         hazard = HazardAI(self.air)
 
         if itemId == HAZARD_HAY_BALE_BOMB_ITEM:
