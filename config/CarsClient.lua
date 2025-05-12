@@ -111,10 +111,12 @@ function retrieveAccount(data)
     })
 
     if error_message then
+        print(data)
         print(string.format("CarsClient: retrieveAccount returned an error! \"%s\"", error_message))
         return "{}"
     end
     if response.status_code ~= 200 then
+        print(data)
         print(string.format("CarsClient: retrieveAccount returned %d!, \"%s\"", response.status_code, response.body))
         return "{}"
     end
