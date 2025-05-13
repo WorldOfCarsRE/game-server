@@ -72,8 +72,21 @@ else
     API_BASE = "http://localhost/carsds/api/internal/"
 end
 
--- TODO: These two functions should be moved to their own
+-- TODO: These three functions should be moved to their own
 -- Lua role.
+
+function urlencode(str)
+  if not str then
+    return ""
+  end
+  str = string.gsub(str, "\n", "\r\n")
+  str = string.gsub(str, "([^%w %-%_%.~])", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end)
+  str = string.gsub(str, " ", "+")
+  return str
+end
+
 function retrieveCar(data)
     local connAttempts = 0
 
@@ -359,7 +372,7 @@ function makeFriends(participant, invite)
 
     if status == INVRESP_ACCEPTED then
         table.insert(invite.inviterData.friends, invite.inviteeId)
-        setCarData(invite.inviterData.ownerAccount, {friends = invite.inviterData.friends})
+        setCarData(urlencode(invite.inviterData.ownerAccount), {friends = invite.inviterData.friends})
 
         local friendInfo = {
             formatCarName(invite.inviteeData.carData.carDna.carName), -- avatarName
@@ -386,7 +399,7 @@ function makeFriends(participant, invite)
 
     if status == INVRESP_ACCEPTED then
         table.insert(invite.inviteeData.friends, invite.inviterId)
-        setCarData(invite.inviteeData.ownerAccount, {friends = invite.inviteeData.friends})
+        setCarData(urlencode(invite.inviteeData.ownerAccount), {friends = invite.inviteeData.friends})
 
         local friendInfo = {
             formatCarName(invite.inviterData.carData.carDna.carName), -- avatarName
