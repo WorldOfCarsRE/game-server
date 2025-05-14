@@ -125,7 +125,7 @@ function retrieveCar(data)
 end
 
 function setCarData(playToken, data)
-    local request = {playToken = playToken, fieldData = data}
+    local request = {playToken = urlencode(playToken), fieldData = data}
     local json = require("json")
     local result, err = json.encode(request)
 
@@ -372,7 +372,7 @@ function makeFriends(participant, invite)
 
     if status == INVRESP_ACCEPTED then
         table.insert(invite.inviterData.friends, invite.inviteeId)
-        setCarData(urlencode(invite.inviterData.ownerAccount), {friends = invite.inviterData.friends})
+        setCarData(invite.inviterData.ownerAccount, {friends = invite.inviterData.friends})
 
         local friendInfo = {
             formatCarName(invite.inviteeData.carData.carDna.carName), -- avatarName
@@ -399,7 +399,7 @@ function makeFriends(participant, invite)
 
     if status == INVRESP_ACCEPTED then
         table.insert(invite.inviteeData.friends, invite.inviterId)
-        setCarData(urlencode(invite.inviteeData.ownerAccount), {friends = invite.inviteeData.friends})
+        setCarData(invite.inviteeData.ownerAccount, {friends = invite.inviteeData.friends})
 
         local friendInfo = {
             formatCarName(invite.inviterData.carData.carDna.carName), -- avatarName
