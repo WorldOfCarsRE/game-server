@@ -67,11 +67,46 @@ function filterWhitelist(message, filterOverride)
         local cleanMessage = "*"
         table.insert(modifications, {0, 0})
         return cleanMessage, modifications
-      end
+    end
+
+    local function stripLeadingAndTrailingPunctuation(word, reversed)
+        -- Disney just stripped punctuation from the start and end of the word. This allows words with punctuation to be in the whitelist.
+        local pattern = "[.,?!]+"
+        local strippedWord = word
+        local matchStart, matchEnd = string.find(strippedWord, pattern)
+
+        -- Strip leading characters.
+        if matchStart == 1 then
+            strippedWord = string.sub(strippedWord, matchEnd + 1)
+        end
+
+        -- We will reverse the word and call ourself again if we haven't already, to make checking for trailing characters easier.
+        local reversedWord = string.reverse(strippedWord)
+
+        if not reversed then
+            return stripLeadingAndTrailingPunctuation(reversedWord, true)
+        end
+
+        -- Return the reversed word. This will actually be the normal word since we only get here in the reversed call.
+        return reversedWord
+    end
+
+    local function isWordOnWhitelist(word)
+        local wordToFind = string.lower(word)
+
+        -- If the word is already on the whitelist, we can return immediately.
+        if WHITELIST[wordToFind] then
+            return true
+        end
+
+        wordToFind = stripLeadingAndTrailingPunctuation(wordToFind, false)
+
+        -- Now return whether the word is in the whitelist.
+        return WHITELIST[wordToFind]
+    end
 
     -- Match any character except spaces.
     for word in string.gmatch(message, "[^%s]*") do
-        -- Strip out punctuations just for checking with the whitelist.
         if filterOverride == true or word ~= "" and isWordOnWhitelist(word) ~= true then
             table.insert(modifications, {offset, offset + string.len(word) - 1})
             table.insert(wordsToSub, word)
