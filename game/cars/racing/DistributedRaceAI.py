@@ -231,7 +231,10 @@ class DistributedRaceAI(DistributedDungeonAI):
                     self.playerIdToMaxLap[playerId] = self.playerIdToLap[playerId]
                     if self.playerIdToCurrentLapTime[playerId] < self.playerIdToBestLapTime[playerId]:
                         self.playerIdToBestLapTime[playerId] = self.playerIdToCurrentLapTime[playerId]
+                    # Reset the lap timer, since we need the task's time to be accurate for this lap.
+                    taskMgr.remove(self.taskName(f"playerLapTime-{playerId}"))
                     self.playerIdToCurrentLapTime[playerId] = 0
+                    taskMgr.add(self.__doPlayerLapTime, self.taskName(f"playerLapTime-{playerId}"), extraArgs=[playerId], appendTask=True)
         elif segment in currentSegment.parentIds:
             parentSegment = currentSegment.parentById.get(segment)
             if not parentSegment:
