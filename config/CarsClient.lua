@@ -99,8 +99,21 @@ end
 
 avatarSpeedChatPlusStates = {}
 
--- TODO: These two functions should be moved to their own
+-- TODO: These three functions should be moved to their own
 -- Lua role.
+
+function urlencode(str)
+  if not str then
+    return ""
+  end
+  str = string.gsub(str, "\n", "\r\n")
+  str = string.gsub(str, "([^%w %-%_%.~])", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end)
+  str = string.gsub(str, " ", "+")
+  return str
+end
+
 function retrieveAccount(data)
     -- TODO: Retries
     local response, error_message = http.get(API_BASE .. "retrieveAccount", {
@@ -327,7 +340,7 @@ function handleLogin(client, dgi)
     end
 
     local json = require("json")
-    local account = json.decode(retrieveAccount("userName=" .. playToken))
+    local account = json.decode(retrieveAccount("userName=" .. urlencode(playToken)))
     local accountId = account._id
     -- Query the account object
     client:getDatabaseValues(accountId, "Account", {"ACCOUNT_AV_SET"}, function (doId, success, fields)
@@ -396,8 +409,8 @@ function loginAccount(client, account, accountId, playToken, openChat, isPaid, d
     local statusId = userTable.avatars[3]
 
     local json = require("json")
-    local account = json.decode(retrieveAccount("userName=" .. playToken))
-    local car = json.decode(retrieveCar(client, "playToken=" .. playToken))
+    local account = json.decode(retrieveAccount("userName=" .. urlencode(playToken)))
+    local car = json.decode(retrieveCar(client, "playToken=" .. urlencode(playToken)))
 
     -- Store name for SpeedChat+
     -- By default the name is formatted like "Wreckless,Spinna,roader" so we format it to normal "Wreckless Spinnaroader".

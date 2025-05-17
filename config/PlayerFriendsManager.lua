@@ -72,8 +72,21 @@ else
     API_BASE = "http://localhost/carsds/api/internal/"
 end
 
--- TODO: These two functions should be moved to their own
+-- TODO: These three functions should be moved to their own
 -- Lua role.
+
+function urlencode(str)
+  if not str then
+    return ""
+  end
+  str = string.gsub(str, "\n", "\r\n")
+  str = string.gsub(str, "([^%w %-%_%.~])", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end)
+  str = string.gsub(str, " ", "+")
+  return str
+end
+
 function retrieveCar(data)
     local connAttempts = 0
 
@@ -112,7 +125,7 @@ function retrieveCar(data)
 end
 
 function setCarData(playToken, data)
-    local request = {playToken = playToken, fieldData = data}
+    local request = {playToken = urlencode(playToken), fieldData = data}
     local json = require("json")
     local result, err = json.encode(request)
 
