@@ -13,6 +13,8 @@ BUY_RESP_CODE_INVALID_STORE_ITEM = 4
 BUY_RESP_CODE_NOT_ENOUGH_CARCOIN = 8
 BUY_RESP_CODE_NOT_PURCHASEABLE = 12
 
+DEDUCT_COINS_EVENT_ID = 10008
+
 class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
@@ -224,6 +226,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             rules = [coins]
 
             self.addCoins(coins)
+        elif eventId == DEDUCT_COINS_EVENT_ID:
+            self.takeCoins(rules[0])
 
         self.d_invokeRuleResponse(eventId, rules, context)
 
