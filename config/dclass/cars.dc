@@ -260,7 +260,7 @@ dclass DistributedRaceCar : Persistent {
     setCostumes(int32[] = []) ownrequired db ownrecv;
     modifyActiveSponsor(int32) ownsend airecv;
     modifyDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[]) ownsend airecv;
-    modifyAddon(int32[], int32[]) ownsend;
+    modifyAddon(int32[], int32[]) ownsend airecv;
     modifyAllDNA(string, int16, int32, int32, int16, int32, int8, int32, int32, int32, int32, int32, int32, int32, int32, int16[], int32[], int32[], int32[]) ownsend airecv;
     modifyActiveGear(int32) ownsend;
     deformAddons(Addon[]) ownsend;

@@ -23,6 +23,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
         self.detailings: list[int] = []
         self.activeSponsor: int = 0
         self.player: DistributedCarPlayerAI = None
+        self.addons: list = []
 
     def consume(self, usedConsumable) -> None:
         itemId: int = usedConsumable[0]
@@ -178,3 +179,17 @@ class DistributedRaceCarAI(DistributedObjectAI):
 
     def getDetailings(self) -> list:
         return self.detailings
+    
+    def setOffAddons(self, addons: list):
+        self.addons = addons
+        self.d_setOffAddons(self.addons)
+
+    def d_setOffAddons(self, addons: list):
+        self.sendUpdate('setOffAddons', [addons])
+
+    def getOffAddons(self) -> list:
+        return self.addons
+    
+    def modifyAddon(self, itemId: list, unk: list):
+        # TODO
+        pass

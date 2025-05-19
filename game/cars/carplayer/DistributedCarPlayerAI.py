@@ -40,6 +40,10 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         itemType: str = item["storeThumbnail"].split("_")[3]
 
+        if itemType in ("spo", "tlp", "exh", "eng", "orn", "hat"):
+            # Addon
+            self.handleAddonPurchase(itemId)
+
         if itemType in ("cns", "ger"):
             # Consumable
             quantity = 1
@@ -58,6 +62,17 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             self.handleYardPurchase(item, itemId)
 
         self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
+
+    def handleAddonPurchase(self, itemId: int) -> None:
+        addons: list = self.racecar.getOffAddons()
+
+        if itemId in addons:
+            self.d_buyItemResponse(itemId, BUY_RESP_CODE_ALREADY_OWNED)
+            return
+
+        addons.append((itemId, 0, 0, 0))
+
+        self.racecar.setOffAddons(addons)
 
     def handleConsumablePurchase(self, item: dict, itemId: int, count: int) -> None:
         consumableInInventory: bool = False
