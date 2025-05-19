@@ -27,7 +27,7 @@ from game.cars.carplayer.tents.ShinyWaxAI import ShinyWaxAI
 from game.cars.carplayer.tents.SpareMintAI import SpareMintAI
 from game.cars.carplayer.tents.SputterStopAI import SputterStopAI
 from game.cars.carplayer.tents.TrunkFreshAI import TrunkFreshAI
-from game.cars.carplayer.zones.ConeAI import ConeAI
+from game.cars.carplayer.zones.GenericInteractiveObjectAI import GenericInteractiveObjectAI
 from game.cars.carplayer.zones.HayBaleBombAI import HayBaleBombAI
 from game.cars.carplayer.zones.MessyMixAI import MessyMixAI
 from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
@@ -163,16 +163,26 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.spyShopRS.generateWithRequired(self.downtownZone.doId)
 
         for i in range(0, 22):
-            cone = ConeAI(self)
+            cone = GenericInteractiveObjectAI(self)
             cone.name = f"cone{i}"
             cone.generateWithRequired(self.downtownZone.doId)
             self.downtownZone.interactiveObjects.append(cone)
+
+        self.stanleyStatue = GenericInteractiveObjectAI(self)
+        self.stanleyStatue.name = "rs_stanley_statue"
+        self.stanleyStatue.generateWithRequired(self.downtownZone.doId)
+
+        self.tireTower = GenericInteractiveObjectAI(self)
+        self.tireTower.name = "rs_tire_tower"
+        self.tireTower.generateWithRequired(self.downtownZone.doId)
 
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.interactiveObjects.append(self.ramone)
         self.downtownZone.interactiveObjects.append(self.docsClinic)
         self.downtownZone.interactiveObjects.append(self.luigisCasaDellaTires)
         self.downtownZone.interactiveObjects.append(self.matersSlingShoot)
+        self.downtownZone.interactiveObjects.append(self.stanleyStatue)
+        self.downtownZone.interactiveObjects.append(self.tireTower)
 
         self.lightningMcQueen = LightningMcQueenAI(self)
         self.lightningMcQueen.generateWithRequired(self.downtownZone.doId)
