@@ -176,9 +176,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.luigisCasaDellaTires = LuigisCasaDellaTiresAI(self)
         self.luigisCasaDellaTires.generateWithRequired(self.downtownZone.doId)
 
-        self.matersSlingShoot = MatersSlingShootAI(self)
-        self.matersSlingShoot.generateWithRequired(self.downtownZone.doId)
-
         self.redhoodValleyHotspot = RedhoodValleyAI(self)
         self.redhoodValleyHotspot.generateWithRequired(self.downtownZone.doId)
 
@@ -204,7 +201,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.downtownZone.interactiveObjects.append(self.ramone)
         self.downtownZone.interactiveObjects.append(self.docsClinic)
         self.downtownZone.interactiveObjects.append(self.luigisCasaDellaTires)
-        self.downtownZone.interactiveObjects.append(self.matersSlingShoot)
         self.downtownZone.interactiveObjects.append(self.stanleyStatue)
         self.downtownZone.interactiveObjects.append(self.tireTower)
 
@@ -387,7 +383,11 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.fillmoreFizzyHutWB.name = "isostore_fillmoreFizzyHutWB"
         self.fillmoreFizzyHutWB.generateWithRequired(self.willysButte.doId)
 
+        self.matersSlingShoot = MatersSlingShootAI(self)
+        self.matersSlingShoot.generateWithRequired(self.willysButte.doId)
+
         self.willysButte.interactiveObjects.append(self.fillmoreFizzyHutWB)
+        self.willysButte.interactiveObjects.append(self.matersSlingShoot)
 
         self.willysButte.updateObjectCount()
 
