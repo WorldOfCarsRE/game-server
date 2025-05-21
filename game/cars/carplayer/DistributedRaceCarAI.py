@@ -23,7 +23,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
         self.detailings: list[int] = []
         self.activeSponsor: int = 0
         self.player: DistributedCarPlayerAI = None
-        self.addons: list = []
+        self.offAddons: list = []
 
     def consume(self, usedConsumable) -> None:
         itemId: int = usedConsumable[0]
@@ -180,16 +180,28 @@ class DistributedRaceCarAI(DistributedObjectAI):
     def getDetailings(self) -> list:
         return self.detailings
     
-    def setOffAddons(self, addons: list):
-        self.addons = addons
-        self.d_setOffAddons(self.addons)
+    def setOffAddons(self, offAddons: list):
+        self.offAddons = offAddons
+        self.d_setOffAddons(self.offAddons)
 
-    def d_setOffAddons(self, addons: list):
-        self.sendUpdate('setOffAddons', [addons])
+    def d_setOffAddons(self, offAddons: list):
+        self.sendUpdate('setOffAddons', [offAddons])
 
     def getOffAddons(self) -> list:
-        return self.addons
+        return self.offAddons
     
     def modifyAddon(self, itemId: list, unk: list):
-        # TODO
-        pass
+        offAddons: list = self.getOffAddons()
+
+        # Unequip
+        if itemId == []:
+            # TODO: Get the addon inside addonItemList and move it back to offAddon
+            pass
+
+        # Equip
+        for i, addon in enumerate(offAddons):
+            catalogItemId, deformX, deformY, deformY = addon
+
+            if catalogItemId == itemId[0]:
+                # TODO: Add addon in addonItemList
+                pass

@@ -118,7 +118,7 @@ Api2Field = {
     gears = "setGears",
     animationList = "setAnimations",
     detailings = "setDetailings",
-    addons = "setOffAddons",
+    offAddons = "setOffAddons",
 
     -- DistributedCarPlayer
     carCoins = "setCarCoins",

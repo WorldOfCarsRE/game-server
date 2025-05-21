@@ -64,15 +64,19 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
 
     def handleAddonPurchase(self, itemId: int) -> None:
-        addons: list = self.racecar.getOffAddons()
+        offAddons: list = self.racecar.getOffAddons()
 
-        if itemId in addons:
-            self.d_buyItemResponse(itemId, BUY_RESP_CODE_ALREADY_OWNED)
-            return
+        # We also need to check in addonItemList (Equipped addon)
+        for i, addon in enumerate(offAddons):
+            catalogItemId, deformX, deformY, deformY = addon
 
-        addons.append((itemId, 0, 0, 0))
+            if catalogItemId == itemId[0]:
+                self.d_buyItemResponse(itemId, BUY_RESP_CODE_ALREADY_OWNED)
+                return
 
-        self.racecar.setOffAddons(addons)
+        offAddons.append((itemId, 0, 0, 0))
+
+        self.racecar.setOffAddons(offAddons)
 
     def handleConsumablePurchase(self, item: dict, itemId: int, count: int) -> None:
         consumableInInventory: bool = False
