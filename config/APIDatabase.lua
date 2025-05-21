@@ -124,6 +124,7 @@ Api2Field = {
     carCoins = "setCarCoins",
     userId = "setDISLid",
     customItemList = "setYardStocks",
+    activeQuests = "setActiveQuests",
 
     -- CarPlayerStatus
     setLocationType = "setLocationType",

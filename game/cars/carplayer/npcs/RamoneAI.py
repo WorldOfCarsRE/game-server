@@ -22,6 +22,9 @@ class RamoneAI(InteractiveObjectAI):
         # Experiments
         self.d_setTelemetry(1806, 860, 0, 1522, 1329, 15022, -3515, 136708)
 
-    # def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
-        # if eventId == COMMAND_OFFER_QUERY_INTERACTIONS:
-            # self.d_setInteractiveCommands(avatarId, eventId, [COMMAND_OFFER_QUEST_ACCEPT, self.getCatalogId(), CMD_TYPE_POSITIVE])
+    def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
+        if eventId == COMMAND_OFFER_QUERY_INTERACTIONS:
+            # Indicators: First visit (32024), Available quest (32025), Incomplete quest (32026), Complete quest (32027)
+            self.d_broadcastChoreographyToPlayer(avatarId, [], [], [[32024, 0]], [])
+            
+            self.d_setInteractiveCommands(avatarId, eventId, [COMMAND_OFFER_QUEST_ACCEPT, self.getCatalogId(), CMD_TYPE_POSITIVE])
