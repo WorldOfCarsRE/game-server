@@ -432,8 +432,41 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.mpFFRRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml")
         self.mpFFRRaceCrossShardLobby.generateWithRequired(self.fillmoresFields.doId)
 
+        self.tgsRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_tgs", 42004, "car_w_trk_prf_tailgator_SS_phys.xml")
+        self.tgsRaceFriendsLobby.generateWithRequired(self.tailgatorSpeedway.doId)
+
         self.tgsRaceLobby = DistributedCrossShardLobbyAI(self, "race_tgs", 42004, "car_w_trk_prf_tailgator_SS_phys.xml")
         self.tgsRaceLobby.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.bhsRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_bhl", 42006, "car_w_trk_prf_BigHeartland_SS_phys.xml")
+        self.bhsRaceFriendsLobby.generateWithRequired(self.bigHeartlandSpeedway.doId)
+
+        self.bhsRaceLobby = DistributedCrossShardLobbyAI(self, "race_bhl", 42006, "car_w_trk_prf_BigHeartland_SS_phys.xml")
+        self.bhsRaceLobby.generateWithRequired(self.bigHeartlandSpeedway.doId)
+
+        self.bfcRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_bfc", 42007, "car_w_trk_prf_BackfireCanyon_SS_phys.xml")
+        self.bfcRaceFriendsLobby.generateWithRequired(self.backfireCanyonSpeedway.doId)
+
+        self.bfcRaceLobby = DistributedCrossShardLobbyAI(self, "race_bfc", 42007, "car_w_trk_prf_BackfireCanyon_SS_phys.xml")
+        self.bfcRaceLobby.generateWithRequired(self.backfireCanyonSpeedway.doId)
+
+        self.pcRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_pc", 42008, "car_w_trk_prf_PetroleumCityRace_SS_phys.xml")
+        self.pcRaceFriendsLobby.generateWithRequired(self.petroleumCitySpeedway.doId)
+
+        self.pcRaceLobby = DistributedCrossShardLobbyAI(self, "race_pc", 42008, "car_w_trk_prf_PetroleumCityRace_SS_phys.xml")
+        self.pcRaceLobby.generateWithRequired(self.petroleumCitySpeedway.doId)
+
+        self.mssRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_mss", 42009, "car_w_trk_prf_MotorSpeedwaySouth_SS_phys.xml")
+        self.mssRaceFriendsLobby.generateWithRequired(self.motorSpeedwaySouth.doId)
+
+        self.mssRaceLobby = DistributedCrossShardLobbyAI(self, "race_mss", 42009, "car_w_trk_prf_MotorSpeedwaySouth_SS_phys.xml")
+        self.mssRaceLobby.generateWithRequired(self.motorSpeedwaySouth.doId)
+
+        self.lasRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_las", 42010, "car_w_trk_prf_LASpeedway_SS_phys.xml")
+        self.lasRaceFriendsLobby.generateWithRequired(self.laSpeedway.doId)
+
+        self.lasRaceLobby = DistributedCrossShardLobbyAI(self, "race_las", 42010, "car_w_trk_prf_LASpeedway_SS_phys.xml")
+        self.lasRaceLobby.generateWithRequired(self.laSpeedway.doId)
 
         # mark district as enabled
         # NOTE: Only setEnabled is used in the client
