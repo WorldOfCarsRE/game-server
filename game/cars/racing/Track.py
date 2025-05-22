@@ -17,7 +17,8 @@ class Track():
         # Parse physics file.
         self.notify.info(f"Parsing physics file: {physicsFile}")
         tree = ET.parse(f"physics/{physicsFile}") # Assuming a symbolic link was placed to the physics xml files there.
-        segments = tree.getroot()[0]
+        root = tree.getroot()
+        segments = root.find('segments')
 
         for segment in segments:
             data = segment.attrib
