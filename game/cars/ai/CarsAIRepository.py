@@ -386,8 +386,13 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.matersSlingShoot = MatersSlingShootAI(self)
         self.matersSlingShoot.generateWithRequired(self.willysButte.doId)
 
+        self.spyShopWB = SpyShopAI(self)
+        self.spyShopWB.name = "isostore_SpyStoreWB"
+        self.spyShopWB.generateWithRequired(self.willysButte.doId)
+
         self.willysButte.interactiveObjects.append(self.fillmoreFizzyHutWB)
         self.willysButte.interactiveObjects.append(self.matersSlingShoot)
+        self.willysButte.interactiveObjects.append(self.spyShopWB)
 
         self.willysButte.updateObjectCount()
 
