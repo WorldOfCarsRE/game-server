@@ -27,6 +27,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.racecar: DistributedRaceCarAI = None
         self.dna: CarDNA = None
         self.activeQuests: list = []
+        self.badges: list = []
 
     def buyItemRequest(self, shopId: int, itemId: int) -> None:
         item: None | dict = self.air.getShopItem(str(shopId), itemId)
@@ -289,3 +290,13 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
  
     def d_setActiveQuests(self, activeQuests: list):
         self.sendUpdate('setActiveQuests', [activeQuests])
+
+    def setBadges(self, badges: list):
+        self.badges = badges
+        self.d_setBadges(badges)
+ 
+    def getBadges(self) -> list:
+        return self.badges
+ 
+    def d_setBadges(self, badges: list):
+        self.sendUpdate('setBadges', [badges])

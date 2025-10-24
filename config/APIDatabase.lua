@@ -125,6 +125,7 @@ Api2Field = {
     userId = "setDISLid",
     customItemList = "setYardStocks",
     activeQuests = "setActiveQuests",
+    badges = "setBadges",
 
     -- CarPlayerStatus
     setLocationType = "setLocationType",
@@ -206,8 +207,10 @@ function handleGetStoredValues(participant, dgi)
         end
         goto finish
     elseif data.objectName == "DistributedCarPlayer" or data.objectName == "DistributedRaceCar" then
-        -- Use carData for data
-        data = data.carData
+        local originalData
+
+        data = originalData.carData
+        data.badges = originalData.badges
     end
 
 
