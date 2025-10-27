@@ -284,19 +284,19 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def setActiveQuests(self, activeQuests: list):
         self.activeQuests = activeQuests
         self.d_setActiveQuests(activeQuests)
- 
+
     def getActiveQuests(self) -> list:
         return self.activeQuests
- 
+
     def d_setActiveQuests(self, activeQuests: list):
         self.sendUpdate('setActiveQuests', [activeQuests])
 
     def setBadges(self, badges: list):
         self.badges = badges
         self.d_setBadges(badges)
- 
+
     def getBadges(self) -> list:
         return self.badges
- 
+
     def d_setBadges(self, badges: list):
         self.sendUpdate('setBadges', [badges])
