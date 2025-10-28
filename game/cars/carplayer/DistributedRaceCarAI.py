@@ -179,7 +179,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
 
     def getDetailings(self) -> list:
         return self.detailings
-    
+
     def setOffAddons(self, offAddons: list):
         self.offAddons = offAddons
         self.d_setOffAddons(self.offAddons)
@@ -189,8 +189,10 @@ class DistributedRaceCarAI(DistributedObjectAI):
 
     def getOffAddons(self) -> list:
         return self.offAddons
-    
+
     def modifyAddon(self, itemId: list, unk: list):
+        return # NOTE: Disabled Addon modification for now
+
         offAddons: list = self.getOffAddons()
 
         # Unequip
