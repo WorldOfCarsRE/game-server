@@ -46,6 +46,8 @@ class DistributedRaceCarAI(DistributedObjectAI):
     def setDNA(self, carDNA: CarDNA):
         if carDNA.validateDNA():
             self.dna = carDNA
+        else:
+            self.notify.debug(str(carDNA))
 
     def d_setDNA(self, carDNA: CarDNA):
         if carDNA.validateDNA():
