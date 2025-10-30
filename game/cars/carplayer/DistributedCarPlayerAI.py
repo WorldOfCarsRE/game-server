@@ -71,8 +71,6 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
 
     def handleAddonPurchase(self, itemId: int) -> None:
-        return # NOTE: Disabled Addon purchases for now
-
         offAddons: list = self.racecar.getOffAddons()
 
         # We also need to check in addonItemList (Equipped addon)
