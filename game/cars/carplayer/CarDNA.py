@@ -94,7 +94,7 @@ class CarDNA:
 
         if self.onAddons is None or \
         not isinstance(self.onAddons, list) or \
-        not all(isinstance(x, int) for x in self.onAddons):
+        not all(isinstance(x, tuple) and len(x) == 4 and all(isinstance(i, int) for i in x) for x in self.onAddons):
             return False
 
         return True
