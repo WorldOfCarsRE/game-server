@@ -207,13 +207,10 @@ function handleGetStoredValues(participant, dgi)
         end
         goto finish
     elseif data.objectName == "DistributedCarPlayer" or data.objectName == "DistributedRaceCar" then
-        -- local originalData
+        local originalData
 
-        -- data = originalData.carData
-        -- data.badges = originalData.badges
-
-        -- Use carData for data
-        data = data.carData
+        data = originalData.carData
+        data.badges = originalData.badges
     end
 
 
