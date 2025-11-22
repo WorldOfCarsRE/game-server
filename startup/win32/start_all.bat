@@ -1,6 +1,8 @@
+@echo off
 taskkill /IM OtpGo.exe /F
 
-start start_dialga.bat
-start start_uberdog.bat
-start start_ai.bat
+cd /d "%~dp0"
+start "" "%~dp0start_dialga.bat"
+start "" "%~dp0start_uberdog.bat"
+start "" "%~dp0start_ai.bat"
 exit
