@@ -8,8 +8,7 @@
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
-        "group": "game-servers"
+        "panel": "dedicated"
       },
       "isBackground": true,
       "runOptions": {
@@ -23,8 +22,7 @@
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
-        "group": "game-servers"
+        "panel": "dedicated"
       },
       "isBackground": true,
       "runOptions": {
@@ -38,8 +36,7 @@
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
-        "group": "game-servers"
+        "panel": "dedicated"
       },
       "isBackground": true,
       "runOptions": {
@@ -53,8 +50,7 @@
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
-        "group": "game-servers"
+        "panel": "dedicated"
       },
       "isBackground": true,
       "runOptions": {
@@ -78,7 +74,7 @@
         "Start UberDOG Server",
         "Start AI Server"
       ],
-      "dependsOrder": "sequence",
+      "dependsOrder": "parallel",
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
