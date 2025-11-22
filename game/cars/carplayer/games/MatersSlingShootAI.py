@@ -12,11 +12,8 @@ class MatersSlingShootAI(InteractiveObjectAI):
         InteractiveObjectAI.__init__(self, air)
 
         self.assetId = 5000
-        self.catalogId = 61005
-
-        # TODO: No landmark in XML for this minigame?
-        self.name = ""
-
+        self.catalogId = 61006
+        self.name = "landmark_materplayground"
         self.minigameId = 108
 
         self.clientScript = "scripts/interactive/default_npc_no_physics.lua"

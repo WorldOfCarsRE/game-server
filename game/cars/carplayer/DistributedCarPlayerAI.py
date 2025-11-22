@@ -13,6 +13,8 @@ BUY_RESP_CODE_INVALID_STORE_ITEM = 4
 BUY_RESP_CODE_NOT_ENOUGH_CARCOIN = 8
 BUY_RESP_CODE_NOT_PURCHASEABLE = 12
 
+DEDUCT_COINS_EVENT_ID = 10008
+
 class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
@@ -24,6 +26,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.yardStocks: list = []
         self.racecar: DistributedRaceCarAI = None
         self.dna: CarDNA = None
+        self.activeQuests: list = []
+        self.badges: list = []
 
     def buyItemRequest(self, shopId: int, itemId: int) -> None:
         item: None | dict = self.air.getShopItem(str(shopId), itemId)
@@ -37,6 +41,10 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             return
 
         itemType: str = item["storeThumbnail"].split("_")[3]
+
+        if itemType in ("spo", "tlp", "exh", "eng", "orn", "hat"):
+            # Addon
+            self.handleAddonPurchase(itemId)
 
         if itemType in ("cns", "ger"):
             # Consumable
@@ -56,6 +64,21 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             self.handleYardPurchase(item, itemId)
 
         self.d_buyItemResponse(itemId, BUY_RESP_CODE_SUCCESS)
+
+    def handleAddonPurchase(self, itemId: int) -> None:
+        offAddons: list = self.racecar.getOffAddons()
+
+        # We also need to check in addonItemList (Equipped addon)
+        for i, addon in enumerate(offAddons):
+            catalogItemId, deformX, deformY, deformY = addon
+
+            if catalogItemId == itemId[0]:
+                self.d_buyItemResponse(itemId, BUY_RESP_CODE_ALREADY_OWNED)
+                return
+
+        offAddons.append((itemId, 0, 0, 0))
+
+        self.racecar.setOffAddons(offAddons)
 
     def handleConsumablePurchase(self, item: dict, itemId: int, count: int) -> None:
         consumableInInventory: bool = False
@@ -224,6 +247,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             rules = [coins]
 
             self.addCoins(coins)
+        elif eventId == DEDUCT_COINS_EVENT_ID:
+            self.takeCoins(rules[0])
 
         self.d_invokeRuleResponse(eventId, rules, context)
 
@@ -255,3 +280,23 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
     def getYardStocks(self) -> list:
         return self.yardStocks
+
+    def setActiveQuests(self, activeQuests: list):
+        self.activeQuests = activeQuests
+        self.d_setActiveQuests(activeQuests)
+
+    def getActiveQuests(self) -> list:
+        return self.activeQuests
+
+    def d_setActiveQuests(self, activeQuests: list):
+        self.sendUpdate('setActiveQuests', [activeQuests])
+
+    def setBadges(self, badges: list):
+        self.badges = badges
+        self.d_setBadges(badges)
+
+    def getBadges(self) -> list:
+        return self.badges
+
+    def d_setBadges(self, badges: list):
+        self.sendUpdate('setBadges', [badges])

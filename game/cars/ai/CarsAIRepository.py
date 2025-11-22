@@ -20,17 +20,11 @@ from game.cars.carplayer.shops.FillmoreFizzyFuelHutAI import \
     FillmoreFizzyFuelHutAI
 from game.cars.carplayer.shops.MackShopAI import MackShopAI
 from game.cars.carplayer.shops.SpyShopAI import SpyShopAI
-from game.cars.carplayer.tents.GaskitsAI import GaskitsAI
-from game.cars.carplayer.tents.LeakLessAI import LeakLessAI
-from game.cars.carplayer.tents.LilTorqueyPistonsAI import LilTorqueyPistonsAI
-from game.cars.carplayer.tents.ShinyWaxAI import ShinyWaxAI
-from game.cars.carplayer.tents.SpareMintAI import SpareMintAI
-from game.cars.carplayer.tents.SputterStopAI import SputterStopAI
-from game.cars.carplayer.tents.TrunkFreshAI import TrunkFreshAI
-from game.cars.carplayer.zones.ConeAI import ConeAI
+from game.cars.carplayer.zones.GenericInteractiveObjectAI import GenericInteractiveObjectAI
 from game.cars.carplayer.zones.HayBaleBombAI import HayBaleBombAI
 from game.cars.carplayer.zones.MessyMixAI import MessyMixAI
 from game.cars.carplayer.zones.RedhoodValleyAI import RedhoodValleyAI
+from game.cars.carplayer.zones.SponsorBoothAI import SponsorBoothAI
 from game.cars.carplayer.zones.WaterTowerAI import WaterTowerAI
 from game.cars.distributed.CarsDistrictAI import CarsDistrictAI
 from game.cars.distributed.CarsGlobals import *
@@ -140,6 +134,36 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.laSpeedway = DistributedZoneAI(self, "LA International Speedway", ZoneConstants.LA_SPEEDWAY)
         self.laSpeedway.generateWithRequired(DUNGEON_INTEREST_HANDLE)
 
+        self.gasprin = SponsorBoothAI(self)
+        self.gasprin.catalogId = 9989
+        self.gasprin.name = "gasprin_main"
+        self.gasprin.generateWithRequired(self.backfireCanyonSpeedway.doId)
+
+        self.tankCoat = SponsorBoothAI(self)
+        self.tankCoat.catalogId = 9990
+        self.tankCoat.name = "tankcoat_main"
+        self.tankCoat.generateWithRequired(self.backfireCanyonSpeedway.doId)
+
+        self.backfireCanyonSpeedway.interactiveObjects.append(self.gasprin)
+        self.backfireCanyonSpeedway.interactiveObjects.append(self.tankCoat)
+
+        self.backfireCanyonSpeedway.updateObjectCount()
+
+        self.noStall = SponsorBoothAI(self)
+        self.noStall.catalogId = 9987
+        self.noStall.name = "nostall_main"
+        self.noStall.generateWithRequired(self.bigHeartlandSpeedway.doId)
+
+        self.revNGo = SponsorBoothAI(self)
+        self.revNGo.catalogId = 9988
+        self.revNGo.name = "revngo_main"
+        self.revNGo.generateWithRequired(self.bigHeartlandSpeedway.doId)
+
+        self.bigHeartlandSpeedway.interactiveObjects.append(self.noStall)
+        self.bigHeartlandSpeedway.interactiveObjects.append(self.revNGo)
+
+        self.bigHeartlandSpeedway.updateObjectCount()
+
         self.mater = MaterAI(self)
         self.mater.generateWithRequired(self.downtownZone.doId)
 
@@ -152,9 +176,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.luigisCasaDellaTires = LuigisCasaDellaTiresAI(self)
         self.luigisCasaDellaTires.generateWithRequired(self.downtownZone.doId)
 
-        self.matersSlingShoot = MatersSlingShootAI(self)
-        self.matersSlingShoot.generateWithRequired(self.downtownZone.doId)
-
         self.redhoodValleyHotspot = RedhoodValleyAI(self)
         self.redhoodValleyHotspot.generateWithRequired(self.downtownZone.doId)
 
@@ -163,16 +184,25 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.spyShopRS.generateWithRequired(self.downtownZone.doId)
 
         for i in range(0, 22):
-            cone = ConeAI(self)
+            cone = GenericInteractiveObjectAI(self)
             cone.name = f"cone{i}"
             cone.generateWithRequired(self.downtownZone.doId)
             self.downtownZone.interactiveObjects.append(cone)
+
+        self.stanleyStatue = GenericInteractiveObjectAI(self)
+        self.stanleyStatue.name = "rs_stanley_statue"
+        self.stanleyStatue.generateWithRequired(self.downtownZone.doId)
+
+        self.tireTower = GenericInteractiveObjectAI(self)
+        self.tireTower.name = "rs_tire_tower"
+        self.tireTower.generateWithRequired(self.downtownZone.doId)
 
         self.downtownZone.interactiveObjects.append(self.mater)
         self.downtownZone.interactiveObjects.append(self.ramone)
         self.downtownZone.interactiveObjects.append(self.docsClinic)
         self.downtownZone.interactiveObjects.append(self.luigisCasaDellaTires)
-        self.downtownZone.interactiveObjects.append(self.matersSlingShoot)
+        self.downtownZone.interactiveObjects.append(self.stanleyStatue)
+        self.downtownZone.interactiveObjects.append(self.tireTower)
 
         self.lightningMcQueen = LightningMcQueenAI(self)
         self.lightningMcQueen.generateWithRequired(self.downtownZone.doId)
@@ -183,37 +213,6 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.downtownZone.interactiveObjects.append(self.spyShopRS)
 
         self.downtownZone.updateObjectCount()
-
-        self.shinyWax = ShinyWaxAI(self)
-        self.shinyWax.generateWithRequired(self.tailgatorSpeedway.doId)
-
-        self.leakLess = LeakLessAI(self)
-        self.leakLess.generateWithRequired(self.tailgatorSpeedway.doId)
-
-        self.sputterStop = SputterStopAI(self)
-        self.sputterStop.generateWithRequired(self.tailgatorSpeedway.doId)
-
-        self.spareMint = SpareMintAI(self)
-        self.spareMint.generateWithRequired(self.tailgatorSpeedway.doId)
-
-        self.trunkFresh = TrunkFreshAI(self)
-        self.trunkFresh.generateWithRequired(self.tailgatorSpeedway.doId)
-
-        self.lilTorquey = LilTorqueyPistonsAI(self)
-        self.lilTorquey.generateWithRequired(self.tailgatorSpeedway.doId)
-
-        self.gaskits = GaskitsAI(self)
-        self.gaskits.generateWithRequired(self.tailgatorSpeedway.doId)
-
-        self.tailgatorSpeedway.interactiveObjects.append(self.shinyWax)
-        self.tailgatorSpeedway.interactiveObjects.append(self.leakLess)
-        self.tailgatorSpeedway.interactiveObjects.append(self.sputterStop)
-        self.tailgatorSpeedway.interactiveObjects.append(self.spareMint)
-        self.tailgatorSpeedway.interactiveObjects.append(self.trunkFresh)
-        self.tailgatorSpeedway.interactiveObjects.append(self.lilTorquey)
-        self.tailgatorSpeedway.interactiveObjects.append(self.gaskits)
-
-        self.tailgatorSpeedway.updateObjectCount()
 
         self.fillmoreFizzyHutFF = FillmoreFizzyFuelHutAI(self)
         self.fillmoreFizzyHutFF.name = "isostore_FillmoreFizzyHutFF"
@@ -251,6 +250,75 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.fillmoresFields.updateObjectCount()
 
+        self.rusteze = SponsorBoothAI(self)
+        self.rusteze.catalogId = 9995
+        self.rusteze.name = "rusteze_main"
+        self.rusteze.generateWithRequired(self.laSpeedway.doId)
+
+        self.nitroAde = SponsorBoothAI(self)
+        self.nitroAde.catalogId = 9996
+        self.nitroAde.name = "nitroade_main"
+        self.nitroAde.generateWithRequired(self.laSpeedway.doId)
+
+        self.octaneGain = SponsorBoothAI(self)
+        self.octaneGain.catalogId = 9997
+        self.octaneGain.name = "octane_main"
+        self.octaneGain.generateWithRequired(self.laSpeedway.doId)
+
+        self.n2oCola = SponsorBoothAI(self)
+        self.n2oCola.catalogId = 9998
+        self.n2oCola.name = "n2o_main"
+        self.n2oCola.generateWithRequired(self.laSpeedway.doId)
+
+        self.dinoco = SponsorBoothAI(self)
+        self.dinoco.catalogId = 9999
+        self.dinoco.name = "dinoco_main"
+        self.dinoco.generateWithRequired(self.laSpeedway.doId)
+
+        self.moodSprings = SponsorBoothAI(self)
+        self.moodSprings.catalogId = 10000
+        self.moodSprings.name = "moodsprings_main"
+        self.moodSprings.generateWithRequired(self.laSpeedway.doId)
+
+        self.laSpeedway.interactiveObjects.append(self.rusteze)
+        self.laSpeedway.interactiveObjects.append(self.nitroAde)
+        self.laSpeedway.interactiveObjects.append(self.octaneGain)
+        self.laSpeedway.interactiveObjects.append(self.n2oCola)
+        self.laSpeedway.interactiveObjects.append(self.dinoco)
+        self.laSpeedway.interactiveObjects.append(self.moodSprings)
+
+        self.laSpeedway.updateObjectCount()
+
+        self.vitoline = SponsorBoothAI(self)
+        self.vitoline.catalogId = 9993
+        self.vitoline.name = "vitoline_main"
+        self.vitoline.generateWithRequired(self.motorSpeedwaySouth.doId)
+
+        self.viewZeen = SponsorBoothAI(self)
+        self.viewZeen.catalogId = 9994
+        self.viewZeen.name = "vuzeen_main"
+        self.viewZeen.generateWithRequired(self.motorSpeedwaySouth.doId)
+
+        self.motorSpeedwaySouth.interactiveObjects.append(self.vitoline)
+        self.motorSpeedwaySouth.interactiveObjects.append(self.viewZeen)
+
+        self.motorSpeedwaySouth.updateObjectCount()
+
+        self.reVolting = SponsorBoothAI(self)
+        self.reVolting.catalogId = 9991
+        self.reVolting.name = "revolting_main"
+        self.reVolting.generateWithRequired(self.petroleumCitySpeedway.doId)
+
+        self.htB = SponsorBoothAI(self)
+        self.htB.catalogId = 9992
+        self.htB.name = "htb_main"
+        self.htB.generateWithRequired(self.petroleumCitySpeedway.doId)
+
+        self.petroleumCitySpeedway.interactiveObjects.append(self.reVolting)
+        self.petroleumCitySpeedway.interactiveObjects.append(self.htB)
+
+        self.petroleumCitySpeedway.updateObjectCount()
+
         self.fillmoreFizzyHutRV = FillmoreFizzyFuelHutAI(self)
         self.fillmoreFizzyHutRV.generateWithRequired(self.redhoodValley.doId)
 
@@ -266,11 +334,65 @@ class CarsAIRepository(AIDistrict, ServerBase):
 
         self.redhoodValley.updateObjectCount()
 
+        self.shinyWax = SponsorBoothAI(self)
+        self.shinyWax.catalogId = 9980
+        self.shinyWax.name = "shinywax_generic"
+        self.shinyWax.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.leakLess = SponsorBoothAI(self)
+        self.leakLess.catalogId = 9981
+        self.leakLess.name = "leakless_generic"
+        self.leakLess.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.sputterStop = SponsorBoothAI(self)
+        self.sputterStop.catalogId = 9982
+        self.sputterStop.name = "sputter_generic"
+        self.sputterStop.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.spareMint = SponsorBoothAI(self)
+        self.spareMint.catalogId = 9983
+        self.spareMint.name = "sparemint_generic"
+        self.spareMint.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.trunkFresh = SponsorBoothAI(self)
+        self.trunkFresh.catalogId = 9984
+        self.trunkFresh.name = "trunkfresh_generic"
+        self.trunkFresh.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.lilTorquey = SponsorBoothAI(self)
+        self.lilTorquey.catalogId = 9985
+        self.lilTorquey.name = "torquey_main"
+        self.lilTorquey.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.gaskits = SponsorBoothAI(self)
+        self.gaskits.catalogId = 9986
+        self.gaskits.name = "gaskit_main"
+        self.gaskits.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.tailgatorSpeedway.interactiveObjects.append(self.shinyWax)
+        self.tailgatorSpeedway.interactiveObjects.append(self.leakLess)
+        self.tailgatorSpeedway.interactiveObjects.append(self.sputterStop)
+        self.tailgatorSpeedway.interactiveObjects.append(self.spareMint)
+        self.tailgatorSpeedway.interactiveObjects.append(self.trunkFresh)
+        self.tailgatorSpeedway.interactiveObjects.append(self.lilTorquey)
+        self.tailgatorSpeedway.interactiveObjects.append(self.gaskits)
+
+        self.tailgatorSpeedway.updateObjectCount()
+
         self.fillmoreFizzyHutWB = FillmoreFizzyFuelHutAI(self)
         self.fillmoreFizzyHutWB.name = "isostore_fillmoreFizzyHutWB"
         self.fillmoreFizzyHutWB.generateWithRequired(self.willysButte.doId)
 
+        self.matersSlingShoot = MatersSlingShootAI(self)
+        self.matersSlingShoot.generateWithRequired(self.willysButte.doId)
+
+        self.spyShopWB = SpyShopAI(self)
+        self.spyShopWB.name = "isostore_SpyStoreWB"
+        self.spyShopWB.generateWithRequired(self.willysButte.doId)
+
         self.willysButte.interactiveObjects.append(self.fillmoreFizzyHutWB)
+        self.willysButte.interactiveObjects.append(self.matersSlingShoot)
+        self.willysButte.interactiveObjects.append(self.spyShopWB)
 
         self.willysButte.updateObjectCount()
 
@@ -310,8 +432,41 @@ class CarsAIRepository(AIDistrict, ServerBase):
         self.mpFFRRaceCrossShardLobby = DistributedCrossShardLobbyAI(self, "mpRace_ffr", 42003, "car_w_trk_frm_ffRally_SS_phys.xml")
         self.mpFFRRaceCrossShardLobby.generateWithRequired(self.fillmoresFields.doId)
 
+        self.tgsRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_tgs", 42004, "car_w_trk_prf_tailgator_SS_phys.xml")
+        self.tgsRaceFriendsLobby.generateWithRequired(self.tailgatorSpeedway.doId)
+
         self.tgsRaceLobby = DistributedCrossShardLobbyAI(self, "race_tgs", 42004, "car_w_trk_prf_tailgator_SS_phys.xml")
         self.tgsRaceLobby.generateWithRequired(self.tailgatorSpeedway.doId)
+
+        self.bhsRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_bhl", 42006, "car_w_trk_prf_BigHeartland_SS_phys.xml")
+        self.bhsRaceFriendsLobby.generateWithRequired(self.bigHeartlandSpeedway.doId)
+
+        self.bhsRaceLobby = DistributedCrossShardLobbyAI(self, "race_bhl", 42006, "car_w_trk_prf_BigHeartland_SS_phys.xml")
+        self.bhsRaceLobby.generateWithRequired(self.bigHeartlandSpeedway.doId)
+
+        self.bfcRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_bfc", 42007, "car_w_trk_prf_BackfireCanyon_SS_phys.xml")
+        self.bfcRaceFriendsLobby.generateWithRequired(self.backfireCanyonSpeedway.doId)
+
+        self.bfcRaceLobby = DistributedCrossShardLobbyAI(self, "race_bfc", 42007, "car_w_trk_prf_BackfireCanyon_SS_phys.xml")
+        self.bfcRaceLobby.generateWithRequired(self.backfireCanyonSpeedway.doId)
+
+        self.pcRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_pc", 42008, "car_w_trk_prf_PetroleumCityRace_SS_phys.xml")
+        self.pcRaceFriendsLobby.generateWithRequired(self.petroleumCitySpeedway.doId)
+
+        self.pcRaceLobby = DistributedCrossShardLobbyAI(self, "race_pc", 42008, "car_w_trk_prf_PetroleumCityRace_SS_phys.xml")
+        self.pcRaceLobby.generateWithRequired(self.petroleumCitySpeedway.doId)
+
+        self.mssRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_mss", 42009, "car_w_trk_prf_MotorSpeedwaySouth_SS_phys.xml")
+        self.mssRaceFriendsLobby.generateWithRequired(self.motorSpeedwaySouth.doId)
+
+        self.mssRaceLobby = DistributedCrossShardLobbyAI(self, "race_mss", 42009, "car_w_trk_prf_MotorSpeedwaySouth_SS_phys.xml")
+        self.mssRaceLobby.generateWithRequired(self.motorSpeedwaySouth.doId)
+
+        self.lasRaceFriendsLobby = DistributedFriendsLobbyAI(self, "race_las", 42010, "car_w_trk_prf_LASpeedway_SS_phys.xml")
+        self.lasRaceFriendsLobby.generateWithRequired(self.laSpeedway.doId)
+
+        self.lasRaceLobby = DistributedCrossShardLobbyAI(self, "race_las", 42010, "car_w_trk_prf_LASpeedway_SS_phys.xml")
+        self.lasRaceLobby.generateWithRequired(self.laSpeedway.doId)
 
         # mark district as enabled
         # NOTE: Only setEnabled is used in the client
