@@ -1,6 +1,6 @@
 @echo off
 title World of Cars Online - UberDOG Server
-cd ../..
+cd /d "%~dp0..\.."
 set /P PYTHON_PATH=<PYTHON_PATH
 
 :main
