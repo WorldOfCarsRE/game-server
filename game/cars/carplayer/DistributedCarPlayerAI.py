@@ -36,6 +36,8 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             self.d_buyItemResponse(itemId, BUY_RESP_CODE_INVALID_STORE_ITEM)
             return
 
+        itemType: str = item["storeThumbnail"].split("_")[3]
+
         if itemType in ("spo", "tlp", "exh", "eng", "orn", "hat"):
             # NOTE: Addon purchases are disabled for now.
             # Do not take coins.
@@ -44,8 +46,6 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         if not self.takeCoins(item["storePrice"]):
             self.d_buyItemResponse(itemId, BUY_RESP_CODE_NOT_ENOUGH_CARCOIN)
             return
-
-        itemType: str = item["storeThumbnail"].split("_")[3]
 
         # if itemType in ("spo", "tlp", "exh", "eng", "orn", "hat"):
             # Addon
