@@ -513,7 +513,7 @@ class CarsAIRepository(AIDistrict, ServerBase):
         dbo = DatabaseObject(self, carPlayer.doId)
         # Add more fields if needed. (Good spot to look if the field you want
         # is an ownrequired field, but no required or ram.)
-        dbo.readObject(carPlayer, ["setCarCoins", "setYardStocks"])
+        dbo.readObject(carPlayer, ["setCarCoins", "setYardStocks", "setRuleStates", "setActiveQuests"])
 
     def readRaceCar(self, racecarId, fields = None, doneEvent = '') -> DistributedRaceCarAI:
         dbo = DatabaseObject(self, racecarId, doneEvent)

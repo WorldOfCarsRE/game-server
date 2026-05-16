@@ -1,7 +1,7 @@
 from game.cars.carplayer.InteractiveObjectAI import (
-    COMMAND_OFFER_QUERY_INTERACTIONS,
     TYPE_NPC, InteractiveObjectAI)
 
+from .QuestNPC import QuestNPC
 
 class LightningMcQueenAI(InteractiveObjectAI):
     def __init__(self, air) -> None:
@@ -23,6 +23,5 @@ class LightningMcQueenAI(InteractiveObjectAI):
         self.d_setTelemetry(3548, 1812, 0, 551, 854, 16213, 16156, 259154)
 
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
-        if eventId == COMMAND_OFFER_QUERY_INTERACTIONS:
-            # Indicators: First visit (32024), Available quest (32025), Incomplete quest (32026), Complete quest (32027)
-            self.d_broadcastChoreographyToPlayer(avatarId, [], [], [[32024, 0]], []) # Indicator
+        av = self.air.getDo(avatarId)
+        QuestNPC.requestInteract(self, av, eventId, args)

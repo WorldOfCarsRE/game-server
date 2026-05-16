@@ -7,18 +7,25 @@ from game.cars.zone import ZoneConstants
 from .DistributedRaceCarAI import DistributedRaceCarAI
 from .CarDNA import CarDNA
 
+from game.cars.ai import QuestConstants
+
+import time
+
 BUY_RESP_CODE_SUCCESS = 0
 BUY_RESP_CODE_ALREADY_OWNED = 1
 BUY_RESP_CODE_INVALID_STORE_ITEM = 4
 BUY_RESP_CODE_NOT_ENOUGH_CARCOIN = 8
 BUY_RESP_CODE_NOT_PURCHASEABLE = 12
 
+TUTORIAL_RULE_ID = 100
+
 DEDUCT_COINS_EVENT_ID = 10008
+BODY_SHAPE_EVENT_ID = 34000
 
 class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def __init__(self, air):
         DistributedCarAvatarAI.__init__(self, air)
-        self.DISLname = ''
+        self.DISLname = ""
         self.DISLid = 0
         self.carCoins = 0
         self.carCount = 0
@@ -28,6 +35,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.dna: CarDNA = None
         self.activeQuests: list = []
         self.badges: list = []
+        self.ruleStates: list = []
 
     def buyItemRequest(self, shopId: int, itemId: int) -> None:
         item: None | dict = self.air.getShopItem(str(shopId), itemId)
@@ -142,7 +150,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         self.setYardStocks(yardStocks)
 
     def d_buyItemResponse(self, itemId: int, responseCode: int) -> None:
-        self.sendUpdateToAvatarId(self.doId, 'buyItemResponse', [itemId, responseCode])
+        self.sendUpdateToAvatarId(self.doId, "buyItemResponse", [itemId, responseCode])
 
     def setDNA(self, carDNA: CarDNA):
         if carDNA.validateDNA():
@@ -202,7 +210,7 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         return self.carCoins
 
     def d_setCarCoins(self, carCoins: int):
-        self.sendUpdate('setCarCoins', [carCoins])
+        self.sendUpdate("setCarCoins", [carCoins])
 
     def b_setCarCoins(self, carCoins: int):
         self.setCarCoins(carCoins)
@@ -210,9 +218,6 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
     def announceGenerate(self):
         self.air.sendFriendManagerAccountOnline(self.DISLid)
-
-        self.sendUpdateToAvatarId(self.doId, 'setRuleStates', [[[100, 1, 1, 1]]]) # To skip the tutorial, remove me to go to tutorial.
-        self.sendUpdateToAvatarId(self.doId, 'generateComplete', [])
 
         self.air.incrementPopulation()
 
@@ -227,14 +232,35 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
 
         DistributedCarAvatarAI.delete(self)
 
+    def setRuleStates(self, ruleStates: list) -> None:
+        self.ruleStates = ruleStates
+
+        # TODO: Implement tutorial
+        self.addRuleState(TUTORIAL_RULE_ID, 1, 1, int(time.time()))
+
+        self.d_setRuleStates(self.ruleStates)
+
+        # Now we can tell the client avatar generation is complete.
+        self.sendUpdateToAvatarId(self.doId, "generateComplete", [])
+
+    def d_setRuleStates(self, ruleStates: list) -> None:
+        self.sendUpdate("setRuleStates", [ruleStates])
+
+    def addRuleState(self, ruleId: int, count: int, accumulator: int, createTime: int) -> None:
+        if not self.hasRuleId(ruleId):
+            self.ruleStates.append([ruleId, count, accumulator, createTime])
+
+    def hasRuleId(self, ruleId: int) -> bool:
+        return any(rule[0] == ruleId for rule in self.ruleStates if rule)
+
     def sendEventLog(self, event: str, params: list, args: list):
-        self.air.writeServerEvent(event, self.doId, f'{params}:{args}')
+        self.air.writeServerEvent(event, self.doId, f"{params}:{args}")
 
     def persistRequest(self, context: int):
-        self.sendUpdateToAvatarId(self.doId, 'persistResponse', [context, 1])
+        self.sendUpdateToAvatarId(self.doId, "persistResponse", [context, 1])
 
     def invokeRuleRequest(self, eventId: int, rules: list, context: int):
-        print(f'invokeRuleRequest - {eventId} - {rules} - {context}')
+        print(f"invokeRuleRequest - {eventId} - {rules} - {context}")
 
         if eventId in ZoneConstants.MINIGAMES:
             if eventId == ZoneConstants.PAINT_BLASTER:
@@ -253,13 +279,22 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
             rules = [coins]
 
             self.addCoins(coins)
+
         elif eventId == DEDUCT_COINS_EVENT_ID:
             self.takeCoins(rules[0])
+
+        elif eventId == BODY_SHAPE_EVENT_ID and QuestConstants.FREE_BODY_WORK_QUEST_ID in self.getActiveQuests():
+            self.addRuleState(QuestConstants.RAMONE_SHOP_TASK_COMPLETED_RULE_ID, 1, 1, int(time.time()))
+
+            self.d_setRuleStates(self.ruleStates)
+
+        elif eventId == QuestConstants.RAMONE_ABANDON_RULE_ID:
+            self.removeActiveQuest(QuestConstants.FREE_BODY_WORK_QUEST_ID)
 
         self.d_invokeRuleResponse(eventId, rules, context)
 
     def d_invokeRuleResponse(self, eventId: int, rules: List[int], context: int):
-        self.sendUpdateToAvatarId(self.doId, 'invokeRuleResponse', [eventId, rules, context])
+        self.sendUpdateToAvatarId(self.doId, "invokeRuleResponse", [eventId, rules, context])
 
     def addCoins(self, deltaCoins: int):
         self.b_setCarCoins(deltaCoins + self.getCarCoins())
@@ -275,10 +310,10 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         return True
 
     def d_showDialogs(self, dialogId: int, args: List[str]):
-        self.sendUpdateToAvatarId(self.doId, 'showDialogs', [[[dialogId, args]]])
+        self.sendUpdateToAvatarId(self.doId, "showDialogs", [[[dialogId, args]]])
 
     def d_setYardStocks(self, yardStocks: list) -> None:
-        self.sendUpdate('setYardStocks', [yardStocks])
+        self.sendUpdate("setYardStocks", [yardStocks])
 
     def setYardStocks(self, yardStocks: list) -> None:
         self.yardStocks = yardStocks
@@ -287,15 +322,30 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
     def getYardStocks(self) -> list:
         return self.yardStocks
 
-    def setActiveQuests(self, activeQuests: list):
+    def setActiveQuests(self, activeQuests: list) -> None:
         self.activeQuests = activeQuests
-        self.d_setActiveQuests(activeQuests)
 
     def getActiveQuests(self) -> list:
         return self.activeQuests
 
     def d_setActiveQuests(self, activeQuests: list):
-        self.sendUpdate('setActiveQuests', [activeQuests])
+        self.sendUpdate("setActiveQuests", [activeQuests])
+
+    def b_setActiveQuests(self, activeQuests: int) -> None:
+        self.setActiveQuests(activeQuests)
+        self.d_setActiveQuests(activeQuests)
+
+    def addActiveQuest(self, questId: int) -> None:
+        if questId not in self.getActiveQuests():
+            self.activeQuests.append(questId)
+
+            self.d_setActiveQuests(self.getActiveQuests())
+
+    def removeActiveQuest(self, questId: int) -> None:
+        if questId in self.getActiveQuests():
+            self.activeQuests.remove(questId)
+
+            self.d_setActiveQuests(self.getActiveQuests())
 
     def setBadges(self, badges: list):
         self.badges = badges
@@ -305,4 +355,4 @@ class DistributedCarPlayerAI(DistributedCarAvatarAI):
         return self.badges
 
     def d_setBadges(self, badges: list):
-        self.sendUpdate('setBadges', [badges])
+        self.sendUpdate("setBadges", [badges])

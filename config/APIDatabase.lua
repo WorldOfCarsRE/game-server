@@ -119,6 +119,7 @@ Api2Field = {
     animationList = "setAnimations",
     detailings = "setDetailings",
     offAddons = "setOffAddons",
+    paints = "setPaints",
 
     -- DistributedCarPlayer
     carCoins = "setCarCoins",
@@ -126,6 +127,7 @@ Api2Field = {
     customItemList = "setYardStocks",
     activeQuests = "setActiveQuests",
     badges = "setBadges",
+    ruleStates = "setRuleStates",
 
     -- CarPlayerStatus
     setLocationType = "setLocationType",
@@ -207,15 +209,17 @@ function handleGetStoredValues(participant, dgi)
         end
         goto finish
     elseif data.objectName == "DistributedCarPlayer" or data.objectName == "DistributedRaceCar" then
-        -- local originalData
-
-        -- data = originalData.carData
-        -- data.badges = originalData.badges
+        local badges = data.badges
+        local ruleStates = data.ruleStates
+        local paints = data.paints
 
         -- Use carData for data
         data = data.carData
-    end
 
+        data.badges = badges
+        data.ruleStates = ruleStates
+        data.paints = paints
+    end
 
     for _, field in ipairs(requestedFields) do
         local dcField = dcClass:getFieldByName(field)

@@ -24,6 +24,7 @@ class DistributedRaceCarAI(DistributedObjectAI):
         self.activeSponsor: int = 0
         self.player: DistributedCarPlayerAI = None
         self.offAddons: list = []
+        self.paints: list = []
 
     def consume(self, usedConsumable) -> None:
         itemId: int = usedConsumable[0]
@@ -181,6 +182,20 @@ class DistributedRaceCarAI(DistributedObjectAI):
 
     def getDetailings(self) -> list:
         return self.detailings
+
+    def setPaints(self, paints: list) -> None:
+        self.paints = paints
+
+        if self.paints == []:
+            self.paints.append(self.dna.color)
+
+        self.d_setPaints(self.paints)
+
+    def d_setPaints(self, paints: list) -> None:
+        self.sendUpdate('setPaints', [paints])
+
+    def getPaints(self) -> list:
+        return self.paints
 
     def setOffAddons(self, offAddons: list):
         self.offAddons = offAddons

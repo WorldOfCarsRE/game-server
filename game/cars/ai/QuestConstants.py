@@ -1,0 +1,55 @@
+FREE_BODY_WORK_QUEST_ID = 25010
+
+HIT_THE_ROAD_CHALLENGE = 25002
+
+RAMONE_SHOP_TASK_COMPLETED_RULE_ID = 2104
+
+RAMONE_RETURN_RULE_ID = 2105
+
+RAMONE_ABANDON_RULE_ID = 2028
+
+RAMONE_QUEST_END_RULE_ID = 2029
+
+MEDALLION_BRONZE_PAINT = 20211
+
+RAMONE = 31008
+
+MCQUEEN = 31010
+
+FREE_BODY_WORK_RULE_DATA = [
+    RAMONE_SHOP_TASK_COMPLETED_RULE_ID, # readyToTurnIn
+    RAMONE_RETURN_RULE_ID,
+    RAMONE_QUEST_END_RULE_ID # questCompleted
+]
+
+HIT_THE_ROAD_CHALLENGE_RULE_DATA = [
+    2039, # Go and compete in a local Carburetor County race (readyToTurnIn).
+    2103, # Return to Lightning.
+    2005 # questCompleted
+]
+
+AV_RAGE_RACING_FIN = 201
+
+QUESTS = {
+    RAMONE: {
+        FREE_BODY_WORK_QUEST_ID: FREE_BODY_WORK_RULE_DATA
+    },
+    MCQUEEN: {
+        HIT_THE_ROAD_CHALLENGE: HIT_THE_ROAD_CHALLENGE_RULE_DATA
+    }
+}
+
+REWARDS = {
+    FREE_BODY_WORK_QUEST_ID: {
+        "coins": 10,
+        "paints": [
+            MEDALLION_BRONZE_PAINT
+        ]
+    },
+    HIT_THE_ROAD_CHALLENGE: {
+        "coins": 50,
+        "addons": [
+            AV_RAGE_RACING_FIN
+        ]
+    }
+}
