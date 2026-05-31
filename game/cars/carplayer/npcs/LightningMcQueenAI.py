@@ -1,7 +1,7 @@
 from game.cars.carplayer.InteractiveObjectAI import (
     TYPE_NPC, InteractiveObjectAI)
 
-from .QuestNPC import QuestNPC
+# from .QuestNPC import QuestNPC
 
 class LightningMcQueenAI(InteractiveObjectAI):
     def __init__(self, air) -> None:
@@ -23,5 +23,7 @@ class LightningMcQueenAI(InteractiveObjectAI):
         self.d_setTelemetry(3548, 1812, 0, 551, 854, 16213, 16156, 259154)
 
     def handleInteraction(self, avatarId: int, eventId: int, args: list) -> None:
-        av = self.air.getDo(avatarId)
-        QuestNPC.requestInteract(self, av, eventId, args)
+        pass
+
+        # av = self.air.getDo(avatarId)
+        # QuestNPC.requestInteract(self, av, eventId, args)
